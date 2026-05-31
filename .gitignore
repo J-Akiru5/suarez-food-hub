@@ -49,3 +49,6 @@ prisma/migrations/
 # Misc
 *.pem
 coverage/
+
+# Dev Lou reference repo
+dev-lou-fo/

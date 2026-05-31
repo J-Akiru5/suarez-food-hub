@@ -7,14 +7,14 @@ import { getCurrentPosition } from "@/lib/geolocation";
 
 const riderIcon = new L.DivIcon({
   className: "rider-marker",
-  html: `<div style="background:#f97316;width:24px;height:24px;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>`,
+  html: `<div style="background:#b1454a;width:24px;height:24px;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>`,
   iconSize: [24, 24],
   iconAnchor: [12, 12],
 });
 
 const destinationIcon = new L.DivIcon({
   className: "destination-marker",
-  html: `<div style="background:#ef4444;width:24px;height:24px;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>`,
+  html: `<div style="background:#9a3a3e;width:24px;height:24px;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.3);"></div>`,
   iconSize: [24, 24],
   iconAnchor: [12, 12],
 });

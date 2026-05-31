@@ -138,12 +138,12 @@ export default function CategoriesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Categories</h1>
+          <h1 className="text-2xl font-bold text-gray-900 font-display">Categories</h1>
           <p className="text-sm text-muted-foreground">
             Manage product categories
           </p>
         </div>
-        <Button onClick={openCreateDialog} className="gap-2 bg-brand-500 hover:bg-brand-600 text-white">
+        <Button onClick={openCreateDialog} className="gap-2 bg-crimson-700 hover:bg-crimson-800 text-white">
           <Plus className="h-4 w-4" />
           Add Category
         </Button>
@@ -300,7 +300,7 @@ export default function CategoriesPage() {
                 onChange={(e) => setFormDescription(e.target.value)}
                 placeholder="Category description (optional)"
                 rows={3}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-crimson-500 focus:border-transparent"
               />
             </div>
 
@@ -310,7 +310,7 @@ export default function CategoriesPage() {
                 id="active"
                 checked={formIsActive}
                 onChange={(e) => setFormIsActive(e.target.checked)}
-                className="rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+                className="rounded border-gray-300 text-crimson-600 focus:ring-crimson-500"
               />
               <label htmlFor="active" className="text-sm font-medium text-gray-700">
                 Active
@@ -325,7 +325,7 @@ export default function CategoriesPage() {
             <Button
               onClick={handleSave}
               disabled={saving || !formName}
-              className="bg-brand-500 hover:bg-brand-600 text-white"
+              className="bg-crimson-700 hover:bg-crimson-800 text-white"
             >
               {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
               {editingCategory ? "Save Changes" : "Create Category"}

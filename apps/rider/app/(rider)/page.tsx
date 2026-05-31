@@ -212,7 +212,7 @@ export default function RiderDashboard() {
   return (
     <div className="p-4 space-y-4">
       {hasNewOrder && !activeOrder && (
-        <div className="bg-brand-500 text-white p-4 rounded-xl pulse-notification flex items-center gap-3">
+        <div className="bg-brand-600 text-white p-4 rounded-xl pulse-notification flex items-center gap-3">
           <Package size={24} />
           <div>
             <p className="font-semibold">New Order Assignment!</p>
@@ -222,15 +222,15 @@ export default function RiderDashboard() {
       )}
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-          <div className="flex items-center gap-2 text-gray-500 mb-1">
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-brand-100">
+          <div className="flex items-center gap-2 text-brand-600 mb-1">
             <Package size={16} />
             <span className="text-xs font-medium">Today&apos;s Deliveries</span>
           </div>
           <p className="text-2xl font-bold text-gray-800">{todayStats.deliveries}</p>
         </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-          <div className="flex items-center gap-2 text-gray-500 mb-1">
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-brand-100">
+          <div className="flex items-center gap-2 text-brand-600 mb-1">
             <TrendingUp size={16} />
             <span className="text-xs font-medium">Today&apos;s Earnings</span>
           </div>
@@ -256,7 +256,7 @@ export default function RiderDashboard() {
             </div>
 
             <div className="flex items-start gap-2">
-              <MapPin size={16} className="text-brand-500 mt-0.5 shrink-0" />
+              <MapPin size={16} className="text-brand-600 mt-0.5 shrink-0" />
               <p className="text-sm text-gray-700">{activeOrder.delivery_address}</p>
             </div>
 

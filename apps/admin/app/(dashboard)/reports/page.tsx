@@ -182,25 +182,25 @@ export default function ReportsPage() {
       label: "Total Orders",
       value: reportData.totalOrders.toLocaleString(),
       icon: ShoppingBag,
-      color: "bg-blue-500",
+      color: "bg-crimson-100 text-crimson-700",
     },
     {
       label: "Revenue",
       value: formatCurrency(reportData.totalRevenue),
       icon: DollarSign,
-      color: "bg-green-500",
+      color: "bg-green-100 text-green-700",
     },
     {
       label: "Avg. Order Value",
       value: formatCurrency(reportData.averageOrderValue),
       icon: TrendingUp,
-      color: "bg-purple-500",
+      color: "bg-blue-100 text-blue-700",
     },
     {
       label: "Items Sold",
       value: reportData.itemsSold.toLocaleString(),
       icon: BarChart3,
-      color: "bg-orange-500",
+      color: "bg-orange-100 text-orange-700",
     },
   ];
 
@@ -216,7 +216,7 @@ export default function ReportsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Reports</h1>
+          <h1 className="text-2xl font-bold text-gray-900 font-display">Reports</h1>
           <p className="text-sm text-muted-foreground">
             Business analytics and insights
           </p>
@@ -261,7 +261,7 @@ export default function ReportsPage() {
                   onClick={() => setPreset(p.value)}
                   className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
                     preset === p.value
-                      ? "bg-brand-500 text-white"
+                      ? "bg-crimson-700 text-white"
                       : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
                 >
@@ -309,7 +309,7 @@ export default function ReportsPage() {
                   <div
                     className={`h-10 w-10 rounded-lg ${stat.color} flex items-center justify-center`}
                   >
-                    <Icon className="h-5 w-5 text-white" />
+                    <Icon className="h-5 w-5" />
                   </div>
                 </div>
               </CardContent>
@@ -321,7 +321,7 @@ export default function ReportsPage() {
       {/* Revenue Chart */}
       <Card>
         <CardContent className="p-4">
-          <h2 className="font-bold text-lg mb-4">Daily Revenue</h2>
+          <h2 className="font-bold text-lg mb-4 font-display">Daily Revenue</h2>
           {loading ? (
             <div className="h-72 bg-gray-100 rounded-lg animate-pulse" />
           ) : (
@@ -352,7 +352,7 @@ export default function ReportsPage() {
                   <Line
                     type="monotone"
                     dataKey="revenue"
-                    stroke="#f97316"
+                    stroke="#b1454a"
                     strokeWidth={2}
                     dot={false}
                     activeDot={{ r: 6 }}
@@ -367,7 +367,7 @@ export default function ReportsPage() {
       {/* Top Products Table */}
       <Card>
         <CardContent className="p-4">
-          <h2 className="font-bold text-lg mb-4">Top Selling Products</h2>
+          <h2 className="font-bold text-lg mb-4 font-display">Top Selling Products</h2>
           {loading ? (
             <div className="space-y-3">
               {[1, 2, 3, 4, 5].map((i) => (
@@ -401,7 +401,7 @@ export default function ReportsPage() {
                   {reportData.topProducts.map((product, idx) => (
                     <tr key={product.name}>
                       <td className="py-3">
-                        <span className="h-6 w-6 rounded-full bg-brand-100 text-brand-700 text-xs font-bold flex items-center justify-center">
+                        <span className="h-6 w-6 rounded-full bg-crimson-100 text-crimson-700 text-xs font-bold flex items-center justify-center">
                           {idx + 1}
                         </span>
                       </td>

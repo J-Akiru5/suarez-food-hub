@@ -129,7 +129,7 @@ export default function OrdersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Orders</h1>
+          <h1 className="text-2xl font-bold text-gray-900 font-display">Orders</h1>
           <p className="text-sm text-muted-foreground">
             Manage and track all orders
           </p>
@@ -221,7 +221,7 @@ export default function OrdersPage() {
                             expandedOrder === order.id ? null : order.id
                           )
                         }
-                        className="flex items-center gap-1 text-xs text-brand-600 font-medium hover:text-brand-700"
+                        className="flex items-center gap-1 text-xs text-crimson-600 font-medium hover:text-crimson-700"
                       >
                         {expandedOrder === order.id ? (
                           <ChevronUp className="h-3 w-3" />

@@ -94,7 +94,7 @@ export default function RidersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Riders</h1>
+        <h1 className="text-2xl font-bold text-gray-900 font-display">Riders</h1>
         <p className="text-sm text-muted-foreground">
           Manage and track delivery riders
         </p>
@@ -119,7 +119,7 @@ export default function RidersPage() {
             <Card
               key={rider.id}
               className={`cursor-pointer transition-all hover:shadow-md ${
-                selectedRider?.id === rider.id ? "ring-2 ring-brand-500" : ""
+                selectedRider?.id === rider.id ? "ring-2 ring-crimson-500" : ""
               }`}
               onClick={() =>
                 setSelectedRider(
@@ -129,7 +129,7 @@ export default function RidersPage() {
             >
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
-                  <div className="h-12 w-12 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 font-bold text-sm shrink-0">
+                  <div className="h-12 w-12 rounded-full bg-crimson-100 flex items-center justify-center text-crimson-700 font-bold text-sm shrink-0">
                     {rider.first_name?.[0]}
                     {rider.last_name?.[0]}
                   </div>
@@ -190,13 +190,13 @@ export default function RidersPage() {
       {selectedRider && (
         <Card>
           <CardContent className="p-4">
-            <h2 className="font-bold mb-3">
+            <h2 className="font-bold mb-3 font-display">
               {selectedRider.first_name} {selectedRider.last_name} - Location
             </h2>
             <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
               {selectedRider.location ? (
                 <div className="text-center">
-                  <MapPin className="h-8 w-8 text-brand-500 mx-auto mb-2" />
+                  <MapPin className="h-8 w-8 text-crimson-600 mx-auto mb-2" />
                   <p className="text-sm font-medium">
                     Lat: {selectedRider.location.latitude.toFixed(6)}
                   </p>

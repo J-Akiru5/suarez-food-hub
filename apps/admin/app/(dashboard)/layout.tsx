@@ -11,6 +11,7 @@ import {
   Tag,
   Bike,
   FileBarChart,
+  Settings,
   LogOut,
   Menu,
   X,
@@ -27,6 +28,7 @@ const navItems = [
   { href: "/categories", label: "Categories", icon: Tag },
   { href: "/riders", label: "Riders", icon: Bike },
   { href: "/reports", label: "Reports", icon: FileBarChart },
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export default function DashboardLayout({
@@ -76,12 +78,12 @@ export default function DashboardLayout({
         }`}
       >
         <div className="flex items-center gap-3 px-4 h-16 border-b border-gray-200">
-          <div className="h-9 w-9 rounded-xl bg-brand-500 flex items-center justify-center shrink-0">
+          <div className="h-9 w-9 rounded-xl bg-crimson-700 flex items-center justify-center shrink-0">
             <Shield className="h-5 w-5 text-white" />
           </div>
           {sidebarOpen && (
             <div className="overflow-hidden">
-              <h1 className="font-bold text-brand-600 text-sm truncate">SFH Admin</h1>
+              <h1 className="font-bold text-crimson-700 text-sm font-display truncate">SFH Admin</h1>
               <p className="text-[10px] text-muted-foreground truncate">Management</p>
             </div>
           )}
@@ -101,7 +103,7 @@ export default function DashboardLayout({
                 href={item.href}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                   isActive
-                    ? "bg-brand-50 text-brand-700"
+                    ? "bg-crimson-50 text-crimson-700 border-l-4 border-crimson-700"
                     : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                 } ${!sidebarOpen ? "justify-center" : ""}`}
                 title={!sidebarOpen ? item.label : undefined}
@@ -144,11 +146,11 @@ export default function DashboardLayout({
           <aside className="absolute left-0 top-0 bottom-0 w-72 bg-white shadow-xl flex flex-col">
             <div className="flex items-center justify-between px-4 h-16 border-b border-gray-200">
               <div className="flex items-center gap-3">
-                <div className="h-9 w-9 rounded-xl bg-brand-500 flex items-center justify-center">
+                <div className="h-9 w-9 rounded-xl bg-crimson-700 flex items-center justify-center">
                   <Shield className="h-5 w-5 text-white" />
                 </div>
                 <div>
-                  <h1 className="font-bold text-brand-600 text-sm">SFH Admin</h1>
+                  <h1 className="font-bold text-crimson-700 text-sm font-display">SFH Admin</h1>
                   <p className="text-[10px] text-muted-foreground">Management</p>
                 </div>
               </div>
@@ -175,7 +177,7 @@ export default function DashboardLayout({
                     onClick={() => setMobileOpen(false)}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                       isActive
-                        ? "bg-brand-50 text-brand-700"
+                        ? "bg-crimson-50 text-crimson-700 border-l-4 border-crimson-700"
                         : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                     }`}
                   >
@@ -202,7 +204,7 @@ export default function DashboardLayout({
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Header */}
-        <header className="sticky top-0 z-30 bg-white border-b border-gray-200 h-16 flex items-center px-4 gap-4 safe-top">
+        <header className="sticky top-0 z-30 bg-white border-b border-gray-200 h-16 flex items-center px-4 gap-4 shadow-sm safe-top">
           <button
             onClick={() => setMobileOpen(true)}
             className="lg:hidden h-9 w-9 flex items-center justify-center rounded-lg hover:bg-gray-100"
@@ -214,11 +216,11 @@ export default function DashboardLayout({
 
           <button className="relative h-9 w-9 flex items-center justify-center rounded-lg hover:bg-gray-100">
             <Bell className="h-5 w-5 text-gray-600" />
-            <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-red-500 rounded-full" />
+            <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-crimson-500 rounded-full" />
           </button>
 
           <div className="flex items-center gap-3">
-            <div className="h-8 w-8 rounded-full bg-brand-500 flex items-center justify-center text-white text-xs font-bold">
+            <div className="h-8 w-8 rounded-full bg-crimson-700 flex items-center justify-center text-white text-xs font-bold">
               {initials}
             </div>
             <div className="hidden sm:block">

@@ -157,7 +157,7 @@ export default function EarningsPage() {
             <div key={i} className="flex-1 flex flex-col items-center gap-1">
               <span className="text-xs text-gray-500">{day.amount > 0 ? `₱${day.amount}` : ""}</span>
               <div
-                className="w-full bg-brand-500 rounded-t-md transition-all"
+                className="w-full bg-brand-600 rounded-t-md transition-all"
                 style={{
                   height: `${day.amount > 0 ? Math.max((day.amount / maxDaily) * 100, 8) : 4}%`,
                   opacity: day.amount > 0 ? 1 : 0.3,

@@ -6,8 +6,7 @@ import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { useCartStore } from "@/stores/cart";
 import { formatCurrency, validateGCashReference } from "@repo/utils";
-import { Button } from "@repo/ui";
-import { Input } from "@repo/ui";
+import { Button, Input } from "@repo/ui";
 import type { Profile } from "@repo/types";
 import {
   MapPin,
@@ -15,7 +14,6 @@ import {
   FileText,
   CreditCard,
   Truck,
-  Store,
   Loader2,
   Upload,
   X,
@@ -56,7 +54,7 @@ export default function CheckoutPage() {
       const { data } = await supabase
         .from("profiles")
         .select("*")
-        .eq("user_id", user.id)
+        .eq("id", user.id)
         .single();
 
       if (data) {
@@ -132,11 +130,8 @@ export default function CheckoutPage() {
     const deliveryFee = 49;
     const total = subtotal + deliveryFee;
 
-    const orderNumber = `SFH-${new Date().getFullYear()}${String(
-      new Date().getMonth() + 1
-    ).padStart(2, "0")}${String(new Date().getDate()).padStart(2, "0")}-${Math.floor(
-      1000 + Math.random() * 9000
-    )}`;
+    const now = new Date();
+    const orderNumber = `SFH-${now.getFullYear()}${String(now.getMonth() + 1).padStart(2, "0")}${String(now.getDate()).padStart(2, "0")}-${Math.floor(1000 + Math.random() * 9000)}`;
 
     const { data: order, error: orderError } = await supabase
       .from("orders")
@@ -144,7 +139,7 @@ export default function CheckoutPage() {
         user_id: user.id,
         order_number: orderNumber,
         status: "pending",
-        payment_method: form.paymentMethod,
+        payment_method: form.paymentMethod === "cash_on_delivery" ? "cod" : "gcash",
         payment_status:
           form.paymentMethod === "gcash" ? "paid" : "pending",
         subtotal,
@@ -152,8 +147,8 @@ export default function CheckoutPage() {
         total,
         delivery_address: form.deliveryAddress,
         delivery_instructions: form.notes || null,
-        gcash_reference: form.paymentMethod === "gcash" ? form.gcashRef : null,
-        gcash_proof_url: paymentProofUrl,
+        gcash_reference_no: form.paymentMethod === "gcash" ? form.gcashRef : null,
+        payment_proof_url: paymentProofUrl,
       })
       .select()
       .single();
@@ -166,14 +161,15 @@ export default function CheckoutPage() {
     const orderItems = items.map((item) => ({
       order_id: order.id,
       product_id: item.product.id,
-      product_variant_id: item.variant?.id || null,
+      variant_id: item.variant?.id || null,
+      product_name: item.product.name,
+      variant_name: item.variant?.name || null,
       quantity: item.quantity,
       unit_price:
-        item.product.price + (item.variant?.price_adjustment || 0),
+        (item.variant?.price ?? item.product.base_price),
       total_price:
-        (item.product.price + (item.variant?.price_adjustment || 0)) *
+        (item.variant?.price ?? item.product.base_price) *
         item.quantity,
-      special_instructions: item.special_instructions || null,
     }));
 
     await supabase.from("order_items").insert(orderItems);
@@ -196,14 +192,18 @@ export default function CheckoutPage() {
         <div className="h-20 w-20 rounded-full bg-green-100 flex items-center justify-center mb-4">
           <CheckCircle2 className="h-10 w-10 text-green-600" />
         </div>
-        <h2 className="text-xl font-bold mb-2">Order Placed!</h2>
-        <p className="text-sm text-muted-foreground text-center mb-6">
-          Your order has been placed successfully. You can track it in the
-          Orders tab.
+        <h2
+          className="text-2xl font-bold mb-2 text-gray-900"
+          style={{ fontFamily: "var(--playfair-display)" }}
+        >
+          Order Placed!
+        </h2>
+        <p className="text-sm text-gray-500 text-center mb-6 max-w-xs">
+          Your order has been placed successfully. You can track it in the Orders tab.
         </p>
         <Button
           onClick={() => router.push("/orders")}
-          className="bg-brand-500 hover:bg-brand-600 text-white"
+          className="bg-[#b1454a] hover:bg-[#9a3a3f] text-white rounded-full px-8"
         >
           View Orders
         </Button>
@@ -215,126 +215,138 @@ export default function CheckoutPage() {
   const deliveryFee = 49;
   const total = subtotal + deliveryFee;
   const isFormValid =
-    form.deliveryAddress && form.phone && (
-      form.paymentMethod === "cash_on_delivery" ||
+    form.deliveryAddress &&
+    form.phone &&
+    (form.paymentMethod === "cash_on_delivery" ||
       (form.gcashRef &&
         validateGCashReference(form.gcashRef) &&
-        paymentProof)
-    );
+        paymentProof));
 
   return (
     <div className="px-4 pt-4 pb-32 space-y-4">
-      <h1 className="text-xl font-bold">Checkout</h1>
+      <h1
+        className="text-2xl font-bold text-gray-900"
+        style={{ fontFamily: "var(--playfair-display)" }}
+      >
+        Checkout
+      </h1>
 
       {/* Delivery Address */}
-      <div className="bg-white rounded-xl p-4 shadow-sm">
+      <div className="bg-white/65 backdrop-blur-xl border border-white/40 rounded-32 p-5">
         <div className="flex items-center gap-2 mb-3">
-          <MapPin className="h-4 w-4 text-brand-500" />
-          <h2 className="font-semibold text-sm">Delivery Address</h2>
+          <MapPin className="h-4 w-4 text-[#b1454a]" />
+          <h2 className="font-semibold text-sm text-gray-900">Delivery Address</h2>
         </div>
         <textarea
           value={form.deliveryAddress}
           onChange={(e) => updateForm("deliveryAddress", e.target.value)}
           placeholder="Enter your complete delivery address"
           rows={2}
-          className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
+          className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-sm focus:outline-none focus:border-[#b1454a] focus:ring-1 focus:ring-[#b1454a]/30 resize-none transition-all"
         />
       </div>
 
       {/* Contact */}
-      <div className="bg-white rounded-xl p-4 shadow-sm">
+      <div className="bg-white/65 backdrop-blur-xl border border-white/40 rounded-32 p-5">
         <div className="flex items-center gap-2 mb-3">
-          <Phone className="h-4 w-4 text-brand-500" />
-          <h2 className="font-semibold text-sm">Contact Number</h2>
+          <Phone className="h-4 w-4 text-[#b1454a]" />
+          <h2 className="font-semibold text-sm text-gray-900">Contact Number</h2>
         </div>
         <Input
           type="tel"
           placeholder="09XX XXX XXXX"
           value={form.phone}
           onChange={(e) => updateForm("phone", e.target.value)}
+          className="rounded-2xl"
         />
       </div>
 
       {/* Order Notes */}
-      <div className="bg-white rounded-xl p-4 shadow-sm">
+      <div className="bg-white/65 backdrop-blur-xl border border-white/40 rounded-32 p-5">
         <div className="flex items-center gap-2 mb-3">
-          <FileText className="h-4 w-4 text-brand-500" />
-          <h2 className="font-semibold text-sm">Order Notes</h2>
+          <FileText className="h-4 w-4 text-[#b1454a]" />
+          <h2 className="font-semibold text-sm text-gray-900">Order Notes</h2>
         </div>
         <textarea
           value={form.notes}
           onChange={(e) => updateForm("notes", e.target.value)}
           placeholder="Any special instructions? (optional)"
           rows={2}
-          className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 resize-none"
+          className="w-full px-4 py-3 rounded-2xl border border-gray-200 text-sm focus:outline-none focus:border-[#b1454a] focus:ring-1 focus:ring-[#b1454a]/30 resize-none transition-all"
         />
       </div>
 
       {/* Payment Method */}
-      <div className="bg-white rounded-xl p-4 shadow-sm">
+      <div className="bg-white/65 backdrop-blur-xl border border-white/40 rounded-32 p-5">
         <div className="flex items-center gap-2 mb-3">
-          <CreditCard className="h-4 w-4 text-brand-500" />
-          <h2 className="font-semibold text-sm">Payment Method</h2>
+          <CreditCard className="h-4 w-4 text-[#b1454a]" />
+          <h2 className="font-semibold text-sm text-gray-900">Payment Method</h2>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-3">
           <button
             onClick={() => updateForm("paymentMethod", "cash_on_delivery")}
-            className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors ${
+            className={`w-full flex items-center gap-3 p-4 rounded-2xl border-2 transition-all duration-200 ${
               form.paymentMethod === "cash_on_delivery"
-                ? "border-brand-500 bg-brand-50"
+                ? "border-[#b1454a] bg-[#b1454a]/5"
                 : "border-gray-200 hover:border-gray-300"
             }`}
           >
-            <Truck className="h-5 w-5 text-brand-500" />
+            <Truck className="h-5 w-5 text-[#b1454a]" />
             <div className="text-left">
               <p className="font-medium text-sm">Cash on Delivery</p>
-              <p className="text-xs text-muted-foreground">
-                Pay when you receive your order
-              </p>
+              <p className="text-xs text-gray-500">Pay when you receive your order</p>
             </div>
           </button>
 
           <button
             onClick={() => updateForm("paymentMethod", "gcash")}
-            className={`w-full flex items-center gap-3 p-3 rounded-lg border transition-colors ${
+            className={`w-full flex items-center gap-3 p-4 rounded-2xl border-2 transition-all duration-200 ${
               form.paymentMethod === "gcash"
-                ? "border-brand-500 bg-brand-50"
+                ? "border-[#b1454a] bg-[#b1454a]/5"
                 : "border-gray-200 hover:border-gray-300"
             }`}
           >
             <CreditCard className="h-5 w-5 text-blue-500" />
             <div className="text-left">
               <p className="font-medium text-sm">GCash</p>
-              <p className="text-xs text-muted-foreground">
-                Pay via GCash
-              </p>
+              <p className="text-xs text-gray-500">Pay via GCash</p>
             </div>
           </button>
         </div>
 
         {/* GCash Fields */}
         {form.paymentMethod === "gcash" && (
-          <div className="mt-4 space-y-3 border-t pt-4">
-            <p className="text-xs text-muted-foreground">
-              Send payment to GCash: <strong>09XXXXXXXXX</strong> (Suarez Food
-              Hub)
-            </p>
+          <div className="mt-4 space-y-4 border-t border-dashed border-gray-200 pt-4">
+            {/* GCash QR Code */}
+            <div className="text-center">
+              <div className="bg-white rounded-2xl p-4 inline-block shadow-sm border border-gray-100">
+                <div className="w-48 h-48 bg-gray-100 rounded-xl flex items-center justify-center mx-auto">
+                  <div className="text-center">
+                    <CreditCard className="h-12 w-12 text-blue-500 mx-auto mb-2" />
+                    <p className="text-xs text-gray-500 font-medium">GCash QR Code</p>
+                    <p className="text-[10px] text-gray-400 mt-1">Scan to pay</p>
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs text-gray-500 mt-2">
+                Send payment to: <strong>09XXXXXXXXX</strong> (Suarez Food Hub)
+              </p>
+            </div>
+
             <Input
               label="GCash Reference Number (13 digits)"
               placeholder="e.g. 1234567890123"
               value={form.gcashRef}
               onChange={(e) => updateForm("gcashRef", e.target.value)}
               maxLength={13}
+              className="rounded-2xl"
             />
-            {form.gcashRef &&
-              !validateGCashReference(form.gcashRef) && (
-                <p className="text-xs text-red-500">
-                  Must be exactly 13 digits
-                </p>
-              )}
+            {form.gcashRef && !validateGCashReference(form.gcashRef) && (
+              <p className="text-xs text-red-500">Must be exactly 13 digits</p>
+            )}
 
             <div>
-              <p className="text-sm font-medium mb-2">Payment Screenshot</p>
+              <p className="text-sm font-medium mb-2 text-gray-900">Payment Screenshot</p>
               {proofPreview ? (
                 <div className="relative inline-block">
                   <Image
@@ -342,7 +354,7 @@ export default function CheckoutPage() {
                     alt="Payment proof"
                     width={200}
                     height={200}
-                    className="rounded-lg object-cover"
+                    className="rounded-2xl object-cover"
                   />
                   <button
                     onClick={removeProof}
@@ -354,12 +366,10 @@ export default function CheckoutPage() {
               ) : (
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-full border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-brand-500 transition-colors"
+                  className="w-full border-2 border-dashed border-gray-300 rounded-2xl p-6 text-center hover:border-[#b1454a] transition-colors"
                 >
                   <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">
-                    Upload payment screenshot
-                  </p>
+                  <p className="text-sm text-gray-500">Upload payment screenshot</p>
                 </button>
               )}
               <input
@@ -375,57 +385,56 @@ export default function CheckoutPage() {
       </div>
 
       {/* Order Summary */}
-      <div className="bg-white rounded-xl p-4 shadow-sm">
-        <h2 className="font-semibold text-sm mb-3">Order Summary</h2>
-        <div className="space-y-2">
+      <div className="bg-white/65 backdrop-blur-xl border border-white/40 rounded-32 p-5">
+        <h2
+          className="font-bold text-base mb-4 text-gray-900"
+          style={{ fontFamily: "var(--playfair-display)" }}
+        >
+          Order Summary
+        </h2>
+        <div className="space-y-3">
           {items.map((item) => {
-            const price =
-              item.product.price +
-              (item.variant?.price_adjustment || 0);
+            const price = item.variant?.price ?? item.product.base_price;
             return (
               <div
                 key={`${item.product.id}-${item.variant?.id || "default"}`}
                 className="flex justify-between text-sm"
               >
-                <span className="text-muted-foreground">
+                <span className="text-gray-500">
                   {item.product.name} {item.variant ? `(${item.variant.name})` : ""} × {item.quantity}
                 </span>
-                <span>{formatCurrency(price * item.quantity)}</span>
+                <span className="font-medium text-gray-900">{formatCurrency(price * item.quantity)}</span>
               </div>
             );
           })}
         </div>
-        <div className="border-t mt-3 pt-3 space-y-2">
+        <div className="border-t-2 border-dashed border-gray-200 mt-4 pt-4 space-y-2">
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Subtotal</span>
-            <span>{formatCurrency(subtotal)}</span>
+            <span className="text-gray-500">Subtotal</span>
+            <span className="text-gray-900">{formatCurrency(subtotal)}</span>
           </div>
           <div className="flex justify-between text-sm">
-            <span className="text-muted-foreground">Delivery Fee</span>
-            <span>{formatCurrency(deliveryFee)}</span>
+            <span className="text-gray-500">Delivery Fee</span>
+            <span className="text-gray-900">{formatCurrency(deliveryFee)}</span>
           </div>
-          <div className="flex justify-between font-bold">
-            <span>Total</span>
-            <span className="text-brand-600">{formatCurrency(total)}</span>
+          <div className="flex justify-between font-bold border-t border-gray-200 pt-2">
+            <span className="text-gray-900">Total</span>
+            <span className="text-[#b1454a]">{formatCurrency(total)}</span>
           </div>
         </div>
       </div>
 
       {/* Place Order Button */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 safe-bottom z-50">
-        <div className="max-w-lg mx-auto">
-          <Button
-            onClick={handlePlaceOrder}
-            disabled={!isFormValid || loading}
-            className="w-full h-12 bg-brand-500 hover:bg-brand-600 text-white font-bold rounded-xl disabled:opacity-50"
-          >
-            {loading ? (
-              <Loader2 className="h-5 w-5 animate-spin mr-2" />
-            ) : null}
-            Place Order - {formatCurrency(total)}
-          </Button>
-        </div>
-      </div>
+      <button
+        onClick={handlePlaceOrder}
+        disabled={!isFormValid || loading}
+        className="w-full py-4 bg-[#b1454a] text-white font-semibold rounded-full text-base hover:bg-[#9a3a3f] transition-all duration-200 active:scale-[0.98] shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+      >
+        {loading ? (
+          <Loader2 className="h-5 w-5 animate-spin" />
+        ) : null}
+        Place Order — {formatCurrency(total)}
+      </button>
     </div>
   );
 }

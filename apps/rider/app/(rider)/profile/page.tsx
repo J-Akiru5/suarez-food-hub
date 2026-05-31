@@ -88,15 +88,15 @@ export default function ProfilePage() {
       </div>
 
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 text-center">
-          <Package size={24} className="text-brand-500 mx-auto mb-1" />
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-brand-100 text-center">
+          <Package size={24} className="text-brand-600 mx-auto mb-1" />
           <p className="text-2xl font-bold text-gray-800">
             {profile?.total_deliveries}
           </p>
           <p className="text-xs text-gray-500">Deliveries</p>
         </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100 text-center">
-          <DollarSign size={24} className="text-brand-500 mx-auto mb-1" />
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-brand-100 text-center">
+          <DollarSign size={24} className="text-brand-600 mx-auto mb-1" />
           <p className="text-2xl font-bold text-brand-600">
             ₱{profile?.total_earnings.toFixed(2)}
           </p>

@@ -1,326 +1,261 @@
+"use client";
+
+import { useState } from "react";
 import Link from "next/link";
+import { Search } from "lucide-react";
 import {
-  UtensilsCrossed,
-  ChevronRight,
-  ShoppingCart,
-  Search,
-} from "lucide-react";
-import { Button } from "@repo/ui";
-import { formatCurrency } from "@repo/utils";
+  Navbar,
+  Footer,
+  CategoryFilter,
+  ProductCard,
+} from "@repo/ui";
 
 const categories = [
-  { id: "all", name: "All", icon: "🍽️" },
-  { id: "appetizers", name: "Appetizers", icon: "🥟" },
-  { id: "soups", name: "Soups", icon: "🍲" },
-  { id: "main-dishes", name: "Main Dishes", icon: "🍛" },
-  { id: "noodles", name: "Noodles", icon: "🍜" },
-  { id: "rice", name: "Rice", icon: "🍚" },
-  { id: "desserts", name: "Desserts", icon: "🍨" },
-  { id: "drinks", name: "Drinks", icon: "🥤" },
+  "All",
+  "Dimsum",
+  "Main Dishes",
+  "Noodles",
+  "Rice",
+  "Appetizers",
+  "Desserts",
+  "Drinks",
 ];
 
 const products = [
   {
-    id: "1",
-    name: "Kare-Kare",
-    description: "Oxtail stew with peanut sauce, eggplant, and string beans",
-    price: 250,
-    category: "main-dishes",
-    is_featured: true,
+    name: "Steamed Siomai",
+    price: 49,
+    image: "/assets/steamed-siomai.jpg",
+    category: "Dimsum",
+    rating: 4.8,
+    availability: "available" as const,
   },
   {
-    id: "2",
-    name: "Sinigang na Baboy",
-    description: "Sour pork soup with tamarind, tomatoes, and leafy vegetables",
-    price: 180,
-    category: "soups",
-    is_featured: true,
+    name: "Fried Siomai",
+    price: 55,
+    image: "/assets/fried-siomai.jpg",
+    category: "Dimsum",
+    rating: 4.7,
+    availability: "available" as const,
   },
   {
-    id: "3",
+    name: "Pork Lumpia",
+    price: 65,
+    image: "/assets/pork-lumpia.jpg",
+    category: "Appetizers",
+    rating: 4.6,
+    availability: "available" as const,
+  },
+  {
+    name: "Dynamite Lumpia",
+    price: 70,
+    image: "/assets/dynamite-lumpia.jpg",
+    category: "Appetizers",
+    rating: 4.9,
+    availability: "available" as const,
+  },
+  {
     name: "Chicken Adobo",
-    description: "Classic braised chicken in soy sauce, vinegar, garlic, and bay leaves",
     price: 150,
-    category: "main-dishes",
-    is_featured: true,
+    image: "/assets/uploads/chickenadobo.jpg",
+    category: "Main Dishes",
+    rating: 4.8,
+    availability: "available" as const,
   },
   {
-    id: "4",
+    name: "Kare-Kare",
+    price: 250,
+    image: "/assets/uploads/beefcalderita.jpg",
+    category: "Main Dishes",
+    rating: 4.9,
+    availability: "available" as const,
+  },
+  {
     name: "Pancit Canton",
-    description: "Stir-fried wheat noodles with vegetables, chicken, and shrimp",
     price: 120,
-    category: "noodles",
-    is_featured: false,
+    image: "/assets/uploads/canton.jpg",
+    category: "Noodles",
+    rating: 4.5,
+    availability: "available" as const,
   },
   {
-    id: "5",
-    name: "Lumpiang Shanghai",
-    description: "Crispy spring rolls stuffed with seasoned ground pork",
-    price: 100,
-    category: "appetizers",
-    is_featured: false,
-  },
-  {
-    id: "6",
-    name: "Halo-Halo",
-    description: "Shaved ice dessert with sweet beans, fruits, jellies, and leche flan",
-    price: 90,
-    category: "desserts",
-    is_featured: true,
-  },
-  {
-    id: "7",
-    name: "Lechon Kawali",
-    description: "Crispy deep-fried pork belly served with liver sauce",
-    price: 200,
-    category: "main-dishes",
-    is_featured: false,
-  },
-  {
-    id: "8",
-    name: "Tinolang Manok",
-    description: "Chicken ginger soup with green papaya and moringa leaves",
-    price: 160,
-    category: "soups",
-    is_featured: false,
-  },
-  {
-    id: "9",
-    name: "Bicol Express",
-    description: "Spicy pork stew cooked in coconut milk with chili peppers",
-    price: 170,
-    category: "main-dishes",
-    is_featured: false,
-  },
-  {
-    id: "10",
-    name: "Pansit Bihon",
-    description: "Stir-fried rice noodles with vegetables, chicken, and soy sauce",
+    name: "Pancit Bihon",
     price: 110,
-    category: "noodles",
-    is_featured: false,
+    image: "/assets/uploads/bihon.jpg",
+    category: "Noodles",
+    rating: 4.4,
+    availability: "available" as const,
   },
   {
-    id: "11",
-    name: "Kakanin Sampler",
-    description: "Assorted traditional Filipino rice cakes — puto, kutsinta, bibingka",
-    price: 80,
-    category: "desserts",
-    is_featured: false,
-  },
-  {
-    id: "12",
-    name: "Sinaing na Tulingan",
-    description: "Slow-cooked tuna belly wrapped in banana leaves with salted pork",
-    price: 140,
-    category: "main-dishes",
-    is_featured: false,
-  },
-  {
-    id: "13",
-    name: "Gising-Gising",
-    description: "Spicy pork and winged bean stew in coconut milk",
-    price: 130,
-    category: "main-dishes",
-    is_featured: false,
-  },
-  {
-    id: "14",
-    name: "Buko Juice",
-    description: "Fresh young coconut water served chilled",
-    price: 40,
-    category: "drinks",
-    is_featured: false,
-  },
-  {
-    id: "15",
-    name: "Calamansi Juice",
-    description: "Refreshing citrus drink made from fresh calamansi",
-    price: 30,
-    category: "drinks",
-    is_featured: false,
-  },
-  {
-    id: "16",
     name: "Garlic Rice",
-    description: "Steamed rice sautéed with crispy garlic bits",
     price: 35,
-    category: "rice",
-    is_featured: false,
+    image: "/assets/uploads/666.jpg",
+    category: "Rice",
+    rating: 4.3,
+    availability: "available" as const,
+  },
+  {
+    name: "Chicken Curry",
+    price: 160,
+    image: "/assets/uploads/chickencurry.jpg",
+    category: "Main Dishes",
+    rating: 4.7,
+    availability: "available" as const,
+  },
+  {
+    name: "Chopsuey",
+    price: 130,
+    image: "/assets/uploads/chopsuey.jpg",
+    category: "Main Dishes",
+    rating: 4.5,
+    availability: "available" as const,
+  },
+  {
+    name: "Beef Steak",
+    price: 180,
+    image: "/assets/uploads/beefsteak.jpg",
+    category: "Main Dishes",
+    rating: 4.8,
+    availability: "available" as const,
+  },
+  {
+    name: "Graham Bar",
+    price: 55,
+    image: "/assets/uploads/graham-bar.jpg",
+    category: "Desserts",
+    rating: 4.6,
+    availability: "available" as const,
+  },
+  {
+    name: "Leche Flan",
+    price: 80,
+    image: "/assets/uploads/lecheflan.jpg",
+    category: "Desserts",
+    rating: 4.9,
+    availability: "available" as const,
+  },
+  {
+    name: "Maja Blanca",
+    price: 60,
+    image: "/assets/uploads/maja-blanca.jpg",
+    category: "Desserts",
+    rating: 4.5,
+    availability: "available" as const,
+  },
+  {
+    name: "Iced Coffee",
+    price: 45,
+    image: "/assets/uploads/iced-coffee.jpg",
+    category: "Drinks",
+    rating: 4.4,
+    availability: "available" as const,
+  },
+  {
+    name: "Strawberry Shake",
+    price: 65,
+    image: "/assets/uploads/strawberry-shake.jpg",
+    category: "Drinks",
+    rating: 4.7,
+    availability: "available" as const,
+  },
+  {
+    name: "Pork BBQ",
+    price: 90,
+    image: "/assets/uploads/porkbarbecue.jpg",
+    category: "Main Dishes",
+    rating: 4.6,
+    availability: "available" as const,
   },
 ];
 
-const emojiMap: Record<string, string> = {
-  "main-dishes": "🍛",
-  soups: "🍲",
-  noodles: "🍜",
-  appetizers: "🥟",
-  desserts: "🍨",
-  drinks: "🥤",
-  rice: "🍚",
-};
-
-function Navbar() {
-  return (
-    <nav className="sticky top-0 z-50 border-b border-brand-100 bg-white/80 backdrop-blur-md">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-500 text-white">
-            <UtensilsCrossed className="h-5 w-5" />
-          </div>
-          <span className="text-xl font-bold text-gray-900">
-            Suarez Food Hub
-          </span>
-        </Link>
-        <div className="hidden items-center gap-8 md:flex">
-          <Link
-            href="/menu"
-            className="text-sm font-medium text-brand-600"
-          >
-            Menu
-          </Link>
-          <Link
-            href="/about"
-            className="text-sm font-medium text-gray-600 transition-colors hover:text-brand-600"
-          >
-            About
-          </Link>
-          <Link
-            href="/contact"
-            className="text-sm font-medium text-gray-600 transition-colors hover:text-brand-600"
-          >
-            Contact
-          </Link>
-        </div>
-      </div>
-    </nav>
-  );
-}
-
 export default function MenuPage() {
+  const [activeCategory, setActiveCategory] = useState("All");
+
+  const filteredProducts =
+    activeCategory === "All"
+      ? products
+      : products.filter((p) => p.category === activeCategory);
+
   return (
-    <div className="min-h-screen">
-      <Navbar />
+    <div className="min-h-screen bg-[#fff0de]">
+      <Navbar showCartIcon={false} />
 
-      {/* Header */}
-      <section className="bg-gradient-to-br from-brand-50 to-white py-12 sm:py-16">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold text-gray-900 sm:text-4xl">
-              Our Menu
-            </h1>
-            <p className="mt-3 text-gray-500">
-              Explore our selection of authentic Filipino dishes
-            </p>
-          </div>
+      {/* Hero Banner */}
+      <section className="bg-[#b1454a] pt-[74px] pb-16 md:pb-20">
+        <div className="max-w-[1280px] mx-auto px-6 text-center">
+          <h1
+            className="text-4xl md:text-5xl lg:text-[56px] font-bold text-white mb-4 leading-tight"
+            style={{ fontFamily: "var(--playfair-display)" }}
+          >
+            Our Menu
+          </h1>
+          <p className="text-white/70 text-base md:text-lg max-w-xl mx-auto">
+            Explore our selection of authentic Filipino dishes, freshly prepared
+            with love
+          </p>
+        </div>
+      </section>
 
-          {/* Search Bar */}
-          <div className="mx-auto mt-8 max-w-md">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search dishes..."
-                className="w-full rounded-xl border border-gray-200 bg-white py-3 pl-10 pr-4 text-sm focus:border-brand-500 focus:outline-none focus:ring-2 focus:ring-brand-200"
-              />
-            </div>
-          </div>
-
-          {/* Categories */}
-          <div className="mt-8 flex flex-wrap justify-center gap-2">
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition ${
-                  cat.id === "all"
-                    ? "border-brand-500 bg-brand-500 text-white"
-                    : "border-gray-200 bg-white text-gray-600 hover:border-brand-300 hover:text-brand-600"
-                }`}
-              >
-                <span>{cat.icon}</span>
-                {cat.name}
-              </button>
-            ))}
-          </div>
+      {/* Category Filter */}
+      <section className="py-8 md:py-12">
+        <div className="max-w-[1280px] mx-auto px-6">
+          <CategoryFilter
+            categories={categories}
+            active={activeCategory}
+            onChange={setActiveCategory}
+          />
         </div>
       </section>
 
       {/* Products Grid */}
-      <section className="py-12 sm:py-16">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          {categories
-            .filter((c) => c.id !== "all")
-            .map((cat) => {
-              const categoryProducts = products.filter(
-                (p) => p.category === cat.id
-              );
-              if (categoryProducts.length === 0) return null;
-              return (
-                <div key={cat.id} className="mb-12">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{cat.icon}</span>
-                    <h2 className="text-2xl font-bold text-gray-900">
-                      {cat.name}
-                    </h2>
-                  </div>
-                  <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                    {categoryProducts.map((product) => (
-                      <div
-                        key={product.id}
-                        className="group overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm transition hover:shadow-lg"
-                      >
-                        <div className="flex h-40 items-center justify-center bg-gradient-to-br from-brand-50 to-brand-100 text-5xl">
-                          {emojiMap[product.category] || "🍽️"}
-                        </div>
-                        <div className="p-5">
-                          <div className="flex items-start justify-between gap-2">
-                            <div className="min-w-0 flex-1">
-                              <h3 className="truncate text-base font-semibold text-gray-900 group-hover:text-brand-600">
-                                {product.name}
-                              </h3>
-                              <p className="mt-1 line-clamp-2 text-sm text-gray-500">
-                                {product.description}
-                              </p>
-                            </div>
-                            <span className="shrink-0 text-lg font-bold text-brand-600">
-                              {formatCurrency(product.price)}
-                            </span>
-                          </div>
-                          <div className="mt-4">
-                            <button className="flex w-full items-center justify-center gap-2 rounded-xl bg-brand-500 py-2.5 text-sm font-medium text-white transition hover:bg-brand-600">
-                              <ShoppingCart className="h-4 w-4" />
-                              Add to Cart
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
+      <section className="pb-20 md:pb-28">
+        <div className="max-w-[1280px] mx-auto px-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            {filteredProducts.map((product) => (
+              <ProductCard
+                key={product.name}
+                name={product.name}
+                price={product.price}
+                image={product.image}
+                category={product.category}
+                rating={product.rating}
+                availability={product.availability}
+              />
+            ))}
+          </div>
+
+          {filteredProducts.length === 0 && (
+            <div className="text-center py-20">
+              <p className="text-gray-500 text-lg">
+                No products found in this category.
+              </p>
+            </div>
+          )}
         </div>
       </section>
 
       {/* CTA */}
-      <section className="border-t border-gray-100 bg-gray-50 py-12">
-        <div className="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
-          <h2 className="text-2xl font-bold text-gray-900">
+      <section className="bg-[#b1454a] py-16">
+        <div className="max-w-[1280px] mx-auto px-6 text-center">
+          <h2
+            className="text-3xl md:text-4xl font-bold text-white mb-4"
+            style={{ fontFamily: "var(--playfair-display)" }}
+          >
             Can&apos;t find what you&apos;re looking for?
           </h2>
-          <p className="mt-2 text-gray-500">
+          <p className="text-white/70 mb-8">
             Contact us for custom orders or special requests
           </p>
-          <div className="mt-6">
-            <Link href="/contact">
-              <Button variant="outline" className="gap-2">
-                Contact Us
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
+          <Link
+            href="/contact"
+            className="inline-block bg-white text-[#b1454a] px-8 py-3 rounded-full font-semibold text-sm hover:bg-white/90 transition-all duration-200 shadow-lg"
+          >
+            Contact Us
+          </Link>
         </div>
       </section>
+
+      <Footer />
     </div>
   );
 }

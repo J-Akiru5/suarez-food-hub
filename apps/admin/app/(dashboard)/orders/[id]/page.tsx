@@ -107,7 +107,7 @@ export default function OrderDetailPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20">
-        <Loader2 className="h-8 w-8 animate-spin text-brand-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-crimson-600" />
       </div>
     );
   }
@@ -140,7 +140,7 @@ export default function OrderDetailPage() {
           Back
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-2xl font-bold text-gray-900 font-display">
             {order.order_number}
           </h1>
           <p className="text-sm text-muted-foreground">
@@ -162,7 +162,7 @@ export default function OrderDetailPage() {
       {!isCancelled && (
         <Card>
           <CardContent className="p-4">
-            <h2 className="font-bold mb-4">Order Status</h2>
+            <h2 className="font-bold mb-4 font-display">Order Status</h2>
             <div className="flex items-center justify-between">
               {statusSteps.map((step, idx) => {
                 const isCompleted = idx <= currentStepIndex;
@@ -174,9 +174,9 @@ export default function OrderDetailPage() {
                       <div
                         className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${
                           isCompleted
-                            ? "bg-green-500 text-white"
+                            ? "bg-crimson-600 text-white"
                             : "bg-gray-200 text-gray-400"
-                        } ${isCurrent ? "ring-2 ring-green-200" : ""}`}
+                        } ${isCurrent ? "ring-2 ring-crimson-200" : ""}`}
                       >
                         {isCompleted ? (
                           <CheckCircle2 className="h-4 w-4" />
@@ -187,14 +187,14 @@ export default function OrderDetailPage() {
                       {idx < statusSteps.length - 1 && (
                         <div
                           className={`flex-1 h-0.5 mx-1 ${
-                            idx < currentStepIndex ? "bg-green-500" : "bg-gray-200"
+                            idx < currentStepIndex ? "bg-crimson-600" : "bg-gray-200"
                           }`}
                         />
                       )}
                     </div>
                     <p
                       className={`text-[10px] mt-1 text-center ${
-                        isCurrent ? "font-bold text-green-600" : "text-gray-500"
+                        isCurrent ? "font-bold text-crimson-600" : "text-gray-500"
                       }`}
                     >
                       {step.label}
@@ -220,7 +220,7 @@ export default function OrderDetailPage() {
         {/* Customer Info */}
         <Card>
           <CardContent className="p-4 space-y-3">
-            <h2 className="font-bold">Customer Details</h2>
+            <h2 className="font-bold font-display">Customer Details</h2>
             <div className="flex items-center gap-2 text-sm">
               <User className="h-4 w-4 text-gray-400" />
               <span>
@@ -250,7 +250,7 @@ export default function OrderDetailPage() {
         {/* Rider Info */}
         <Card>
           <CardContent className="p-4 space-y-3">
-            <h2 className="font-bold">Assigned Rider</h2>
+            <h2 className="font-bold font-display">Assigned Rider</h2>
             {order.rider ? (
               <div className="space-y-2">
                 <div className="flex items-center gap-2 text-sm">
@@ -292,7 +292,7 @@ export default function OrderDetailPage() {
       {/* Order Items */}
       <Card>
         <CardContent className="p-4">
-          <h2 className="font-bold mb-3">Order Items</h2>
+          <h2 className="font-bold mb-3 font-display">Order Items</h2>
           <div className="space-y-2">
             {order.items?.map((item: any, idx: number) => (
               <div
@@ -336,7 +336,7 @@ export default function OrderDetailPage() {
       {/* Payment Info */}
       <Card>
         <CardContent className="p-4">
-          <h2 className="font-bold mb-2">Payment</h2>
+          <h2 className="font-bold mb-2 font-display">Payment</h2>
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Method</span>
             <span className="text-sm font-medium">
@@ -363,7 +363,7 @@ export default function OrderDetailPage() {
       {/* Delivery Location Map */}
       <Card>
         <CardContent className="p-4">
-          <h2 className="font-bold mb-3">Delivery Location</h2>
+          <h2 className="font-bold mb-3 font-display">Delivery Location</h2>
           <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
             <div className="text-center">
               <MapPin className="h-8 w-8 text-gray-400 mx-auto mb-2" />
@@ -377,12 +377,13 @@ export default function OrderDetailPage() {
       {order.status !== "cancelled" && order.status !== "delivered" && (
         <Card>
           <CardContent className="p-4">
-            <h2 className="font-bold mb-3">Actions</h2>
+            <h2 className="font-bold mb-3 font-display">Actions</h2>
             <div className="flex flex-wrap gap-2">
               {order.status === "pending" && (
                 <Button
                   onClick={() => updateStatus("confirmed")}
                   disabled={updating}
+                  className="bg-crimson-700 hover:bg-crimson-800 text-white"
                 >
                   {updating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                   Confirm Order
@@ -392,6 +393,7 @@ export default function OrderDetailPage() {
                 <Button
                   onClick={() => updateStatus("preparing")}
                   disabled={updating}
+                  className="bg-crimson-700 hover:bg-crimson-800 text-white"
                 >
                   {updating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                   Start Preparing
@@ -401,6 +403,7 @@ export default function OrderDetailPage() {
                 <Button
                   onClick={() => updateStatus("out_for_delivery")}
                   disabled={updating}
+                  className="bg-crimson-700 hover:bg-crimson-800 text-white"
                 >
                   {updating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                   Mark Out for Delivery
@@ -410,6 +413,7 @@ export default function OrderDetailPage() {
                 <Button
                   onClick={() => updateStatus("delivered")}
                   disabled={updating}
+                  className="bg-crimson-700 hover:bg-crimson-800 text-white"
                 >
                   {updating && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
                   Mark Delivered

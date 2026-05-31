@@ -60,15 +60,15 @@ export default function DeliveriesPage() {
   return (
     <div className="p-4 space-y-4">
       <div className="grid grid-cols-2 gap-3">
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-          <div className="flex items-center gap-2 text-gray-500 mb-1">
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-brand-100">
+          <div className="flex items-center gap-2 text-brand-600 mb-1">
             <Package size={16} />
             <span className="text-xs font-medium">Total Deliveries</span>
           </div>
           <p className="text-2xl font-bold text-gray-800">{stats.total}</p>
         </div>
-        <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
-          <div className="flex items-center gap-2 text-gray-500 mb-1">
+        <div className="bg-white rounded-xl p-4 shadow-sm border border-brand-100">
+          <div className="flex items-center gap-2 text-brand-600 mb-1">
             <TrendingUp size={16} />
             <span className="text-xs font-medium">Total Earnings</span>
           </div>
@@ -110,7 +110,7 @@ export default function DeliveriesPage() {
                     ? format(new Date(delivery.completed_at), "MMM d, yyyy h:mm a")
                     : format(new Date(delivery.created_at), "MMM d, yyyy h:mm a")}
                 </span>
-                <span className="text-green-600 bg-green-50 px-2 py-0.5 rounded-full">
+                <span className="text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full font-medium">
                   Delivered
                 </span>
               </div>

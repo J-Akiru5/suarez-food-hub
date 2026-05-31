@@ -47,16 +47,16 @@ export default function RiderLayout({
 
   return (
     <div className="min-h-screen flex flex-col pb-16">
-      <header className="bg-brand-600 text-white px-4 py-3 safe-top sticky top-0 z-30">
+      <header className="bg-white border-b border-gray-200 px-4 py-3 safe-top sticky top-0 z-30">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-lg font-bold">SFH Rider</span>
+            <span className="text-lg font-bold text-brand-600">SFH Rider</span>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-sm text-brand-100">{riderName}</span>
+            <span className="text-sm text-gray-600">{riderName}</span>
             <button
               onClick={handleLogout}
-              className="p-2 hover:bg-brand-700 rounded-full transition"
+              className="p-2 hover:bg-brand-50 rounded-full transition text-brand-600"
               title="Logout"
             >
               <LogOut size={18} />
@@ -81,7 +81,7 @@ export default function RiderLayout({
                 href={item.href}
                 className={`flex flex-col items-center justify-center gap-1 transition ${
                   isActive
-                    ? "text-brand-600"
+                    ? "text-brand-600 bg-brand-50"
                     : "text-gray-400 hover:text-gray-600"
                 }`}
               >

@@ -28,7 +28,7 @@ export default function RiderMap({ latitude, longitude }: RiderMapProps) {
 
     const riderIcon = L.divIcon({
       className: "custom-rider-marker",
-      html: `<div style="width:36px;height:36px;background:#f97316;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);">
+      html: `<div style="width:36px;height:36px;background:#b1454a;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);">
         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" y1="1" x2="6" y2="4"></line><line x1="10" y1="1" x2="10" y2="4"></line><line x1="14" y1="1" x2="14" y2="4"></line></svg>
       </div>`,
       iconSize: [36, 36],
@@ -57,7 +57,7 @@ export default function RiderMap({ latitude, longitude }: RiderMapProps) {
   return (
     <div
       ref={mapRef}
-      className="h-64 w-full rounded-xl"
+      className="h-64 w-full rounded-32"
       style={{ zIndex: 0 }}
     />
   );

@@ -223,35 +223,35 @@ export default function DashboardPage() {
       value: stats.todayOrders,
       trend: stats.ordersTrend,
       icon: ShoppingBag,
-      color: "bg-blue-500",
+      color: "bg-crimson-100 text-crimson-700",
     },
     {
       label: "Today's Revenue",
       value: formatCurrency(stats.todayRevenue),
       trend: stats.revenueTrend,
       icon: DollarSign,
-      color: "bg-green-500",
+      color: "bg-green-100 text-green-700",
     },
     {
       label: "Total Products",
       value: stats.totalProducts,
       trend: null,
       icon: Package,
-      color: "bg-purple-500",
+      color: "bg-blue-100 text-blue-700",
     },
     {
       label: "Active Riders",
       value: stats.activeRiders,
       trend: null,
       icon: Bike,
-      color: "bg-orange-500",
+      color: "bg-orange-100 text-orange-700",
     },
   ];
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+        <h1 className="text-2xl font-bold text-gray-900 font-display">Dashboard</h1>
         <p className="text-sm text-muted-foreground">
           Overview of your business operations
         </p>
@@ -284,7 +284,7 @@ export default function DashboardPage() {
                     )}
                   </div>
                   <div className={`h-10 w-10 rounded-lg ${stat.color} flex items-center justify-center`}>
-                    <Icon className="h-5 w-5 text-white" />
+                    <Icon className="h-5 w-5" />
                   </div>
                 </div>
               </CardContent>
@@ -298,8 +298,8 @@ export default function DashboardPage() {
         <CardContent className="p-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-brand-500" />
-              <h2 className="font-bold text-lg">Revenue Trend</h2>
+              <TrendingUp className="h-5 w-5 text-crimson-600" />
+              <h2 className="font-bold text-lg font-display">Revenue Trend</h2>
             </div>
             <div className="flex bg-gray-100 rounded-lg p-0.5">
               <button
@@ -351,7 +351,7 @@ export default function DashboardPage() {
                 <Line
                   type="monotone"
                   dataKey="revenue"
-                  stroke="#f97316"
+                  stroke="#b1454a"
                   strokeWidth={2}
                   dot={false}
                   activeDot={{ r: 6 }}
@@ -366,7 +366,7 @@ export default function DashboardPage() {
         {/* Recent Orders */}
         <Card>
           <CardContent className="p-4">
-            <h2 className="font-bold text-lg mb-4">Recent Orders</h2>
+            <h2 className="font-bold text-lg mb-4 font-display">Recent Orders</h2>
             {loading ? (
               <div className="space-y-3">
                 {[1, 2, 3, 4, 5].map((i) => (
@@ -412,7 +412,7 @@ export default function DashboardPage() {
         {/* Top Products */}
         <Card>
           <CardContent className="p-4">
-            <h2 className="font-bold text-lg mb-4">Best Selling Products</h2>
+            <h2 className="font-bold text-lg mb-4 font-display">Best Selling Products</h2>
             {loading ? (
               <div className="space-y-3">
                 {[1, 2, 3, 4, 5].map((i) => (
@@ -428,7 +428,7 @@ export default function DashboardPage() {
                     key={product.name}
                     className="flex items-center gap-3 p-3 rounded-lg bg-gray-50"
                   >
-                    <div className="h-8 w-8 rounded-full bg-brand-100 flex items-center justify-center text-brand-700 text-xs font-bold shrink-0">
+                    <div className="h-8 w-8 rounded-full bg-crimson-100 flex items-center justify-center text-crimson-700 text-xs font-bold shrink-0">
                       #{idx + 1}
                     </div>
                     <div className="min-w-0 flex-1">

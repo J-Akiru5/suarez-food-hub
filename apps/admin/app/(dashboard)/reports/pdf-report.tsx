@@ -12,12 +12,12 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     paddingBottom: 20,
     borderBottomWidth: 2,
-    borderBottomColor: "#f97316",
+    borderBottomColor: "#b1454a",
   },
   title: {
     fontSize: 22,
     fontWeight: "bold",
-    color: "#f97316",
+    color: "#b1454a",
     marginBottom: 4,
   },
   subtitle: {
@@ -50,9 +50,9 @@ const styles = StyleSheet.create({
   statCard: {
     flex: 1,
     padding: 12,
-    backgroundColor: "#f9fafb",
+    backgroundColor: "#fdf2f3",
     borderRadius: 8,
-    border: "1px solid #e5e7eb",
+    border: "1px solid #f9d0d3",
   },
   statLabel: {
     fontSize: 8,
@@ -71,7 +71,7 @@ const styles = StyleSheet.create({
     borderCollapse: "collapse",
   },
   tableHeader: {
-    backgroundColor: "#f9fafb",
+    backgroundColor: "#fdf2f3",
     flexDirection: "row",
     borderBottomWidth: 1,
     borderBottomColor: "#e5e7eb",
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
     color: "#9ca3af",
   },
   brandAccent: {
-    color: "#f97316",
+    color: "#b1454a",
   },
 });
 

@@ -2,332 +2,191 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { formatCurrency } from "@repo/utils";
-import type { Product, Category } from "@repo/types";
-import { Card, CardContent } from "@repo/ui";
-import { Badge } from "@repo/ui";
-import { Skeleton } from "@repo/ui";
-import {
-  Star,
-  ShoppingBag,
-  ChevronRight,
-  Flame,
-  Zap,
-} from "lucide-react";
+import type { Product, Category, ProductVariant as DbProductVariant } from "@repo/types";
+import { HeroSection, HowItWorks, TrendingSection, AboutSection, Skeleton, Footer, ProductCard, ProductModal, ToastNotification } from "@repo/ui";
+import type { ProductVariant as UiProductVariant } from "@repo/ui";
+import { useCartStore } from "@/stores/cart";
+import { ShoppingBag } from "lucide-react";
 
-function ProductCardSkeleton() {
+function ProductSkeleton() {
   return (
-    <div className="bg-white rounded-xl overflow-hidden shadow-sm">
-      <Skeleton className="h-36 w-full" />
-      <div className="p-3 space-y-2">
-        <Skeleton className="h-4 w-3/4" />
-        <Skeleton className="h-3 w-1/2" />
-        <Skeleton className="h-5 w-1/3" />
+    <div className="bg-white/65 backdrop-blur-xl border border-white/40 rounded-32 overflow-hidden">
+      <Skeleton className="h-[200px] w-full rounded-none" />
+      <div className="p-5 space-y-3">
+        <Skeleton className="h-3 w-16" />
+        <Skeleton className="h-5 w-3/4" />
+        <Skeleton className="h-4 w-1/3" />
+        <Skeleton className="h-10 w-full rounded-full" />
       </div>
-    </div>
-  );
-}
-
-function CategorySkeleton() {
-  return (
-    <div className="flex gap-3 px-4">
-      {[1, 2, 3, 4, 5].map((i) => (
-        <div key={i} className="flex flex-col items-center gap-2">
-          <Skeleton className="h-16 w-16 rounded-2xl" />
-          <Skeleton className="h-3 w-12" />
-        </div>
-      ))}
     </div>
   );
 }
 
 export default function HomePage() {
-  const searchParams = useSearchParams();
-  const searchQuery = searchParams.get("q") || "";
-
   const [categories, setCategories] = useState<Category[]>([]);
   const [featured, setFeatured] = useState<Product[]>([]);
-  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
+  const [modalProduct, setModalProduct] = useState<Product | null>(null);
+  const [toast, setToast] = useState({ visible: false, message: "" });
 
+  const addItem = useCartStore((s) => s.addItem);
   const supabase = createClient();
 
-  async function fetchData() {
-    const [catRes, featRes, prodRes] = await Promise.all([
-      supabase
-        .from("categories")
-        .select("*")
-        .eq("is_active", true)
-        .order("sort_order"),
-      supabase
-        .from("products")
-        .select("*, category:categories(*)")
-        .eq("is_featured", true)
-        .eq("availability", "available")
-        .order("sort_order")
-        .limit(10),
-      supabase
-        .from("products")
-        .select("*, category:categories(*)")
-        .eq("availability", "available")
-        .order("sort_order"),
-    ]);
-
-    setCategories(catRes.data || []);
-    setFeatured(featRes.data || []);
-    setProducts(prodRes.data || []);
-    setLoading(false);
-  }
-
   useEffect(() => {
+    async function fetchData() {
+      const [catRes, featRes] = await Promise.all([
+        supabase
+          .from("categories")
+          .select("*")
+          .eq("is_active", true)
+          .order("sort_order"),
+        supabase
+          .from("products")
+          .select("*, category:categories(*)")
+          .eq("is_featured", true)
+          .eq("availability", "available")
+          .order("sort_order")
+          .limit(6),
+      ]);
+
+      setCategories(catRes.data || []);
+      setFeatured(featRes.data || []);
+      setLoading(false);
+    }
     fetchData();
   }, []);
 
-  async function handleRefresh() {
-    setRefreshing(true);
-    await fetchData();
-    setRefreshing(false);
+  function handleAddToCart(
+    product: { id: string; name: string; description: string; image: string; base_price: number; stocks: number; availability: string },
+    variant?: UiProductVariant,
+    quantity?: number
+  ) {
+    const dbProduct = featured.find((p) => p.id === product.id);
+    if (dbProduct) {
+      const dbVariant = dbProduct.variants?.find((v) => v.id === variant?.id);
+      addItem(dbProduct, quantity || 1, dbVariant);
+    }
+    setToast({ visible: true, message: `${product.name} added to cart!` });
   }
 
-  const filteredProducts = searchQuery
-    ? products.filter(
-        (p) =>
-          p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          p.description?.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : products;
+  const trendingItems: { name: string }[] = [
+    { name: "Freshly steamed Filipino siomai" },
+    { name: "Premium quality meats & ingredients" },
+    { name: "Made-to-order, never frozen" },
+    { name: "Fast pickup near WVSU campus" },
+    { name: "Affordable student-friendly prices" },
+  ];
 
   return (
-    <div className="space-y-6">
-      {/* Search Results Header */}
-      {searchQuery && (
-        <div className="px-4 pt-4">
-          <h2 className="text-lg font-bold">
-            Results for &quot;{searchQuery}&quot;
-          </h2>
-          <p className="text-sm text-muted-foreground">
-            {filteredProducts.length} item(s) found
-          </p>
-        </div>
-      )}
+    <div>
+      {/* Hero Section */}
+      <HeroSection
+        title="Taste the Best Filipino Food in Town"
+        description="Discover the best food near WVSU — from crispy siomai to savory mains. Quick, affordable, and made to satisfy your cravings."
+        ctaText="Explore Menu"
+        ctaHref="/menu"
+        imageSrc="/hero-food.png"
+      />
 
-      {/* Hero Banner */}
-      {!searchQuery && (
-        <div className="px-4 pt-4">
-          <div className="relative rounded-2xl overflow-hidden bg-gradient-to-r from-brand-500 to-brand-600 p-6 text-white">
-            <div className="relative z-10">
-              <div className="flex items-center gap-2 mb-2">
-                <Zap className="h-5 w-5" />
-                <span className="text-sm font-medium">Fast Delivery</span>
-              </div>
-              <h2 className="text-2xl font-bold mb-2">
-                Craving something?
-              </h2>
-              <p className="text-sm text-white/80 mb-4">
-                Order from your favorite local restaurants
-              </p>
-              <Link
-                href="/menu"
-                className="inline-flex items-center gap-2 bg-white text-brand-600 px-5 py-2.5 rounded-full text-sm font-bold hover:bg-gray-100 transition-colors"
-              >
-                <ShoppingBag className="h-4 w-4" />
-                Browse Menu
-              </Link>
-            </div>
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-20">
-              <Flame className="h-24 w-24" />
-            </div>
+      {/* Popular Foods */}
+      <section className="py-16 md:py-24 bg-creamson">
+        <div className="max-w-[1280px] mx-auto px-6">
+          <div className="text-center mb-12">
+            <p className="text-[#b1454a] text-base font-semibold uppercase tracking-wider mb-3">
+              Popular Foods
+            </p>
+            <h2
+              className="text-4xl md:text-5xl lg:text-[56px] font-bold text-gray-900 leading-tight"
+              style={{ fontFamily: "var(--playfair-display)" }}
+            >
+              Customer Favorites
+            </h2>
           </div>
-        </div>
-      )}
 
-      {/* Categories */}
-      {!searchQuery && (
-        <div>
-          <div className="flex items-center justify-between px-4 mb-3">
-            <h2 className="font-bold text-lg">Categories</h2>
+          {loading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3].map((i) => (
+                <ProductSkeleton key={i} />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {featured.slice(0, 6).map((product) => (
+                <ProductCard
+                  key={product.id}
+                  name={product.name}
+                  price={product.base_price}
+                  image={product.image_url || "/placeholder-food.png"}
+                  category={product.category?.name || "Food"}
+                  rating={product.rating || 4.5}
+                  availability={product.availability as "available" | "sold_out"}
+                  featured={product.is_featured}
+                  onClick={() => setModalProduct(product)}
+                />
+              ))}
+            </div>
+          )}
+
+          <div className="text-center mt-10">
             <Link
               href="/menu"
-              className="text-sm text-brand-600 font-medium flex items-center gap-1"
+              className="inline-block bg-[#b1454a] text-white px-8 py-4 rounded-full font-semibold text-base hover:bg-[#9a3a3f] transition-all duration-200 hover:-translate-y-0.5 active:scale-95 shadow-lg"
             >
-              View all <ChevronRight className="h-4 w-4" />
+              View Full Menu
             </Link>
           </div>
-          {loading ? (
-            <CategorySkeleton />
-          ) : (
-            <div className="flex gap-3 px-4 overflow-x-auto scrollbar-hide pb-2">
-              {categories.map((cat) => (
-                <Link
-                  key={cat.id}
-                  href={`/menu?category=${cat.slug}`}
-                  className="flex flex-col items-center gap-2 shrink-0"
-                >
-                  <div className="h-16 w-16 rounded-2xl bg-brand-50 flex items-center justify-center overflow-hidden border border-brand-100">
-                    {cat.image_url ? (
-                      <Image
-                        src={cat.image_url}
-                        alt={cat.name}
-                        width={64}
-                        height={64}
-                        className="object-cover w-full h-full"
-                      />
-                    ) : (
-                      <ShoppingBag className="h-7 w-7 text-brand-500" />
-                    )}
-                  </div>
-                  <span className="text-xs font-medium text-gray-700 whitespace-nowrap">
-                    {cat.name}
-                  </span>
-                </Link>
-              ))}
-            </div>
-          )}
         </div>
+      </section>
+
+      {/* How It Works */}
+      <HowItWorks />
+
+      {/* Trending Section */}
+      <TrendingSection
+        title="Why Students Love Us"
+        subtitle="Trending Now"
+        description="Suarez Food Hub is the go-to food destination for WVSU students. Fresh, fast, and always affordable."
+        items={trendingItems}
+        imageSrc="/trending-food.png"
+        imageAlt="Trending Filipino food"
+      />
+
+      {/* About Section */}
+      <AboutSection />
+
+      {/* Footer */}
+      <Footer />
+
+      {/* Product Modal */}
+      {modalProduct && (
+        <ProductModal
+          product={{
+            id: modalProduct.id,
+            name: modalProduct.name,
+            description: modalProduct.description || "",
+            image: modalProduct.image_url || "/placeholder-food.png",
+            base_price: modalProduct.base_price,
+            stocks: modalProduct.stocks,
+            availability: modalProduct.availability,
+            variants: modalProduct.variants?.map((v) => ({
+              id: v.id,
+              name: v.name,
+              price: v.price,
+            })),
+          }}
+          onClose={() => setModalProduct(null)}
+          onAddToCart={handleAddToCart}
+        />
       )}
 
-      {/* Featured Products */}
-      {!searchQuery && featured.length > 0 && (
-        <div>
-          <div className="flex items-center justify-between px-4 mb-3">
-            <div className="flex items-center gap-2">
-              <Flame className="h-5 w-5 text-brand-500" />
-              <h2 className="font-bold text-lg">Featured</h2>
-            </div>
-          </div>
-          {loading ? (
-            <div className="grid grid-cols-2 gap-3 px-4">
-              {[1, 2, 3, 4].map((i) => (
-                <ProductCardSkeleton key={i} />
-              ))}
-            </div>
-          ) : (
-            <div className="flex gap-3 px-4 overflow-x-auto scrollbar-hide pb-2">
-              {featured.map((product) => (
-                <Link
-                  key={product.id}
-                  href={`/menu/${product.slug}`}
-                  className="shrink-0 w-44"
-                >
-                  <div className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                    <div className="h-32 bg-gray-100 relative">
-                      {product.image_url ? (
-                        <Image
-                          src={product.image_url}
-                          alt={product.name}
-                          fill
-                          className="object-cover"
-                        />
-                      ) : (
-                        <div className="flex items-center justify-center h-full">
-                          <ShoppingBag className="h-10 w-10 text-gray-300" />
-                        </div>
-                      )}
-                      <Badge className="absolute top-2 left-2 bg-brand-500 text-white border-0 text-[10px]">
-                        <Star className="h-3 w-3 mr-0.5 fill-current" />
-                        Featured
-                      </Badge>
-                    </div>
-                    <div className="p-3">
-                      <h3 className="font-semibold text-sm line-clamp-2 mb-1">
-                        {product.name}
-                      </h3>
-                      <p className="text-xs text-muted-foreground line-clamp-1">
-                        {product.category?.name}
-                      </p>
-                      <p className="font-bold text-brand-600 mt-1">
-                        {formatCurrency(product.price)}
-                      </p>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* All Products Grid */}
-      <div className="px-4 pb-4">
-        <h2 className="font-bold text-lg mb-3">
-          {searchQuery ? "Search Results" : "All Products"}
-        </h2>
-        {loading ? (
-          <div className="grid grid-cols-2 gap-3">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <ProductCardSkeleton key={i} />
-            ))}
-          </div>
-        ) : filteredProducts.length === 0 ? (
-          <div className="text-center py-12">
-            <ShoppingBag className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-muted-foreground">No products found</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 gap-3">
-            {filteredProducts.map((product) => (
-              <Link
-                key={product.id}
-                href={`/menu/${product.slug}`}
-              >
-                <div className="bg-white rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow">
-                  <div className="h-36 bg-gray-100 relative">
-                    {product.image_url ? (
-                      <Image
-                        src={product.image_url}
-                        alt={product.name}
-                        fill
-                        className="object-cover"
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center h-full">
-                        <ShoppingBag className="h-10 w-10 text-gray-300" />
-                      </div>
-                    )}
-                    {product.is_featured && (
-                      <Badge className="absolute top-2 right-2 bg-brand-500 text-white border-0 text-[10px]">
-                        <Star className="h-3 w-3 mr-0.5 fill-current" />
-                        Featured
-                      </Badge>
-                    )}
-                  </div>
-                  <div className="p-3">
-                    <h3 className="font-semibold text-sm line-clamp-2 mb-1">
-                      {product.name}
-                    </h3>
-                    <p className="text-xs text-muted-foreground line-clamp-1 mb-1">
-                      {product.category?.name}
-                    </p>
-                    <p className="font-bold text-brand-600">
-                      {formatCurrency(product.price)}
-                    </p>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        )}
-
-        {/* Pull to refresh indicator */}
-        {refreshing && (
-          <div className="flex justify-center py-4">
-            <div className="h-6 w-6 border-2 border-brand-500 border-t-transparent rounded-full animate-spin" />
-          </div>
-        )}
-
-        {!loading && !refreshing && (
-          <button
-            onClick={handleRefresh}
-            className="w-full mt-4 py-2 text-sm text-brand-600 font-medium hover:bg-brand-50 rounded-lg transition-colors"
-          >
-            Refresh
-          </button>
-        )}
-      </div>
+      {/* Toast */}
+      <ToastNotification
+        message={toast.message}
+        isVisible={toast.visible}
+        onClose={() => setToast({ visible: false, message: "" })}
+      />
     </div>
   );
 }

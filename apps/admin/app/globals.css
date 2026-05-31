@@ -1,30 +1,30 @@
+@import "@repo/ui/globals.css";
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap");
-
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 20 14% 4%;
+    --foreground: 0 0% 7%;
     --card: 0 0% 100%;
-    --card-foreground: 20 14% 4%;
+    --card-foreground: 0 0% 7%;
     --popover: 0 0% 100%;
-    --popover-foreground: 20 14% 4%;
-    --primary: 24 95% 53%;
+    --popover-foreground: 0 0% 7%;
+    --primary: 356 55% 48%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 30 10% 96%;
-    --secondary-foreground: 24 10% 10%;
-    --muted: 30 10% 96%;
-    --muted-foreground: 20 5% 45%;
-    --accent: 30 10% 96%;
-    --accent-foreground: 24 10% 10%;
+    --secondary: 40 33% 96%;
+    --secondary-foreground: 0 0% 9%;
+    --muted: 40 33% 96%;
+    --muted-foreground: 0 0% 45%;
+    --accent: 40 33% 96%;
+    --accent-foreground: 0 0% 9%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
-    --border: 30 10% 90%;
-    --input: 30 10% 90%;
-    --ring: 24 95% 53%;
+    --border: 0 0% 90%;
+    --input: 0 0% 90%;
+    --ring: 356 55% 48%;
     --radius: 0.75rem;
   }
 

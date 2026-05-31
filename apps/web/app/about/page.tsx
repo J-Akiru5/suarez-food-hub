@@ -1,13 +1,6 @@
 import Link from "next/link";
-import {
-  UtensilsCrossed,
-  ChevronRight,
-  Heart,
-  Users,
-  Leaf,
-  Award,
-} from "lucide-react";
-import { Button } from "@repo/ui";
+import { Heart, Award, Users, Leaf } from "lucide-react";
+import { Navbar, Footer } from "@repo/ui";
 
 const values = [
   {
@@ -63,90 +56,126 @@ const timeline = [
   },
 ];
 
-function Navbar() {
-  return (
-    <nav className="sticky top-0 z-50 border-b border-brand-100 bg-white/80 backdrop-blur-md">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-        <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-500 text-white">
-            <UtensilsCrossed className="h-5 w-5" />
-          </div>
-          <span className="text-xl font-bold text-gray-900">
-            Suarez Food Hub
-          </span>
-        </Link>
-        <div className="hidden items-center gap-8 md:flex">
-          <Link
-            href="/menu"
-            className="text-sm font-medium text-gray-600 transition-colors hover:text-brand-600"
-          >
-            Menu
-          </Link>
-          <Link
-            href="/about"
-            className="text-sm font-medium text-brand-600"
-          >
-            About
-          </Link>
-          <Link
-            href="/contact"
-            className="text-sm font-medium text-gray-600 transition-colors hover:text-brand-600"
-          >
-            Contact
-          </Link>
-        </div>
-      </div>
-    </nav>
-  );
-}
-
 export default function AboutPage() {
   return (
-    <div className="min-h-screen">
-      <Navbar />
+    <div className="min-h-screen bg-[#fff0de]">
+      <Navbar showCartIcon={false} />
 
       {/* Hero */}
-      <section className="bg-gradient-to-br from-brand-50 to-white py-16 sm:py-24">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-3xl text-center">
-            <h1 className="text-4xl font-bold text-gray-900 sm:text-5xl">
-              About Suarez Food Hub
-            </h1>
-            <p className="mt-6 text-lg text-gray-600">
-              We are a family-owned Filipino food business based in Janiuay,
-              Iloilo, dedicated to bringing authentic home-cooked meals to your
-              doorstep.
-            </p>
+      <section className="bg-[#b1454a] pt-[74px] pb-16 md:py-24">
+        <div className="max-w-[1280px] mx-auto px-6 text-center">
+          <p className="text-white/60 text-sm font-semibold uppercase tracking-wider mb-3">
+            About Us
+          </p>
+          <h1
+            className="text-4xl md:text-5xl lg:text-[56px] font-bold text-white mb-6 leading-tight"
+            style={{ fontFamily: "var(--playfair-display)" }}
+          >
+            About Suarez Food Hub
+          </h1>
+          <p className="text-white/70 text-lg max-w-2xl mx-auto">
+            We are a family-owned Filipino food business based in Janiuay,
+            Iloilo, dedicated to bringing authentic home-cooked meals to your
+            doorstep.
+          </p>
+        </div>
+      </section>
+
+      {/* Our Story */}
+      <section className="py-16 md:py-24">
+        <div className="max-w-[1280px] mx-auto px-6">
+          <div className="flex flex-col md:flex-row items-center gap-12 md:gap-16">
+            {/* Image */}
+            <div className="flex-1 relative">
+              <div className="bg-white rounded-3xl p-4 shadow-lg">
+                <div className="space-y-4">
+                  <div className="rounded-2xl overflow-hidden">
+                    <img
+                      src="/assets/store1.jpg"
+                      alt="Suarez Food Hub store"
+                      className="w-full h-[220px] object-cover"
+                    />
+                  </div>
+                  <div className="border-t border-gray-100" />
+                  <div className="rounded-2xl overflow-hidden">
+                    <img
+                      src="/assets/steamed-siomai.jpg"
+                      alt="Our signature siomai"
+                      className="w-full h-[220px] object-cover"
+                    />
+                  </div>
+                </div>
+                <div className="absolute -bottom-5 left-1/2 -translate-x-1/2">
+                  <Link
+                    href="/menu"
+                    className="inline-block bg-[#121212] text-white px-8 py-3 rounded-full font-semibold text-sm hover:bg-gray-800 transition-all duration-200 shadow-xl whitespace-nowrap"
+                  >
+                    Order Now
+                  </Link>
+                </div>
+              </div>
+            </div>
+
+            {/* Text */}
+            <div className="flex-1 text-center md:text-left pt-8 md:pt-0">
+              <p className="text-[#b1454a] text-sm font-semibold uppercase tracking-wider mb-3">
+                Our Story
+              </p>
+              <h2
+                className="text-3xl md:text-4xl font-bold text-gray-900 leading-tight mb-6"
+                style={{ fontFamily: "var(--playfair-display)" }}
+              >
+                A Taste of Home in Every Bite
+              </h2>
+              <p className="text-gray-600 text-base leading-relaxed mb-4 max-w-lg mx-auto md:mx-0">
+                Suarez Food Hub was founded with a simple mission: to share the
+                rich flavors of Filipino cuisine with the community of Janiuay
+                and beyond. We believe that food is more than sustenance — it is
+                a way to connect, to share stories, and to celebrate culture.
+              </p>
+              <p className="text-gray-600 text-base leading-relaxed max-w-lg mx-auto md:mx-0">
+                Every dish we serve tells a story. From the slow-simmered
+                kare-kare to the perfectly balanced sinigang, our recipes honor
+                the traditions of Filipino home cooking while bringing them
+                conveniently to your doorstep.
+              </p>
+            </div>
           </div>
         </div>
       </section>
 
       {/* Mission & Vision */}
-      <section className="py-16 sm:py-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <section className="py-16 md:py-24 bg-white/50">
+        <div className="max-w-[1280px] mx-auto px-6">
           <div className="grid gap-8 md:grid-cols-2">
-            <div className="rounded-2xl border border-gray-100 bg-white p-8 shadow-sm">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-100 text-brand-600">
-                <Heart className="h-6 w-6" />
+            <div className="bg-white/65 backdrop-blur-xl border border-white/40 rounded-32 p-8 hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
+              <div className="w-14 h-14 bg-[#b1454a]/10 rounded-2xl flex items-center justify-center text-[#b1454a] mb-6">
+                <Heart className="w-7 h-7" />
               </div>
-              <h2 className="mt-4 text-2xl font-bold text-gray-900">
+              <h2
+                className="text-2xl font-bold text-gray-900 mb-4"
+                style={{ fontFamily: "var(--playfair-display)" }}
+              >
                 Our Mission
               </h2>
-              <p className="mt-4 text-gray-600">
+              <p className="text-gray-600 leading-relaxed">
                 To share the rich and diverse flavors of Filipino cuisine with
                 our community. We aim to provide convenient access to authentic,
                 high-quality home-cooked meals that bring joy and comfort to
                 every table.
               </p>
             </div>
-            <div className="rounded-2xl border border-gray-100 bg-white p-8 shadow-sm">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-100 text-brand-600">
-                <Award className="h-6 w-6" />
+            <div className="bg-white/65 backdrop-blur-xl border border-white/40 rounded-32 p-8 hover:-translate-y-1 hover:shadow-xl transition-all duration-300">
+              <div className="w-14 h-14 bg-[#b1454a]/10 rounded-2xl flex items-center justify-center text-[#b1454a] mb-6">
+                <Award className="w-7 h-7" />
               </div>
-              <h2 className="mt-4 text-2xl font-bold text-gray-900">
+              <h2
+                className="text-2xl font-bold text-gray-900 mb-4"
+                style={{ fontFamily: "var(--playfair-display)" }}
+              >
                 Our Vision
               </h2>
-              <p className="mt-4 text-gray-600">
+              <p className="text-gray-600 leading-relaxed">
                 To become the most trusted Filipino food hub in Iloilo, known
                 for our unwavering commitment to quality, authenticity, and
                 customer satisfaction. We envision a future where great Filipino
@@ -158,27 +187,35 @@ export default function AboutPage() {
       </section>
 
       {/* Values */}
-      <section className="bg-gray-50 py-16 sm:py-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold text-gray-900">Our Values</h2>
-            <p className="mt-3 text-gray-500">
+      <section className="py-16 md:py-24">
+        <div className="max-w-[1280px] mx-auto px-6">
+          <div className="text-center mb-12">
+            <h2
+              className="text-3xl md:text-4xl font-bold text-gray-900"
+              style={{ fontFamily: "var(--playfair-display)" }}
+            >
+              Our Values
+            </h2>
+            <p className="text-gray-500 mt-3">
               The principles that guide everything we do
             </p>
           </div>
-          <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
             {values.map((value) => (
               <div
                 key={value.title}
-                className="rounded-2xl bg-white p-6 text-center shadow-sm"
+                className="bg-white/65 backdrop-blur-xl border border-white/40 rounded-32 p-6 text-center hover:-translate-y-1 hover:shadow-xl transition-all duration-300"
               >
-                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-100 text-brand-600">
-                  <value.icon className="h-6 w-6" />
+                <div className="w-14 h-14 mx-auto mb-5 bg-[#b1454a]/10 rounded-2xl flex items-center justify-center text-[#b1454a]">
+                  <value.icon className="w-6 h-6" />
                 </div>
-                <h3 className="mt-4 text-base font-semibold text-gray-900">
+                <h3
+                  className="text-base font-bold text-gray-900 mb-2"
+                  style={{ fontFamily: "var(--playfair-display)" }}
+                >
                   {value.title}
                 </h3>
-                <p className="mt-2 text-sm text-gray-500">
+                <p className="text-gray-500 text-sm leading-relaxed">
                   {value.description}
                 </p>
               </div>
@@ -187,17 +224,22 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Story Timeline */}
-      <section className="py-16 sm:py-20">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h2 className="text-3xl font-bold text-gray-900">Our Journey</h2>
-            <p className="mt-3 text-gray-500">
+      {/* Timeline */}
+      <section className="py-16 md:py-24 bg-white/50">
+        <div className="max-w-[1280px] mx-auto px-6">
+          <div className="text-center mb-12">
+            <h2
+              className="text-3xl md:text-4xl font-bold text-gray-900"
+              style={{ fontFamily: "var(--playfair-display)" }}
+            >
+              Our Journey
+            </h2>
+            <p className="text-gray-500 mt-3">
               From a home kitchen to your neighborhood food hub
             </p>
           </div>
-          <div className="relative mt-12">
-            <div className="absolute left-4 top-0 h-full w-0.5 bg-brand-200 sm:left-1/2 sm:-translate-x-px" />
+          <div className="relative">
+            <div className="absolute left-4 top-0 h-full w-0.5 bg-[#b1454a]/20 sm:left-1/2 sm:-translate-x-px" />
             <div className="space-y-8">
               {timeline.map((item, index) => (
                 <div
@@ -206,16 +248,21 @@ export default function AboutPage() {
                     index % 2 === 0 ? "sm:flex-row" : "sm:flex-row-reverse"
                   } items-start gap-6`}
                 >
-                  <div className="absolute left-4 top-1 h-4 w-4 -translate-x-1/2 rounded-full border-2 border-brand-500 bg-white sm:left-1/2" />
+                  <div className="absolute left-4 top-1 h-4 w-4 -translate-x-1/2 rounded-full border-2 border-[#b1454a] bg-white sm:left-1/2" />
                   <div
                     className={`ml-10 flex-1 sm:ml-0 ${
-                      index % 2 === 0 ? "sm:text-right sm:pr-12" : "sm:text-left sm:pl-12"
+                      index % 2 === 0
+                        ? "sm:text-right sm:pr-12"
+                        : "sm:text-left sm:pl-12"
                     }`}
                   >
-                    <span className="inline-block rounded-full bg-brand-100 px-3 py-1 text-sm font-semibold text-brand-700">
+                    <span className="inline-block rounded-full bg-[#b1454a]/10 px-3 py-1 text-sm font-semibold text-[#b1454a]">
                       {item.year}
                     </span>
-                    <h3 className="mt-2 text-lg font-semibold text-gray-900">
+                    <h3
+                      className="mt-2 text-lg font-bold text-gray-900"
+                      style={{ fontFamily: "var(--playfair-display)" }}
+                    >
                       {item.title}
                     </h3>
                     <p className="mt-2 text-sm text-gray-500">
@@ -230,24 +277,27 @@ export default function AboutPage() {
       </section>
 
       {/* CTA */}
-      <section className="border-t border-gray-100 bg-brand-50 py-16">
-        <div className="mx-auto max-w-7xl px-4 text-center sm:px-6 lg:px-8">
-          <h2 className="text-3xl font-bold text-gray-900">
+      <section className="bg-[#b1454a] py-16">
+        <div className="max-w-[1280px] mx-auto px-6 text-center">
+          <h2
+            className="text-3xl md:text-4xl font-bold text-white mb-4"
+            style={{ fontFamily: "var(--playfair-display)" }}
+          >
             Want to taste the difference?
           </h2>
-          <p className="mt-3 text-gray-600">
+          <p className="text-white/70 mb-8">
             Order now and experience authentic Filipino home cooking
           </p>
-          <div className="mt-8">
-            <Link href="/menu">
-              <Button size="lg" className="gap-2">
-                Browse Our Menu
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </Link>
-          </div>
+          <Link
+            href="/menu"
+            className="inline-block bg-white text-[#b1454a] px-10 py-4 rounded-full font-bold text-base hover:bg-white/90 transition-all duration-200 hover:-translate-y-0.5 active:scale-95 shadow-lg"
+          >
+            Browse Our Menu
+          </Link>
         </div>
       </section>
+
+      <Footer />
     </div>
   );
 }

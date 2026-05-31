@@ -8,18 +8,8 @@ import { createClient } from "@/lib/supabase/client";
 import { useCartStore } from "@/stores/cart";
 import { formatCurrency } from "@repo/utils";
 import type { Product, ProductVariant } from "@repo/types";
-import { Button } from "@repo/ui";
-import { Badge } from "@repo/ui";
-import { Skeleton } from "@repo/ui";
-import {
-  ArrowLeft,
-  ShoppingCart,
-  Plus,
-  Minus,
-  Star,
-  ShoppingBag,
-  Check,
-} from "lucide-react";
+import { Button, Badge, Skeleton, ToastNotification } from "@repo/ui";
+import { ArrowLeft, ShoppingCart, Plus, Minus, Star, ShoppingBag, Check } from "lucide-react";
 
 export default function ProductDetailPage() {
   const params = useParams();
@@ -32,6 +22,7 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const [selectedVariant, setSelectedVariant] = useState<ProductVariant | null>(null);
   const [added, setAdded] = useState(false);
+  const [toast, setToast] = useState({ visible: false, message: "" });
 
   const addItem = useCartStore((s) => s.addItem);
   const supabase = createClient();
@@ -58,7 +49,7 @@ export default function ProductDetailPage() {
         setRelated(relatedProd || []);
 
         const defaultVariant = prod.variants?.find(
-          (v: ProductVariant) => v.is_default
+          (v: ProductVariant) => v.is_active
         );
         if (defaultVariant) {
           setSelectedVariant(defaultVariant);
@@ -75,20 +66,21 @@ export default function ProductDetailPage() {
     if (!product) return;
     addItem(product, quantity, selectedVariant || undefined);
     setAdded(true);
+    setToast({ visible: true, message: `${product.name} added to cart!` });
     setTimeout(() => setAdded(false), 2000);
   }
 
   const currentPrice =
-    (product?.price || 0) + (selectedVariant?.price_adjustment || 0);
+    (product?.base_price || 0) + (selectedVariant?.price || 0);
 
   if (loading) {
     return (
-      <div className="min-h-dvh bg-white">
-        <div className="h-72 bg-gray-100" />
-        <div className="p-4 space-y-4">
-          <Skeleton className="h-6 w-3/4" />
-          <Skeleton className="h-4 w-1/2" />
-          <Skeleton className="h-20 w-full" />
+      <div className="min-h-dvh bg-creamson">
+        <div className="h-72 bg-gray-200" />
+        <div className="p-6 space-y-4 max-w-[1280px] mx-auto">
+          <Skeleton className="h-8 w-3/4" />
+          <Skeleton className="h-5 w-1/2" />
+          <Skeleton className="h-24 w-full" />
         </div>
       </div>
     );
@@ -96,10 +88,10 @@ export default function ProductDetailPage() {
 
   if (!product) {
     return (
-      <div className="min-h-dvh bg-white flex items-center justify-center">
+      <div className="min-h-dvh bg-creamson flex items-center justify-center">
         <div className="text-center">
-          <ShoppingBag className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-          <p className="text-muted-foreground mb-4">Product not found</p>
+          <ShoppingBag className="h-16 w-16 text-gray-300 mx-auto mb-4" />
+          <p className="text-gray-500 mb-4">Product not found</p>
           <Button onClick={() => router.back()} variant="outline">
             Go Back
           </Button>
@@ -109,23 +101,22 @@ export default function ProductDetailPage() {
   }
 
   return (
-    <div className="min-h-dvh bg-white pb-28">
+    <div className="min-h-dvh bg-creamson pb-28">
       {/* Back Button */}
       <button
         onClick={() => router.back()}
-        className="absolute top-4 left-4 z-10 h-9 w-9 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-sm hover:bg-white transition-colors"
+        className="absolute top-20 left-6 z-10 h-10 w-10 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center shadow-md hover:bg-white transition-colors"
       >
-        <ArrowLeft className="h-5 w-5" />
+        <ArrowLeft className="h-5 w-5 text-gray-700" />
       </button>
 
       {/* Product Image */}
-      <div className="relative h-72 bg-gray-100">
+      <div className="relative h-72 md:h-96 bg-gray-200 overflow-hidden">
         {product.image_url ? (
-          <Image
+          <img
             src={product.image_url}
             alt={product.name}
-            fill
-            className="object-cover"
+            className="w-full h-full object-cover"
           />
         ) : (
           <div className="flex items-center justify-center h-full">
@@ -133,7 +124,7 @@ export default function ProductDetailPage() {
           </div>
         )}
         {product.is_featured && (
-          <Badge className="absolute top-4 right-4 bg-brand-500 text-white border-0">
+          <Badge className="absolute top-4 right-4 bg-[#b1454a] text-white border-0">
             <Star className="h-3 w-3 mr-1 fill-current" />
             Featured
           </Badge>
@@ -141,50 +132,54 @@ export default function ProductDetailPage() {
       </div>
 
       {/* Product Info */}
-      <div className="px-4 py-4">
-        <div className="flex items-start justify-between gap-4 mb-2">
-          <h1 className="text-xl font-bold">{product.name}</h1>
-          <p className="text-xl font-bold text-brand-600 shrink-0">
+      <div className="max-w-[1280px] mx-auto px-6 py-6">
+        <div className="flex items-start justify-between gap-4 mb-3">
+          <h1
+            className="text-2xl md:text-3xl font-bold text-gray-900"
+            style={{ fontFamily: "var(--playfair-display)" }}
+          >
+            {product.name}
+          </h1>
+          <p className="text-2xl font-bold text-[#b1454a] shrink-0">
             {formatCurrency(currentPrice)}
           </p>
         </div>
 
-        <p className="text-sm text-muted-foreground mb-1">
+        <p className="text-sm text-gray-500 uppercase tracking-wider mb-2">
           {product.category?.name}
         </p>
 
         {product.description && (
-          <p className="text-sm text-gray-600 mt-3 leading-relaxed">
+          <p className="text-gray-600 text-sm leading-relaxed mb-6">
             {product.description}
           </p>
         )}
 
         {/* Variants */}
         {product.variants && product.variants.length > 0 && (
-          <div className="mt-5">
-            <h3 className="font-semibold text-sm mb-3">
-              {product.variants[0]?.type === "size"
-                ? "Select Size"
-                : product.variants[0]?.type === "add_on"
-                ? "Add-ons"
-                : "Options"}
+          <div className="mb-6">
+            <h3
+              className="font-bold text-base mb-3"
+              style={{ fontFamily: "var(--playfair-display)" }}
+            >
+              Options
             </h3>
             <div className="flex flex-wrap gap-2">
               {product.variants.map((variant) => (
                 <button
                   key={variant.id}
                   onClick={() => setSelectedVariant(variant)}
-                  className={`px-4 py-2.5 rounded-xl text-sm font-medium border transition-all ${
+                  className={`px-5 py-2.5 rounded-24 text-sm font-semibold border-2 transition-all duration-200 ${
                     selectedVariant?.id === variant.id
-                      ? "border-brand-500 bg-brand-50 text-brand-700"
-                      : "border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300"
+                      ? "bg-[#b1454a] text-white border-[#b1454a]"
+                      : "bg-white text-gray-600 border-gray-200 hover:border-[#b1454a]/50"
                   }`}
                 >
-                  <span>{variant.name}</span>
-                  {variant.price_adjustment !== 0 && (
-                    <span className="ml-1 text-xs text-muted-foreground">
-                      {variant.price_adjustment > 0 ? "+" : ""}
-                      {formatCurrency(variant.price_adjustment)}
+                  {variant.name}
+                  {variant.price !== 0 && (
+                    <span className="ml-1 text-xs opacity-75">
+                      {variant.price > 0 ? "+" : ""}
+                      {formatCurrency(variant.price)}
                     </span>
                   )}
                 </button>
@@ -194,82 +189,99 @@ export default function ProductDetailPage() {
         )}
 
         {/* Quantity */}
-        <div className="mt-5">
-          <h3 className="font-semibold text-sm mb-3">Quantity</h3>
+        <div className="mb-6">
+          <h3
+            className="font-bold text-base mb-3"
+            style={{ fontFamily: "var(--playfair-display)" }}
+          >
+            Quantity
+          </h3>
           <div className="flex items-center gap-4">
             <button
               onClick={() => setQuantity(Math.max(1, quantity - 1))}
-              className="h-10 w-10 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors"
+              className="h-11 w-11 rounded-full border-2 border-gray-200 flex items-center justify-center hover:border-[#b1454a] transition-colors"
             >
-              <Minus className="h-4 w-4" />
+              <Minus className="h-4 w-4 text-gray-600" />
             </button>
-            <span className="font-bold text-lg w-8 text-center">{quantity}</span>
+            <span
+              className="text-2xl font-bold text-gray-900 min-w-[32px] text-center"
+              style={{ fontFamily: "var(--playfair-display)" }}
+            >
+              {quantity}
+            </span>
             <button
               onClick={() => setQuantity(quantity + 1)}
-              className="h-10 w-10 rounded-xl border border-gray-200 flex items-center justify-center hover:bg-gray-50 transition-colors"
+              className="h-11 w-11 rounded-full border-2 border-gray-200 flex items-center justify-center hover:border-[#b1454a] transition-colors"
             >
-              <Plus className="h-4 w-4" />
+              <Plus className="h-4 w-4 text-gray-600" />
             </button>
           </div>
         </div>
+
+        {/* Related Products */}
+        {related.length > 0 && (
+          <div className="mt-8">
+            <h3
+              className="font-bold text-lg mb-4"
+              style={{ fontFamily: "var(--playfair-display)" }}
+            >
+              You might also like
+            </h3>
+            <div className="flex gap-4 overflow-x-auto pb-4 sushi__hide-scrollbar">
+              {related.map((item) => (
+                <Link
+                  key={item.id}
+                  href={`/menu/${item.slug}`}
+                  className="shrink-0 w-40"
+                >
+                  <div className="bg-white/65 backdrop-blur-xl border border-white/40 rounded-32 overflow-hidden hover:-translate-y-1 hover:shadow-lg transition-all duration-300">
+                    <div className="h-28 bg-gray-100 relative overflow-hidden">
+                      {item.image_url ? (
+                        <img
+                          src={item.image_url}
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="flex items-center justify-center h-full">
+                          <ShoppingBag className="h-8 w-8 text-gray-300" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-3">
+                      <h4 className="font-semibold text-xs line-clamp-2 mb-1 text-gray-900">
+                        {item.name}
+                      </h4>
+                      <p className="text-xs font-bold text-[#b1454a]">
+                        {formatCurrency(item.base_price)}
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* Related Products */}
-      {related.length > 0 && (
-        <div className="px-4 mt-4">
-          <h3 className="font-bold text-lg mb-3">You might also like</h3>
-          <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-2">
-            {related.map((item) => (
-              <Link
-                key={item.id}
-                href={`/menu/${item.slug}`}
-                className="shrink-0 w-36"
-              >
-                <div className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100">
-                  <div className="h-24 bg-gray-100 relative">
-                    {item.image_url ? (
-                      <Image
-                        src={item.image_url}
-                        alt={item.name}
-                        fill
-                        className="object-cover"
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center h-full">
-                        <ShoppingBag className="h-8 w-8 text-gray-300" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="p-2">
-                    <h4 className="font-medium text-xs line-clamp-2 mb-1">
-                      {item.name}
-                    </h4>
-                    <p className="text-xs font-bold text-brand-600">
-                      {formatCurrency(item.price)}
-                    </p>
-                  </div>
-                </div>
-              </Link>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Sticky Add to Cart */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 safe-bottom z-50">
-        <div className="max-w-lg mx-auto flex items-center gap-4">
+      <div className="fixed bottom-0 left-0 right-0 bg-white/80 backdrop-blur-xl border-t border-white/40 p-4 safe-bottom z-50">
+        <div className="max-w-[1280px] mx-auto flex items-center gap-4">
           <div className="flex-1">
-            <p className="text-xs text-muted-foreground">Subtotal</p>
-            <p className="font-bold text-lg">
+            <p className="text-xs text-gray-400 uppercase tracking-wider">Subtotal</p>
+            <p
+              className="font-bold text-lg text-gray-900"
+              style={{ fontFamily: "var(--playfair-display)" }}
+            >
               {formatCurrency(currentPrice * quantity)}
             </p>
           </div>
           <Button
             onClick={handleAddToCart}
-            className={`flex-1 h-12 rounded-xl font-bold text-white ${
+            className={`flex-1 h-12 rounded-full font-bold text-white text-base transition-all duration-200 ${
               added
                 ? "bg-green-500 hover:bg-green-600"
-                : "bg-brand-500 hover:bg-brand-600"
+                : "bg-[#b1454a] hover:bg-[#9a3a3f] active:scale-[0.98]"
             }`}
           >
             {added ? (
@@ -286,6 +298,13 @@ export default function ProductDetailPage() {
           </Button>
         </div>
       </div>
+
+      {/* Toast */}
+      <ToastNotification
+        message={toast.message}
+        isVisible={toast.visible}
+        onClose={() => setToast({ visible: false, message: "" })}
+      />
     </div>
   );
 }

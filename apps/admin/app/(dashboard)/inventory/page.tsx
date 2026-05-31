@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import Image from "next/image";
 import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent } from "@repo/ui";
@@ -31,6 +31,8 @@ import {
   Loader2,
   Minus,
   Image as ImageIcon,
+  Upload,
+  X,
 } from "lucide-react";
 import type { Product, Category } from "@repo/types";
 
@@ -56,6 +58,8 @@ export default function InventoryPage() {
   const [formAvailability, setFormAvailability] = useState<string>("available");
   const [formImageUrl, setFormImageUrl] = useState("");
   const [formIsFeatured, setFormIsFeatured] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchData = useCallback(async () => {
     const [prodRes, catRes] = await Promise.all([
@@ -103,6 +107,29 @@ export default function InventoryPage() {
     setDialogOpen(true);
   }
 
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${Math.random()}.${fileExt}`;
+    const filePath = `products/${fileName}`;
+
+    const { error } = await supabase.storage
+      .from("product-images")
+      .upload(filePath, file);
+
+    if (!error) {
+      const { data } = supabase.storage
+        .from("product-images")
+        .getPublicUrl(filePath);
+      setFormImageUrl(data.publicUrl);
+    }
+
+    setUploading(false);
+  }
+
   async function handleSave() {
     setSaving(true);
     const productData = {
@@ -136,15 +163,6 @@ export default function InventoryPage() {
     fetchData();
   }
 
-  async function adjustStock(productId: string, delta: number) {
-    const product = products.find((p) => p.id === productId);
-    if (!product) return;
-    // Assuming stock is tracked as a field - if not, this is a placeholder
-    // For now we just toggle availability based on logic
-    await supabase.from("products").update({ updated_at: new Date().toISOString() }).eq("id", productId);
-    fetchData();
-  }
-
   const filteredProducts = products.filter((p) => {
     const matchesSearch =
       !search ||
@@ -158,12 +176,12 @@ export default function InventoryPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Inventory</h1>
+          <h1 className="text-2xl font-bold text-gray-900 font-display">Inventory</h1>
           <p className="text-sm text-muted-foreground">
             Manage your products and stock
           </p>
         </div>
-        <Button onClick={openCreateDialog} className="gap-2 bg-brand-500 hover:bg-brand-600 text-white">
+        <Button onClick={openCreateDialog} className="gap-2 bg-crimson-700 hover:bg-crimson-800 text-white">
           <Plus className="h-4 w-4" />
           Add Product
         </Button>
@@ -178,7 +196,7 @@ export default function InventoryPage() {
             placeholder="Search products..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="w-full h-10 pl-9 pr-4 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+            className="w-full h-10 pl-9 pr-4 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-crimson-500 focus:border-transparent"
           />
         </div>
         <Select value={filterCategory} onValueChange={setFilterCategory}>
@@ -254,7 +272,7 @@ export default function InventoryPage() {
                         <div className="min-w-0">
                           <p className="text-sm font-medium truncate">{product.name}</p>
                           {product.is_featured && (
-                            <Badge className="mt-0.5 bg-brand-100 text-brand-700 border-0 text-[10px]">
+                            <Badge className="mt-0.5 bg-crimson-100 text-crimson-700 border-0 text-[10px]">
                               Featured
                             </Badge>
                           )}
@@ -314,6 +332,54 @@ export default function InventoryPage() {
           </DialogHeader>
 
           <div className="space-y-4 py-4">
+            {/* Image Upload */}
+            <div>
+              <label className="text-sm font-medium text-gray-700 block mb-1">
+                Product Image
+              </label>
+              <div className="flex items-center gap-4">
+                <div className="h-20 w-20 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
+                  {formImageUrl ? (
+                    <Image
+                      src={formImageUrl}
+                      alt="Product"
+                      width={80}
+                      height={80}
+                      className="object-cover w-full h-full"
+                    />
+                  ) : (
+                    <ImageIcon className="h-8 w-8 text-gray-400" />
+                  )}
+                </div>
+                <div className="flex-1">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageUpload}
+                    className="hidden"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading}
+                    className="gap-2"
+                  >
+                    {uploading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4" />
+                    )}
+                    Upload Image
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Or enter URL below
+                  </p>
+                </div>
+              </div>
+            </div>
+
             <div>
               <label className="text-sm font-medium text-gray-700 block mb-1">
                 Name
@@ -345,7 +411,7 @@ export default function InventoryPage() {
                 onChange={(e) => setFormDescription(e.target.value)}
                 placeholder="Product description"
                 rows={3}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent"
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-crimson-500 focus:border-transparent"
               />
             </div>
 
@@ -416,7 +482,7 @@ export default function InventoryPage() {
                 id="featured"
                 checked={formIsFeatured}
                 onChange={(e) => setFormIsFeatured(e.target.checked)}
-                className="rounded border-gray-300 text-brand-500 focus:ring-brand-500"
+                className="rounded border-gray-300 text-crimson-600 focus:ring-crimson-500"
               />
               <label htmlFor="featured" className="text-sm font-medium text-gray-700">
                 Featured Product
@@ -431,7 +497,7 @@ export default function InventoryPage() {
             <Button
               onClick={handleSave}
               disabled={saving || !formName || !formPrice}
-              className="bg-brand-500 hover:bg-brand-600 text-white"
+              className="bg-crimson-700 hover:bg-crimson-800 text-white"
             >
               {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
               {editingProduct ? "Save Changes" : "Create Product"}
