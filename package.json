@@ -1,0 +1,35 @@
+{
+  "name": "suarez-food-hub",
+  "private": true,
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
+    "db:migrate": "prisma migrate dev",
+    "db:push": "prisma db push",
+    "db:seed": "prisma db seed",
+    "db:studio": "prisma studio",
+    "db:generate": "prisma generate"
+  },
+  "devDependencies": {
+    "@prisma/client": "^5.20.0",
+    "pg": "^8.21.0",
+    "prettier": "^3.3.0",
+    "prisma": "^5.20.0",
+    "tsx": "^4.19.0",
+    "turbo": "^2.1.0",
+    "typescript": "^5.5.0"
+  },
+  "pnpm": {
+    "overrides": {},
+    "onlyBuiltDependencies": [
+      "prisma",
+      "@prisma/engines",
+      "esbuild"
+    ]
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
+  }
+}
