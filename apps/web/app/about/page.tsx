@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Heart, Award, Users, Leaf } from "lucide-react";
-import { Navbar, Footer } from "@repo/ui";
+import AuthNavbar from "../../components/AuthNavbar";
+import { Footer } from "@repo/ui";
 
 const values = [
   {
@@ -59,7 +60,7 @@ const timeline = [
 export default function AboutPage() {
   return (
     <div className="min-h-screen bg-[#fff0de]">
-      <Navbar showCartIcon={false} />
+      <AuthNavbar showCartIcon={false} />
 
       {/* Hero */}
       <section className="bg-[#b1454a] pt-[74px] pb-16 md:py-24">

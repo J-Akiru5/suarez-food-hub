@@ -12,13 +12,16 @@ export type PaymentMethod = 'cod' | 'gcash';
 
 export type PaymentStatus = 'pending' | 'paid' | 'failed' | 'refunded';
 
-export type ProductAvailability = 'available' | 'sold_out';
+export type ProductAvailability = 'available' | 'unavailable' | 'pre_order' | 'sold_out';
 
 export type VariantType = 'none' | 'size' | 'preparation' | 'sugar_level';
 
 export interface Profile {
   id: string;
+  user_id?: string;
   full_name: string;
+  first_name?: string;
+  last_name?: string;
   role: UserRole;
   phone: string;
   address: string;
@@ -69,6 +72,7 @@ export interface ProductVariant {
 
 export interface Order {
   id: string;
+  order_number: string;
   customer_id: string;
   status: OrderStatus;
   payment_method: PaymentMethod;

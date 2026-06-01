@@ -10,9 +10,10 @@
     --playfair-display: "Playfair Display", serif;
     --plus-jakarta-sans: "Plus Jakarta Sans", sans-serif;
 
-    --primary-color: #b1454a;
-    --secondary-color: #121212;
-    --color-creamson: #fff0de;
+    --primary-color: #B85C38;
+    --primary-dark: #A0522D;
+    --secondary-color: #1A1A1A;
+    --color-cream: #FFF8F0;
     --color-white: #ffffff;
 
     --black-200: #020202;
@@ -21,66 +22,66 @@
     --black-500: #555555;
     --gray-100: #888888;
 
-    --background: 40 40% 100%;
-    --foreground: 0 0% 7%;
+    --background: 30 60% 98%;
+    --foreground: 20 10% 7%;
     --card: 0 0% 100%;
-    --card-foreground: 0 0% 7%;
+    --card-foreground: 20 10% 7%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 7%;
-    --primary: 356 55% 48%;
+    --popover-foreground: 20 10% 7%;
+    --primary: 20 55% 47%;
     --primary-foreground: 0 0% 100%;
-    --secondary: 40 40% 97%;
-    --secondary-foreground: 0 0% 9%;
-    --muted: 40 33% 96%;
+    --secondary: 30 60% 98%;
+    --secondary-foreground: 20 10% 9%;
+    --muted: 30 20% 96%;
     --muted-foreground: 0 0% 45%;
-    --accent: 40 33% 96%;
-    --accent-foreground: 0 0% 9%;
+    --accent: 30 20% 96%;
+    --accent-foreground: 20 10% 9%;
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
-    --ring: 356 55% 48%;
+    --border: 30 10% 90%;
+    --input: 30 10% 90%;
+    --ring: 20 55% 47%;
     --radius: 0.75rem;
   }
 
   .dark {
     --background: 0 0% 7%;
-    --foreground: 40 40% 97%;
+    --foreground: 30 60% 97%;
     --card: 0 0% 7%;
-    --card-foreground: 40 40% 97%;
+    --card-foreground: 30 60% 97%;
     --popover: 0 0% 7%;
-    --popover-foreground: 40 40% 97%;
-    --primary: 356 55% 48%;
+    --popover-foreground: 30 60% 97%;
+    --primary: 20 55% 47%;
     --primary-foreground: 0 0% 100%;
     --secondary: 0 0% 12%;
-    --secondary-foreground: 40 40% 97%;
+    --secondary-foreground: 30 60% 97%;
     --muted: 0 0% 12%;
     --muted-foreground: 0 0% 63%;
     --accent: 0 0% 12%;
-    --accent-foreground: 40 40% 97%;
+    --accent-foreground: 30 60% 97%;
     --destructive: 0 62% 30%;
     --destructive-foreground: 0 0% 98%;
     --border: 0 0% 12%;
     --input: 0 0% 12%;
-    --ring: 356 55% 48%;
+    --ring: 20 55% 47%;
   }
 }
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-gray-200;
     margin: 0;
     padding: 0;
     box-sizing: border-box;
     scroll-behavior: smooth;
   }
   body {
-    @apply bg-background text-foreground;
-    max-width: 1280px;
-    margin: 0 auto;
-    background-color: var(--color-creamson);
-    padding-top: 74px;
+    @apply bg-white text-gray-900;
+    max-width: 100%;
+    margin: 0;
+    background-color: var(--color-cream);
     font-family: var(--plus-jakarta-sans);
+    padding-top: 0;
   }
   a {
     text-decoration: none;
@@ -88,24 +89,11 @@
   }
 }
 
-/* Utility Classes */
-.flex-center {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.flex-between {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
 /* Hide scrollbar */
-.sushi__hide-scrollbar::-webkit-scrollbar {
+.hide-scrollbar::-webkit-scrollbar {
   display: none;
 }
-.sushi__hide-scrollbar {
+.hide-scrollbar {
   -ms-overflow-style: none;
   scrollbar-width: none;
 }
@@ -138,12 +126,134 @@
   animation: fadeIn 0.2s ease-out forwards;
 }
 
-/* Mobile utilities */
+/* Hero scattered image grid */
+.hero-grid {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr 0.9fr;
+  grid-template-rows: 200px 180px 200px;
+  gap: 14px;
+}
+
+.hero-grid img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 16px;
+  transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.hero-grid img:hover {
+  transform: scale(1.03);
+}
+
+.hero-grid img:nth-child(1) {
+  grid-column: 1 / 2;
+  grid-row: 1 / 3;
+}
+
+.hero-grid img:nth-child(2) {
+  grid-column: 2 / 3;
+  grid-row: 1 / 2;
+}
+
+.hero-grid img:nth-child(3) {
+  grid-column: 3 / 4;
+  grid-row: 1 / 2;
+}
+
+.hero-grid img:nth-child(4) {
+  grid-column: 2 / 3;
+  grid-row: 2 / 4;
+}
+
+.hero-grid img:nth-child(5) {
+  grid-column: 3 / 4;
+  grid-row: 2 / 4;
+}
+
+/* Glassmorphism card */
+.glass-card {
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  border-radius: 24px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06);
+  transition: all 0.3s ease;
+}
+
+.glass-card:hover {
+  background: rgba(255, 255, 255, 0.8);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+  transform: translateY(-4px);
+}
+
+/* Trending horizontal scroll */
+.trending-scroll {
+  display: flex;
+  gap: 24px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  padding-bottom: 16px;
+  -webkit-overflow-scrolling: touch;
+}
+
+.trending-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.trending-scroll-item {
+  flex: 0 0 auto;
+  scroll-snap-align: start;
+}
+
+.trending-scroll-item img {
+  width: 200px;
+  height: 200px;
+  object-fit: cover;
+  border-radius: 20px;
+  transition: transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+.trending-scroll-item img:hover {
+  transform: translateY(-6px) scale(1.02);
+}
+
 @media (max-width: 768px) {
-  .mobile-hide { display: none !important; }
-  .mobile-padding { padding: 40px 20px !important; }
-  .mobile-text-center { text-align: center !important; }
-  .mobile-col { flex-direction: column !important; }
-  .mobile-font-huge { font-size: 32px !important; line-height: 1.2 !important; }
-  body { overflow-x: hidden; padding-top: 70px; }
+  .hero-grid {
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: 140px 140px 140px;
+    gap: 10px;
+  }
+
+  .hero-grid img:nth-child(1) {
+    grid-column: 1 / 2;
+    grid-row: 1 / 2;
+  }
+
+  .hero-grid img:nth-child(2) {
+    grid-column: 2 / 3;
+    grid-row: 1 / 2;
+  }
+
+  .hero-grid img:nth-child(3) {
+    grid-column: 1 / 2;
+    grid-row: 2 / 3;
+  }
+
+  .hero-grid img:nth-child(4) {
+    grid-column: 2 / 3;
+    grid-row: 2 / 3;
+  }
+
+  .hero-grid img:nth-child(5) {
+    grid-column: 1 / 3;
+    grid-row: 3 / 4;
+    height: 140px;
+  }
+
+  .trending-scroll-item img {
+    width: 150px;
+    height: 150px;
+  }
 }

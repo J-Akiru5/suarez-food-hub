@@ -1,10 +1,10 @@
 "use client";
 
 import * as React from "react";
+import { Search, ShoppingCart, Check } from "lucide-react";
 import { cn } from "../lib/utils";
 
 export interface StepProps {
-  step: string;
   icon: React.ReactNode;
   title: string;
   description: string;
@@ -17,32 +17,17 @@ export interface HowItWorksProps {
 
 const defaultSteps: StepProps[] = [
   {
-    step: "1",
-    icon: (
-      <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-      </svg>
-    ),
+    icon: <Search className="w-6 h-6" />,
     title: "Choose Your Cravings",
     description: "Browse our menu and pick your favorite dishes from a wide selection.",
   },
   {
-    step: "2",
-    icon: (
-      <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" />
-      </svg>
-    ),
+    icon: <ShoppingCart className="w-6 h-6" />,
     title: "Place Your Order",
     description: "Add items to your cart and checkout in seconds — quick and easy.",
   },
   {
-    step: "3",
-    icon: (
-      <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-      </svg>
-    ),
+    icon: <Check className="w-6 h-6" />,
     title: "Enjoy Your Meal",
     description: "Pick up your order or have it delivered right to your doorstep.",
   },
@@ -53,56 +38,40 @@ const HowItWorks = React.forwardRef<HTMLDivElement, HowItWorksProps>(
     return (
       <section
         ref={ref}
-        className={cn("bg-[#b1454a] py-20 md:py-28", className)}
+        className={cn("py-20 md:py-28 bg-[#FFF8F0]", className)}
       >
         <div className="max-w-[1280px] mx-auto px-6 text-center">
           <h2
-            className="text-4xl md:text-5xl lg:text-[56px] font-bold text-white mb-16 leading-tight"
+            className="text-3xl md:text-4xl lg:text-[44px] font-bold text-[#1A1A1A] mb-4 leading-tight"
             style={{ fontFamily: "var(--playfair-display)" }}
           >
             Order in 3 Easy Steps
           </h2>
+          <p className="text-[#1A1A1A]/50 text-sm mb-16 max-w-md mx-auto">
+            Interactive high-resolution food gallery
+          </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+          <div className="flex flex-col md:flex-row items-stretch justify-center gap-6">
             {steps.map((step, index) => (
               <div
                 key={index}
-                className="relative bg-white/10 border border-white/15 backdrop-blur-sm rounded-32 p-8 text-center group hover:bg-white/15 transition-all duration-300"
+                className="glass-card p-8 text-center flex-1 max-w-sm w-full mx-auto"
               >
-                {/* Step Number Watermark */}
-                <span
-                  className="absolute top-4 right-6 text-[140px] font-black text-white/[0.05] leading-none select-none pointer-events-none"
-                  style={{ fontFamily: "var(--playfair-display)" }}
-                >
-                  {step.step}
-                </span>
-
-                {/* Icon */}
-                <div className="w-16 h-16 mx-auto mb-6 bg-white/15 rounded-2xl flex items-center justify-center text-white">
+                <div className="w-14 h-14 mx-auto mb-5 rounded-2xl bg-[#B85C38]/10 flex items-center justify-center text-[#B85C38]">
                   {step.icon}
                 </div>
-
-                {/* Content */}
                 <h3
-                  className="text-xl font-bold text-white mb-3"
+                  className="text-lg font-bold text-[#1A1A1A] mb-2"
                   style={{ fontFamily: "var(--playfair-display)" }}
                 >
                   {step.title}
                 </h3>
-                <p className="text-white/70 text-sm leading-relaxed">
+                <p className="text-[#1A1A1A]/50 text-sm leading-relaxed">
                   {step.description}
                 </p>
               </div>
             ))}
           </div>
-
-          {/* CTA Button */}
-          <a
-            href="/menu"
-            className="inline-block bg-white text-[#b1454a] px-10 py-4 rounded-full font-bold text-base hover:bg-white/90 transition-all duration-200 hover:-translate-y-0.5 active:scale-95 shadow-lg"
-          >
-            Order Now
-          </a>
         </div>
       </section>
     );

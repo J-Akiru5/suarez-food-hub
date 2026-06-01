@@ -287,10 +287,12 @@ export default function ReportsPage() {
               </div>
             )}
           </div>
-          <p className="text-xs text-muted-foreground mt-2">
-            {format(new Date(dateFrom), "MMM d, yyyy")} -{" "}
-            {format(new Date(dateTo), "MMM d, yyyy")}
-          </p>
+          {dateFrom && dateTo && (
+            <p className="text-xs text-muted-foreground mt-2">
+              {format(new Date(dateFrom), "MMM d, yyyy")} -{" "}
+              {format(new Date(dateTo), "MMM d, yyyy")}
+            </p>
+          )}
         </CardContent>
       </Card>
 

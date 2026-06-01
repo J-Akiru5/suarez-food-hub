@@ -1,37 +1,30 @@
 import type { Metadata } from "next";
-import "@repo/ui/globals.css";
+import "./globals.css";
+import "aos/dist/aos.css";
+import { AuthProvider } from "../components/auth-provider";
+import { FeedbackFab } from "../components/feedback-fab";
 
 export const metadata: Metadata = {
-  title: "Suarez Food Hub - Authentic Filipino Food",
-  description:
-    "Authentic Filipino food delivered to your doorstep in Janiuay, Iloilo. Order crispy siomai, kare-kare, sinigang, and more from Suarez Food Hub!",
-  keywords: [
-    "Filipino food",
-    "food delivery",
-    "Janiuay",
-    "Iloilo",
-    "Suarez Food Hub",
-    "Filipino cuisine",
-    "siomai",
-    "home delivery",
-  ],
-  openGraph: {
-    title: "Suarez Food Hub - Authentic Filipino Food",
-    description:
-      "Authentic Filipino food delivered to your doorstep in Janiuay, Iloilo.",
-    type: "website",
-    locale: "en_PH",
-  },
+  title: "Suarez Food Hub",
+  description: "Experience the Best Siomai in Town",
+  icons: {
+    icon: "/assets/sushi.png"
+  }
 };
 
 export default function RootLayout({
   children,
-}: {
+}: Readonly<{
   children: React.ReactNode;
-}) {
+}>) {
   return (
     <html lang="en">
-      <body className="font-sans antialiased">{children}</body>
+      <body>
+        <AuthProvider>
+          {children}
+          <FeedbackFab />
+        </AuthProvider>
+      </body>
     </html>
   );
 }

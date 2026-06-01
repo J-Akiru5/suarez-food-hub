@@ -99,8 +99,8 @@ export default function InventoryPage() {
     setFormName(product.name);
     setFormSlug(product.slug);
     setFormDescription(product.description || "");
-    setFormPrice(String(product.price));
-    setFormCategoryId(product.category_id);
+    setFormPrice(String(product.base_price));
+    setFormCategoryId(product.category_id || "");
     setFormAvailability(product.availability);
     setFormImageUrl(product.image_url || "");
     setFormIsFeatured(product.is_featured);
@@ -286,7 +286,7 @@ export default function InventoryPage() {
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-sm font-bold">
-                        {formatCurrency(product.price)}
+                        {formatCurrency(product.base_price)}
                       </span>
                     </td>
                     <td className="px-4 py-3">

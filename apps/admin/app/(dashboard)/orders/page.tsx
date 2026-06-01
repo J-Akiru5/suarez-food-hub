@@ -53,7 +53,6 @@ const paymentColors: Record<string, string> = {
 
 interface OrderWithProfile extends Order {
   profile?: Profile | null;
-  rider?: Profile | null;
   items?: any[];
 }
 
@@ -279,8 +278,8 @@ export default function OrdersPage() {
                                 </SelectTrigger>
                                 <SelectContent>
                                   {riders.map((rider) => (
-                                    <SelectItem key={rider.id} value={rider.user_id}>
-                                      {rider.first_name} {rider.last_name}
+                                    <SelectItem key={rider.id} value={rider.user_id || rider.id}>
+                                      {rider.first_name || rider.full_name} {rider.last_name || ""}
                                     </SelectItem>
                                   ))}
                                 </SelectContent>

@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { ArrowRight } from "lucide-react";
 import { cn } from "../lib/utils";
 
 export interface HeroSectionProps {
@@ -8,81 +9,117 @@ export interface HeroSectionProps {
   description?: string;
   ctaText?: string;
   ctaHref?: string;
-  imageSrc?: string;
+  images?: string[];
 }
+
+const defaultImages = [
+  "/assets/steamed-siomai.jpg",
+  "/assets/pork-lumpia.jpg",
+  "/assets/fried-siomai.jpg",
+  "/assets/uploads/drinks.jpg",
+  "/assets/dynamite-lumpia.jpg",
+];
 
 const HeroSection = React.forwardRef<HTMLDivElement, HeroSectionProps>(
   (
     {
-      title = "Crave-worthy Bites, Delivered Fresh",
-      description = "Discover the best food near WVSU — from crispy siomai to savory mains. Quick, affordable, and made to satisfy your cravings.",
-      ctaText = "Explore Menu",
+      title = "Taste Filipino\nSoul.",
+      description = "From siomai to lumpia, main dishes to refreshing drinks —\nSuarez Food Hub brings authentic Filipino flavors straight\nto your door. Order online anytime.",
+      ctaText = "Order Now",
       ctaHref = "/menu",
-      imageSrc = "/hero-food.png",
+      images = defaultImages,
     },
     ref
   ) => {
+    const [scrollY, setScrollY] = React.useState(0);
+
+    React.useEffect(() => {
+      const handleScroll = () => setScrollY(window.scrollY);
+      window.addEventListener("scroll", handleScroll, { passive: true });
+      return () => window.removeEventListener("scroll", handleScroll);
+    }, []);
+
     return (
       <section
         ref={ref}
-        className="relative overflow-hidden bg-[#fff0de]"
+        className="relative min-h-[90vh] flex overflow-hidden"
       >
-        <div className="max-w-[1280px] mx-auto px-6 py-16 md:py-24">
-          <div className="flex flex-col md:flex-row items-center gap-12">
-            {/* Image Side */}
-            <div className="flex-1 relative">
-              <div className="relative rounded-3xl overflow-hidden shadow-2xl">
-                <img
-                  src={imageSrc}
-                  alt="Featured food"
-                  className="w-full h-[300px] md:h-[480px] object-cover"
-                />
-                {/* Crimson Overlay */}
-                <div className="absolute inset-0 bg-[#b1454a]/10" />
-              </div>
+        {/* Left: Brown background with text */}
+        <div className="w-full lg:w-1/2 bg-[#8B3A2B] flex flex-col justify-center px-10 md:px-16 lg:px-24 pt-32 pb-20">
+          <div className="max-w-[500px]" data-aos="fade-right">
+            {/* Logo Badge */}
+            <div className="w-32 h-32 mb-8 relative rounded-full overflow-hidden shadow-lg bg-white flex items-center justify-center">
+              <img src="/logo.jpg" alt="Suarez Food Hub Logo" className="w-full h-full object-cover scale-[1.35]" />
             </div>
 
-            {/* Content Side */}
-            <div className="flex-1 text-center md:text-left">
-              <h1
-                className="text-4xl md:text-5xl lg:text-6xl font-bold text-gray-900 leading-tight mb-6"
-                style={{ fontFamily: "var(--playfair-display)" }}
-              >
-                {title}
-              </h1>
-              <p className="text-gray-600 text-base md:text-lg leading-relaxed mb-8 max-w-lg mx-auto md:mx-0">
-                {description}
-              </p>
-              <a
-                href={ctaHref}
-                className="inline-block bg-[#b1454a] text-white px-8 py-4 rounded-full font-semibold text-base hover:bg-[#9a3a3f] transition-all duration-200 hover:-translate-y-0.5 active:scale-95 shadow-lg"
-              >
-                {ctaText}
-              </a>
+            <h1
+              className="text-5xl md:text-6xl lg:text-[76px] font-bold text-white leading-[1.05] mb-6 whitespace-pre-line"
+              style={{ fontFamily: "var(--playfair-display)" }}
+            >
+              {title}
+            </h1>
 
-              {/* Testimonial */}
-              <div className="mt-12 flex flex-col sm:flex-row items-center gap-4 md:justify-start justify-center">
-                <div className="flex -space-x-3">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div
-                      key={i}
-                      className="w-10 h-10 rounded-full bg-gray-300 border-2 border-[#fff0de] overflow-hidden"
-                    >
-                      <img
-                        src={`/avatars/avatar-${i}.png`}
-                        alt=""
-                        className="w-full h-full object-cover"
-                      />
-                    </div>
-                  ))}
-                </div>
-                <div className="text-center sm:text-left">
-                  <p className="font-bold text-gray-900 text-sm">24k+ Happy Customers</p>
-                  <p className="text-xs text-gray-500 italic">
-                    &ldquo;Best food hub near the university!&rdquo;
-                  </p>
-                </div>
-              </div>
+            <p className="text-white/80 text-base md:text-lg leading-relaxed mb-10 max-w-[420px] whitespace-pre-line">
+              {description}
+            </p>
+
+            <a
+              href={ctaHref}
+              className="inline-flex items-center gap-2 bg-[#F3E7D3] text-[#1A1A1A] px-6 py-3.5 rounded-full font-medium text-sm hover:bg-white transition-all duration-200 hover:-translate-y-0.5"
+            >
+              {ctaText}
+              <ArrowRight size={16} />
+            </a>
+          </div>
+        </div>
+
+        {/* Right: Food images on cream background */}
+        <div className="hidden lg:flex w-1/2 bg-[#FCFAF5] items-center justify-center px-12 pt-32 pb-20">
+          <div
+            className="w-full max-w-[540px] grid grid-cols-2 gap-5"
+            data-aos="fade-left"
+            style={{
+              transform: `translateY(${scrollY * 0.03}px)`,
+            }}
+          >
+            {/* Left Column */}
+            <div className="flex flex-col gap-5 pt-8">
+              <img
+                src={images[0]}
+                alt="Filipino food 1"
+                className="w-full h-[240px] object-cover rounded-3xl shadow-md"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "/placeholder-food.png";
+                }}
+              />
+              <img
+                src={images[2]}
+                alt="Filipino food 3"
+                className="w-full h-[220px] object-cover rounded-3xl shadow-md"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "/placeholder-food.png";
+                }}
+              />
+            </div>
+            
+            {/* Right Column */}
+            <div className="flex flex-col gap-5">
+              <img
+                src={images[1]}
+                alt="Filipino food 2"
+                className="w-full h-[320px] object-cover rounded-3xl shadow-md"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "/placeholder-food.png";
+                }}
+              />
+              <img
+                src={images[3]}
+                alt="Filipino food 4"
+                className="w-full h-[200px] object-cover rounded-[32px] shadow-md"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "/placeholder-food.png";
+                }}
+              />
             </div>
           </div>
         </div>

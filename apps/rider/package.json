@@ -9,27 +9,28 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "next": "^14.2.0",
-    "react": "^18.3.0",
-    "react-dom": "^18.3.0",
-    "@repo/ui": "workspace:*",
-    "@repo/utils": "workspace:*",
     "@repo/supabase": "workspace:*",
     "@repo/types": "workspace:*",
-    "@supabase/supabase-js": "^2.45.0",
+    "@repo/ui": "workspace:*",
+    "@repo/utils": "workspace:*",
     "@supabase/ssr": "^0.5.0",
+    "@supabase/supabase-js": "^2.45.0",
+    "date-fns": "^3.6.0",
     "leaflet": "^1.9.4",
-    "react-leaflet": "^4.2.1",
-    "lucide-react": "^0.400.0",
-    "date-fns": "^3.6.0"
+    "lucide-react": "^1.17.0",
+    "next": "^16.2.6",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "react-leaflet": "^4.2.1"
   },
   "devDependencies": {
-    "@types/node": "^20.14.0",
-    "@types/react": "^18.3.0",
-    "@types/react-dom": "^18.3.0",
     "@types/leaflet": "^1.9.8",
+    "@types/node": "^20.14.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
     "autoprefixer": "^10.4.0",
     "postcss": "^8.4.0",
+    "postcss-import": "^16.1.1",
     "tailwindcss": "^3.4.0",
     "typescript": "^5.5.0"
   }

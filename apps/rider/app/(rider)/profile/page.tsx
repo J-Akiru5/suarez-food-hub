@@ -28,8 +28,8 @@ export default function ProfilePage() {
 
       const { data } = await supabase
         .from("profiles")
-        .select("full_name, email, phone")
-        .eq("id", user.id)
+        .select("full_name, phone, address")
+        .eq("user_id", user.id)
         .single();
 
       const { count: deliveries } = await supabase
@@ -50,7 +50,7 @@ export default function ProfilePage() {
 
       setProfile({
         full_name: data?.full_name || "Rider",
-        email: data?.email || user.email || "",
+        email: user.email || "",
         phone: data?.phone || "",
         total_deliveries: deliveries || 0,
         total_earnings: totalEarnings,

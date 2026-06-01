@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
 export async function POST(request: NextRequest) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const body = await request.json();
 
   const { rider_id, lat, lng, order_id } = body;
@@ -14,8 +14,8 @@ export async function POST(request: NextRequest) {
   const { error } = await supabase.from("rider_locations").upsert(
     {
       rider_id,
-      lat,
-      lng,
+      latitude: lat,
+      longitude: lng,
       order_id: order_id || null,
       updated_at: new Date().toISOString(),
     },
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { searchParams } = new URL(request.url);
   const rider_id = searchParams.get("rider_id");
 

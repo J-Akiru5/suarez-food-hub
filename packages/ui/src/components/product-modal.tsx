@@ -49,27 +49,29 @@ const ProductModal = React.forwardRef<HTMLDivElement, ProductModalProps>(
         <div
           ref={ref}
           onClick={(e) => e.stopPropagation()}
-          className="relative w-full max-w-[480px] bg-white rounded-32 shadow-4xl overflow-hidden animate-slideUp"
+          className="relative w-full max-w-[480px] md:max-w-[860px] bg-white rounded-32 shadow-4xl overflow-hidden animate-slideUp flex flex-col md:flex-row"
         >
           {/* Close Button */}
           <button
             onClick={onClose}
-            className="absolute top-4 right-4 z-10 w-10 h-10 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md hover:bg-white transition-colors"
+            className="absolute top-4 right-4 z-20 w-10 h-10 bg-white/80 backdrop-blur-sm rounded-full flex items-center justify-center shadow-md hover:bg-white transition-colors"
           >
             <X className="w-5 h-5 text-gray-600" />
           </button>
 
           {/* Image */}
-          <div className="h-[260px] w-full overflow-hidden">
-            <img
-              src={product.image}
-              alt={product.name}
-              className="w-full h-full object-cover"
-            />
+          <div className="relative h-[260px] md:h-auto md:w-1/2 flex-shrink-0 bg-gray-50 overflow-hidden">
+            <div className="absolute inset-0">
+              <img
+                src={product.image}
+                alt={product.name}
+                className="w-full h-full object-cover"
+              />
+            </div>
           </div>
 
           {/* Content */}
-          <div className="p-6">
+          <div className="p-6 md:p-10 md:w-1/2 flex flex-col justify-center">
             <h2
               className="text-[32px] font-bold text-gray-900 mb-2 leading-tight"
               style={{ fontFamily: "var(--playfair-display)" }}

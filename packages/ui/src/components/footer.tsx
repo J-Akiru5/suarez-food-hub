@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Facebook, Instagram, Twitter } from "lucide-react";
+import { Utensils } from "lucide-react";
 import { cn } from "../lib/utils";
 
 export interface FooterProps {
@@ -15,19 +15,13 @@ const navLinks = [
   { label: "About Us", href: "/about" },
 ];
 
-const socialLinks = [
-  { icon: Facebook, href: "#", label: "Facebook" },
-  { icon: Instagram, href: "#", label: "Instagram" },
-  { icon: Twitter, href: "#", label: "Twitter" },
-];
-
 const Footer = React.forwardRef<HTMLElement, FooterProps>(
   ({ className }, ref) => {
     return (
       <footer
         ref={ref}
         className={cn(
-          "bg-white border-t border-gray-100 py-8",
+          "bg-white border-t border-[#B85C38]/10 py-8",
           className
         )}
       >
@@ -36,11 +30,12 @@ const Footer = React.forwardRef<HTMLElement, FooterProps>(
             {/* Logo */}
             <a href="/" className="flex-shrink-0">
               <span
-                className="text-xl font-bold"
+                className="text-xl font-bold inline-flex items-center gap-2"
                 style={{ fontFamily: "var(--playfair-display)" }}
               >
-                <span className="text-[#b1454a]">SUAREZ</span>{" "}
-                <span className="text-gray-900">Food Hub</span>
+                <Utensils className="w-5 h-5 text-[#B85C38]" />
+                <span className="text-[#B85C38]">Suarez</span>{" "}
+                <span className="text-[#1A1A1A]">Food Hub</span>
               </span>
             </a>
 
@@ -50,33 +45,17 @@ const Footer = React.forwardRef<HTMLElement, FooterProps>(
                 <a
                   key={link.label}
                   href={link.href}
-                  className="text-sm font-medium text-gray-500 hover:text-[#b1454a] transition-colors"
+                  className="text-sm font-medium text-[#1A1A1A]/50 hover:text-[#B85C38] transition-colors"
                 >
                   {link.label}
                 </a>
               ))}
             </div>
 
-            {/* Social Icons */}
-            <div className="flex items-center gap-3">
-              {socialLinks.map((social) => (
-                <a
-                  key={social.label}
-                  href={social.href}
-                  aria-label={social.label}
-                  className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 hover:bg-[#121212] hover:text-white transition-all duration-200"
-                >
-                  <social.icon className="w-4 h-4" />
-                </a>
-              ))}
+            {/* Copyright */}
+            <div className="text-xs text-[#1A1A1A]/40">
+              &copy; {new Date().getFullYear()} Suarez Food Hub
             </div>
-          </div>
-
-          {/* Copyright */}
-          <div className="mt-6 pt-6 border-t border-gray-100 text-center">
-            <p className="text-xs text-gray-400">
-              &copy; {new Date().getFullYear()} Suarez Food Hub. All rights reserved.
-            </p>
           </div>
         </div>
       </footer>

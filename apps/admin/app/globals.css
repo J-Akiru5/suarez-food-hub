@@ -1,4 +1,4 @@
-@import "@repo/ui/globals.css";
+@import "../../../packages/ui/src/globals.css";
 
 @tailwind base;
 @tailwind components;
@@ -29,11 +29,11 @@
   }
 
   * {
-    @apply border-border;
+    @apply border-gray-200;
   }
 
   body {
-    @apply bg-background text-foreground font-sans antialiased;
+    @apply bg-white text-gray-900 font-sans antialiased;
     -webkit-tap-highlight-color: transparent;
   }
 }

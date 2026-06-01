@@ -1,15 +1,15 @@
 import { updateSession } from '@repo/supabase/middleware';
-import { type NextRequest } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 
 const protectedRoutes = ['/', '/orders', '/inventory', '/categories', '/riders', '/reports'];
 const authRoutes = ['/login'];
 
 export async function middleware(request: NextRequest) {
-  const supabaseResponse = await updateSession(request);
+  const { supabaseResponse, user } = await updateSession(request);
 
   const { pathname } = request.nextUrl;
 
-  const hasSession =
+  const hasSession = user !== null ||
     request.cookies.get('sb-access-token') !== undefined ||
     request.cookies.get('sb-refresh-token') !== undefined;
 
@@ -24,13 +24,13 @@ export async function middleware(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = '/login';
     url.searchParams.set('redirect', pathname);
-    return Response.redirect(url);
+    return NextResponse.redirect(url);
   }
 
   if (isAuthRoute && hasSession) {
     const url = request.nextUrl.clone();
     url.pathname = '/';
-    return Response.redirect(url);
+    return NextResponse.redirect(url);
   }
 
   return supabaseResponse;

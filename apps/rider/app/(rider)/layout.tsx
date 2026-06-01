@@ -32,7 +32,7 @@ export default function RiderLayout({
         const { data } = await supabase
           .from("profiles")
           .select("full_name")
-          .eq("id", user.id)
+          .eq("user_id", user.id)
           .single();
         if (data?.full_name) setRiderName(data.full_name.split(" ")[0]);
       }

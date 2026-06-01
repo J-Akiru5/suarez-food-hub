@@ -17,19 +17,19 @@ const DeliveryMap = dynamic(() => import("@/components/DeliveryMap"), {
 
 interface Order {
   id: string;
-  customer_name: string;
-  customer_phone: string;
+  customer_id: string;
+  customer?: { full_name: string; phone: string } | null;
   delivery_address: string;
-  total_amount: number;
+  delivery_contact: string;
+  total: number;
+  delivery_fee: number;
   payment_method: string;
+  payment_status: string;
+  delivery_location_lat?: number | null;
+  delivery_location_lng?: number | null;
   status: string;
-  items: string;
   created_at: string;
-  restaurant_address?: string;
-  restaurant_lat?: number;
-  restaurant_lng?: number;
-  delivery_lat?: number;
-  delivery_lng?: number;
+  completed_at?: string | null;
 }
 
 interface TodayStats {
@@ -57,15 +57,15 @@ export default function RiderDashboard() {
 
     const { data: order } = await supabase
       .from("orders")
-      .select("*")
+      .select("*, customer:profiles!orders_customer_id_fkey(full_name, phone)")
       .eq("rider_id", user.id)
-      .in("status", ["assigned", "picked_up"])
+      .in("status", ["confirmed", "out_for_delivery"])
       .order("created_at", { ascending: false })
       .limit(1)
-      .single();
+      .maybeSingle();
 
     if (order) {
-      setActiveOrder(order);
+      setActiveOrder(order as any);
       setHasNewOrder(false);
     } else {
       setActiveOrder(null);
@@ -76,7 +76,7 @@ export default function RiderDashboard() {
 
     const { data: todayOrders } = await supabase
       .from("orders")
-      .select("id, total_amount, delivery_fee")
+      .select("id, delivery_fee")
       .eq("rider_id", user.id)
       .eq("status", "delivered")
       .gte("completed_at", today.toISOString());
@@ -105,10 +105,9 @@ export default function RiderDashboard() {
           filter: riderId ? `rider_id=eq.${riderId}` : undefined,
         },
         (payload) => {
-          const newOrder = payload.new as Order;
-          if (newOrder.status === "assigned" || newOrder.status === "picked_up") {
-            setActiveOrder(newOrder);
-            setHasNewOrder(true);
+          const newOrder = payload.new as any;
+          if (newOrder.status === "out_for_delivery" || newOrder.status === "confirmed") {
+            fetchRiderData();
           } else if (newOrder.status === "delivered") {
             setActiveOrder(null);
             fetchRiderData();
@@ -252,7 +251,9 @@ export default function RiderDashboard() {
           <div className="p-4 space-y-3">
             <div>
               <p className="text-sm text-gray-500">Customer</p>
-              <p className="font-semibold text-gray-800">{activeOrder.customer_name}</p>
+              <p className="font-semibold text-gray-800">
+                {(activeOrder as any).customer?.full_name || "Customer"}
+              </p>
             </div>
 
             <div className="flex items-start gap-2">
@@ -260,34 +261,27 @@ export default function RiderDashboard() {
               <p className="text-sm text-gray-700">{activeOrder.delivery_address}</p>
             </div>
 
-            {activeOrder.items && (
-              <div>
-                <p className="text-sm text-gray-500 mb-1">Items</p>
-                <p className="text-sm text-gray-700">{activeOrder.items}</p>
-              </div>
-            )}
-
             <div className="flex items-center justify-between pt-2 border-t border-gray-100">
               <div>
                 <p className="text-xs text-gray-500">Payment</p>
                 <p className="text-sm font-medium text-gray-800 capitalize">
-                  {activeOrder.payment_method}
+                  {activeOrder.payment_method?.replace(/_/g, " ")}
                 </p>
               </div>
               <div className="text-right">
                 <p className="text-xs text-gray-500">Amount</p>
                 <p className="text-sm font-bold text-brand-600">
-                  ₱{activeOrder.total_amount.toFixed(2)}
+                  ₱{Number(activeOrder.total).toFixed(2)}
                 </p>
               </div>
             </div>
           </div>
 
-          {activeOrder.delivery_lat && activeOrder.delivery_lng && (
+          {activeOrder.delivery_location_lat && activeOrder.delivery_location_lng && (
             <div className="px-4 pb-3">
               <DeliveryMap
-                destinationLat={activeOrder.delivery_lat}
-                destinationLng={activeOrder.delivery_lng}
+                destinationLat={Number(activeOrder.delivery_location_lat)}
+                destinationLng={Number(activeOrder.delivery_location_lng)}
                 destinationLabel={activeOrder.delivery_address}
               />
             </div>
@@ -295,14 +289,14 @@ export default function RiderDashboard() {
 
           <div className="grid grid-cols-3 gap-2 p-4 pt-0">
             <a
-              href={`tel:${activeOrder.customer_phone}`}
+              href={`tel:${(activeOrder as any).customer?.phone || activeOrder.delivery_contact}`}
               className="flex items-center justify-center gap-2 bg-green-500 hover:bg-green-600 text-white py-3 rounded-xl font-medium text-sm transition"
             >
               <Phone size={16} />
               Call
             </a>
             <a
-              href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(activeOrder.delivery_address)}`}
+              href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(activeOrder.delivery_address)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center justify-center gap-2 bg-blue-500 hover:bg-blue-600 text-white py-3 rounded-xl font-medium text-sm transition"

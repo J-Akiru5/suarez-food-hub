@@ -46,7 +46,6 @@ const statusColors: Record<string, string> = {
 
 interface OrderDetail extends Order {
   profile?: Profile | null;
-  rider?: Profile | null;
   items?: any[];
 }
 
@@ -239,9 +238,9 @@ export default function OrderDetailPage() {
               <MapPin className="h-4 w-4 text-gray-400 mt-0.5 shrink-0" />
               <span>{order.delivery_address}</span>
             </div>
-            {order.delivery_instructions && (
+            {order.delivery_notes && (
               <div className="p-2 bg-yellow-50 rounded-lg text-xs text-yellow-800">
-                Note: {order.delivery_instructions}
+                Note: {order.delivery_notes}
               </div>
             )}
           </CardContent>
@@ -276,8 +275,8 @@ export default function OrderDetailPage() {
                     </SelectTrigger>
                     <SelectContent>
                       {riders.map((rider) => (
-                        <SelectItem key={rider.id} value={rider.user_id}>
-                          {rider.first_name} {rider.last_name}
+                        <SelectItem key={rider.id} value={rider.user_id || rider.id}>
+                          {rider.first_name || rider.full_name} {rider.last_name || ""}
                         </SelectItem>
                       ))}
                     </SelectContent>

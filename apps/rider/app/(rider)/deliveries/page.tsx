@@ -7,9 +7,9 @@ import { format } from "date-fns";
 
 interface Delivery {
   id: string;
-  customer_name: string;
+  customer?: { full_name: string } | null;
   delivery_address: string;
-  total_amount: number;
+  total: number;
   delivery_fee: number;
   status: string;
   completed_at: string;
@@ -31,16 +31,16 @@ export default function DeliveriesPage() {
 
       const { data } = await supabase
         .from("orders")
-        .select("*")
+        .select("*, customer:profiles!orders_customer_id_fkey(full_name)")
         .eq("rider_id", user.id)
         .eq("status", "delivered")
         .order("completed_at", { ascending: false });
 
       if (data) {
-        setDeliveries(data);
+        setDeliveries(data as Delivery[]);
         setStats({
           total: data.length,
-          earnings: data.reduce((sum, d) => sum + (d.delivery_fee || 0), 0),
+          earnings: data.reduce((sum, d: any) => sum + (d.delivery_fee || 0), 0),
         });
       }
       setLoading(false);
@@ -96,12 +96,12 @@ export default function DeliveriesPage() {
               <div className="flex items-start justify-between mb-2">
                 <div>
                   <p className="font-semibold text-gray-800">
-                    {delivery.customer_name}
+                    {delivery.customer?.full_name || "Customer"}
                   </p>
                   <p className="text-sm text-gray-500">{delivery.delivery_address}</p>
                 </div>
                 <span className="text-sm font-bold text-brand-600">
-                  ₱{delivery.delivery_fee?.toFixed(2) || "0.00"}
+                  ₱{Number(delivery.delivery_fee || 0).toFixed(2)}
                 </span>
               </div>
               <div className="flex items-center justify-between text-xs text-gray-400">
