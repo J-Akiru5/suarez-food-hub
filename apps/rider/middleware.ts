@@ -1,52 +1,24 @@
-import { createServerClient } from "@supabase/ssr";
-import { NextResponse, type NextRequest } from "next/server";
+import { updateSession } from "@repo/supabase/middleware";
+import { type NextRequest, NextResponse } from "next/server";
+
+const protectedRoutes = ["/", "/deliveries", "/earnings", "/profile"];
 
 export async function middleware(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
+  const { supabaseResponse, user } = await updateSession(request);
 
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value)
-          );
-          supabaseResponse = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          );
-        },
-      },
-    }
-  );
+  const { pathname } = request.nextUrl;
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const hasSession =
+    user !== null ||
+    request.cookies.get("sb-access-token") !== undefined ||
+    request.cookies.get("sb-refresh-token") !== undefined;
 
-  if (!user && request.nextUrl.pathname !== "/login") {
+  const isProtectedRoute = protectedRoutes.some((route) => pathname === route || pathname.startsWith(route + "/"));
+
+  if (isProtectedRoute && !hasSession) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     return NextResponse.redirect(url);
-  }
-
-  if (user) {
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("user_id", user.id)
-      .single();
-
-    if (profile && profile.role !== "rider" && request.nextUrl.pathname !== "/login") {
-      const url = request.nextUrl.clone();
-      url.pathname = "/login";
-      return NextResponse.redirect(url);
-    }
   }
 
   return supabaseResponse;

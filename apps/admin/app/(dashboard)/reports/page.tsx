@@ -1,31 +1,22 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { Card, CardContent } from "@repo/ui";
-import { Button } from "@repo/ui";
-import { formatCurrency } from "@repo/utils";
-import {
-  FileBarChart,
-  Download,
-  Calendar,
-  TrendingUp,
-  ShoppingBag,
-  DollarSign,
-  BarChart3,
-  Loader2,
-} from "lucide-react";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
-import { format, subDays, startOfMonth, endOfMonth, startOfWeek, endOfWeek } from "date-fns";
 import { PDFDownloadLink } from "@react-pdf/renderer";
+import { Button, Card, CardContent } from "@repo/ui";
+import { formatCurrency } from "@repo/utils";
+import { endOfMonth, endOfWeek, format, startOfMonth, startOfWeek, subDays } from "date-fns";
+import {
+  BarChart3,
+  Calendar,
+  DollarSign,
+  Download,
+  FileBarChart,
+  Loader2,
+  ShoppingBag,
+  TrendingUp,
+} from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { createClient } from "@/lib/supabase/client";
 import PdfReport from "./pdf-report";
 
 interface ReportData {
@@ -217,28 +208,16 @@ export default function ReportsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 font-display">Reports</h1>
-          <p className="text-sm text-muted-foreground">
-            Business analytics and insights
-          </p>
+          <p className="text-sm text-muted-foreground">Business analytics and insights</p>
         </div>
         {!loading && (
           <PDFDownloadLink
-            document={
-              <PdfReport
-                dateFrom={dateFrom}
-                dateTo={dateTo}
-                data={reportData}
-              />
-            }
+            document={<PdfReport dateFrom={dateFrom} dateTo={dateTo} data={reportData} />}
             fileName={`sfh-report-${dateFrom}-to-${dateTo}.pdf`}
           >
             {({ loading: pdfLoading }) => (
               <Button variant="outline" className="gap-2" disabled={pdfLoading}>
-                {pdfLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Download className="h-4 w-4" />
-                )}
+                {pdfLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Download className="h-4 w-4" />}
                 Download PDF
               </Button>
             )}
@@ -260,9 +239,7 @@ export default function ReportsPage() {
                   key={p.value}
                   onClick={() => setPreset(p.value)}
                   className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
-                    preset === p.value
-                      ? "bg-crimson-700 text-white"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    preset === p.value ? "bg-crimson-700 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
                   }`}
                 >
                   {p.label}
@@ -289,8 +266,7 @@ export default function ReportsPage() {
           </div>
           {dateFrom && dateTo && (
             <p className="text-xs text-muted-foreground mt-2">
-              {format(new Date(dateFrom), "MMM d, yyyy")} -{" "}
-              {format(new Date(dateTo), "MMM d, yyyy")}
+              {format(new Date(dateFrom), "MMM d, yyyy")} - {format(new Date(dateTo), "MMM d, yyyy")}
             </p>
           )}
         </CardContent>
@@ -308,9 +284,7 @@ export default function ReportsPage() {
                     <p className="text-sm text-muted-foreground">{stat.label}</p>
                     <p className="text-2xl font-bold mt-1">{stat.value}</p>
                   </div>
-                  <div
-                    className={`h-10 w-10 rounded-lg ${stat.color} flex items-center justify-center`}
-                  >
+                  <div className={`h-10 w-10 rounded-lg ${stat.color} flex items-center justify-center`}>
                     <Icon className="h-5 w-5" />
                   </div>
                 </div>
@@ -331,18 +305,8 @@ export default function ReportsPage() {
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={reportData.dailyBreakdown}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis
-                    dataKey="date"
-                    tick={{ fontSize: 12 }}
-                    tickLine={false}
-                    axisLine={false}
-                  />
-                  <YAxis
-                    tick={{ fontSize: 12 }}
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(v) => `₱${v}`}
-                  />
+                  <XAxis dataKey="date" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
+                  <YAxis tick={{ fontSize: 12 }} tickLine={false} axisLine={false} tickFormatter={(v) => `₱${v}`} />
                   <Tooltip
                     formatter={(value: number) => [formatCurrency(value), "Revenue"]}
                     contentStyle={{
@@ -377,17 +341,13 @@ export default function ReportsPage() {
               ))}
             </div>
           ) : reportData.topProducts.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-8">
-              No data for this period
-            </p>
+            <p className="text-sm text-muted-foreground text-center py-8">No data for this period</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-gray-200">
-                    <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider pb-3">
-                      Rank
-                    </th>
+                    <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider pb-3">Rank</th>
                     <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider pb-3">
                       Product
                     </th>
@@ -408,12 +368,8 @@ export default function ReportsPage() {
                         </span>
                       </td>
                       <td className="py-3 text-sm font-medium">{product.name}</td>
-                      <td className="py-3 text-sm text-right text-gray-600">
-                        {product.quantity}
-                      </td>
-                      <td className="py-3 text-sm text-right font-bold">
-                        {formatCurrency(product.revenue)}
-                      </td>
+                      <td className="py-3 text-sm text-right text-gray-600">{product.quantity}</td>
+                      <td className="py-3 text-sm text-right font-bold">{formatCurrency(product.revenue)}</td>
                     </tr>
                   ))}
                 </tbody>

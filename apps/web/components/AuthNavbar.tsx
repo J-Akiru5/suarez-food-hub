@@ -1,10 +1,10 @@
 "use client";
 
-import * as React from "react";
-import Link from "next/link";
-import { ShoppingCart, Package, History, User, LogOut, ChevronDown } from "lucide-react";
-import { usePathname } from "next/navigation";
 import { cn } from "@repo/utils";
+import { ChevronDown, History, LogOut, Package, ShoppingCart, User } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import * as React from "react";
 import { useAuth } from "./auth-provider";
 
 export interface AuthNavbarProps {
@@ -45,16 +45,22 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
         ref={ref}
         className={cn(
           "fixed top-0 left-0 right-0 z-[999] bg-[#f9f3ec]/90 backdrop-blur-xl border-b border-black/5 shadow-sm",
-          className
+          className,
         )}
       >
         {/* Full-width Rectangle Navbar */}
         <nav className="w-full max-w-[1280px] mx-auto flex items-center justify-between px-6 py-3 relative">
           {/* Logo */}
-          <a href="/" className="flex items-center gap-3 flex-shrink-0">
-            <div className="w-12 h-12 relative flex items-center justify-center rounded-full overflow-hidden bg-white shadow-sm">
-              <img src="/logo.jpg" alt="Suarez Food Hub Logo" className="w-full h-full object-cover scale-[1.35]" />
+          <a href="/" className="flex items-center gap-3 flex-shrink-0 no-underline">
+            <div className="w-12 h-12 relative flex items-center justify-center">
+              <img src="/logo.svg" alt="Suarez Food Hub Logo" className="w-full h-full" />
             </div>
+            <span
+              className="hidden sm:inline text-lg font-bold text-[#1A1A1A]"
+              style={{ fontFamily: "var(--playfair-display)" }}
+            >
+              Suarez Food Hub
+            </span>
           </a>
 
           {/* Desktop Nav Links */}
@@ -67,7 +73,7 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
                     "text-[15px] font-medium transition-all px-5 py-2.5 rounded-full",
                     pathname === link.href
                       ? "bg-[#8B3A2B] text-white shadow-sm"
-                      : "text-[#1A1A1A]/80 hover:text-[#1A1A1A] hover:bg-black/5"
+                      : "text-[#1A1A1A]/80 hover:text-[#1A1A1A] hover:bg-black/5",
                   )}
                   style={{ fontFamily: "var(--plus-jakarta-sans)" }}
                 >
@@ -136,7 +142,10 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
 
                     <div className="px-2 pb-2 pt-1 border-t border-gray-100">
                       <button
-                        onClick={() => { setDropdownOpen(false); signOut(); }}
+                        onClick={() => {
+                          setDropdownOpen(false);
+                          signOut();
+                        }}
                         className="flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 transition-colors w-full text-left border-none bg-transparent cursor-pointer"
                       >
                         <LogOut className="w-[18px] h-[18px]" /> Logout
@@ -160,11 +169,23 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
               className="md:hidden w-10 h-10 flex items-center justify-center rounded-full bg-white/50 hover:bg-white/80 border-none cursor-pointer"
             >
               {mobileOpen ? (
-                <svg className="w-5 h-5 text-[#1A1A1A]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg
+                  className="w-5 h-5 text-[#1A1A1A]"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               ) : (
-                <svg className="w-5 h-5 text-[#1A1A1A]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <svg
+                  className="w-5 h-5 text-[#1A1A1A]"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               )}
@@ -181,7 +202,7 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
                 href={link.href}
                 className={cn(
                   "block px-6 py-4 text-[15px] font-medium transition-colors no-underline",
-                  pathname === link.href ? "text-[#8B3A2B] bg-[#F3E7D3]/30" : "text-[#1A1A1A] hover:bg-gray-50"
+                  pathname === link.href ? "text-[#8B3A2B] bg-[#F3E7D3]/30" : "text-[#1A1A1A] hover:bg-gray-50",
                 )}
                 onClick={() => setMobileOpen(false)}
               >
@@ -212,7 +233,10 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
                   Track Order
                 </Link>
                 <button
-                  onClick={() => { setMobileOpen(false); signOut(); }}
+                  onClick={() => {
+                    setMobileOpen(false);
+                    signOut();
+                  }}
                   className="block w-full text-left px-6 py-4 text-[15px] font-medium text-red-500 hover:bg-red-50 transition-colors border-t border-gray-100 no-underline bg-transparent border-none cursor-pointer"
                 >
                   Logout
@@ -231,7 +255,7 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
         )}
       </header>
     );
-  }
+  },
 );
 AuthNavbar.displayName = "AuthNavbar";
 

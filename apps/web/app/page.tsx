@@ -1,17 +1,11 @@
 "use client";
 
+import { AboutSection, Footer, HeroSection, HowItWorks, TrendingSection } from "@repo/ui";
+import AOS from "aos";
+import { ArrowRight, Utensils } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { ArrowRight, Utensils } from "lucide-react";
-import AOS from "aos";
 import AuthNavbar from "../components/AuthNavbar";
-import {
-  HeroSection,
-  HowItWorks,
-  TrendingSection,
-  AboutSection,
-  Footer,
-} from "@repo/ui";
 
 interface Product {
   id: number;
@@ -25,10 +19,7 @@ interface Product {
   availability: "available" | "unavailable";
 }
 
-const getImageSrc = (img: string) =>
-  img?.startsWith("http") || img?.startsWith("/")
-    ? img
-    : `/assets/uploads/${img}`;
+const getImageSrc = (img: string) => (img?.startsWith("http") || img?.startsWith("/") ? img : `/assets/uploads/${img}`);
 
 export default function HomePage() {
   const [popularFoods, setPopularFoods] = useState<Product[]>([]);
@@ -42,9 +33,7 @@ export default function HomePage() {
       .then((r) => r.json())
       .then((data) => {
         if (Array.isArray(data)) {
-          const sorted = data
-            .sort((a: Product, b: Product) => (b.rating || 5) - (a.rating || 5))
-            .slice(0, 8);
+          const sorted = data.sort((a: Product, b: Product) => (b.rating || 5) - (a.rating || 5)).slice(0, 8);
           setPopularFoods(sorted);
         }
       })
@@ -109,11 +98,7 @@ export default function HomePage() {
                 ))
             ) : fetchError ? (
               <div className="col-span-full text-center w-full py-10">
-                <Utensils
-                  size={48}
-                  color="#ef4444"
-                  className="mx-auto mb-4 opacity-30"
-                />
+                <Utensils size={48} color="#ef4444" className="mx-auto mb-4 opacity-30" />
                 <p className="text-[#1A1A1A]/50 text-lg font-medium">
                   Could not load featured items.
                   <br />
@@ -122,11 +107,7 @@ export default function HomePage() {
               </div>
             ) : popularFoods.length === 0 ? (
               <div className="col-span-full text-center w-full py-10">
-                <Utensils
-                  size={48}
-                  color="#B85C38"
-                  className="mx-auto mb-4 opacity-30"
-                />
+                <Utensils size={48} color="#B85C38" className="mx-auto mb-4 opacity-30" />
                 <p className="text-[#1A1A1A]/50 text-lg font-medium">
                   Our chefs are preparing the popular menu.
                   <br />
@@ -142,8 +123,7 @@ export default function HomePage() {
                       alt={item.name}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       onError={(e) => {
-                        (e.target as HTMLImageElement).src =
-                          "/assets/food-hub.jpg";
+                        (e.target as HTMLImageElement).src = "/assets/food-hub.jpg";
                       }}
                     />
                   </div>
@@ -159,7 +139,6 @@ export default function HomePage() {
           </div>
         </div>
       </section>
-
 
       {/* About Us + Visit Us */}
       <AboutSection

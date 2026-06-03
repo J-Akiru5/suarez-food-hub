@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { ChevronRight, DollarSign, LogOut, Package, Settings, User } from "lucide-react";
 import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { User, Package, DollarSign, Settings, LogOut, ChevronRight } from "lucide-react";
 
 interface Profile {
   full_name: string;
@@ -28,8 +28,8 @@ export default function ProfilePage() {
 
       const { data } = await supabase
         .from("profiles")
-        .select("full_name, phone, address")
-        .eq("user_id", user.id)
+        .select("first_name, last_name, phone")
+        .eq("id", user.id)
         .single();
 
       const { count: deliveries } = await supabase
@@ -39,17 +39,20 @@ export default function ProfilePage() {
         .eq("status", "delivered");
 
       const { data: earningsData } = await supabase
-        .from("orders")
-        .select("delivery_fee")
-        .eq("rider_id", user.id)
-        .eq("status", "delivered");
+        .from("rider_earnings")
+        .select("amount, status")
+        .eq("rider_id", user.id);
 
       const totalEarnings = earningsData
-        ? earningsData.reduce((sum, o) => sum + (o.delivery_fee || 0), 0)
+        ? earningsData
+            .filter((e) => e.status === "pending" || e.status === "paid")
+            .reduce((sum, e) => sum + (e.amount || 0), 0)
         : 0;
 
+      const fullName = data ? `${data.first_name || ""} ${data.last_name || ""}`.trim() || "Rider" : "Rider";
+
       setProfile({
-        full_name: data?.full_name || "Rider",
+        full_name: fullName,
         email: user.email || "",
         phone: data?.phone || "",
         total_deliveries: deliveries || 0,
@@ -63,6 +66,7 @@ export default function ProfilePage() {
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    router.refresh();
     router.push("/login");
   };
 
@@ -82,24 +86,18 @@ export default function ProfilePage() {
         </div>
         <h2 className="text-xl font-bold text-gray-800">{profile?.full_name}</h2>
         <p className="text-sm text-gray-500">{profile?.email}</p>
-        {profile?.phone && (
-          <p className="text-sm text-gray-400 mt-1">{profile.phone}</p>
-        )}
+        {profile?.phone && <p className="text-sm text-gray-400 mt-1">{profile.phone}</p>}
       </div>
 
       <div className="grid grid-cols-2 gap-3">
         <div className="bg-white rounded-xl p-4 shadow-sm border border-brand-100 text-center">
           <Package size={24} className="text-brand-600 mx-auto mb-1" />
-          <p className="text-2xl font-bold text-gray-800">
-            {profile?.total_deliveries}
-          </p>
+          <p className="text-2xl font-bold text-gray-800">{profile?.total_deliveries}</p>
           <p className="text-xs text-gray-500">Deliveries</p>
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm border border-brand-100 text-center">
           <DollarSign size={24} className="text-brand-600 mx-auto mb-1" />
-          <p className="text-2xl font-bold text-brand-600">
-            ₱{profile?.total_earnings.toFixed(2)}
-          </p>
+          <p className="text-2xl font-bold text-brand-600">₱{profile?.total_earnings.toFixed(2)}</p>
           <p className="text-xs text-gray-500">Earnings</p>
         </div>
       </div>

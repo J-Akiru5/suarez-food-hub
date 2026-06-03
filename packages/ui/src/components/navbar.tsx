@@ -1,8 +1,8 @@
 "use client";
 
-import * as React from "react";
-import { ShoppingCart, Menu, X } from "lucide-react";
+import { Menu, ShoppingCart, X } from "lucide-react";
 import { usePathname } from "next/navigation";
+import * as React from "react";
 import { cn } from "../lib/utils";
 
 export interface NavbarProps {
@@ -29,7 +29,7 @@ const Navbar = React.forwardRef<HTMLElement, NavbarProps>(
         ref={ref}
         className={cn(
           "fixed top-0 left-0 right-0 z-[999] bg-[#f9f3ec]/90 backdrop-blur-xl border-b border-black/5 shadow-sm",
-          className
+          className,
         )}
       >
         {/* Full-width Rectangle Navbar */}
@@ -49,9 +49,9 @@ const Navbar = React.forwardRef<HTMLElement, NavbarProps>(
                   href={link.href}
                   className={cn(
                     "text-[15px] font-medium transition-all px-5 py-2.5 rounded-full",
-                    pathname === link.href 
-                      ? "bg-[#8B3A2B] text-white shadow-sm" 
-                      : "text-[#1A1A1A]/80 hover:text-[#1A1A1A] hover:bg-black/5"
+                    pathname === link.href
+                      ? "bg-[#8B3A2B] text-white shadow-sm"
+                      : "text-[#1A1A1A]/80 hover:text-[#1A1A1A] hover:bg-black/5",
                   )}
                   style={{ fontFamily: "var(--plus-jakarta-sans)" }}
                 >
@@ -89,11 +89,7 @@ const Navbar = React.forwardRef<HTMLElement, NavbarProps>(
               onClick={() => setMobileOpen(!mobileOpen)}
               className="md:hidden w-10 h-10 flex items-center justify-center rounded-full bg-white/50 hover:bg-white/80"
             >
-              {mobileOpen ? (
-                <X className="w-5 h-5 text-[#1A1A1A]" />
-              ) : (
-                <Menu className="w-5 h-5 text-[#1A1A1A]" />
-              )}
+              {mobileOpen ? <X className="w-5 h-5 text-[#1A1A1A]" /> : <Menu className="w-5 h-5 text-[#1A1A1A]" />}
             </button>
           </div>
         </nav>
@@ -107,7 +103,7 @@ const Navbar = React.forwardRef<HTMLElement, NavbarProps>(
                 href={link.href}
                 className={cn(
                   "block px-6 py-4 text-[15px] font-medium transition-colors",
-                  pathname === link.href ? "text-[#8B3A2B] bg-[#F3E7D3]/30" : "text-[#1A1A1A] hover:bg-gray-50"
+                  pathname === link.href ? "text-[#8B3A2B] bg-[#F3E7D3]/30" : "text-[#1A1A1A] hover:bg-gray-50",
                 )}
                 onClick={() => setMobileOpen(false)}
               >
@@ -125,7 +121,7 @@ const Navbar = React.forwardRef<HTMLElement, NavbarProps>(
         )}
       </header>
     );
-  }
+  },
 );
 Navbar.displayName = "Navbar";
 

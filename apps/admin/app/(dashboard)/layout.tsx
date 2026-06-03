@@ -1,25 +1,27 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import {
-  LayoutDashboard,
-  ClipboardList,
-  Package,
-  Tag,
-  Bike,
-  FileBarChart,
-  Settings,
-  LogOut,
-  Menu,
-  X,
-  Shield,
   Bell,
+  Bike,
   ChevronLeft,
   ChevronRight,
+  ClipboardList,
+  DollarSign,
+  FileBarChart,
+  LayoutDashboard,
+  LogOut,
+  Menu,
+  Package,
+  Settings,
+  Shield,
+  Tag,
+  UserPlus,
+  X,
 } from "lucide-react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -27,15 +29,13 @@ const navItems = [
   { href: "/inventory", label: "Inventory", icon: Package },
   { href: "/categories", label: "Categories", icon: Tag },
   { href: "/riders", label: "Riders", icon: Bike },
+  { href: "/staff", label: "Staff", icon: UserPlus },
+  { href: "/cashouts", label: "Cashouts", icon: DollarSign },
   { href: "/reports", label: "Reports", icon: FileBarChart },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
 
-export default function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
@@ -52,7 +52,7 @@ export default function DashboardLayout({
         supabase
           .from("profiles")
           .select("first_name, last_name")
-          .eq("user_id", data.user.id)
+          .eq("id", data.user.id)
           .single()
           .then(({ data: p }) => setProfile(p));
       }
@@ -65,9 +65,7 @@ export default function DashboardLayout({
     router.refresh();
   }
 
-  const initials = profile
-    ? `${profile.first_name?.[0] || ""}${profile.last_name?.[0] || ""}`.toUpperCase()
-    : "A";
+  const initials = profile ? `${profile.first_name?.[0] || ""}${profile.last_name?.[0] || ""}`.toUpperCase() : "A";
 
   return (
     <div className="min-h-dvh bg-gray-50 flex">
@@ -91,10 +89,7 @@ export default function DashboardLayout({
 
         <nav className="flex-1 px-3 py-4 space-y-1">
           {navItems.map((item) => {
-            const isActive =
-              item.href === "/"
-                ? pathname === "/"
-                : pathname.startsWith(item.href);
+            const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
             const Icon = item.icon;
 
             return (
@@ -139,10 +134,7 @@ export default function DashboardLayout({
       {/* Mobile Sidebar Overlay */}
       {mobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
-          <div
-            className="absolute inset-0 bg-black/50"
-            onClick={() => setMobileOpen(false)}
-          />
+          <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
           <aside className="absolute left-0 top-0 bottom-0 w-72 bg-white shadow-xl flex flex-col">
             <div className="flex items-center justify-between px-4 h-16 border-b border-gray-200">
               <div className="flex items-center gap-3">
@@ -164,10 +156,7 @@ export default function DashboardLayout({
 
             <nav className="flex-1 px-3 py-4 space-y-1">
               {navItems.map((item) => {
-                const isActive =
-                  item.href === "/"
-                    ? pathname === "/"
-                    : pathname.startsWith(item.href);
+                const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
                 const Icon = item.icon;
 
                 return (
@@ -227,9 +216,7 @@ export default function DashboardLayout({
               <p className="text-sm font-medium text-gray-900">
                 {profile ? `${profile.first_name} ${profile.last_name}` : "Admin"}
               </p>
-              <p className="text-xs text-muted-foreground">
-                {user?.email || "admin@sfh.com"}
-              </p>
+              <p className="text-xs text-muted-foreground">{user?.email || "admin@sfh.com"}</p>
             </div>
           </div>
         </header>

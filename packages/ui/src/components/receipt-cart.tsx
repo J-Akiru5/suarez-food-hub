@@ -1,7 +1,7 @@
 "use client";
 
+import { Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
 import * as React from "react";
-import { X, Minus, Plus, Trash2, ShoppingBag } from "lucide-react";
 import { cn } from "../lib/utils";
 
 export interface ReceiptCartItem {
@@ -24,10 +24,7 @@ export interface ReceiptCartProps {
 
 const ReceiptCart = React.forwardRef<HTMLDivElement, ReceiptCartProps>(
   ({ items, isOpen, onClose, onUpdateQuantity, onRemove, onCheckout }, ref) => {
-    const receiptNumber = React.useMemo(
-      () => Math.floor(100000 + Math.random() * 900000),
-      []
-    );
+    const receiptNumber = React.useMemo(() => Math.floor(100000 + Math.random() * 900000), []);
 
     const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
 
@@ -37,7 +34,7 @@ const ReceiptCart = React.forwardRef<HTMLDivElement, ReceiptCartProps>(
         <div
           className={cn(
             "fixed inset-0 z-[9997] bg-black/40 backdrop-blur-sm transition-opacity duration-300",
-            isOpen ? "opacity-100" : "opacity-0 pointer-events-none"
+            isOpen ? "opacity-100" : "opacity-0 pointer-events-none",
           )}
           onClick={onClose}
         />
@@ -47,22 +44,16 @@ const ReceiptCart = React.forwardRef<HTMLDivElement, ReceiptCartProps>(
           ref={ref}
           className={cn(
             "fixed top-0 right-0 z-[9998] h-full w-full max-w-[440px] bg-[#f1f5f9] shadow-2xl transition-transform duration-300 ease-in-out flex flex-col",
-            isOpen ? "translate-x-0" : "translate-x-full"
+            isOpen ? "translate-x-0" : "translate-x-full",
           )}
         >
           {/* Header */}
           <div className="bg-[#b1454a] text-white px-6 py-5 flex items-center justify-between">
             <div>
-              <h2
-                className="text-lg font-bold tracking-wider"
-                style={{ fontFamily: "monospace" }}
-              >
+              <h2 className="text-lg font-bold tracking-wider" style={{ fontFamily: "monospace" }}>
                 SUAREZ FOOD HUB
               </h2>
-              <p
-                className="text-xs text-white/70 mt-0.5"
-                style={{ fontFamily: "monospace" }}
-              >
+              <p className="text-xs text-white/70 mt-0.5" style={{ fontFamily: "monospace" }}>
                 RECEIPT #{receiptNumber}
               </p>
             </div>
@@ -79,11 +70,7 @@ const ReceiptCart = React.forwardRef<HTMLDivElement, ReceiptCartProps>(
             <div className="bg-white rounded-2xl shadow-sm relative">
               {/* Torn paper edge */}
               <div className="absolute -bottom-3 left-0 right-0 h-6 overflow-hidden">
-                <svg
-                  viewBox="0 0 440 24"
-                  className="w-full h-full"
-                  preserveAspectRatio="none"
-                >
+                <svg viewBox="0 0 440 24" className="w-full h-full" preserveAspectRatio="none">
                   <path
                     d="M0,0 L440,0 L440,8 Q430,16 420,8 Q410,0 400,8 Q390,16 380,8 Q370,0 360,8 Q350,16 340,8 Q330,0 320,8 Q310,16 300,8 Q290,0 280,8 Q270,16 260,8 Q250,0 240,8 Q230,16 220,8 Q210,0 200,8 Q190,16 180,8 Q170,0 160,8 Q150,16 140,8 Q130,0 120,8 Q110,16 100,8 Q90,0 80,8 Q70,16 60,8 Q50,0 40,8 Q30,16 20,8 Q10,0 0,8 Z"
                     fill="white"
@@ -94,10 +81,7 @@ const ReceiptCart = React.forwardRef<HTMLDivElement, ReceiptCartProps>(
               {items.length === 0 ? (
                 <div className="py-16 text-center text-gray-400">
                   <ShoppingBag className="w-12 h-12 mx-auto mb-3 text-gray-300" />
-                  <p
-                    className="text-sm"
-                    style={{ fontFamily: "monospace" }}
-                  >
+                  <p className="text-sm" style={{ fontFamily: "monospace" }}>
                     Your cart is empty
                   </p>
                 </div>
@@ -123,17 +107,11 @@ const ReceiptCart = React.forwardRef<HTMLDivElement, ReceiptCartProps>(
                             {item.quantity}x {item.name}
                           </p>
                           {item.variant && (
-                            <p
-                              className="text-xs text-gray-400 mt-0.5"
-                              style={{ fontFamily: "monospace" }}
-                            >
+                            <p className="text-xs text-gray-400 mt-0.5" style={{ fontFamily: "monospace" }}>
                               {item.variant}
                             </p>
                           )}
-                          <p
-                            className="text-sm font-bold text-[#b1454a] mt-1"
-                            style={{ fontFamily: "monospace" }}
-                          >
+                          <p className="text-sm font-bold text-[#b1454a] mt-1" style={{ fontFamily: "monospace" }}>
                             ₱{(item.price * item.quantity).toFixed(2)}
                           </p>
                         </div>
@@ -143,13 +121,7 @@ const ReceiptCart = React.forwardRef<HTMLDivElement, ReceiptCartProps>(
                       <div className="flex items-center justify-between mt-3">
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() =>
-                              onUpdateQuantity(
-                                item.id,
-                                Math.max(1, item.quantity - 1),
-                                item.variant
-                              )
-                            }
+                            onClick={() => onUpdateQuantity(item.id, Math.max(1, item.quantity - 1), item.variant)}
                             className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center hover:border-[#b1454a] transition-colors"
                           >
                             <Minus className="w-3 h-3 text-gray-500" />
@@ -161,9 +133,7 @@ const ReceiptCart = React.forwardRef<HTMLDivElement, ReceiptCartProps>(
                             {item.quantity}
                           </span>
                           <button
-                            onClick={() =>
-                              onUpdateQuantity(item.id, item.quantity + 1, item.variant)
-                            }
+                            onClick={() => onUpdateQuantity(item.id, item.quantity + 1, item.variant)}
                             className="w-7 h-7 rounded-full border border-gray-200 flex items-center justify-center hover:border-[#b1454a] transition-colors"
                           >
                             <Plus className="w-3 h-3 text-gray-500" />
@@ -190,10 +160,7 @@ const ReceiptCart = React.forwardRef<HTMLDivElement, ReceiptCartProps>(
                       >
                         TOTAL
                       </span>
-                      <span
-                        className="text-xl font-bold text-[#b1454a]"
-                        style={{ fontFamily: "monospace" }}
-                      >
+                      <span className="text-xl font-bold text-[#b1454a]" style={{ fontFamily: "monospace" }}>
                         ₱{total.toFixed(2)}
                       </span>
                     </div>
@@ -217,7 +184,7 @@ const ReceiptCart = React.forwardRef<HTMLDivElement, ReceiptCartProps>(
         </div>
       </>
     );
-  }
+  },
 );
 ReceiptCart.displayName = "ReceiptCart";
 

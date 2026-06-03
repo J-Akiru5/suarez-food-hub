@@ -18,10 +18,7 @@ export interface TrendingSectionProps {
 const TrendingSection = React.forwardRef<HTMLDivElement, TrendingSectionProps>(
   ({ title, description, items, className }, ref) => {
     return (
-      <section
-        ref={ref}
-        className={cn("py-16 md:py-24 bg-[#FFF8F0]", className)}
-      >
+      <section ref={ref} className={cn("py-16 md:py-24 bg-[#FFF8F0]", className)}>
         <div className="max-w-[1280px] mx-auto px-6">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-10">
             <div>
@@ -31,11 +28,7 @@ const TrendingSection = React.forwardRef<HTMLDivElement, TrendingSectionProps>(
               >
                 {title}
               </h2>
-              {description && (
-                <p className="text-[#1A1A1A]/50 text-sm mt-2 max-w-md">
-                  {description}
-                </p>
-              )}
+              {description && <p className="text-[#1A1A1A]/50 text-sm mt-2 max-w-md">{description}</p>}
             </div>
           </div>
 
@@ -46,8 +39,7 @@ const TrendingSection = React.forwardRef<HTMLDivElement, TrendingSectionProps>(
                   src={item.image}
                   alt={item.name}
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src =
-                      "/assets/food-hub.jpg";
+                    (e.target as HTMLImageElement).src = "/assets/food-hub.jpg";
                   }}
                 />
                 <p
@@ -62,7 +54,7 @@ const TrendingSection = React.forwardRef<HTMLDivElement, TrendingSectionProps>(
         </div>
       </section>
     );
-  }
+  },
 );
 TrendingSection.displayName = "TrendingSection";
 

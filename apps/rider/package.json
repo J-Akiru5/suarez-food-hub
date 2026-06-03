@@ -6,7 +6,7 @@
     "dev": "next dev --port 3003",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@repo/supabase": "workspace:*",

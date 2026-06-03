@@ -1,0 +1,14 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "workspaces": {
+    "apps/web": { "entry": ["app/**/*.{ts,tsx}", "middleware.ts"] },
+    "apps/admin": { "entry": ["app/**/*.{ts,tsx}", "middleware.ts"] },
+    "apps/staff": { "entry": ["app/**/*.{ts,tsx}", "middleware.ts"] },
+    "apps/rider": { "entry": ["app/**/*.{ts,tsx}", "middleware.ts"] },
+    "packages/ui": { "entry": ["src/**/*.{ts,tsx}"] },
+    "packages/types": { "entry": ["src/index.ts"] },
+    "packages/utils": { "entry": ["src/index.ts"] },
+    "packages/supabase": { "entry": ["src/**/*.ts"] }
+  },
+  "ignore": [".next/**", "dist/**", "node_modules/**", ".turbo/**"]
+}

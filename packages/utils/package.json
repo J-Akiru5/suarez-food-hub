@@ -7,6 +7,10 @@
   "exports": {
     ".": "./src/index.ts"
   },
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "test": "pnpm exec vitest run"
+  },
   "dependencies": {
     "clsx": "^2.1.0",
     "tailwind-merge": "^2.5.0"

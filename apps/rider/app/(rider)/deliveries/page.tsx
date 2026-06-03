@@ -1,18 +1,18 @@
 "use client";
 
+import { format } from "date-fns";
+import { Package, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Package, TrendingUp } from "lucide-react";
-import { format } from "date-fns";
 
 interface Delivery {
   id: string;
-  customer?: { full_name: string } | null;
+  customer?: { full_name: string; first_name?: string; last_name?: string } | null;
   delivery_address: string;
   total: number;
   delivery_fee: number;
   status: string;
-  completed_at: string;
+  delivered_at: string;
   created_at: string;
 }
 
@@ -31,16 +31,16 @@ export default function DeliveriesPage() {
 
       const { data } = await supabase
         .from("orders")
-        .select("*, customer:profiles!orders_customer_id_fkey(full_name)")
+        .select("*, customer:profiles!orders_user_id_fkey(first_name, last_name, full_name)")
         .eq("rider_id", user.id)
         .eq("status", "delivered")
-        .order("completed_at", { ascending: false });
+        .order("delivered_at", { ascending: false });
 
       if (data) {
         setDeliveries(data as Delivery[]);
         setStats({
           total: data.length,
-          earnings: data.reduce((sum, d: any) => sum + (d.delivery_fee || 0), 0),
+          earnings: data.reduce((sum: number, d: any) => sum + (d.delivery_fee || 0), 0),
         });
       }
       setLoading(false);
@@ -72,9 +72,7 @@ export default function DeliveriesPage() {
             <TrendingUp size={16} />
             <span className="text-xs font-medium">Total Earnings</span>
           </div>
-          <p className="text-2xl font-bold text-brand-600">
-            ₱{stats.earnings.toFixed(2)}
-          </p>
+          <p className="text-2xl font-bold text-brand-600">₱{stats.earnings.toFixed(2)}</p>
         </div>
       </div>
 
@@ -83,20 +81,22 @@ export default function DeliveriesPage() {
           <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
             <Package size={48} className="text-gray-300 mx-auto mb-3" />
             <p className="text-gray-500 font-medium">No deliveries yet</p>
-            <p className="text-sm text-gray-400 mt-1">
-              Completed deliveries will appear here
-            </p>
+            <p className="text-sm text-gray-400 mt-1">Completed deliveries will appear here</p>
           </div>
         ) : (
           deliveries.map((delivery) => (
-            <div
-              key={delivery.id}
-              className="bg-white rounded-xl shadow-sm border border-gray-100 p-4"
-            >
+            <div key={delivery.id} className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
               <div className="flex items-start justify-between mb-2">
                 <div>
                   <p className="font-semibold text-gray-800">
-                    {delivery.customer?.full_name || "Customer"}
+                    {(() => {
+                      const c = delivery.customer;
+                      if (!c) return "Customer";
+                      if (c.first_name || c.last_name) {
+                        return `${c.first_name || ""} ${c.last_name || ""}`.trim();
+                      }
+                      return c.full_name || "Customer";
+                    })()}
                   </p>
                   <p className="text-sm text-gray-500">{delivery.delivery_address}</p>
                 </div>
@@ -106,13 +106,11 @@ export default function DeliveriesPage() {
               </div>
               <div className="flex items-center justify-between text-xs text-gray-400">
                 <span>
-                  {delivery.completed_at
-                    ? format(new Date(delivery.completed_at), "MMM d, yyyy h:mm a")
+                  {delivery.delivered_at
+                    ? format(new Date(delivery.delivered_at), "MMM d, yyyy h:mm a")
                     : format(new Date(delivery.created_at), "MMM d, yyyy h:mm a")}
                 </span>
-                <span className="text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full font-medium">
-                  Delivered
-                </span>
+                <span className="text-brand-600 bg-brand-50 px-2 py-0.5 rounded-full font-medium">Delivered</span>
               </div>
             </div>
           ))

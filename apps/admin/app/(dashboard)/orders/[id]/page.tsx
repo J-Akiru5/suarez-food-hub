@@ -1,30 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
-import { Card, CardContent } from "@repo/ui";
-import { Button } from "@repo/ui";
-import { Badge } from "@repo/ui";
+import type { Order, Profile } from "@repo/types";
 import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
   Select,
-  SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@repo/ui";
 import { formatCurrency } from "@repo/utils";
-import {
-  ArrowLeft,
-  MapPin,
-  Phone,
-  User,
-  Clock,
-  CheckCircle2,
-  XCircle,
-  Loader2,
-} from "lucide-react";
-import type { Order, Profile } from "@repo/types";
+import { ArrowLeft, CheckCircle2, Clock, Loader2, MapPin, Phone, User, XCircle } from "lucide-react";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 const statusSteps = [
   { key: "pending", label: "Pending" },
@@ -69,7 +61,7 @@ export default function OrderDetailPage() {
     const { data } = await supabase
       .from("orders")
       .select(
-        "*, profile:profiles!orders_user_id_fkey(first_name, last_name, phone, address), rider:profiles!orders_rider_id_fkey(first_name, last_name, phone), items:order_items(quantity, unit_price, total_price, special_instructions, product:products!order_items_product_id_fkey(name, image_url))"
+        "*, profile:profiles!orders_user_id_fkey(first_name, last_name, phone, address), rider:profiles!orders_rider_id_fkey(first_name, last_name, phone), items:order_items(quantity, unit_price, total_price, special_instructions, product:products!order_items_product_id_fkey(name, image_url))",
       )
       .eq("id", orderId)
       .single();
@@ -79,19 +71,13 @@ export default function OrderDetailPage() {
   }
 
   async function fetchRiders() {
-    const { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("role", "rider");
+    const { data } = await supabase.from("profiles").select("*").eq("role", "rider");
     setRiders((data as Profile[]) || []);
   }
 
   async function assignRider(riderId: string) {
     setUpdating(true);
-    await supabase
-      .from("orders")
-      .update({ rider_id: riderId, status: "confirmed" })
-      .eq("id", orderId);
+    await supabase.from("orders").update({ rider_id: riderId, status: "confirmed" }).eq("id", orderId);
     await fetchOrder();
     setUpdating(false);
   }
@@ -129,22 +115,13 @@ export default function OrderDetailPage() {
     <div className="space-y-6 max-w-3xl mx-auto">
       {/* Header */}
       <div className="flex items-center gap-3">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => router.back()}
-          className="gap-1"
-        >
+        <Button variant="outline" size="sm" onClick={() => router.back()} className="gap-1">
           <ArrowLeft className="h-4 w-4" />
           Back
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 font-display">
-            {order.order_number}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Placed on {new Date(order.created_at).toLocaleString()}
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900 font-display">{order.order_number}</h1>
+          <p className="text-sm text-muted-foreground">Placed on {new Date(order.created_at).toLocaleString()}</p>
         </div>
         <div className="ml-auto">
           <span
@@ -172,9 +149,7 @@ export default function OrderDetailPage() {
                     <div className="flex items-center w-full">
                       <div
                         className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${
-                          isCompleted
-                            ? "bg-crimson-600 text-white"
-                            : "bg-gray-200 text-gray-400"
+                          isCompleted ? "bg-crimson-600 text-white" : "bg-gray-200 text-gray-400"
                         } ${isCurrent ? "ring-2 ring-crimson-200" : ""}`}
                       >
                         {isCompleted ? (
@@ -185,9 +160,7 @@ export default function OrderDetailPage() {
                       </div>
                       {idx < statusSteps.length - 1 && (
                         <div
-                          className={`flex-1 h-0.5 mx-1 ${
-                            idx < currentStepIndex ? "bg-crimson-600" : "bg-gray-200"
-                          }`}
+                          className={`flex-1 h-0.5 mx-1 ${idx < currentStepIndex ? "bg-crimson-600" : "bg-gray-200"}`}
                         />
                       )}
                     </div>
@@ -222,11 +195,7 @@ export default function OrderDetailPage() {
             <h2 className="font-bold font-display">Customer Details</h2>
             <div className="flex items-center gap-2 text-sm">
               <User className="h-4 w-4 text-gray-400" />
-              <span>
-                {order.profile
-                  ? `${order.profile.first_name} ${order.profile.last_name}`
-                  : "N/A"}
-              </span>
+              <span>{order.profile ? `${order.profile.first_name} ${order.profile.last_name}` : "N/A"}</span>
             </div>
             {order.profile?.phone && (
               <div className="flex items-center gap-2 text-sm">
@@ -239,9 +208,7 @@ export default function OrderDetailPage() {
               <span>{order.delivery_address}</span>
             </div>
             {order.delivery_notes && (
-              <div className="p-2 bg-yellow-50 rounded-lg text-xs text-yellow-800">
-                Note: {order.delivery_notes}
-              </div>
+              <div className="p-2 bg-yellow-50 rounded-lg text-xs text-yellow-800">Note: {order.delivery_notes}</div>
             )}
           </CardContent>
         </Card>
@@ -275,7 +242,7 @@ export default function OrderDetailPage() {
                     </SelectTrigger>
                     <SelectContent>
                       {riders.map((rider) => (
-                        <SelectItem key={rider.id} value={rider.user_id || rider.id}>
+                        <SelectItem key={rider.id} value={rider.id}>
                           {rider.first_name || rider.full_name} {rider.last_name || ""}
                         </SelectItem>
                       ))}
@@ -294,14 +261,9 @@ export default function OrderDetailPage() {
           <h2 className="font-bold mb-3 font-display">Order Items</h2>
           <div className="space-y-2">
             {order.items?.map((item: any, idx: number) => (
-              <div
-                key={idx}
-                className="flex items-center justify-between p-3 bg-gray-50 rounded-lg"
-              >
+              <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                 <div>
-                  <p className="text-sm font-medium">
-                    {item.product?.name || "Product"}
-                  </p>
+                  <p className="text-sm font-medium">{item.product?.name || "Product"}</p>
                   <p className="text-xs text-muted-foreground">
                     {formatCurrency(item.unit_price)} x {item.quantity}
                   </p>
@@ -338,17 +300,15 @@ export default function OrderDetailPage() {
           <h2 className="font-bold mb-2 font-display">Payment</h2>
           <div className="flex items-center justify-between">
             <span className="text-sm text-muted-foreground">Method</span>
-            <span className="text-sm font-medium">
-              {order.payment_method.replace(/_/g, " ")}
-            </span>
+            <span className="text-sm font-medium">{order.payment_method.replace(/_/g, " ")}</span>
           </div>
           <div className="flex items-center justify-between mt-1">
             <span className="text-sm text-muted-foreground">Status</span>
             <span
               className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                order.payment_status === "paid"
+                order.payment_status === "verified"
                   ? "bg-green-100 text-green-800"
-                  : order.payment_status === "failed"
+                  : order.payment_status === "rejected"
                     ? "bg-red-100 text-red-800"
                     : "bg-yellow-100 text-yellow-800"
               }`}

@@ -1,40 +1,29 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
-import Image from "next/image";
-import { createClient } from "@/lib/supabase/client";
-import { Card, CardContent } from "@repo/ui";
-import { Button } from "@repo/ui";
-import { Badge } from "@repo/ui";
-import { Input } from "@repo/ui";
+import type { Category, Product } from "@repo/types";
 import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
   Dialog,
-  DialogTrigger,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
-} from "@repo/ui";
-import {
+  DialogTrigger,
+  Input,
   Select,
-  SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from "@repo/ui";
 import { formatCurrency } from "@repo/utils";
-import {
-  Plus,
-  Pencil,
-  Search,
-  Package,
-  Loader2,
-  Minus,
-  Image as ImageIcon,
-  Upload,
-  X,
-} from "lucide-react";
-import type { Product, Category } from "@repo/types";
+import { Image as ImageIcon, Loader2, Minus, Package, Pencil, Plus, Search, Upload, X } from "lucide-react";
+import Image from "next/image";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 export default function InventoryPage() {
   const supabase = createClient();
@@ -58,19 +47,15 @@ export default function InventoryPage() {
   const [formAvailability, setFormAvailability] = useState<string>("available");
   const [formImageUrl, setFormImageUrl] = useState("");
   const [formIsFeatured, setFormIsFeatured] = useState(false);
+  const [formQuantity, setFormQuantity] = useState("");
+  const [formBuffer, setFormBuffer] = useState("5");
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchData = useCallback(async () => {
     const [prodRes, catRes] = await Promise.all([
-      supabase
-        .from("products")
-        .select("*, category:categories(*)")
-        .order("created_at", { ascending: false }),
-      supabase
-        .from("categories")
-        .select("*")
-        .order("sort_order"),
+      supabase.from("products").select("*, category:categories(*)").order("created_at", { ascending: false }),
+      supabase.from("categories").select("*").order("sort_order"),
     ]);
     setProducts((prodRes.data as any[]) || []);
     setCategories((catRes.data as Category[]) || []);
@@ -91,10 +76,12 @@ export default function InventoryPage() {
     setFormAvailability("available");
     setFormImageUrl("");
     setFormIsFeatured(false);
+    setFormQuantity("0");
+    setFormBuffer("5");
     setDialogOpen(true);
   }
 
-  function openEditDialog(product: Product) {
+  function openEditDialog(product: any) {
     setEditingProduct(product);
     setFormName(product.name);
     setFormSlug(product.slug);
@@ -103,7 +90,9 @@ export default function InventoryPage() {
     setFormCategoryId(product.category_id || "");
     setFormAvailability(product.availability);
     setFormImageUrl(product.image_url || "");
-    setFormIsFeatured(product.is_featured);
+    setFormIsFeatured(!!product.is_featured);
+    setFormQuantity(String(product.quantity ?? 0));
+    setFormBuffer(String(product.buffer_quantity ?? 5));
     setDialogOpen(true);
   }
 
@@ -113,17 +102,15 @@ export default function InventoryPage() {
 
     setUploading(true);
     const fileExt = file.name.split(".").pop();
-    const fileName = `${Math.random()}.${fileExt}`;
+    const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${fileExt}`;
     const filePath = `products/${fileName}`;
 
     const { error } = await supabase.storage
-      .from("product-images")
-      .upload(filePath, file);
+      .from("images")
+      .upload(filePath, file, { contentType: file.type, upsert: true });
 
     if (!error) {
-      const { data } = supabase.storage
-        .from("product-images")
-        .getPublicUrl(filePath);
+      const { data } = supabase.storage.from("images").getPublicUrl(filePath);
       setFormImageUrl(data.publicUrl);
     }
 
@@ -136,11 +123,13 @@ export default function InventoryPage() {
       name: formName,
       slug: formSlug || formName.toLowerCase().replace(/\s+/g, "-"),
       description: formDescription || null,
-      price: parseFloat(formPrice) || 0,
+      base_price: parseFloat(formPrice) || 0,
       category_id: formCategoryId,
       availability: formAvailability,
       image_url: formImageUrl || null,
       is_featured: formIsFeatured,
+      quantity: parseInt(formQuantity) || 0,
+      buffer_quantity: parseInt(formBuffer) || 5,
     };
 
     if (editingProduct) {
@@ -156,10 +145,7 @@ export default function InventoryPage() {
 
   async function toggleAvailability(product: Product) {
     const newStatus = product.availability === "available" ? "unavailable" : "available";
-    await supabase
-      .from("products")
-      .update({ availability: newStatus })
-      .eq("id", product.id);
+    await supabase.from("products").update({ availability: newStatus }).eq("id", product.id);
     fetchData();
   }
 
@@ -177,9 +163,7 @@ export default function InventoryPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 font-display">Inventory</h1>
-          <p className="text-sm text-muted-foreground">
-            Manage your products and stock
-          </p>
+          <p className="text-sm text-muted-foreground">Manage your products and stock</p>
         </div>
         <Button onClick={openCreateDialog} className="gap-2 bg-crimson-700 hover:bg-crimson-800 text-white">
           <Plus className="h-4 w-4" />
@@ -244,6 +228,9 @@ export default function InventoryPage() {
                     Price
                   </th>
                   <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">
+                    Stock
+                  </th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">
                     Status
                   </th>
                   <th className="text-right text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">
@@ -280,14 +267,24 @@ export default function InventoryPage() {
                       </div>
                     </td>
                     <td className="px-4 py-3 hidden sm:table-cell">
-                      <span className="text-sm text-gray-600">
-                        {product.category?.name || "N/A"}
-                      </span>
+                      <span className="text-sm text-gray-600">{product.category?.name || "N/A"}</span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-sm font-bold">
-                        {formatCurrency(product.base_price)}
-                      </span>
+                      <span className="text-sm font-bold">{formatCurrency(product.base_price)}</span>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1">
+                        <span
+                          className={`text-sm font-bold ${
+                            (product.quantity ?? 0) <= (product.buffer_quantity ?? 5) ? "text-red-600" : "text-gray-900"
+                          }`}
+                        >
+                          {product.quantity ?? 0}
+                        </span>
+                        {(product.quantity ?? 0) <= (product.buffer_quantity ?? 5) && (
+                          <Badge className="bg-red-100 text-red-700 text-[9px] border-0">Low</Badge>
+                        )}
+                      </div>
                     </td>
                     <td className="px-4 py-3">
                       <button
@@ -295,21 +292,14 @@ export default function InventoryPage() {
                         className={`text-xs font-medium px-2.5 py-1 rounded-full transition-colors ${
                           product.availability === "available"
                             ? "bg-green-100 text-green-800 hover:bg-green-200"
-                            : product.availability === "pre_order"
-                              ? "bg-blue-100 text-blue-800 hover:bg-blue-200"
-                              : "bg-red-100 text-red-800 hover:bg-red-200"
+                            : "bg-red-100 text-red-800 hover:bg-red-200"
                         }`}
                       >
                         {product.availability.replace(/_/g, " ")}
                       </button>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => openEditDialog(product)}
-                        className="gap-1"
-                      >
+                      <Button variant="outline" size="sm" onClick={() => openEditDialog(product)} className="gap-1">
                         <Pencil className="h-3 w-3" />
                         Edit
                       </Button>
@@ -326,17 +316,13 @@ export default function InventoryPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {editingProduct ? "Edit Product" : "Add Product"}
-            </DialogTitle>
+            <DialogTitle>{editingProduct ? "Edit Product" : "Add Product"}</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             {/* Image Upload */}
             <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1">
-                Product Image
-              </label>
+              <label className="text-sm font-medium text-gray-700 block mb-1">Product Image</label>
               <div className="flex items-center gap-4">
                 <div className="h-20 w-20 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
                   {formImageUrl ? (
@@ -366,35 +352,21 @@ export default function InventoryPage() {
                     disabled={uploading}
                     className="gap-2"
                   >
-                    {uploading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <Upload className="h-4 w-4" />
-                    )}
+                    {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
                     Upload Image
                   </Button>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Or enter URL below
-                  </p>
+                  <p className="text-xs text-muted-foreground mt-1">Or enter URL below</p>
                 </div>
               </div>
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1">
-                Name
-              </label>
-              <Input
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-                placeholder="Product name"
-              />
+              <label className="text-sm font-medium text-gray-700 block mb-1">Name</label>
+              <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Product name" />
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1">
-                Slug
-              </label>
+              <label className="text-sm font-medium text-gray-700 block mb-1">Slug</label>
               <Input
                 value={formSlug}
                 onChange={(e) => setFormSlug(e.target.value)}
@@ -403,9 +375,7 @@ export default function InventoryPage() {
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1">
-                Description
-              </label>
+              <label className="text-sm font-medium text-gray-700 block mb-1">Description</label>
               <textarea
                 value={formDescription}
                 onChange={(e) => setFormDescription(e.target.value)}
@@ -417,9 +387,7 @@ export default function InventoryPage() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">
-                  Price
-                </label>
+                <label className="text-sm font-medium text-gray-700 block mb-1">Price</label>
                 <Input
                   type="number"
                   value={formPrice}
@@ -431,9 +399,7 @@ export default function InventoryPage() {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">
-                  Category
-                </label>
+                <label className="text-sm font-medium text-gray-700 block mb-1">Category</label>
                 <Select value={formCategoryId} onValueChange={setFormCategoryId}>
                   <SelectTrigger>
                     <SelectValue placeholder="Select category" />
@@ -449,21 +415,36 @@ export default function InventoryPage() {
               </div>
             </div>
 
-            <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1">
-                Image URL
-              </label>
-              <Input
-                value={formImageUrl}
-                onChange={(e) => setFormImageUrl(e.target.value)}
-                placeholder="https://..."
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-1">Stock Quantity</label>
+                <Input
+                  type="number"
+                  value={formQuantity}
+                  onChange={(e) => setFormQuantity(e.target.value)}
+                  placeholder="0"
+                  min="0"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-1">Low-stock Buffer</label>
+                <Input
+                  type="number"
+                  value={formBuffer}
+                  onChange={(e) => setFormBuffer(e.target.value)}
+                  placeholder="5"
+                  min="0"
+                />
+              </div>
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1">
-                Availability
-              </label>
+              <label className="text-sm font-medium text-gray-700 block mb-1">Image URL</label>
+              <Input value={formImageUrl} onChange={(e) => setFormImageUrl(e.target.value)} placeholder="https://..." />
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-gray-700 block mb-1">Availability</label>
               <Select value={formAvailability} onValueChange={setFormAvailability}>
                 <SelectTrigger>
                   <SelectValue />

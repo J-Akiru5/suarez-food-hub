@@ -1,57 +1,57 @@
-import { PrismaClient, UserRole, VariantType, ProductAvailability } from '@prisma/client';
+import { PrismaClient, ProductAvailability, UserRole, VariantType } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('Seeding database...');
+  console.log("Seeding database...");
 
   // Create categories (matching dev-lou's categories)
   const categories = await Promise.all([
     prisma.category.create({
       data: {
-        name: 'Dumplings',
-        slug: 'dumplings',
-        description: 'Freshly made siomai in various styles',
+        name: "Dumplings",
+        slug: "dumplings",
+        description: "Freshly made siomai in various styles",
         sortOrder: 1,
       },
     }),
     prisma.category.create({
       data: {
-        name: 'Spring Rolls',
-        slug: 'spring-rolls',
-        description: 'Crispy and delicious lumpia',
+        name: "Spring Rolls",
+        slug: "spring-rolls",
+        description: "Crispy and delicious lumpia",
         sortOrder: 2,
       },
     }),
     prisma.category.create({
       data: {
-        name: 'Main Dish',
-        slug: 'main-dish',
-        description: 'Hearty Filipino main courses',
+        name: "Main Dish",
+        slug: "main-dish",
+        description: "Hearty Filipino main courses",
         sortOrder: 3,
       },
     }),
     prisma.category.create({
       data: {
-        name: 'Dessert',
-        slug: 'dessert',
-        description: 'Sweet treats to end your meal',
+        name: "Dessert",
+        slug: "dessert",
+        description: "Sweet treats to end your meal",
         sortOrder: 4,
       },
     }),
     prisma.category.create({
       data: {
-        name: 'Drinks',
-        slug: 'drinks',
-        description: 'Refreshing beverages',
+        name: "Drinks",
+        slug: "drinks",
+        description: "Refreshing beverages",
         sortOrder: 5,
       },
     }),
     prisma.category.create({
       data: {
-        name: 'Snacks',
-        slug: 'snacks',
-        description: 'Quick bites and merienda',
+        name: "Snacks",
+        slug: "snacks",
+        description: "Quick bites and merienda",
         sortOrder: 6,
       },
     }),
@@ -64,12 +64,12 @@ async function main() {
     // Dumplings
     prisma.product.create({
       data: {
-        name: 'Steamed Siomai',
-        slug: 'steamed-siomai',
-        description: 'Classic steamed pork and shrimp siomai, perfectly seasoned and tender.',
+        name: "Steamed Siomai",
+        slug: "steamed-siomai",
+        description: "Classic steamed pork and shrimp siomai, perfectly seasoned and tender.",
         categoryId: dumplings.id,
         basePrice: 60.0,
-        imageUrl: '/assets/uploads/steamed-siomai.jpg',
+        imageUrl: "/assets/uploads/steamed-siomai.jpg",
         variantType: VariantType.preparation,
         stocks: 100,
         availability: ProductAvailability.available,
@@ -77,20 +77,20 @@ async function main() {
         rating: 5.0,
         variants: {
           create: [
-            { name: 'Steamed', price: 60.0, stocks: 100, sortOrder: 1 },
-            { name: 'Fried', price: 70.0, stocks: 100, sortOrder: 2 },
+            { name: "Steamed", price: 60.0, stocks: 100, sortOrder: 1 },
+            { name: "Fried", price: 70.0, stocks: 100, sortOrder: 2 },
           ],
         },
       },
     }),
     prisma.product.create({
       data: {
-        name: 'Fried Siomai',
-        slug: 'fried-siomai',
-        description: 'Crispy fried siomai with a golden crunch outside and juicy filling inside.',
+        name: "Fried Siomai",
+        slug: "fried-siomai",
+        description: "Crispy fried siomai with a golden crunch outside and juicy filling inside.",
         categoryId: dumplings.id,
         basePrice: 70.0,
-        imageUrl: '/assets/uploads/fried-siomai.jpg',
+        imageUrl: "/assets/uploads/fried-siomai.jpg",
         variantType: VariantType.none,
         stocks: 80,
         availability: ProductAvailability.available,
@@ -101,12 +101,12 @@ async function main() {
     // Spring Rolls
     prisma.product.create({
       data: {
-        name: 'Pork Lumpia',
-        slug: 'pork-lumpia',
-        description: 'Crispy pork spring rolls with sweet chili sauce, a Filipino party favorite.',
+        name: "Pork Lumpia",
+        slug: "pork-lumpia",
+        description: "Crispy pork spring rolls with sweet chili sauce, a Filipino party favorite.",
         categoryId: springRolls.id,
         basePrice: 50.0,
-        imageUrl: '/assets/uploads/pork-lumpia.jpg',
+        imageUrl: "/assets/uploads/pork-lumpia.jpg",
         variantType: VariantType.none,
         stocks: 120,
         availability: ProductAvailability.available,
@@ -116,12 +116,12 @@ async function main() {
     }),
     prisma.product.create({
       data: {
-        name: 'Dynamite Lumpia',
-        slug: 'dynamite-lumpia',
-        description: 'Spicy green chili rolls filled with cheese and ground pork.',
+        name: "Dynamite Lumpia",
+        slug: "dynamite-lumpia",
+        description: "Spicy green chili rolls filled with cheese and ground pork.",
         categoryId: springRolls.id,
         basePrice: 65.0,
-        imageUrl: '/assets/uploads/dynamite-lumpia.jpg',
+        imageUrl: "/assets/uploads/dynamite-lumpia.jpg",
         variantType: VariantType.none,
         stocks: 80,
         availability: ProductAvailability.available,
@@ -133,60 +133,60 @@ async function main() {
     // Main Dishes
     prisma.product.create({
       data: {
-        name: 'Valenciana',
-        slug: 'valenciana',
-        description: 'Traditional Filipino rice dish with chicken, chorizo, and spices.',
+        name: "Valenciana",
+        slug: "valenciana",
+        description: "Traditional Filipino rice dish with chicken, chorizo, and spices.",
         categoryId: mainDish.id,
         basePrice: 80.0,
-        imageUrl: '/assets/uploads/valenciana.jpg',
+        imageUrl: "/assets/uploads/valenciana.jpg",
         variantType: VariantType.size,
         stocks: 50,
         availability: ProductAvailability.available,
         rating: 4.9,
         variants: {
           create: [
-            { name: 'Medium', price: 80.0, stocks: 50, sortOrder: 1 },
-            { name: 'Large', price: 150.0, stocks: 30, sortOrder: 2 },
+            { name: "Medium", price: 80.0, stocks: 50, sortOrder: 1 },
+            { name: "Large", price: 150.0, stocks: 30, sortOrder: 2 },
           ],
         },
       },
     }),
     prisma.product.create({
       data: {
-        name: 'Chicken Adobo',
-        slug: 'chicken-adobo',
-        description: 'Classic Filipino chicken adobo braised in soy sauce, vinegar, and garlic.',
+        name: "Chicken Adobo",
+        slug: "chicken-adobo",
+        description: "Classic Filipino chicken adobo braised in soy sauce, vinegar, and garlic.",
         categoryId: mainDish.id,
         basePrice: 75.0,
-        imageUrl: '/assets/uploads/chickenadobo.jpg',
+        imageUrl: "/assets/uploads/chickenadobo.jpg",
         variantType: VariantType.size,
         stocks: 50,
         availability: ProductAvailability.available,
         rating: 4.8,
         variants: {
           create: [
-            { name: 'Medium', price: 75.0, stocks: 50, sortOrder: 1 },
-            { name: 'Large', price: 140.0, stocks: 30, sortOrder: 2 },
+            { name: "Medium", price: 75.0, stocks: 50, sortOrder: 1 },
+            { name: "Large", price: 140.0, stocks: 30, sortOrder: 2 },
           ],
         },
       },
     }),
     prisma.product.create({
       data: {
-        name: 'Beef Calderita',
-        slug: 'beef-calderita',
-        description: 'Rich beef stew with potatoes, carrots, and bell peppers in tomato sauce.',
+        name: "Beef Calderita",
+        slug: "beef-calderita",
+        description: "Rich beef stew with potatoes, carrots, and bell peppers in tomato sauce.",
         categoryId: mainDish.id,
         basePrice: 90.0,
-        imageUrl: '/assets/uploads/beefcalderita.jpg',
+        imageUrl: "/assets/uploads/beefcalderita.jpg",
         variantType: VariantType.size,
         stocks: 40,
         availability: ProductAvailability.available,
         rating: 4.7,
         variants: {
           create: [
-            { name: 'Medium', price: 90.0, stocks: 40, sortOrder: 1 },
-            { name: 'Large', price: 160.0, stocks: 25, sortOrder: 2 },
+            { name: "Medium", price: 90.0, stocks: 40, sortOrder: 1 },
+            { name: "Large", price: 160.0, stocks: 25, sortOrder: 2 },
           ],
         },
       },
@@ -195,12 +195,12 @@ async function main() {
     // Desserts
     prisma.product.create({
       data: {
-        name: 'Leche Flan',
-        slug: 'leche-flan',
-        description: 'Creamy Filipino caramel custard, a classic dessert favorite.',
+        name: "Leche Flan",
+        slug: "leche-flan",
+        description: "Creamy Filipino caramel custard, a classic dessert favorite.",
         categoryId: dessert.id,
         basePrice: 45.0,
-        imageUrl: '/assets/uploads/lecheflan.jpg',
+        imageUrl: "/assets/uploads/lecheflan.jpg",
         variantType: VariantType.none,
         stocks: 30,
         availability: ProductAvailability.available,
@@ -209,12 +209,12 @@ async function main() {
     }),
     prisma.product.create({
       data: {
-        name: 'Maja Blanca',
-        slug: 'maja-blanca',
-        description: 'Sweet coconut milk pudding with corn kernels, topped with latik.',
+        name: "Maja Blanca",
+        slug: "maja-blanca",
+        description: "Sweet coconut milk pudding with corn kernels, topped with latik.",
         categoryId: dessert.id,
         basePrice: 40.0,
-        imageUrl: '/assets/uploads/maja-blanca.jpg',
+        imageUrl: "/assets/uploads/maja-blanca.jpg",
         variantType: VariantType.none,
         stocks: 25,
         availability: ProductAvailability.available,
@@ -225,32 +225,32 @@ async function main() {
     // Drinks
     prisma.product.create({
       data: {
-        name: 'Iced Coffee',
-        slug: 'iced-coffee',
-        description: 'Refreshing iced coffee, perfect for hot days.',
+        name: "Iced Coffee",
+        slug: "iced-coffee",
+        description: "Refreshing iced coffee, perfect for hot days.",
         categoryId: drinks.id,
         basePrice: 35.0,
-        imageUrl: '/assets/uploads/iced-coffee.jpg',
+        imageUrl: "/assets/uploads/iced-coffee.jpg",
         variantType: VariantType.sugar_level,
         stocks: 200,
         availability: ProductAvailability.available,
         rating: 4.5,
         variants: {
           create: [
-            { name: '100% Sugar', price: 35.0, stocks: 200, sortOrder: 1 },
-            { name: '50% Sugar', price: 35.0, stocks: 200, sortOrder: 2 },
+            { name: "100% Sugar", price: 35.0, stocks: 200, sortOrder: 1 },
+            { name: "50% Sugar", price: 35.0, stocks: 200, sortOrder: 2 },
           ],
         },
       },
     }),
     prisma.product.create({
       data: {
-        name: 'Strawberry Shake',
-        slug: 'strawberry-shake',
-        description: 'Fresh strawberry shake made with real strawberries and milk.',
+        name: "Strawberry Shake",
+        slug: "strawberry-shake",
+        description: "Fresh strawberry shake made with real strawberries and milk.",
         categoryId: drinks.id,
         basePrice: 45.0,
-        imageUrl: '/assets/uploads/strawberry-shake.jpg',
+        imageUrl: "/assets/uploads/strawberry-shake.jpg",
         variantType: VariantType.none,
         stocks: 100,
         availability: ProductAvailability.available,
@@ -262,8 +262,8 @@ async function main() {
   console.log(`Created ${categories.length} categories`);
   console.log(`Created ${products.length} products`);
 
-  console.log('\nSeed completed!');
-  console.log('Note: Create admin user via Supabase Auth dashboard or registration endpoint.');
+  console.log("\nSeed completed!");
+  console.log("Note: Create admin user via Supabase Auth dashboard or registration endpoint.");
 }
 
 main()

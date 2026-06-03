@@ -1,7 +1,7 @@
 "use client";
 
-import * as React from "react";
 import { ArrowRight } from "lucide-react";
+import * as React from "react";
 import { cn } from "../lib/utils";
 
 export interface HeroSectionProps {
@@ -29,7 +29,7 @@ const HeroSection = React.forwardRef<HTMLDivElement, HeroSectionProps>(
       ctaHref = "/menu",
       images = defaultImages,
     },
-    ref
+    ref,
   ) => {
     const [scrollY, setScrollY] = React.useState(0);
 
@@ -40,10 +40,7 @@ const HeroSection = React.forwardRef<HTMLDivElement, HeroSectionProps>(
     }, []);
 
     return (
-      <section
-        ref={ref}
-        className="relative min-h-[90vh] flex overflow-hidden"
-      >
+      <section ref={ref} className="relative min-h-[90vh] flex overflow-hidden">
         {/* Left: Brown background with text */}
         <div className="w-full lg:w-1/2 bg-[#8B3A2B] flex flex-col justify-center px-10 md:px-16 lg:px-24 pt-32 pb-20">
           <div className="max-w-[500px]" data-aos="fade-right">
@@ -101,7 +98,7 @@ const HeroSection = React.forwardRef<HTMLDivElement, HeroSectionProps>(
                 }}
               />
             </div>
-            
+
             {/* Right Column */}
             <div className="flex flex-col gap-5">
               <img
@@ -125,7 +122,7 @@ const HeroSection = React.forwardRef<HTMLDivElement, HeroSectionProps>(
         </div>
       </section>
     );
-  }
+  },
 );
 HeroSection.displayName = "HeroSection";
 

@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { DollarSign, History, Home, LogOut, User } from "lucide-react";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { Home, History, DollarSign, User, LogOut } from "lucide-react";
 
 const navItems = [
   { href: "/", label: "Home", icon: Home },
@@ -13,11 +13,7 @@ const navItems = [
   { href: "/profile", label: "Profile", icon: User },
 ];
 
-export default function RiderLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RiderLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const supabase = createClient();
@@ -29,12 +25,10 @@ export default function RiderLayout({
         data: { user },
       } = await supabase.auth.getUser();
       if (user) {
-        const { data } = await supabase
-          .from("profiles")
-          .select("full_name")
-          .eq("user_id", user.id)
-          .single();
-        if (data?.full_name) setRiderName(data.full_name.split(" ")[0]);
+        const { data } = await supabase.from("profiles").select("first_name, last_name").eq("id", user.id).single();
+        if (data) {
+          setRiderName(data.first_name || data.last_name || "Rider");
+        }
       }
     };
     getProfile();
@@ -42,6 +36,7 @@ export default function RiderLayout({
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
+    router.refresh();
     router.push("/login");
   };
 
@@ -71,26 +66,17 @@ export default function RiderLayout({
         <div className="grid grid-cols-4 h-16">
           {navItems.map((item) => {
             const Icon = item.icon;
-            const isActive =
-              item.href === "/"
-                ? pathname === "/"
-                : pathname.startsWith(item.href);
+            const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
             return (
               <Link
                 key={item.href}
                 href={item.href}
                 className={`flex flex-col items-center justify-center gap-1 transition ${
-                  isActive
-                    ? "text-brand-600 bg-brand-50"
-                    : "text-gray-400 hover:text-gray-600"
+                  isActive ? "text-brand-600 bg-brand-50" : "text-gray-400 hover:text-gray-600"
                 }`}
               >
                 <Icon size={22} strokeWidth={isActive ? 2.5 : 2} />
-                <span
-                  className={`text-xs ${isActive ? "font-semibold" : "font-medium"}`}
-                >
-                  {item.label}
-                </span>
+                <span className={`text-xs ${isActive ? "font-semibold" : "font-medium"}`}>{item.label}</span>
               </Link>
             );
           })}

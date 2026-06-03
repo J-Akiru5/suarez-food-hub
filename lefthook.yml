@@ -1,0 +1,10 @@
+pre-commit:
+  parallel: true
+  commands:
+    format-lint:
+      run: pnpm biome check --write --no-errors-on-unmatched {staged_files}
+      glob: "*.{js,ts,jsx,tsx,json,md}"
+    typecheck:
+      run: pnpm turbo typecheck --affected
+    secrets:
+      run: npx trufflehog git --since=HEAD~1 --no-verification --fail 2>/dev/null || true

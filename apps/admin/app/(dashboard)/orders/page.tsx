@@ -1,28 +1,26 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import Link from "next/link";
-import { createClient } from "@/lib/supabase/client";
-import { Card, CardContent } from "@repo/ui";
-import { Button } from "@repo/ui";
-import { Badge } from "@repo/ui";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@repo/ui";
+import type { Order, Profile } from "@repo/types";
 import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
   Select,
-  SelectTrigger,
-  SelectValue,
   SelectContent,
   SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
 } from "@repo/ui";
 import { formatCurrency } from "@repo/utils";
-import {
-  Eye,
-  ChevronDown,
-  ChevronUp,
-  Loader2,
-  RefreshCw,
-} from "lucide-react";
-import type { Order, Profile } from "@repo/types";
+import { ChevronDown, ChevronUp, Eye, Loader2, RefreshCw } from "lucide-react";
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 const statusTabs = [
   { value: "all", label: "All" },
@@ -46,8 +44,8 @@ const statusColors: Record<string, string> = {
 
 const paymentColors: Record<string, string> = {
   pending: "bg-yellow-100 text-yellow-800",
-  paid: "bg-green-100 text-green-800",
-  failed: "bg-red-100 text-red-800",
+  verified: "bg-green-100 text-green-800",
+  rejected: "bg-red-100 text-red-800",
   refunded: "bg-gray-100 text-gray-800",
 };
 
@@ -68,7 +66,7 @@ export default function OrdersPage() {
     let query = supabase
       .from("orders")
       .select(
-        "*, profile:profiles!orders_user_id_fkey(first_name, last_name, phone, address), rider:profiles!orders_rider_id_fkey(first_name, last_name), items:order_items(quantity, unit_price, product:products!order_items_product_id_fkey(name))"
+        "*, profile:profiles!orders_user_id_fkey(first_name, last_name, phone, address), rider:profiles!orders_rider_id_fkey(first_name, last_name), items:order_items(quantity, unit_price, product:products!order_items_product_id_fkey(name))",
       )
       .order("created_at", { ascending: false });
 
@@ -82,10 +80,7 @@ export default function OrdersPage() {
   }, [activeTab, supabase]);
 
   const fetchRiders = useCallback(async () => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("role", "rider");
+    const { data } = await supabase.from("profiles").select("*").eq("role", "rider");
     setRiders((data as Profile[]) || []);
   }, [supabase]);
 
@@ -97,13 +92,9 @@ export default function OrdersPage() {
   useEffect(() => {
     const channel = supabase
       .channel("orders-realtime")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "orders" },
-        () => {
-          fetchOrders();
-        }
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
+        fetchOrders();
+      })
       .subscribe();
 
     return () => {
@@ -112,10 +103,7 @@ export default function OrdersPage() {
   }, [supabase, fetchOrders]);
 
   async function assignRider(orderId: string, riderId: string) {
-    await supabase
-      .from("orders")
-      .update({ rider_id: riderId, status: "confirmed" })
-      .eq("id", orderId);
+    await supabase.from("orders").update({ rider_id: riderId, status: "confirmed" }).eq("id", orderId);
     fetchOrders();
   }
 
@@ -129,15 +117,9 @@ export default function OrdersPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 font-display">Orders</h1>
-          <p className="text-sm text-muted-foreground">
-            Manage and track all orders
-          </p>
+          <p className="text-sm text-muted-foreground">Manage and track all orders</p>
         </div>
-        <Button
-          variant="outline"
-          onClick={() => fetchOrders()}
-          className="gap-2"
-        >
+        <Button variant="outline" onClick={() => fetchOrders()} className="gap-2">
           <RefreshCw className="h-4 w-4" />
           Refresh
         </Button>
@@ -190,9 +172,7 @@ export default function OrdersPage() {
                           </span>
                         </div>
                         <p className="text-sm text-muted-foreground">
-                          {order.profile
-                            ? `${order.profile.first_name} ${order.profile.last_name}`
-                            : "Customer"}
+                          {order.profile ? `${order.profile.first_name} ${order.profile.last_name}` : "Customer"}
                         </p>
                         <p className="text-xs text-muted-foreground mt-0.5">
                           {new Date(order.created_at).toLocaleString()}
@@ -215,11 +195,7 @@ export default function OrdersPage() {
                     {/* Expandable Details */}
                     <div className="mt-3">
                       <button
-                        onClick={() =>
-                          setExpandedOrder(
-                            expandedOrder === order.id ? null : order.id
-                          )
-                        }
+                        onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
                         className="flex items-center gap-1 text-xs text-crimson-600 font-medium hover:text-crimson-700"
                       >
                         {expandedOrder === order.id ? (
@@ -234,20 +210,13 @@ export default function OrdersPage() {
                         <div className="mt-3 p-3 bg-gray-50 rounded-lg space-y-3">
                           {/* Order Items */}
                           <div>
-                            <p className="text-xs font-medium text-gray-500 mb-1">
-                              Items
-                            </p>
+                            <p className="text-xs font-medium text-gray-500 mb-1">Items</p>
                             {order.items?.map((item: any, idx: number) => (
-                              <div
-                                key={idx}
-                                className="flex justify-between text-sm"
-                              >
+                              <div key={idx} className="flex justify-between text-sm">
                                 <span>
                                   {item.product?.name || "Product"} x{item.quantity}
                                 </span>
-                                <span>
-                                  {formatCurrency(item.unit_price * item.quantity)}
-                                </span>
+                                <span>{formatCurrency(item.unit_price * item.quantity)}</span>
                               </div>
                             ))}
                             <div className="flex justify-between text-sm font-bold mt-1 pt-1 border-t">
@@ -258,27 +227,21 @@ export default function OrdersPage() {
 
                           {/* Delivery Address */}
                           <div>
-                            <p className="text-xs font-medium text-gray-500">
-                              Delivery Address
-                            </p>
+                            <p className="text-xs font-medium text-gray-500">Delivery Address</p>
                             <p className="text-sm">{order.delivery_address}</p>
                           </div>
 
                           {/* Assign Rider */}
                           {!order.rider_id && order.status !== "cancelled" && order.status !== "delivered" && (
                             <div>
-                              <p className="text-xs font-medium text-gray-500 mb-1">
-                                Assign Rider
-                              </p>
-                              <Select
-                                onValueChange={(value) => assignRider(order.id, value)}
-                              >
+                              <p className="text-xs font-medium text-gray-500 mb-1">Assign Rider</p>
+                              <Select onValueChange={(value) => assignRider(order.id, value)}>
                                 <SelectTrigger className="w-full">
                                   <SelectValue placeholder="Select rider" />
                                 </SelectTrigger>
                                 <SelectContent>
                                   {riders.map((rider) => (
-                                    <SelectItem key={rider.id} value={rider.user_id || rider.id}>
+                                    <SelectItem key={rider.id} value={rider.id}>
                                       {rider.first_name || rider.full_name} {rider.last_name || ""}
                                     </SelectItem>
                                   ))}
@@ -290,9 +253,7 @@ export default function OrdersPage() {
                           {/* Status Actions */}
                           {order.status !== "cancelled" && order.status !== "delivered" && (
                             <div>
-                              <p className="text-xs font-medium text-gray-500 mb-1">
-                                Update Status
-                              </p>
+                              <p className="text-xs font-medium text-gray-500 mb-1">Update Status</p>
                               <div className="flex flex-wrap gap-2">
                                 {order.status === "pending" && (
                                   <Button

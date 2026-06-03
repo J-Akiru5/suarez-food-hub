@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback, useRef } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { watchPosition, getCurrentPosition } from "@/lib/geolocation";
-import { MapPin, Phone, Navigation, CheckCircle, Package, TrendingUp } from "lucide-react";
+import { CheckCircle, MapPin, Navigation, Package, Phone, TrendingUp } from "lucide-react";
 import dynamic from "next/dynamic";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { getCurrentPosition, watchPosition } from "@/lib/geolocation";
+import { createClient } from "@/lib/supabase/client";
 
 const DeliveryMap = dynamic(() => import("@/components/DeliveryMap"), {
   ssr: false,
@@ -17,19 +17,19 @@ const DeliveryMap = dynamic(() => import("@/components/DeliveryMap"), {
 
 interface Order {
   id: string;
-  customer_id: string;
-  customer?: { full_name: string; phone: string } | null;
+  user_id: string;
+  customer?: { first_name: string; last_name: string; full_name: string; phone: string } | null;
   delivery_address: string;
   delivery_contact: string;
   total: number;
   delivery_fee: number;
   payment_method: string;
   payment_status: string;
-  delivery_location_lat?: number | null;
-  delivery_location_lng?: number | null;
+  delivery_lat?: number | null;
+  delivery_lng?: number | null;
   status: string;
   created_at: string;
-  completed_at?: string | null;
+  delivered_at?: string | null;
 }
 
 interface TodayStats {
@@ -57,9 +57,9 @@ export default function RiderDashboard() {
 
     const { data: order } = await supabase
       .from("orders")
-      .select("*, customer:profiles!orders_customer_id_fkey(full_name, phone)")
+      .select("*, customer:profiles!orders_user_id_fkey(first_name, last_name, phone)")
       .eq("rider_id", user.id)
-      .in("status", ["confirmed", "out_for_delivery"])
+      .in("status", ["claimed_by_rider", "out_for_delivery", "near_customer"])
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle();
@@ -74,17 +74,16 @@ export default function RiderDashboard() {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const { data: todayOrders } = await supabase
-      .from("orders")
-      .select("id, delivery_fee")
+    const { data: todayEarnings } = await supabase
+      .from("rider_earnings")
+      .select("amount")
       .eq("rider_id", user.id)
-      .eq("status", "delivered")
-      .gte("completed_at", today.toISOString());
+      .gte("created_at", today.toISOString());
 
-    if (todayOrders) {
+    if (todayEarnings) {
       setTodayStats({
-        deliveries: todayOrders.length,
-        earnings: todayOrders.reduce((sum, o) => sum + (o.delivery_fee || 0), 0),
+        deliveries: todayEarnings.length,
+        earnings: todayEarnings.reduce((sum, e) => sum + (e.amount || 0), 0),
       });
     }
 
@@ -106,13 +105,17 @@ export default function RiderDashboard() {
         },
         (payload) => {
           const newOrder = payload.new as any;
-          if (newOrder.status === "out_for_delivery" || newOrder.status === "confirmed") {
+          if (
+            newOrder.status === "claimed_by_rider" ||
+            newOrder.status === "out_for_delivery" ||
+            newOrder.status === "near_customer"
+          ) {
             fetchRiderData();
           } else if (newOrder.status === "delivered") {
             setActiveOrder(null);
             fetchRiderData();
           }
-        }
+        },
       )
       .on(
         "postgres_changes",
@@ -123,7 +126,7 @@ export default function RiderDashboard() {
         },
         () => {
           setHasNewOrder(true);
-        }
+        },
       )
       .subscribe();
 
@@ -233,9 +236,7 @@ export default function RiderDashboard() {
             <TrendingUp size={16} />
             <span className="text-xs font-medium">Today&apos;s Earnings</span>
           </div>
-          <p className="text-2xl font-bold text-brand-600">
-            ₱{todayStats.earnings.toFixed(2)}
-          </p>
+          <p className="text-2xl font-bold text-brand-600">₱{todayStats.earnings.toFixed(2)}</p>
         </div>
       </div>
 
@@ -244,7 +245,7 @@ export default function RiderDashboard() {
           <div className="bg-brand-600 text-white px-4 py-2 flex items-center justify-between">
             <span className="font-semibold text-sm">Active Delivery</span>
             <span className="text-xs bg-brand-700 px-2 py-1 rounded-full">
-              {activeOrder.status === "picked_up" ? "Picked Up" : "Assigned"}
+              {activeOrder.status === "out_for_delivery" ? "Picked Up" : "Assigned"}
             </span>
           </div>
 
@@ -252,7 +253,11 @@ export default function RiderDashboard() {
             <div>
               <p className="text-sm text-gray-500">Customer</p>
               <p className="font-semibold text-gray-800">
-                {(activeOrder as any).customer?.full_name || "Customer"}
+                {(() => {
+                  const c = (activeOrder as any).customer;
+                  if (!c) return "Customer";
+                  return `${c.first_name || ""} ${c.last_name || ""}`.trim() || c.full_name || "Customer";
+                })()}
               </p>
             </div>
 
@@ -270,18 +275,16 @@ export default function RiderDashboard() {
               </div>
               <div className="text-right">
                 <p className="text-xs text-gray-500">Amount</p>
-                <p className="text-sm font-bold text-brand-600">
-                  ₱{Number(activeOrder.total).toFixed(2)}
-                </p>
+                <p className="text-sm font-bold text-brand-600">₱{Number(activeOrder.total).toFixed(2)}</p>
               </div>
             </div>
           </div>
 
-          {activeOrder.delivery_location_lat && activeOrder.delivery_location_lng && (
+          {activeOrder.delivery_lat && activeOrder.delivery_lng && (
             <div className="px-4 pb-3">
               <DeliveryMap
-                destinationLat={Number(activeOrder.delivery_location_lat)}
-                destinationLng={Number(activeOrder.delivery_location_lng)}
+                destinationLat={Number(activeOrder.delivery_lat)}
+                destinationLng={Number(activeOrder.delivery_lng)}
                 destinationLabel={activeOrder.delivery_address}
               />
             </div>
@@ -318,9 +321,7 @@ export default function RiderDashboard() {
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
           <Package size={48} className="text-gray-300 mx-auto mb-3" />
           <p className="text-gray-500 font-medium">No Active Delivery</p>
-          <p className="text-sm text-gray-400 mt-1">
-            Waiting for order assignment...
-          </p>
+          <p className="text-sm text-gray-400 mt-1">Waiting for order assignment...</p>
         </div>
       )}
     </div>

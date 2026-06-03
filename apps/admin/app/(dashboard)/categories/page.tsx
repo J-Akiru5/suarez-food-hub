@@ -1,28 +1,21 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { Card, CardContent } from "@repo/ui";
-import { Button } from "@repo/ui";
-import { Input } from "@repo/ui";
+import type { Category } from "@repo/types";
 import {
+  Button,
+  Card,
+  CardContent,
   Dialog,
-  DialogTrigger,
   DialogContent,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogFooter,
+  DialogTrigger,
+  Input,
 } from "@repo/ui";
-import {
-  Plus,
-  Pencil,
-  Trash2,
-  Tag,
-  Loader2,
-  ArrowUp,
-  ArrowDown,
-} from "lucide-react";
-import type { Category } from "@repo/types";
+import { ArrowDown, ArrowUp, Loader2, Pencil, Plus, Tag, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 export default function CategoriesPage() {
   const supabase = createClient();
@@ -39,10 +32,7 @@ export default function CategoriesPage() {
   const [formIsActive, setFormIsActive] = useState(true);
 
   const fetchCategories = useCallback(async () => {
-    const { data } = await supabase
-      .from("categories")
-      .select("*")
-      .order("sort_order");
+    const { data } = await supabase.from("categories").select("*").order("sort_order");
 
     // Get product counts
     const cats = (data as Category[]) || [];
@@ -53,7 +43,7 @@ export default function CategoriesPage() {
           .select("id", { count: "exact", head: true })
           .eq("category_id", cat.id);
         return { ...cat, productCount: count || 0 };
-      })
+      }),
     );
 
     setCategories(counts as any[]);
@@ -92,15 +82,10 @@ export default function CategoriesPage() {
     };
 
     if (editingCategory) {
-      await supabase
-        .from("categories")
-        .update(categoryData)
-        .eq("id", editingCategory.id);
+      await supabase.from("categories").update(categoryData).eq("id", editingCategory.id);
     } else {
       const maxOrder = categories.reduce((max, c) => Math.max(max, c.sort_order), 0);
-      await supabase
-        .from("categories")
-        .insert({ ...categoryData, sort_order: maxOrder + 1 });
+      await supabase.from("categories").insert({ ...categoryData, sort_order: maxOrder + 1 });
     }
 
     setDialogOpen(false);
@@ -122,14 +107,8 @@ export default function CategoriesPage() {
     if (swapIdx < 0 || swapIdx >= categories.length) return;
 
     const other = categories[swapIdx];
-    await supabase
-      .from("categories")
-      .update({ sort_order: other.sort_order })
-      .eq("id", category.id);
-    await supabase
-      .from("categories")
-      .update({ sort_order: category.sort_order })
-      .eq("id", other.id);
+    await supabase.from("categories").update({ sort_order: other.sort_order }).eq("id", category.id);
+    await supabase.from("categories").update({ sort_order: category.sort_order }).eq("id", other.id);
 
     fetchCategories();
   }
@@ -139,9 +118,7 @@ export default function CategoriesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 font-display">Categories</h1>
-          <p className="text-sm text-muted-foreground">
-            Manage product categories
-          </p>
+          <p className="text-sm text-muted-foreground">Manage product categories</p>
         </div>
         <Button onClick={openCreateDialog} className="gap-2 bg-crimson-700 hover:bg-crimson-800 text-white">
           <Plus className="h-4 w-4" />
@@ -216,16 +193,12 @@ export default function CategoriesPage() {
                       <span className="text-sm text-gray-500">{category.slug}</span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-sm text-gray-600">
-                        {(category as any).productCount || 0}
-                      </span>
+                      <span className="text-sm text-gray-600">{(category as any).productCount || 0}</span>
                     </td>
                     <td className="px-4 py-3">
                       <span
                         className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                          category.is_active
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-600"
+                          category.is_active ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-600"
                         }`}
                       >
                         {category.is_active ? "Active" : "Inactive"}
@@ -233,12 +206,7 @@ export default function CategoriesPage() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-1">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => openEditDialog(category)}
-                          className="gap-1"
-                        >
+                        <Button variant="outline" size="sm" onClick={() => openEditDialog(category)} className="gap-1">
                           <Pencil className="h-3 w-3" />
                         </Button>
                         <Button
@@ -263,27 +231,17 @@ export default function CategoriesPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>
-              {editingCategory ? "Edit Category" : "Add Category"}
-            </DialogTitle>
+            <DialogTitle>{editingCategory ? "Edit Category" : "Add Category"}</DialogTitle>
           </DialogHeader>
 
           <div className="space-y-4 py-4">
             <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1">
-                Name
-              </label>
-              <Input
-                value={formName}
-                onChange={(e) => setFormName(e.target.value)}
-                placeholder="Category name"
-              />
+              <label className="text-sm font-medium text-gray-700 block mb-1">Name</label>
+              <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Category name" />
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1">
-                Slug
-              </label>
+              <label className="text-sm font-medium text-gray-700 block mb-1">Slug</label>
               <Input
                 value={formSlug}
                 onChange={(e) => setFormSlug(e.target.value)}
@@ -292,9 +250,7 @@ export default function CategoriesPage() {
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1">
-                Description
-              </label>
+              <label className="text-sm font-medium text-gray-700 block mb-1">Description</label>
               <textarea
                 value={formDescription}
                 onChange={(e) => setFormDescription(e.target.value)}

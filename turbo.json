@@ -13,6 +13,11 @@
     "lint": {
       "dependsOn": ["^build"]
     },
+    "typecheck": {
+      "dependsOn": ["^build"],
+      "outputs": [],
+      "inputs": ["$TURBO_DEFAULT$", "tsconfig.json"]
+    },
     "clean": {
       "cache": false
     }

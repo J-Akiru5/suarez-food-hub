@@ -1,18 +1,10 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { Card, CardContent } from "@repo/ui";
-import { Button } from "@repo/ui";
-import {
-  Bike,
-  MapPin,
-  Package,
-  CheckCircle,
-  Clock,
-  Loader2,
-} from "lucide-react";
 import type { Profile } from "@repo/types";
+import { Button, Card, CardContent } from "@repo/ui";
+import { Bike, CheckCircle, Clock, Loader2, MapPin, Package, XCircle } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 interface RiderWithStats extends Profile {
   activeDeliveries: number;
@@ -27,11 +19,7 @@ export default function RidersPage() {
   const [selectedRider, setSelectedRider] = useState<RiderWithStats | null>(null);
 
   const fetchRiders = useCallback(async () => {
-    const { data: riderProfiles } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("role", "rider")
-      .order("created_at");
+    const { data: riderProfiles } = await supabase.from("profiles").select("*").eq("role", "rider").order("created_at");
 
     const ridersList = (riderProfiles as Profile[]) || [];
 
@@ -41,20 +29,27 @@ export default function RidersPage() {
           supabase
             .from("orders")
             .select("id", { count: "exact", head: true })
-            .eq("rider_id", rider.user_id)
-            .in("status", ["confirmed", "preparing", "out_for_delivery"]),
+            .eq("rider_id", rider.id)
+            .in("status", [
+              "confirmed",
+              "preparing",
+              "ready_for_pickup",
+              "claimed_by_rider",
+              "out_for_delivery",
+              "near_customer",
+            ]),
           supabase
             .from("orders")
             .select("id", { count: "exact", head: true })
-            .eq("rider_id", rider.user_id)
+            .eq("rider_id", rider.id)
             .eq("status", "delivered"),
           supabase
             .from("rider_locations")
             .select("latitude, longitude")
-            .eq("rider_id", rider.user_id)
+            .eq("rider_id", rider.id)
             .order("updated_at", { ascending: false })
             .limit(1)
-            .single(),
+            .maybeSingle(),
         ]);
 
         return {
@@ -63,7 +58,7 @@ export default function RidersPage() {
           totalDeliveries: totalRes.count || 0,
           location: locationRes.data || null,
         };
-      })
+      }),
     );
 
     setRiders(ridersWithStats as RiderWithStats[]);
@@ -77,13 +72,9 @@ export default function RidersPage() {
   useEffect(() => {
     const channel = supabase
       .channel("riders-realtime")
-      .on(
-        "postgres_changes",
-        { event: "*", schema: "public", table: "rider_locations" },
-        () => {
-          fetchRiders();
-        }
-      )
+      .on("postgres_changes", { event: "*", schema: "public", table: "rider_locations" }, () => {
+        fetchRiders();
+      })
       .subscribe();
 
     return () => {
@@ -91,13 +82,34 @@ export default function RidersPage() {
     };
   }, [supabase, fetchRiders]);
 
+  async function approveRider(riderId: string) {
+    await supabase.from("profiles").update({ rider_status: "available", is_active: true }).eq("id", riderId);
+    await supabase.from("notifications").insert({
+      user_id: riderId,
+      type: "rider_approved",
+      title: "Welcome to the team!",
+      message: "Your rider application has been approved. You can now accept deliveries.",
+    });
+    fetchRiders();
+  }
+
+  async function rejectRider(riderId: string) {
+    if (!confirm("Reject this rider application? They will not be able to log in.")) return;
+    await supabase.from("profiles").update({ rider_status: "rejected", is_active: false }).eq("id", riderId);
+    await supabase.from("notifications").insert({
+      user_id: riderId,
+      type: "rider_rejected",
+      title: "Application Update",
+      message: "Unfortunately, your rider application was not approved. Please contact support.",
+    });
+    fetchRiders();
+  }
+
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 font-display">Riders</h1>
-        <p className="text-sm text-muted-foreground">
-          Manage and track delivery riders
-        </p>
+        <p className="text-sm text-muted-foreground">Manage and track delivery riders</p>
       </div>
 
       {loading ? (
@@ -121,11 +133,7 @@ export default function RidersPage() {
               className={`cursor-pointer transition-all hover:shadow-md ${
                 selectedRider?.id === rider.id ? "ring-2 ring-crimson-500" : ""
               }`}
-              onClick={() =>
-                setSelectedRider(
-                  selectedRider?.id === rider.id ? null : rider
-                )
-              }
+              onClick={() => setSelectedRider(selectedRider?.id === rider.id ? null : rider)}
             >
               <CardContent className="p-4">
                 <div className="flex items-start gap-3">
@@ -137,9 +145,7 @@ export default function RidersPage() {
                     <h3 className="font-bold text-sm">
                       {rider.first_name} {rider.last_name}
                     </h3>
-                    <p className="text-xs text-muted-foreground">
-                      {rider.phone || "No phone"}
-                    </p>
+                    <p className="text-xs text-muted-foreground">{rider.phone || "No phone"}</p>
                   </div>
                 </div>
 
@@ -147,18 +153,14 @@ export default function RidersPage() {
                   <div className="p-2 bg-orange-50 rounded-lg text-center">
                     <div className="flex items-center justify-center gap-1 text-orange-600">
                       <Package className="h-3 w-3" />
-                      <span className="text-lg font-bold">
-                        {rider.activeDeliveries}
-                      </span>
+                      <span className="text-lg font-bold">{rider.activeDeliveries}</span>
                     </div>
                     <p className="text-[10px] text-orange-600">Active</p>
                   </div>
                   <div className="p-2 bg-green-50 rounded-lg text-center">
                     <div className="flex items-center justify-center gap-1 text-green-600">
                       <CheckCircle className="h-3 w-3" />
-                      <span className="text-lg font-bold">
-                        {rider.totalDeliveries}
-                      </span>
+                      <span className="text-lg font-bold">{rider.totalDeliveries}</span>
                     </div>
                     <p className="text-[10px] text-green-600">Completed</p>
                   </div>
@@ -168,8 +170,7 @@ export default function RidersPage() {
                   <div className="mt-3 flex items-center gap-1 text-xs text-gray-500">
                     <MapPin className="h-3 w-3" />
                     <span>
-                      {rider.location.latitude.toFixed(4)},{" "}
-                      {rider.location.longitude.toFixed(4)}
+                      {rider.location.latitude.toFixed(4)}, {rider.location.longitude.toFixed(4)}
                     </span>
                   </div>
                 )}
@@ -180,6 +181,47 @@ export default function RidersPage() {
                     <span>Location unavailable</span>
                   </div>
                 )}
+
+                {rider.rider_status === "pending_approval" && (
+                  <div className="mt-3 flex gap-2">
+                    <Button
+                      size="sm"
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        approveRider(rider.id);
+                      }}
+                    >
+                      <CheckCircle className="h-3 w-3 mr-1" /> Approve
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="flex-1 text-red-600 border-red-200"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        rejectRider(rider.id);
+                      }}
+                    >
+                      <XCircle className="h-3 w-3 mr-1" /> Reject
+                    </Button>
+                  </div>
+                )}
+
+                <div className="mt-3 flex items-center gap-1 text-xs">
+                  <span
+                    className={`inline-flex h-2 w-2 rounded-full ${
+                      rider.rider_status === "available"
+                        ? "bg-green-500"
+                        : rider.rider_status === "occupied"
+                          ? "bg-orange-500"
+                          : rider.rider_status === "pending_approval"
+                            ? "bg-yellow-500"
+                            : "bg-gray-400"
+                    }`}
+                  />
+                  <span className="text-gray-600">{rider.rider_status?.replace(/_/g, " ") || "—"}</span>
+                </div>
               </CardContent>
             </Card>
           ))}
@@ -197,19 +239,13 @@ export default function RidersPage() {
               {selectedRider.location ? (
                 <div className="text-center">
                   <MapPin className="h-8 w-8 text-crimson-600 mx-auto mb-2" />
-                  <p className="text-sm font-medium">
-                    Lat: {selectedRider.location.latitude.toFixed(6)}
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    Lng: {selectedRider.location.longitude.toFixed(6)}
-                  </p>
+                  <p className="text-sm font-medium">Lat: {selectedRider.location.latitude.toFixed(6)}</p>
+                  <p className="text-sm text-muted-foreground">Lng: {selectedRider.location.longitude.toFixed(6)}</p>
                 </div>
               ) : (
                 <div className="text-center">
                   <MapPin className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">
-                    No location data available
-                  </p>
+                  <p className="text-sm text-muted-foreground">No location data available</p>
                 </div>
               )}
             </div>

@@ -10,10 +10,10 @@
     --playfair-display: "Playfair Display", serif;
     --plus-jakarta-sans: "Plus Jakarta Sans", sans-serif;
 
-    --primary-color: #B85C38;
-    --primary-dark: #A0522D;
-    --secondary-color: #1A1A1A;
-    --color-cream: #FFF8F0;
+    --primary-color: #b85c38;
+    --primary-dark: #a0522d;
+    --secondary-color: #1a1a1a;
+    --color-cream: #fff8f0;
     --color-white: #ffffff;
 
     --black-200: #020202;
@@ -100,18 +100,34 @@
 
 /* Animations */
 @keyframes slideUp {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes slideDown {
-  from { opacity: 0; transform: translateY(-10px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .animate-slideUp {

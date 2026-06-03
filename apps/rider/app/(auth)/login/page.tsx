@@ -1,9 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
 import { Eye, EyeOff, Truck } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -33,12 +33,24 @@ export default function LoginPage() {
     if (data.user) {
       const { data: profile } = await supabase
         .from("profiles")
-        .select("role")
-        .eq("user_id", data.user.id)
+        .select("role, is_active, rider_status")
+        .eq("id", data.user.id)
         .single();
 
       if (!profile || profile.role !== "rider") {
         setError("Access denied. Rider account required.");
+        await supabase.auth.signOut();
+        setLoading(false);
+        return;
+      }
+      if (profile.is_active === false || profile.rider_status === "pending_approval") {
+        setError("Your account is pending admin approval. Please wait for confirmation.");
+        await supabase.auth.signOut();
+        setLoading(false);
+        return;
+      }
+      if (profile.rider_status === "rejected") {
+        setError("Your rider application was rejected. Please contact support.");
         await supabase.auth.signOut();
         setLoading(false);
         return;
@@ -60,24 +72,13 @@ export default function LoginPage() {
           <p className="text-brand-100 mt-1">Suarez Food Hub Delivery</p>
         </div>
 
-        <form
-          onSubmit={handleLogin}
-          className="bg-white rounded-2xl shadow-xl p-6 space-y-4"
-        >
-          <h2 className="text-xl font-semibold text-gray-800 text-center">
-            Sign In
-          </h2>
+        <form onSubmit={handleLogin} className="bg-white rounded-2xl shadow-xl p-6 space-y-4">
+          <h2 className="text-xl font-semibold text-gray-800 text-center">Sign In</h2>
 
-          {error && (
-            <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg">
-              {error}
-            </div>
-          )}
+          {error && <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg">{error}</div>}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
             <input
               type="email"
               value={email}
@@ -89,9 +90,7 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Password
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
@@ -120,9 +119,7 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="text-center text-brand-100 text-sm mt-6">
-          Delivery Rider Portal v1.0
-        </p>
+        <p className="text-center text-brand-100 text-sm mt-6">Delivery Rider Portal v1.0</p>
       </div>
     </div>
   );

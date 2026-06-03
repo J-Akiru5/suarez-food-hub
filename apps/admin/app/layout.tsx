@@ -3,8 +3,8 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "SFH Admin - Suarez Food Hub Management",
-  description:
-    "Admin dashboard for managing Suarez Food Hub operations, orders, inventory, and reports.",
+  description: "Admin dashboard for managing Suarez Food Hub operations, orders, inventory, and reports.",
+  icons: { icon: "/favicon.svg" },
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -25,11 +25,7 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <head>

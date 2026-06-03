@@ -1,28 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
-import { Card, CardContent } from "@repo/ui";
-import { Badge } from "@repo/ui";
+import { Badge, Card, CardContent } from "@repo/ui";
 import { formatCurrency } from "@repo/utils";
-import {
-  ShoppingBag,
-  DollarSign,
-  Package,
-  Bike,
-  TrendingUp,
-  ArrowUpRight,
-  ArrowDownRight,
-} from "lucide-react";
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
+import { ArrowDownRight, ArrowUpRight, Bike, DollarSign, Package, ShoppingBag, TrendingUp } from "lucide-react";
+import { useEffect, useState } from "react";
+import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { createClient } from "@/lib/supabase/client";
 
 interface DashboardStats {
   todayOrders: number;
@@ -97,31 +80,24 @@ export default function DashboardPage() {
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayISO = yesterday.toISOString();
 
-    const [todayOrdersRes, yesterdayOrdersRes, productsRes, ridersRes, ordersRes, orderItemsRes] =
-      await Promise.all([
-        supabase
-          .from("orders")
-          .select("id, total", { count: "exact" })
-          .gte("created_at", todayISO),
-        supabase
-          .from("orders")
-          .select("id, total", { count: "exact" })
-          .gte("created_at", yesterdayISO)
-          .lt("created_at", todayISO),
-        supabase.from("products").select("id", { count: "exact" }),
-        supabase
-          .from("profiles")
-          .select("id", { count: "exact" })
-          .eq("role", "rider"),
-        supabase
-          .from("orders")
-          .select("id, order_number, total, status, created_at, profile:profiles!orders_user_id_fkey(first_name, last_name)")
-          .order("created_at", { ascending: false })
-          .limit(10),
-        supabase
-          .from("order_items")
-          .select("quantity, unit_price, product:products!order_items_product_id_fkey(name)"),
-      ]);
+    const [todayOrdersRes, yesterdayOrdersRes, productsRes, ridersRes, ordersRes, orderItemsRes] = await Promise.all([
+      supabase.from("orders").select("id, total", { count: "exact" }).gte("created_at", todayISO),
+      supabase
+        .from("orders")
+        .select("id, total", { count: "exact" })
+        .gte("created_at", yesterdayISO)
+        .lt("created_at", todayISO),
+      supabase.from("products").select("id", { count: "exact" }),
+      supabase.from("profiles").select("id", { count: "exact" }).eq("role", "rider"),
+      supabase
+        .from("orders")
+        .select(
+          "id, order_number, total, status, created_at, profile:profiles!orders_user_id_fkey(first_name, last_name)",
+        )
+        .order("created_at", { ascending: false })
+        .limit(10),
+      supabase.from("order_items").select("quantity, unit_price, product:products!order_items_product_id_fkey(name)"),
+    ]);
 
     const todayOrders = todayOrdersRes.data || [];
     const todayRevenue = todayOrders.reduce((sum, o) => sum + (o.total || 0), 0);
@@ -136,11 +112,7 @@ export default function DashboardPage() {
           : 0;
 
     const revenueTrend =
-      yesterdayRevenue > 0
-        ? ((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 100
-        : todayRevenue > 0
-          ? 100
-          : 0;
+      yesterdayRevenue > 0 ? ((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 100 : todayRevenue > 0 ? 100 : 0;
 
     setStats({
       todayOrders: todayOrders.length,
@@ -155,7 +127,7 @@ export default function DashboardPage() {
       (ordersRes.data || []).map((o: any) => ({
         ...o,
         profile: o.profile,
-      }))
+      })),
     );
 
     const items = (orderItemsRes.data || []) as any[];
@@ -252,9 +224,7 @@ export default function DashboardPage() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-gray-900 font-display">Dashboard</h1>
-        <p className="text-sm text-muted-foreground">
-          Overview of your business operations
-        </p>
+        <p className="text-sm text-muted-foreground">Overview of your business operations</p>
       </div>
 
       {/* Stats Cards */}
@@ -305,9 +275,7 @@ export default function DashboardPage() {
               <button
                 onClick={() => setChartMode("weekly")}
                 className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-                  chartMode === "weekly"
-                    ? "bg-white text-gray-900 shadow-sm"
-                    : "text-gray-500 hover:text-gray-700"
+                  chartMode === "weekly" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
                 }`}
               >
                 7 Days
@@ -315,9 +283,7 @@ export default function DashboardPage() {
               <button
                 onClick={() => setChartMode("monthly")}
                 className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
-                  chartMode === "monthly"
-                    ? "bg-white text-gray-900 shadow-sm"
-                    : "text-gray-500 hover:text-gray-700"
+                  chartMode === "monthly" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
                 }`}
               >
                 30 Days
@@ -328,18 +294,8 @@ export default function DashboardPage() {
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                <XAxis
-                  dataKey="date"
-                  tick={{ fontSize: 12 }}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis
-                  tick={{ fontSize: 12 }}
-                  tickLine={false}
-                  axisLine={false}
-                  tickFormatter={(v) => `₱${v}`}
-                />
+                <XAxis dataKey="date" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
+                <YAxis tick={{ fontSize: 12 }} tickLine={false} axisLine={false} tickFormatter={(v) => `₱${v}`} />
                 <Tooltip
                   formatter={(value: number) => [formatCurrency(value), "Revenue"]}
                   contentStyle={{
@@ -383,13 +339,9 @@ export default function DashboardPage() {
                     className="flex items-center justify-between p-3 rounded-lg bg-gray-50 hover:bg-gray-100 transition-colors"
                   >
                     <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">
-                        {order.order_number}
-                      </p>
+                      <p className="text-sm font-medium truncate">{order.order_number}</p>
                       <p className="text-xs text-muted-foreground">
-                        {order.profile
-                          ? `${order.profile.first_name} ${order.profile.last_name}`
-                          : "Customer"}
+                        {order.profile ? `${order.profile.first_name} ${order.profile.last_name}` : "Customer"}
                       </p>
                     </div>
                     <div className="text-right shrink-0 ml-3">
@@ -424,22 +376,15 @@ export default function DashboardPage() {
             ) : (
               <div className="space-y-2">
                 {topProducts.map((product, idx) => (
-                  <div
-                    key={product.name}
-                    className="flex items-center gap-3 p-3 rounded-lg bg-gray-50"
-                  >
+                  <div key={product.name} className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
                     <div className="h-8 w-8 rounded-full bg-crimson-100 flex items-center justify-center text-crimson-700 text-xs font-bold shrink-0">
                       #{idx + 1}
                     </div>
                     <div className="min-w-0 flex-1">
                       <p className="text-sm font-medium truncate">{product.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {product.totalQuantity} sold
-                      </p>
+                      <p className="text-xs text-muted-foreground">{product.totalQuantity} sold</p>
                     </div>
-                    <p className="text-sm font-bold shrink-0">
-                      {formatCurrency(product.totalRevenue)}
-                    </p>
+                    <p className="text-sm font-bold shrink-0">{formatCurrency(product.totalRevenue)}</p>
                   </div>
                 ))}
               </div>

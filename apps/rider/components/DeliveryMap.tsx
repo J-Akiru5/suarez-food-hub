@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
+import { useEffect, useState } from "react";
+import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
 import { getCurrentPosition } from "@/lib/geolocation";
 
 const riderIcon = new L.DivIcon({
@@ -33,11 +33,7 @@ function MapUpdater({ center }: { center: [number, number] }) {
   return null;
 }
 
-export default function DeliveryMap({
-  destinationLat,
-  destinationLng,
-  destinationLabel,
-}: DeliveryMapProps) {
+export default function DeliveryMap({ destinationLat, destinationLng, destinationLabel }: DeliveryMapProps) {
   const [riderPos, setRiderPos] = useState<[number, number] | null>(null);
 
   useEffect(() => {
@@ -48,7 +44,7 @@ export default function DeliveryMap({
     const id = navigator.geolocation.watchPosition(
       (pos) => setRiderPos([pos.coords.latitude, pos.coords.longitude]),
       () => {},
-      { enableHighAccuracy: true, maximumAge: 5000 }
+      { enableHighAccuracy: true, maximumAge: 5000 },
     );
 
     return () => navigator.geolocation.clearWatch(id);
@@ -58,12 +54,7 @@ export default function DeliveryMap({
 
   return (
     <div className="h-48 rounded-xl overflow-hidden border border-gray-200">
-      <MapContainer
-        center={center}
-        zoom={14}
-        className="h-full w-full"
-        zoomControl={false}
-      >
+      <MapContainer center={center} zoom={14} className="h-full w-full" zoomControl={false}>
         <TileLayer
           attribution='&copy; <a href="https://osm.org/copyright">OSM</a>'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"

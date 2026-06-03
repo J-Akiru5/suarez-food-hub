@@ -1,14 +1,6 @@
-import {
-  MapPin,
-  Phone,
-  Mail,
-  Clock,
-  Facebook,
-  Instagram,
-  MessageCircle,
-} from "lucide-react";
-import AuthNavbar from "../../components/AuthNavbar";
 import { Footer } from "@repo/ui";
+import { Camera, Clock, Globe, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
+import AuthNavbar from "../../components/AuthNavbar";
 
 const contactInfo = [
   {
@@ -39,13 +31,13 @@ const contactInfo = [
 
 const socialLinks = [
   {
-    icon: Facebook,
+    icon: Globe,
     name: "Facebook",
     url: "https://facebook.com/suarezfoodhub",
     color: "hover:bg-blue-600 hover:text-white",
   },
   {
-    icon: Instagram,
+    icon: Camera,
     name: "Instagram",
     url: "https://instagram.com/suarezfoodhub",
     color: "hover:bg-pink-500 hover:text-white",
@@ -66,9 +58,7 @@ export default function ContactPage() {
       {/* Hero */}
       <section className="bg-[#b1454a] pt-[74px] pb-16 md:py-24">
         <div className="max-w-[1280px] mx-auto px-6 text-center">
-          <p className="text-white/60 text-sm font-semibold uppercase tracking-wider mb-3">
-            Get in Touch
-          </p>
+          <p className="text-white/60 text-sm font-semibold uppercase tracking-wider mb-3">Get in Touch</p>
           <h1
             className="text-4xl md:text-5xl lg:text-[56px] font-bold text-white mb-6 leading-tight"
             style={{ fontFamily: "var(--playfair-display)" }}
@@ -76,8 +66,7 @@ export default function ContactPage() {
             Contact Us
           </h1>
           <p className="text-white/70 text-lg max-w-2xl mx-auto">
-            Have questions, special requests, or want to place an order? We
-            would love to hear from you!
+            Have questions, special requests, or want to place an order? We would love to hear from you!
           </p>
         </div>
       </section>
@@ -107,16 +96,8 @@ export default function ContactPage() {
                         <a
                           href={info.action}
                           className="hover:text-[#b1454a] transition-colors"
-                          target={
-                            info.action.startsWith("http")
-                              ? "_blank"
-                              : undefined
-                          }
-                          rel={
-                            info.action.startsWith("http")
-                              ? "noopener noreferrer"
-                              : undefined
-                          }
+                          target={info.action.startsWith("http") ? "_blank" : undefined}
+                          rel={info.action.startsWith("http") ? "noopener noreferrer" : undefined}
                         >
                           {detail}
                         </a>
@@ -138,15 +119,10 @@ export default function ContactPage() {
           <div className="grid gap-12 lg:grid-cols-2">
             {/* Map */}
             <div>
-              <h2
-                className="text-2xl font-bold text-gray-900 mb-2"
-                style={{ fontFamily: "var(--playfair-display)" }}
-              >
+              <h2 className="text-2xl font-bold text-gray-900 mb-2" style={{ fontFamily: "var(--playfair-display)" }}>
                 Our Location
               </h2>
-              <p className="text-gray-500 mb-6">
-                Visit us or check if we deliver to your area
-              </p>
+              <p className="text-gray-500 mb-6">Visit us or check if we deliver to your area</p>
               <div className="rounded-3xl overflow-hidden shadow-2xl h-[400px]">
                 <iframe
                   src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3947.5!2d122.506551!3d10.950087!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x0%3A0x0!2zMTDCsDU3JzAwLjAiTiAxMjLCsDMwJzIzLjYiRQ!5e0!3m2!1sen!2sph!4v1"
@@ -165,15 +141,10 @@ export default function ContactPage() {
             <div className="space-y-8">
               {/* Social Links */}
               <div>
-                <h3
-                  className="text-lg font-bold text-gray-900 mb-2"
-                  style={{ fontFamily: "var(--playfair-display)" }}
-                >
+                <h3 className="text-lg font-bold text-gray-900 mb-2" style={{ fontFamily: "var(--playfair-display)" }}>
                   Follow Us
                 </h3>
-                <p className="text-sm text-gray-500 mb-4">
-                  Stay connected for updates, promos, and new dishes
-                </p>
+                <p className="text-sm text-gray-500 mb-4">Stay connected for updates, promos, and new dishes</p>
                 <div className="flex gap-3">
                   {socialLinks.map((social) => (
                     <a
@@ -192,37 +163,25 @@ export default function ContactPage() {
 
               {/* FAQ */}
               <div className="bg-white/65 backdrop-blur-xl border border-white/40 rounded-32 p-6">
-                <h3
-                  className="text-lg font-bold text-gray-900 mb-4"
-                  style={{ fontFamily: "var(--playfair-display)" }}
-                >
+                <h3 className="text-lg font-bold text-gray-900 mb-4" style={{ fontFamily: "var(--playfair-display)" }}>
                   Frequently Asked Questions
                 </h3>
                 <div className="space-y-4">
                   <div>
-                    <h4 className="text-sm font-semibold text-gray-900">
-                      What are your delivery hours?
-                    </h4>
+                    <h4 className="text-sm font-semibold text-gray-900">What are your delivery hours?</h4>
                     <p className="mt-1 text-sm text-gray-500">
-                      We deliver from 10:00 AM to 9:00 PM, Monday through
-                      Saturday.
+                      We deliver from 10:00 AM to 9:00 PM, Monday through Saturday.
                     </p>
                   </div>
                   <div>
-                    <h4 className="text-sm font-semibold text-gray-900">
-                      Do you accept GCash?
-                    </h4>
-                    <p className="mt-1 text-sm text-gray-500">
-                      Yes! We accept GCash, PayMaya, and cash on delivery.
-                    </p>
+                    <h4 className="text-sm font-semibold text-gray-900">Do you accept GCash?</h4>
+                    <p className="mt-1 text-sm text-gray-500">Yes! We accept GCash, PayMaya, and cash on delivery.</p>
                   </div>
                   <div>
-                    <h4 className="text-sm font-semibold text-gray-900">
-                      How far do you deliver?
-                    </h4>
+                    <h4 className="text-sm font-semibold text-gray-900">How far do you deliver?</h4>
                     <p className="mt-1 text-sm text-gray-500">
-                      We deliver within Janiuay and select nearby areas. Contact
-                      us to check if your location is covered.
+                      We deliver within Janiuay and select nearby areas. Contact us to check if your location is
+                      covered.
                     </p>
                   </div>
                 </div>

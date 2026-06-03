@@ -13,13 +13,7 @@ export interface CategoryFilterProps {
 const CategoryFilter = React.forwardRef<HTMLDivElement, CategoryFilterProps>(
   ({ categories, active, onChange, className }, ref) => {
     return (
-      <div
-        ref={ref}
-        className={cn(
-          "flex flex-wrap items-center justify-center gap-3",
-          className
-        )}
-      >
+      <div ref={ref} className={cn("flex flex-wrap items-center justify-center gap-3", className)}>
         {categories.map((category) => (
           <button
             key={category}
@@ -28,7 +22,7 @@ const CategoryFilter = React.forwardRef<HTMLDivElement, CategoryFilterProps>(
               "px-7 py-3 rounded-30 text-sm font-semibold transition-all duration-200",
               active === category
                 ? "bg-[#b1454a] text-white shadow-lg shadow-[#b1454a]/25"
-                : "bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-700 hover:-translate-y-0.5"
+                : "bg-white text-gray-500 hover:bg-gray-50 hover:text-gray-700 hover:-translate-y-0.5",
             )}
           >
             {category}
@@ -36,7 +30,7 @@ const CategoryFilter = React.forwardRef<HTMLDivElement, CategoryFilterProps>(
         ))}
       </div>
     );
-  }
+  },
 );
 CategoryFilter.displayName = "CategoryFilter";
 

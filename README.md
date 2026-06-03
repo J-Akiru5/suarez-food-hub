@@ -1,40 +1,34 @@
-# Suarez Food Hub
+# Suarez Food Hub (SFH) — Capstone Project
 
-A full-stack food ordering platform for Suarez Food Hub — a Filipino siomai and food business based in Janiuay, Iloilo. Built with Next.js 14, Supabase, Prisma, and Tailwind CSS in a Turborepo monorepo.
+A full-stack food ordering platform for Suarez Food Hub, a Filipino siomai and food business in Janiuay, Iloilo. Built with Next.js 15, Supabase, and Tailwind CSS in a Turborepo monorepo.
 
-## Apps
+## Architecture — 4 Apps
 
-| App | Port | Description |
-|---|---|---|
-| `@repo/web` | 3000 | Public marketing site and menu preview |
-| `@repo/customer` | 3001 | Customer-facing e-commerce ordering PWA |
-| `@repo/admin` | 3002 | Admin dashboard — inventory, orders, reports with PDF export |
-| `@repo/rider` | 3003 | Delivery rider mobile-first PWA with realtime tracking |
+| App | Port | URL | Description |
+|-----|------|-----|-------------|
+| `apps/web` | 3000 | `http://localhost:3000` | Customer app — menu browsing, basket, checkout (COD/GCash/Maya), order tracking with live rider map |
+| `apps/admin` | 3001 | `http://localhost:3001` | Admin dashboard — orders, inventory, categories, riders, cashouts, staff accounts, reports, business settings |
+| `apps/staff` | 3002 | `http://localhost:3002` | Staff kitchen workflow — order status advancement (pending → ready_for_pickup), inventory quick-edit |
+| `apps/rider` | 3003 | `http://localhost:3003` | Rider PWA — active deliveries with map, earnings tracker, cashout requests, location broadcast |
 
 ## Packages
 
-| Package | Description |
-|---|---|
-| `@repo/ui` | Shared UI component library (shadcn/ui + Radix + Tailwind) |
-| `@repo/types` | Shared TypeScript type definitions |
-| `@repo/utils` | Shared utilities (currency formatting, slugify, order status config) |
-| `@repo/supabase` | Supabase client helpers (browser, server, middleware) |
-| `@repo/config` | Shared Tailwind and build configurations |
+- `@repo/ui` — Shared UI components (Tailwind + shadcn/ui)
+- `@repo/types` — TypeScript type definitions matching the Supabase schema
+- `@repo/utils` — Utility functions (currency, slugify, order status config)
+- `@repo/supabase` — Supabase client helpers (browser, server, middleware)
 
 ## Tech Stack
 
-- **Framework** — Next.js 14 (App Router)
-- **Language** — TypeScript (strict mode)
-- **Database** — Supabase (PostgreSQL) via Prisma ORM
-- **Auth** — Supabase Auth with role-based access (customer, admin, rider, manager)
-- **Realtime** — Supabase Realtime for live order tracking and rider location
-- **UI** — shadcn/ui (Radix primitives + Tailwind CSS)
-- **State** — Zustand (cart with localStorage persistence)
-- **Charts** — Recharts (admin analytics)
-- **Maps** — Leaflet.js (order tracking, rider navigation)
-- **PDF** — @react-pdf/renderer (sales reports)
-- **PWA** — Service workers for all apps (installable, offline support)
+- **Framework** — Next.js 15 (App Router)
+- **Language** — TypeScript (strict)
+- **Database** — Supabase (PostgreSQL) with raw SQL migrations
+- **Auth** — Supabase Auth (email/password) with role-based access (`customer`, `admin`, `staff`, `rider`)
+- **Realtime** — Supabase Realtime (order updates, rider location, notifications)
+- **Maps** — Leaflet + OpenStreetMap (no API key required)
+- **Payments** — COD, GCash (QR + reference), Maya (QR + reference)
 - **Monorepo** — Turborepo + pnpm workspaces
+- **PWA** — `apps/rider` (manifest + service worker for installable delivery app)
 
 ## Getting Started
 
@@ -42,119 +36,99 @@ A full-stack food ordering platform for Suarez Food Hub — a Filipino siomai an
 
 - Node.js 18+
 - pnpm 9+
-- A [Supabase](https://supabase.com) project (free tier works)
+- A Supabase project (free tier)
 
-### Installation
+### Environment Variables
 
-```bash
-# Clone the repo
-git clone https://github.com/J-Akiru5/suarez-food-hub.git
-cd suarez-food-hub
+Copy `.env.example` to each app's root:
 
-# Install dependencies
-pnpm install
-
-# Set up environment variables
-cp .env.example .env
-# Edit .env with your Supabase credentials
-```
+| Variable | Where Used | Description |
+|----------|-----------|-------------|
+| `NEXT_PUBLIC_SUPABASE_URL` | All apps | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | All apps | Supabase anon key |
+| `SUPABASE_SERVICE_ROLE_KEY` | All apps (server) | Service role key for admin operations |
 
 ### Database Setup
 
-```bash
-# Push the Prisma schema to your Supabase database
-pnpm db:push
-
-# Seed the database with menu categories and products
-pnpm db:seed
-
-# Open Prisma Studio to view/edit data
-pnpm db:studio
-```
+1. Run `supabase/migrations/0001_capstone_full.sql` in Supabase SQL Editor — creates all tables, enums, RLS policies, triggers, storage buckets.
+2. Run `supabase/migrations/0002_psgc_seed.sql` — seeds Philippine regions, Iloilo province/cities/barangays.
+3. Run `supabase/migrations/0003_demo_seed.sql` — inserts demo categories and products.
 
 ### Development
 
 ```bash
-# Start all apps in dev mode
+pnpm install
+
+# Start all 4 apps concurrently
 pnpm dev
 
 # Or start individual apps
-pnpm --filter @repo/web dev
-pnpm --filter @repo/customer dev
-pnpm --filter @repo/admin dev
-pnpm --filter @repo/rider dev
+pnpm --filter web dev     # port 3000
+pnpm --filter admin dev   # port 3001
+pnpm --filter staff dev   # port 3002
+pnpm --filter rider dev   # port 3003
 ```
 
-### Environment Variables
+## Key Design Decisions
 
-See `.env.example` for all required variables. Key ones:
+- **Customer app is `apps/web` (port 3000)** — not a separate customer URL.
+- **Guest browsing** — users can browse the menu freely; login is required on "Add to Basket".
+- **Role-based access** — `customer` (self-register), `staff` (admin-created), `rider` (self-register + admin approval).
+- **Order state machine**: `pending → confirmed → preparing → ready_for_pickup → claimed_by_rider → out_for_delivery → near_customer → delivered`. Customers can cancel while `pending`.
+- **Low-stock alerts** — products with `quantity <= buffer_quantity` trigger notifications on order placement.
+- **Delivery fee** — flat ₱40, free for orders over ₱200 (configured in `business` table).
+- **Rider earnings** — auto-computed as `delivery_fee × 0.8` commission at order completion, stored in `rider_earnings`.
+- **Cashouts** — riders request (min ₱100), admin marks paid with GCash reference number.
+- **Live map** — Leaflet + OpenStreetMap + browser geolocation; rider broadcasts location to `rider_locations` table via Supabase Realtime.
+- **Basket** — persisted in Supabase via `/api/cart`; the term "Basket" is used consistently across the UI.
 
-| Variable | Description |
-|---|---|
-| `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anonymous/public key |
-| `SUPABASE_SERVICE_ROLE_KEY` | Supabase service role key (server-side only) |
-| `DATABASE_URL` | PostgreSQL connection string (Supabase session pooler) |
+## Storage Buckets
 
-## Features
-
-### Customer App
-- Browse menu with category filters and search
-- Product details with variant selection (size, preparation, sugar level)
-- Shopping cart with persistent state
-- Checkout with COD or GCash payment
-- Real-time order tracking with rider location on map
-- Order history and profile management
-
-### Admin Dashboard
-- Analytics overview (daily/weekly revenue, order volume, top products)
-- Inventory management with stock tracking
-- Order management with status updates and rider assignment
-- Category management
-- Rider management with location tracking
-- Sales reports with daily/weekly/monthly aggregation
-- PDF and CSV report export
-
-### Rider App
-- Active delivery display with customer details and map
-- One-tap actions: call customer, open in Google Maps, mark delivered
-- Real-time order assignment notifications via Supabase Realtime
-- GPS location tracking during active deliveries
-- Delivery history and earnings tracker
+- **`images`** — Product images and menu assets.
+- **`business-qr`** — GCash and Maya QR code images uploaded via admin settings.
 
 ## Project Structure
 
 ```
 suarez-food-hub/
 ├── apps/
-│   ├── web/              # Public marketing site
-│   ├── customer/         # Customer e-commerce PWA
-│   ├── admin/            # Admin dashboard PWA
-│   └── rider/            # Rider delivery PWA
+│   ├── web/                   # Customer app (port 3000)
+│   │   ├── app/
+│   │   │   ├── api/           # API routes (cart, locations, orders, etc.)
+│   │   │   ├── checkout/      # Checkout with payment selection
+│   │   │   ├── menu/          # Menu browsing
+│   │   │   ├── orders/        # Order list + status timeline + live map
+│   │   │   └── profile/       # User profile with address
+│   │   └── components/        # CartSidebar, CustomerDeliveryMap, etc.
+│   ├── admin/                 # Admin dashboard (port 3001)
+│   │   └── app/(dashboard)/
+│   │       ├── inventory/     # Product CRUD + stock edit
+│   │       ├── orders/        # Full order management
+│   │       ├── riders/        # Rider approval + location
+│   │       ├── cashouts/      # Cashout management
+│   │       ├── staff/         # Staff account creation
+│   │       ├── categories/    # Category CRUD
+│   │       ├── reports/       # Sales reports
+│   │       └── settings/      # Business config + QR upload
+│   ├── staff/                 # Staff kitchen app (port 3002)
+│   │   └── app/(staff)/
+│   │       ├── dashboard/     # Order stats + low-stock alerts
+│   │       ├── orders/        # Kitchen workflow
+│   │       └── inventory/     # Quick stock edit
+│   └── rider/                 # Rider delivery app (port 3003)
+│       └── app/(rider)/
+│           ├── page.tsx       # Home — active delivery + live map
+│           ├── deliveries/    # Delivery history
+│           ├── earnings/      # Earnings + cashout requests
+│           └── profile/       # Rider profile + stats
 ├── packages/
-│   ├── ui/               # Shared UI components
-│   ├── types/            # TypeScript types
-│   ├── utils/            # Utility functions
-│   ├── supabase/         # Supabase client helpers
-│   └── config/           # Shared configs
-├── prisma/
-│   ├── schema.prisma     # Database schema
-│   └── seed.ts           # Seed data
-├── turbo.json            # Turborepo config
-├── pnpm-workspace.yaml   # Workspace config
-└── package.json          # Root package.json
+│   ├── ui/                    # Shared UI components + Tailwind config
+│   ├── types/                 # TypeScript type definitions
+│   ├── utils/                 # Utility functions
+│   └── supabase/              # Supabase client helpers
+├── supabase/migrations/
+│   ├── 0001_capstone_full.sql # Full schema + RLS + storage + realtime
+│   ├── 0002_psgc_seed.sql     # PSGC address data
+│   └── 0003_demo_seed.sql     # Demo products and categories
+└── package.json               # Root package.json
 ```
-
-## Database Schema
-
-- **profiles** — User profiles with role-based access (customer, admin, rider, manager)
-- **categories** — Menu categories (Dumplings, Spring Rolls, Main Dish, etc.)
-- **products** — Menu items with base pricing and variant support
-- **product_variants** — Size, preparation, and sugar level variants
-- **orders** — Customer orders with payment, delivery, and status tracking
-- **order_items** — Individual items within an order
-- **rider_locations** — Real-time rider GPS coordinates
-
-## License
-
-Private — Suarez Food Hub

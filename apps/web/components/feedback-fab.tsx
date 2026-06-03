@@ -58,12 +58,8 @@ export function FeedbackFab() {
               color: "#fff",
             }}
           >
-            <h4 style={{ margin: 0, fontFamily: "var(--playfair-display)", fontSize: 18 }}>
-              Send Feedback
-            </h4>
-            <p style={{ margin: "4px 0 0", fontSize: 13, opacity: 0.85 }}>
-              Help us improve your experience
-            </p>
+            <h4 style={{ margin: 0, fontFamily: "var(--playfair-display)", fontSize: 18 }}>Send Feedback</h4>
+            <p style={{ margin: "4px 0 0", fontSize: 13, opacity: 0.85 }}>Help us improve your experience</p>
           </div>
           <form
             onSubmit={(e) => {
@@ -73,7 +69,7 @@ export function FeedbackFab() {
               if (!message?.trim()) return;
               window.open(
                 `mailto:feedback@suarezfoodhub.com?subject=Feedback&body=${encodeURIComponent(message)}`,
-                "_blank"
+                "_blank",
               );
               form.reset();
               setOpen(false);

@@ -4,6 +4,7 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: "SFH Rider",
   description: "Suarez Food Hub Delivery Rider App",
+  icons: { icon: "/favicon.svg" },
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
@@ -21,11 +22,7 @@ export const viewport: Viewport = {
   themeColor: "#f97316",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <head>

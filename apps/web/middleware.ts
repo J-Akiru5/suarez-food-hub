@@ -1,5 +1,5 @@
-import { updateSession } from "@/lib/supabase/middleware";
 import { type NextRequest, NextResponse } from "next/server";
+import { updateSession } from "@/lib/supabase/middleware";
 
 const protectedRoutes = ["/checkout", "/orders", "/profile"];
 const authRoutes = ["/login", "/register"];
@@ -9,14 +9,13 @@ export async function middleware(request: NextRequest) {
 
   const { pathname } = request.nextUrl;
 
-  const hasSession = !!user;
+  const hasSession =
+    user !== null ||
+    request.cookies.get("sb-access-token") !== undefined ||
+    request.cookies.get("sb-refresh-token") !== undefined;
 
-  const isProtectedRoute = protectedRoutes.some(
-    (route) => pathname === route || pathname.startsWith(route + "/")
-  );
-  const isAuthRoute = authRoutes.some(
-    (route) => pathname === route || pathname.startsWith(route + "/")
-  );
+  const isProtectedRoute = protectedRoutes.some((route) => pathname === route || pathname.startsWith(route + "/"));
+  const isAuthRoute = authRoutes.some((route) => pathname === route || pathname.startsWith(route + "/"));
 
   if (isProtectedRoute && !hasSession) {
     const url = request.nextUrl.clone();
@@ -35,7 +34,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
-  ],
+  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
 };

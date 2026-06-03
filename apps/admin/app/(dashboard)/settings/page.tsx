@@ -1,139 +1,125 @@
 "use client";
 
-import { useEffect, useState, useRef } from "react";
-import Image from "next/image";
-import { createClient } from "@/lib/supabase/client";
-import { Card, CardContent } from "@repo/ui";
-import { Button } from "@repo/ui";
-import { Input } from "@repo/ui";
+import { Button, Card, CardContent, Input } from "@repo/ui";
 import {
-  Settings,
-  Upload,
-  Loader2,
-  Image as ImageIcon,
-  Save,
-  Store,
   CreditCard,
+  Image as ImageIcon,
+  Loader2,
+  MapPin,
   QrCode,
+  Save,
+  Settings,
+  Store,
   Trash2,
+  Upload,
 } from "lucide-react";
+import Image from "next/image";
+import { useEffect, useRef, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
-interface StoreSettings {
+interface BusinessConfig {
   id?: string;
-  store_name: string;
-  store_address: string;
-  store_phone: string;
-  store_email: string;
+  name: string;
+  address: string;
+  phone: string;
+  email: string;
   gcash_qr_url: string;
-  gcash_number: string;
-  gcash_name: string;
-  is_gcash_enabled: boolean;
+  maya_qr_url: string;
+  delivery_fee: number;
+  free_delivery_min: number;
+  base_lat: number;
+  base_lng: number;
 }
 
 export default function SettingsPage() {
   const supabase = createClient();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingGcash, setUploadingGcash] = useState(false);
+  const [uploadingMaya, setUploadingMaya] = useState(false);
+  const gcashRef = useRef<HTMLInputElement>(null);
+  const mayaRef = useRef<HTMLInputElement>(null);
 
-  const [settings, setSettings] = useState<StoreSettings>({
-    store_name: "Suarez Food Hub",
-    store_address: "",
-    store_phone: "",
-    store_email: "",
+  const [config, setConfig] = useState<BusinessConfig>({
+    name: "Suarez Food Hub",
+    address: "",
+    phone: "",
+    email: "",
     gcash_qr_url: "",
-    gcash_number: "",
-    gcash_name: "",
-    is_gcash_enabled: true,
+    maya_qr_url: "",
+    delivery_fee: 40,
+    free_delivery_min: 200,
+    base_lat: 0,
+    base_lng: 0,
   });
 
   useEffect(() => {
-    fetchSettings();
+    fetchConfig();
   }, []);
 
-  async function fetchSettings() {
-    const { data } = await supabase
-      .from("store_settings")
-      .select("*")
-      .limit(1)
-      .single();
-
+  async function fetchConfig() {
+    const { data } = await supabase.from("business").select("*").limit(1).maybeSingle();
     if (data) {
-      setSettings({
+      setConfig({
         id: data.id,
-        store_name: data.store_name || "Suarez Food Hub",
-        store_address: data.store_address || "",
-        store_phone: data.store_phone || "",
-        store_email: data.store_email || "",
+        name: data.name || "Suarez Food Hub",
+        address: data.address || "",
+        phone: data.phone || "",
+        email: data.email || "",
         gcash_qr_url: data.gcash_qr_url || "",
-        gcash_number: data.gcash_number || "",
-        gcash_name: data.gcash_name || "",
-        is_gcash_enabled: data.is_gcash_enabled ?? true,
+        maya_qr_url: data.maya_qr_url || "",
+        delivery_fee: Number(data.delivery_fee) || 40,
+        free_delivery_min: Number(data.free_delivery_min) || 200,
+        base_lat: Number(data.base_lat) || 0,
+        base_lng: Number(data.base_lng) || 0,
       });
     }
     setLoading(false);
   }
 
-  async function handleQRUpload(e: React.ChangeEvent<HTMLInputElement>) {
-    const file = e.target.files?.[0];
+  async function uploadQR(
+    file: File,
+    prefix: string,
+    setter: (url: string) => void,
+    setUpdating: (v: boolean) => void,
+  ) {
     if (!file) return;
-
-    setUploading(true);
-    const fileExt = file.name.split(".").pop();
-    const fileName = `gcash-qr-${Date.now()}.${fileExt}`;
-    const filePath = `settings/${fileName}`;
-
+    setUpdating(true);
+    const ext = file.name.split(".").pop();
+    const filename = `${prefix}-${Date.now()}.${ext}`;
     const { error } = await supabase.storage
-      .from("store-assets")
-      .upload(filePath, file, { upsert: true });
-
+      .from("business-qr")
+      .upload(filename, file, { contentType: file.type, upsert: true });
     if (!error) {
-      const { data } = supabase.storage
-        .from("store-assets")
-        .getPublicUrl(filePath);
-      setSettings((prev) => ({ ...prev, gcash_qr_url: data.publicUrl }));
+      const { data: urlData } = supabase.storage.from("business-qr").getPublicUrl(filename);
+      setter(urlData.publicUrl);
     }
-
-    setUploading(false);
+    setUpdating(false);
   }
 
   async function handleSave() {
     setSaving(true);
-
-    const updateData = {
-      store_name: settings.store_name,
-      store_address: settings.store_address,
-      store_phone: settings.store_phone,
-      store_email: settings.store_email,
-      gcash_qr_url: settings.gcash_qr_url,
-      gcash_number: settings.gcash_number,
-      gcash_name: settings.gcash_name,
-      is_gcash_enabled: settings.is_gcash_enabled,
+    const payload = {
+      name: config.name,
+      address: config.address,
+      phone: config.phone,
+      email: config.email,
+      gcash_qr_url: config.gcash_qr_url,
+      maya_qr_url: config.maya_qr_url,
+      delivery_fee: config.delivery_fee,
+      free_delivery_min: config.free_delivery_min,
+      base_lat: config.base_lat,
+      base_lng: config.base_lng,
       updated_at: new Date().toISOString(),
     };
 
-    if (settings.id) {
-      await supabase
-        .from("store_settings")
-        .update(updateData)
-        .eq("id", settings.id);
+    if (config.id) {
+      await supabase.from("business").update(payload).eq("id", config.id);
     } else {
-      const { data } = await supabase
-        .from("store_settings")
-        .insert(updateData)
-        .select()
-        .single();
-      if (data) {
-        setSettings((prev) => ({ ...prev, id: data.id }));
-      }
+      const { data } = await supabase.from("business").insert(payload).select().single();
+      if (data) setConfig((prev) => ({ ...prev, id: data.id }));
     }
-
     setSaving(false);
-  }
-
-  async function removeQR() {
-    setSettings((prev) => ({ ...prev, gcash_qr_url: "" }));
   }
 
   if (loading) {
@@ -149,138 +135,9 @@ export default function SettingsPage() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900 font-display">Settings</h1>
         <p className="text-sm text-muted-foreground">
-          Manage store settings and payment configuration
+          Manage store settings, payment QR codes, and delivery configuration
         </p>
       </div>
-
-      {/* GCash QR Code Settings */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex items-center gap-2 mb-6">
-            <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
-              <QrCode className="h-5 w-5 text-blue-600" />
-            </div>
-            <div>
-              <h2 className="font-bold text-lg font-display">GCash QR Code</h2>
-              <p className="text-sm text-muted-foreground">
-                Upload your GCash QR code for customer payments
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            {/* QR Code Preview */}
-            <div>
-              <label className="text-sm font-medium text-gray-700 block mb-2">
-                Current QR Code
-              </label>
-              <div className="flex items-start gap-4">
-                <div className="h-40 w-40 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden bg-gray-50">
-                  {settings.gcash_qr_url ? (
-                    <Image
-                      src={settings.gcash_qr_url}
-                      alt="GCash QR Code"
-                      width={160}
-                      height={160}
-                      className="object-contain w-full h-full"
-                    />
-                  ) : (
-                    <div className="text-center">
-                      <QrCode className="h-12 w-12 text-gray-300 mx-auto mb-2" />
-                      <p className="text-xs text-gray-400">No QR code uploaded</p>
-                    </div>
-                  )}
-                </div>
-                <div className="flex-1 space-y-3">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleQRUpload}
-                    className="hidden"
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => fileInputRef.current?.click()}
-                      disabled={uploading}
-                      className="gap-2"
-                    >
-                      {uploading ? (
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                      ) : (
-                        <Upload className="h-4 w-4" />
-                      )}
-                      {settings.gcash_qr_url ? "Replace QR Code" : "Upload QR Code"}
-                    </Button>
-                    {settings.gcash_qr_url && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={removeQR}
-                        className="gap-2 text-red-600 hover:text-red-700 hover:bg-red-50"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                        Remove
-                      </Button>
-                    )}
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Recommended size: 500x500px. Supports PNG, JPG, or SVG.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* GCash Details */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">
-                  GCash Number
-                </label>
-                <Input
-                  value={settings.gcash_number}
-                  onChange={(e) =>
-                    setSettings((prev) => ({ ...prev, gcash_number: e.target.value }))
-                  }
-                  placeholder="09XXXXXXXXX"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">
-                  Account Name
-                </label>
-                <Input
-                  value={settings.gcash_name}
-                  onChange={(e) =>
-                    setSettings((prev) => ({ ...prev, gcash_name: e.target.value }))
-                  }
-                  placeholder="Account holder name"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="gcash_enabled"
-                checked={settings.is_gcash_enabled}
-                onChange={(e) =>
-                  setSettings((prev) => ({
-                    ...prev,
-                    is_gcash_enabled: e.target.checked,
-                  }))
-                }
-                className="rounded border-gray-300 text-crimson-600 focus:ring-crimson-500"
-              />
-              <label htmlFor="gcash_enabled" className="text-sm font-medium text-gray-700">
-                Enable GCash payments
-              </label>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Store Information */}
       <Card>
@@ -291,159 +148,229 @@ export default function SettingsPage() {
             </div>
             <div>
               <h2 className="font-bold text-lg font-display">Store Information</h2>
-              <p className="text-sm text-muted-foreground">
-                Basic store details and contact information
-              </p>
+              <p className="text-sm text-muted-foreground">Basic store details and contact info</p>
             </div>
           </div>
-
           <div className="space-y-4">
             <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1">
-                Store Name
-              </label>
-              <Input
-                value={settings.store_name}
-                onChange={(e) =>
-                  setSettings((prev) => ({ ...prev, store_name: e.target.value }))
-                }
-                placeholder="Store name"
-              />
+              <label className="text-sm font-medium text-gray-700 block mb-1">Store Name</label>
+              <Input value={config.name} onChange={(e) => setConfig((p) => ({ ...p, name: e.target.value }))} />
             </div>
-
             <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1">
-                Address
-              </label>
+              <label className="text-sm font-medium text-gray-700 block mb-1">Address</label>
               <textarea
-                value={settings.store_address}
-                onChange={(e) =>
-                  setSettings((prev) => ({ ...prev, store_address: e.target.value }))
-                }
-                placeholder="Store address"
+                value={config.address}
+                onChange={(e) => setConfig((p) => ({ ...p, address: e.target.value }))}
                 rows={2}
                 className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-crimson-500 focus:border-transparent"
               />
             </div>
-
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">
-                  Phone Number
-                </label>
-                <Input
-                  value={settings.store_phone}
-                  onChange={(e) =>
-                    setSettings((prev) => ({ ...prev, store_phone: e.target.value }))
-                  }
-                  placeholder="09XXXXXXXXX"
-                />
+                <label className="text-sm font-medium text-gray-700 block mb-1">Phone</label>
+                <Input value={config.phone} onChange={(e) => setConfig((p) => ({ ...p, phone: e.target.value }))} />
               </div>
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">
-                  Email Address
-                </label>
-                <Input
-                  type="email"
-                  value={settings.store_email}
-                  onChange={(e) =>
-                    setSettings((prev) => ({ ...prev, store_email: e.target.value }))
-                  }
-                  placeholder="store@example.com"
-                />
+                <label className="text-sm font-medium text-gray-700 block mb-1">Email</label>
+                <Input value={config.email} onChange={(e) => setConfig((p) => ({ ...p, email: e.target.value }))} />
               </div>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Business Settings Placeholder */}
+      {/* Payment QR Codes */}
       <Card>
         <CardContent className="p-6">
           <div className="flex items-center gap-2 mb-6">
             <div className="h-10 w-10 rounded-lg bg-green-100 flex items-center justify-center">
-              <CreditCard className="h-5 w-5 text-green-600" />
+              <QrCode className="h-5 w-5 text-green-600" />
             </div>
             <div>
-              <h2 className="font-bold text-lg font-display">Business Settings</h2>
-              <p className="text-sm text-muted-foreground">
-                Configure delivery fees, minimum orders, and more
-              </p>
+              <h2 className="font-bold text-lg font-display">Payment QR Codes</h2>
+              <p className="text-sm text-muted-foreground">Upload GCash and Maya QR codes for customer payments</p>
             </div>
           </div>
 
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">
-                  Delivery Fee (₱)
-                </label>
-                <Input
-                  type="number"
-                  placeholder="0.00"
-                  min="0"
-                  step="0.01"
-                />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* GCash */}
+            <div className="space-y-3 p-4 border border-gray-200 rounded-xl">
+              <h3 className="font-semibold text-sm text-blue-600">GCash</h3>
+              <div className="h-36 w-36 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden bg-gray-50 mx-auto">
+                {config.gcash_qr_url ? (
+                  <Image
+                    src={config.gcash_qr_url}
+                    alt="GCash QR"
+                    width={144}
+                    height={144}
+                    className="object-contain"
+                    unoptimized
+                  />
+                ) : (
+                  <QrCode className="h-12 w-12 text-gray-300" />
+                )}
               </div>
-              <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">
-                  Minimum Order (₱)
-                </label>
-                <Input
-                  type="number"
-                  placeholder="0.00"
-                  min="0"
-                  step="0.01"
-                />
+              <input
+                ref={gcashRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f)
+                    uploadQR(f, "gcash", (url) => setConfig((p) => ({ ...p, gcash_qr_url: url })), setUploadingGcash);
+                }}
+              />
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => gcashRef.current?.click()}
+                  disabled={uploadingGcash}
+                >
+                  {uploadingGcash ? (
+                    <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                  ) : (
+                    <Upload className="h-3 w-3 mr-1" />
+                  )}
+                  Upload
+                </Button>
+                {config.gcash_qr_url && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-red-600"
+                    onClick={() => setConfig((p) => ({ ...p, gcash_qr_url: "" }))}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                )}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">
-                  Free Delivery Minimum (₱)
-                </label>
-                <Input
-                  type="number"
-                  placeholder="0.00"
-                  min="0"
-                  step="0.01"
-                />
+            {/* Maya */}
+            <div className="space-y-3 p-4 border border-gray-200 rounded-xl">
+              <h3 className="font-semibold text-sm text-purple-600">Maya</h3>
+              <div className="h-36 w-36 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden bg-gray-50 mx-auto">
+                {config.maya_qr_url ? (
+                  <Image
+                    src={config.maya_qr_url}
+                    alt="Maya QR"
+                    width={144}
+                    height={144}
+                    className="object-contain"
+                    unoptimized
+                  />
+                ) : (
+                  <QrCode className="h-12 w-12 text-gray-300" />
+                )}
               </div>
-              <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">
-                  Service Fee (₱)
-                </label>
-                <Input
-                  type="number"
-                  placeholder="0.00"
-                  min="0"
-                  step="0.01"
-                />
+              <input
+                ref={mayaRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const f = e.target.files?.[0];
+                  if (f) uploadQR(f, "maya", (url) => setConfig((p) => ({ ...p, maya_qr_url: url })), setUploadingMaya);
+                }}
+              />
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1"
+                  onClick={() => mayaRef.current?.click()}
+                  disabled={uploadingMaya}
+                >
+                  {uploadingMaya ? (
+                    <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                  ) : (
+                    <Upload className="h-3 w-3 mr-1" />
+                  )}
+                  Upload
+                </Button>
+                {config.maya_qr_url && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-red-600"
+                    onClick={() => setConfig((p) => ({ ...p, maya_qr_url: "" }))}
+                  >
+                    <Trash2 className="h-3 w-3" />
+                  </Button>
+                )}
               </div>
-            </div>
-
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <p className="text-sm text-muted-foreground text-center">
-                Additional business settings coming soon...
-              </p>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Save Button */}
+      {/* Delivery & Location */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="h-10 w-10 rounded-lg bg-orange-100 flex items-center justify-center">
+              <MapPin className="h-5 w-5 text-orange-600" />
+            </div>
+            <div>
+              <h2 className="font-bold text-lg font-display">Delivery & Location</h2>
+              <p className="text-sm text-muted-foreground">
+                Delivery fees, free delivery threshold, and store coordinates
+              </p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700 block mb-1">Delivery Fee (₱)</label>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                value={config.delivery_fee}
+                onChange={(e) => setConfig((p) => ({ ...p, delivery_fee: parseFloat(e.target.value) || 0 }))}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700 block mb-1">Free Delivery Min (₱)</label>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                value={config.free_delivery_min}
+                onChange={(e) => setConfig((p) => ({ ...p, free_delivery_min: parseFloat(e.target.value) || 0 }))}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700 block mb-1">Latitude</label>
+              <Input
+                type="number"
+                step="0.000001"
+                value={config.base_lat}
+                onChange={(e) => setConfig((p) => ({ ...p, base_lat: parseFloat(e.target.value) || 0 }))}
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700 block mb-1">Longitude</label>
+              <Input
+                type="number"
+                step="0.000001"
+                value={config.base_lng}
+                onChange={(e) => setConfig((p) => ({ ...p, base_lng: parseFloat(e.target.value) || 0 }))}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <div className="flex justify-end">
         <Button
           onClick={handleSave}
           disabled={saving}
           className="gap-2 bg-crimson-700 hover:bg-crimson-800 text-white px-8"
         >
-          {saving ? (
-            <Loader2 className="h-4 w-4 animate-spin" />
-          ) : (
-            <Save className="h-4 w-4" />
-          )}
+          {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           Save Settings
         </Button>
       </div>

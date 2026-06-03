@@ -1,0 +1,26 @@
+web:
+  - changed-files:
+      - any-glob-to-any-file: apps/web/**/*
+
+admin:
+  - changed-files:
+      - any-glob-to-any-file: apps/admin/**/*
+
+staff:
+  - changed-files:
+      - any-glob-to-any-file: apps/staff/**/*
+
+rider:
+  - changed-files:
+      - any-glob-to-any-file: apps/rider/**/*
+
+packages:
+  - changed-files:
+      - any-glob-to-any-file: packages/**/*
+
+infra:
+  - changed-files:
+      - any-glob-to-any-file:
+          - .github/**/*
+          - turbo.json
+          - package.json

@@ -1,7 +1,7 @@
 "use client";
 
+import { Mail, MapPin, Phone } from "lucide-react";
 import * as React from "react";
-import { MapPin, Phone, Mail } from "lucide-react";
 import { cn } from "../lib/utils";
 
 export interface AboutSectionProps {
@@ -23,29 +23,22 @@ const AboutSection = React.forwardRef<HTMLDivElement, AboutSectionProps>(
       foodImage = "/assets/steamed-siomai.jpg",
       className,
     },
-    ref
+    ref,
   ) => {
     return (
-      <section
-        ref={ref}
-        className={cn("bg-[#FFF8F0]", className)}
-      >
+      <section ref={ref} className={cn("bg-[#FFF8F0]", className)}>
         <div className="max-w-[1280px] mx-auto">
           <div className="flex flex-col lg:flex-row min-h-[600px]">
             {/* Left: About Us */}
             <div className="flex-1 py-16 px-6 md:px-12 lg:px-16 flex flex-col justify-center" data-aos="fade-right">
-              <p className="text-[#B85C38] text-sm font-semibold uppercase tracking-wider mb-3">
-                {subtitle}
-              </p>
+              <p className="text-[#B85C38] text-sm font-semibold uppercase tracking-wider mb-3">{subtitle}</p>
               <h2
                 className="text-3xl md:text-4xl font-bold text-[#1A1A1A] leading-tight mb-6"
                 style={{ fontFamily: "var(--playfair-display)" }}
               >
                 {title}
               </h2>
-              <p className="text-[#1A1A1A]/60 text-base leading-relaxed mb-8 max-w-md">
-                {description}
-              </p>
+              <p className="text-[#1A1A1A]/60 text-base leading-relaxed mb-8 max-w-md">{description}</p>
 
               {/* Overlapping Images */}
               <div className="flex gap-4">
@@ -55,8 +48,7 @@ const AboutSection = React.forwardRef<HTMLDivElement, AboutSectionProps>(
                     alt="Store"
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src =
-                        "/assets/food-hub.jpg";
+                      (e.target as HTMLImageElement).src = "/assets/food-hub.jpg";
                     }}
                   />
                 </div>
@@ -66,8 +58,7 @@ const AboutSection = React.forwardRef<HTMLDivElement, AboutSectionProps>(
                     alt="Food"
                     className="w-full h-full object-cover"
                     onError={(e) => {
-                      (e.target as HTMLImageElement).src =
-                        "/assets/food-hub.jpg";
+                      (e.target as HTMLImageElement).src = "/assets/food-hub.jpg";
                     }}
                   />
                 </div>
@@ -75,10 +66,11 @@ const AboutSection = React.forwardRef<HTMLDivElement, AboutSectionProps>(
             </div>
 
             {/* Right: Visit Us */}
-            <div className="flex-1 bg-[#1A1A1A] py-16 px-6 md:px-12 lg:px-16 flex flex-col justify-center" data-aos="fade-left">
-              <p className="text-[#B85C38] text-sm font-semibold uppercase tracking-wider mb-3">
-                Find Us
-              </p>
+            <div
+              className="flex-1 bg-[#1A1A1A] py-16 px-6 md:px-12 lg:px-16 flex flex-col justify-center"
+              data-aos="fade-left"
+            >
+              <p className="text-[#B85C38] text-sm font-semibold uppercase tracking-wider mb-3">Find Us</p>
               <h2
                 className="text-3xl md:text-4xl font-bold text-white leading-tight mb-8"
                 style={{ fontFamily: "var(--playfair-display)" }}
@@ -120,7 +112,7 @@ const AboutSection = React.forwardRef<HTMLDivElement, AboutSectionProps>(
         </div>
       </section>
     );
-  }
+  },
 );
 AboutSection.displayName = "AboutSection";
 

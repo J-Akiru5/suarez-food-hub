@@ -13,6 +13,7 @@ build/
 # Environment
 .env
 .env.local
+e2e/test-results/
 .env.development.local
 .env.test.local
 .env.production.local

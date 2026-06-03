@@ -1,16 +1,26 @@
 "use client";
 
-import { createClient } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
 
 interface Profile {
   id: string;
   full_name: string;
+  first_name: string;
+  last_name: string;
   phone: string;
   address: string;
+  street_address: string;
+  region_id: string;
+  province_id: string;
+  town_id: string;
+  barangay_id: string;
+  zip_code: string;
   role: string;
   avatar_url: string | null;
+  rider_status: string;
+  is_active: boolean;
 }
 
 interface AuthContextValue {
@@ -35,11 +45,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true);
 
   const fetchProfile = async (userId: string) => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .single();
+    const { data } = await supabase.from("profiles").select("*").eq("id", userId).single();
     if (data) setProfile(data as Profile);
   };
 
@@ -50,16 +56,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          fetchProfile(session.user.id);
-        } else {
-          setProfile(null);
-        }
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+      if (session?.user) {
+        fetchProfile(session.user.id);
+      } else {
+        setProfile(null);
       }
-    );
+    });
 
     return () => subscription.unsubscribe();
   }, []);
@@ -72,11 +78,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.refresh();
   };
 
-  return (
-    <AuthContext.Provider value={{ user, profile, loading, signOut }}>
-      {children}
-    </AuthContext.Provider>
-  );
+  return <AuthContext.Provider value={{ user, profile, loading, signOut }}>{children}</AuthContext.Provider>;
 }
 
 export const useAuth = () => useContext(AuthContext);

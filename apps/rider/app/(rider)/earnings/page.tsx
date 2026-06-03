@@ -1,9 +1,9 @@
 "use client";
 
+import { eachDayOfInterval, endOfMonth, endOfWeek, format, startOfMonth, startOfWeek } from "date-fns";
+import { BarChart3, Calendar, DollarSign, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
-import { DollarSign, Calendar, TrendingUp, BarChart3 } from "lucide-react";
-import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
 
 interface EarningsData {
   today: number;
@@ -40,37 +40,34 @@ export default function EarningsPage() {
       const weekStart = startOfWeek(now, { weekStartsOn: 1 });
       const monthStart = startOfMonth(now);
 
-      const { data: allDelivered } = await supabase
+      const { data: monthEarnings } = await supabase
+        .from("rider_earnings")
+        .select("id, amount, created_at, order_id, status")
+        .eq("rider_id", user.id)
+        .gte("created_at", monthStart.toISOString())
+        .order("created_at", { ascending: false });
+
+      const { data: allEarnings } = await supabase.from("rider_earnings").select("amount").eq("rider_id", user.id);
+
+      const { data: recentOrders } = await supabase
         .from("orders")
-        .select("id, delivery_fee, completed_at, delivery_address")
+        .select("id, delivery_address, delivered_at, delivery_fee")
         .eq("rider_id", user.id)
         .eq("status", "delivered")
-        .gte("completed_at", monthStart.toISOString())
-        .order("completed_at", { ascending: false });
+        .order("delivered_at", { ascending: false })
+        .limit(10);
 
-      if (allDelivered) {
-        const todayEarnings = allDelivered
-          .filter((o) => new Date(o.completed_at) >= todayStart)
-          .reduce((sum, o) => sum + (o.delivery_fee || 0), 0);
+      if (monthEarnings) {
+        const todayAmt = monthEarnings
+          .filter((e) => new Date(e.created_at) >= todayStart)
+          .reduce((sum, e) => sum + (e.amount || 0), 0);
 
-        const weekEarnings = allDelivered
-          .filter((o) => new Date(o.completed_at) >= weekStart)
-          .reduce((sum, o) => sum + (o.delivery_fee || 0), 0);
+        const weekAmt = monthEarnings
+          .filter((e) => new Date(e.created_at) >= weekStart)
+          .reduce((sum, e) => sum + (e.amount || 0), 0);
 
-        const monthEarnings = allDelivered.reduce(
-          (sum, o) => sum + (o.delivery_fee || 0),
-          0
-        );
-
-        const { data: totalData } = await supabase
-          .from("orders")
-          .select("delivery_fee")
-          .eq("rider_id", user.id)
-          .eq("status", "delivered");
-
-        const totalEarnings = totalData
-          ? totalData.reduce((sum, o) => sum + (o.delivery_fee || 0), 0)
-          : 0;
+        const monthAmt = monthEarnings.reduce((sum, e) => sum + (e.amount || 0), 0);
+        const totalAmt = allEarnings ? allEarnings.reduce((sum, e) => sum + (e.amount || 0), 0) : 0;
 
         const weekDays = eachDayOfInterval({
           start: weekStart,
@@ -79,24 +76,24 @@ export default function EarningsPage() {
 
         const dailyEarnings = weekDays.map((day) => {
           const dayStr = format(day, "yyyy-MM-dd");
-          const dayEarnings = allDelivered
-            .filter((o) => format(new Date(o.completed_at), "yyyy-MM-dd") === dayStr)
-            .reduce((sum, o) => sum + (o.delivery_fee || 0), 0);
-          return { date: format(day, "EEE"), amount: dayEarnings };
+          const dayAmt = monthEarnings
+            .filter((e) => format(new Date(e.created_at), "yyyy-MM-dd") === dayStr)
+            .reduce((sum, e) => sum + (e.amount || 0), 0);
+          return { date: format(day, "EEE"), amount: dayAmt };
         });
 
-        const recentDeliveries = allDelivered.slice(0, 10).map((o) => ({
+        const recentDeliveries = (recentOrders || []).map((o) => ({
           id: o.id,
-          date: format(new Date(o.completed_at), "MMM d"),
+          date: o.delivered_at ? format(new Date(o.delivered_at), "MMM d") : "—",
           amount: o.delivery_fee || 0,
           address: o.delivery_address,
         }));
 
         setEarnings({
-          today: todayEarnings,
-          week: weekEarnings,
-          month: monthEarnings,
-          total: totalEarnings,
+          today: todayAmt,
+          week: weekAmt,
+          month: monthAmt,
+          total: totalAmt,
           dailyEarnings,
           recentDeliveries,
         });
@@ -181,9 +178,7 @@ export default function EarningsPage() {
                   <p className="text-sm text-gray-800 truncate">{d.address}</p>
                   <p className="text-xs text-gray-400">{d.date}</p>
                 </div>
-                <span className="text-sm font-semibold text-brand-600 ml-3">
-                  ₱{d.amount.toFixed(2)}
-                </span>
+                <span className="text-sm font-semibold text-brand-600 ml-3">₱{d.amount.toFixed(2)}</span>
               </div>
             ))}
           </div>

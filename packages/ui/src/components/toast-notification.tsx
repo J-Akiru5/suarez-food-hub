@@ -1,7 +1,7 @@
 "use client";
 
-import * as React from "react";
 import { ShoppingBag } from "lucide-react";
+import * as React from "react";
 import { cn } from "../lib/utils";
 
 export interface ToastNotificationProps {
@@ -25,10 +25,8 @@ const ToastNotification = React.forwardRef<HTMLDivElement, ToastNotificationProp
         ref={ref}
         className={cn(
           "fixed top-6 right-6 z-[9999] flex items-center gap-3 bg-white/90 backdrop-blur-md rounded-30 px-5 py-3.5 shadow-xl border border-white/40 transition-all duration-300",
-          isVisible
-            ? "translate-y-0 opacity-100"
-            : "-translate-y-4 opacity-0 pointer-events-none",
-          className
+          isVisible ? "translate-y-0 opacity-100" : "-translate-y-4 opacity-0 pointer-events-none",
+          className,
         )}
       >
         {/* Icon Circle */}
@@ -37,12 +35,10 @@ const ToastNotification = React.forwardRef<HTMLDivElement, ToastNotificationProp
         </div>
 
         {/* Message */}
-        <p className="text-sm font-medium text-gray-800 pr-2">
-          {message}
-        </p>
+        <p className="text-sm font-medium text-gray-800 pr-2">{message}</p>
       </div>
     );
-  }
+  },
 );
 ToastNotification.displayName = "ToastNotification";
 
