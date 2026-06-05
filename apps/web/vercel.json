@@ -1,0 +1,4 @@
+{
+  "installCommand": "cd ../.. && pnpm install",
+  "buildCommand": "pnpm turbo run build --filter=@repo/web"
+}
