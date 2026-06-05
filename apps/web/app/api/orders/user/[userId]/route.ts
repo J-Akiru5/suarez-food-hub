@@ -3,10 +3,13 @@ import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 
-const serviceSupabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+function getServiceSupabase() {
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+}
 
 export async function GET(_req: NextRequest, { params }: { params: Promise<{ userId: string }> }) {
   try {
+    const serviceSupabase = getServiceSupabase();
     const { userId } = await params;
     const cookieStore = await cookies();
 

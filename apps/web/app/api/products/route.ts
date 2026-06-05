@@ -2,9 +2,12 @@ import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { type NextRequest, NextResponse } from "next/server";
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+function getServiceSupabase() {
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+}
 
 async function requireAdmin() {
+  const supabase = getServiceSupabase();
   const authSupabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -21,6 +24,7 @@ async function requireAdmin() {
 
 export async function GET() {
   try {
+    const supabase = getServiceSupabase();
     const { data: products, error: productsError } = await supabase
       .from("products")
       .select("*")
@@ -73,6 +77,7 @@ export async function POST(req: NextRequest) {
     const admin = await requireAdmin();
     if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+    const supabase = getServiceSupabase();
     const formData = await req.formData();
     const name = formData.get("name") as string;
     const categoryStr = formData.get("category") as string;

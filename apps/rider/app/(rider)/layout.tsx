@@ -3,7 +3,7 @@
 import { DollarSign, History, Home, LogOut, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 const navItems = [
@@ -16,10 +16,15 @@ const navItems = [
 export default function RiderLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const supabase = createClient();
+  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
+  if (!supabaseRef.current && typeof window !== "undefined") {
+    supabaseRef.current = createClient();
+  }
   const [riderName, setRiderName] = useState("Rider");
 
   useEffect(() => {
+    const supabase = supabaseRef.current;
+    if (!supabase) return;
     const getProfile = async () => {
       const {
         data: { user },
@@ -32,9 +37,11 @@ export default function RiderLayout({ children }: { children: React.ReactNode })
       }
     };
     getProfile();
-  }, [supabase]);
+  }, []);
 
   const handleLogout = async () => {
+    const supabase = supabaseRef.current;
+    if (!supabase) return;
     await supabase.auth.signOut();
     router.refresh();
     router.push("/login");

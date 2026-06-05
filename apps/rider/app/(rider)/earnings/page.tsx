@@ -59,15 +59,15 @@ export default function EarningsPage() {
 
       if (monthEarnings) {
         const todayAmt = monthEarnings
-          .filter((e) => new Date(e.created_at) >= todayStart)
-          .reduce((sum, e) => sum + (e.amount || 0), 0);
+          .filter((e: any) => new Date(e.created_at) >= todayStart)
+          .reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
 
         const weekAmt = monthEarnings
-          .filter((e) => new Date(e.created_at) >= weekStart)
-          .reduce((sum, e) => sum + (e.amount || 0), 0);
+          .filter((e: any) => new Date(e.created_at) >= weekStart)
+          .reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
 
-        const monthAmt = monthEarnings.reduce((sum, e) => sum + (e.amount || 0), 0);
-        const totalAmt = allEarnings ? allEarnings.reduce((sum, e) => sum + (e.amount || 0), 0) : 0;
+        const monthAmt = monthEarnings.reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
+        const totalAmt = allEarnings ? allEarnings.reduce((sum: number, e: any) => sum + (e.amount || 0), 0) : 0;
 
         const weekDays = eachDayOfInterval({
           start: weekStart,
@@ -77,12 +77,12 @@ export default function EarningsPage() {
         const dailyEarnings = weekDays.map((day) => {
           const dayStr = format(day, "yyyy-MM-dd");
           const dayAmt = monthEarnings
-            .filter((e) => format(new Date(e.created_at), "yyyy-MM-dd") === dayStr)
-            .reduce((sum, e) => sum + (e.amount || 0), 0);
+            .filter((e: any) => format(new Date(e.created_at), "yyyy-MM-dd") === dayStr)
+            .reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
           return { date: format(day, "EEE"), amount: dayAmt };
         });
 
-        const recentDeliveries = (recentOrders || []).map((o) => ({
+        const recentDeliveries = (recentOrders || []).map((o: any) => ({
           id: o.id,
           date: o.delivered_at ? format(new Date(o.delivered_at), "MMM d") : "—",
           amount: o.delivery_fee || 0,

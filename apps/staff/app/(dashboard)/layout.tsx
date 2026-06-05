@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 const navItems = [
@@ -26,7 +26,10 @@ const navItems = [
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const supabase = createClient();
+  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
+  if (!supabaseRef.current && typeof window !== "undefined") {
+    supabaseRef.current = createClient();
+  }
 
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
   const [profile, setProfile] = useState<{ first_name: string; last_name: string } | null>(null);
@@ -34,6 +37,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
+    const supabase = supabaseRef.current;
+    if (!supabase) return;
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) {
         setUser(data.user);
@@ -45,9 +50,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           .then(({ data: p }) => setProfile(p));
       }
     });
-  }, [supabase]);
+  }, []);
 
   async function handleLogout() {
+    const supabase = supabaseRef.current;
+    if (!supabase) return;
     await supabase.auth.signOut();
     router.push("/login");
     router.refresh();

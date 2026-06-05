@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 interface Profile {
@@ -39,17 +39,24 @@ const AuthContext = createContext<AuthContextValue>({
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const supabase = createClient();
+  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
   const [user, setUser] = useState<any | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProfile = async (userId: string) => {
-    const { data } = await supabase.from("profiles").select("*").eq("id", userId).single();
-    if (data) setProfile(data as Profile);
-  };
+  if (!supabaseRef.current && typeof window !== "undefined") {
+    supabaseRef.current = createClient();
+  }
 
   useEffect(() => {
+    const supabase = supabaseRef.current;
+    if (!supabase) return;
+
+    const fetchProfile = async (userId: string) => {
+      const { data } = await supabase.from("profiles").select("*").eq("id", userId).single();
+      if (data) setProfile(data as Profile);
+    };
+
     supabase.auth.getUser().then(({ data: { user } }) => {
       setUser(user);
       if (user) fetchProfile(user.id);
@@ -71,6 +78,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = async () => {
+    const supabase = supabaseRef.current;
+    if (!supabase) return;
     await supabase.auth.signOut();
     setUser(null);
     setProfile(null);

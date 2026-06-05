@@ -2,9 +2,12 @@ import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { type NextRequest, NextResponse } from "next/server";
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+function getServiceSupabase() {
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+}
 
 async function requireAdmin() {
+  const supabase = getServiceSupabase();
   const authSupabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -21,6 +24,7 @@ async function requireAdmin() {
 
 export async function GET() {
   try {
+    const supabase = getServiceSupabase();
     const { data, error } = await supabase.from("settings").select("key, value");
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     const settings = data.reduce((acc, row) => ({ ...acc, [row.key]: row.value }), {});
@@ -36,6 +40,7 @@ export async function POST(req: NextRequest) {
     const admin = await requireAdmin();
     if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+    const supabase = getServiceSupabase();
     const formData = await req.formData();
     const qrcodeFile = formData.get("gcash_qr") as File | null;
     if (!qrcodeFile || qrcodeFile.size === 0) return NextResponse.json({ error: "No image provided" }, { status: 400 });

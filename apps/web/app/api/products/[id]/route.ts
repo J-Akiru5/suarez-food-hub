@@ -2,9 +2,12 @@ import { createServerClient } from "@supabase/ssr";
 import { createClient } from "@supabase/supabase-js";
 import { type NextRequest, NextResponse } from "next/server";
 
-const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+function getServiceSupabase() {
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+}
 
 async function requireAdmin() {
+  const supabase = getServiceSupabase();
   const authSupabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
@@ -24,6 +27,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const admin = await requireAdmin();
     if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+    const supabase = getServiceSupabase();
     const { id } = await params;
     const formData = await req.formData();
 
@@ -80,6 +84,7 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     const admin = await requireAdmin();
     if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+    const supabase = getServiceSupabase();
     const { id } = await params;
     const { error } = await supabase.from("products").delete().eq("id", id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });

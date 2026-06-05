@@ -3,7 +3,9 @@ import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 
-const serviceSupabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+function getServiceSupabase() {
+  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
+}
 
 async function getUser(req: NextRequest) {
   const cookieStore = await cookies();
@@ -34,6 +36,7 @@ export async function GET(req: NextRequest) {
     const user = await getUser(req);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+    const serviceSupabase = getServiceSupabase();
     const { data, error } = await serviceSupabase.from("user_carts").select("items").eq("user_id", user.id).single();
 
     if (error && error.code !== "PGRST116") {
@@ -54,6 +57,7 @@ export async function PUT(req: NextRequest) {
     const { items } = await req.json();
     if (!Array.isArray(items)) return NextResponse.json({ error: "Items must be an array" }, { status: 400 });
 
+    const serviceSupabase = getServiceSupabase();
     const { error } = await serviceSupabase
       .from("user_carts")
       .upsert({ user_id: user.id, items, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
@@ -71,6 +75,7 @@ export async function DELETE(req: NextRequest) {
     const user = await getUser(req);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+    const serviceSupabase = getServiceSupabase();
     const { error } = await serviceSupabase.from("user_carts").delete().eq("user_id", user.id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ success: true });
