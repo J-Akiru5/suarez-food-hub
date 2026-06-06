@@ -1,40 +1,17 @@
-import { createServerClient } from "@supabase/ssr";
-import { createClient } from "@supabase/supabase-js";
-import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
-
-function getServiceSupabase() {
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
-}
+import { cookies } from "next/headers";
+import { createAuthClient, createServiceClient } from "@repo/data-access/client";
+import { getUser } from "@repo/data-access/auth";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const serviceSupabase = getServiceSupabase();
+    const serviceSupabase = createServiceClient();
     const { id } = await params;
     const cookieStore = await cookies();
+    const authClient = createAuthClient(cookieStore);
 
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-          setAll(cookiesToSet: { name: string; value: string; options: any }[]) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
-            } catch {}
-          },
-        },
-      },
-    );
-
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-    if (userError || !user) {
+    const user = await getUser(authClient);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 

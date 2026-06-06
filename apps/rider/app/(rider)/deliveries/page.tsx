@@ -3,7 +3,8 @@
 import { format } from "date-fns";
 import { Package, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createBrowserTypedClient } from "@repo/data-access/client";
+import { getOrdersForRider } from "@repo/data-access/data/orders";
 
 interface Delivery {
   id: string;
@@ -17,7 +18,7 @@ interface Delivery {
 }
 
 export default function DeliveriesPage() {
-  const supabase = createClient();
+  const supabase = createBrowserTypedClient();
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState({ total: 0, earnings: 0 });
@@ -29,18 +30,14 @@ export default function DeliveriesPage() {
       } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data } = await supabase
-        .from("orders")
-        .select("*, customer:profiles!orders_user_id_fkey(first_name, last_name, full_name)")
-        .eq("rider_id", user.id)
-        .eq("status", "delivered")
-        .order("delivered_at", { ascending: false });
+      const orders = await getOrdersForRider(supabase, user.id);
+      const delivered = orders.filter((o: any) => o.status === "delivered");
 
-      if (data) {
-        setDeliveries(data as Delivery[]);
+      if (delivered) {
+        setDeliveries(delivered as Delivery[]);
         setStats({
-          total: data.length,
-          earnings: data.reduce((sum: number, d: any) => sum + (d.delivery_fee || 0), 0),
+          total: delivered.length,
+          earnings: delivered.reduce((sum: number, d: any) => sum + (d.delivery_fee || 0), 0),
         });
       }
       setLoading(false);

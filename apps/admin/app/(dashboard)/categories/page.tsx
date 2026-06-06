@@ -15,10 +15,11 @@ import {
 } from "@repo/ui";
 import { ArrowDown, ArrowUp, Loader2, Pencil, Plus, Tag, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createBrowserTypedClient } from "@repo/data-access/client";
+import { getCategories, createCategory, updateCategory, deleteCategory } from "@repo/data-access/data/categories";
 
 export default function CategoriesPage() {
-  const supabase = createClient();
+  const supabase = createBrowserTypedClient();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -32,7 +33,7 @@ export default function CategoriesPage() {
   const [formIsActive, setFormIsActive] = useState(true);
 
   const fetchCategories = useCallback(async () => {
-    const { data } = await supabase.from("categories").select("*").order("sort_order");
+    const data = await getCategories(supabase);
 
     // Get product counts
     const cats = (data as Category[]) || [];
@@ -82,10 +83,10 @@ export default function CategoriesPage() {
     };
 
     if (editingCategory) {
-      await supabase.from("categories").update(categoryData).eq("id", editingCategory.id);
+      await updateCategory(supabase, editingCategory.id, categoryData);
     } else {
       const maxOrder = categories.reduce((max, c) => Math.max(max, c.sort_order), 0);
-      await supabase.from("categories").insert({ ...categoryData, sort_order: maxOrder + 1 });
+      await createCategory(supabase, { ...categoryData, sort_order: maxOrder + 1 });
     }
 
     setDialogOpen(false);
@@ -93,9 +94,9 @@ export default function CategoriesPage() {
     fetchCategories();
   }
 
-  async function deleteCategory(id: string) {
+  async function handleDeleteCategory(id: string) {
     if (!confirm("Are you sure you want to delete this category?")) return;
-    await supabase.from("categories").delete().eq("id", id);
+    await deleteCategory(supabase, id);
     fetchCategories();
   }
 
@@ -212,7 +213,7 @@ export default function CategoriesPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => deleteCategory(category.id)}
+                          onClick={() => handleDeleteCategory(category.id)}
                           className="gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
                         >
                           <Trash2 className="h-3 w-3" />

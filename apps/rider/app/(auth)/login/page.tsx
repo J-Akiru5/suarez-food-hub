@@ -3,7 +3,8 @@
 import { Eye, EyeOff, Truck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createBrowserTypedClient } from "@repo/data-access/client";
+import { getProfileRole } from "@repo/data-access/data/profiles";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -12,7 +13,7 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = createBrowserTypedClient();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,11 +32,7 @@ export default function LoginPage() {
     }
 
     if (data.user) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role, is_active, rider_status")
-        .eq("id", data.user.id)
-        .single();
+      const profile = await getProfileRole(supabase, data.user.id);
 
       if (!profile || profile.role !== "rider") {
         setError("Access denied. Rider account required.");

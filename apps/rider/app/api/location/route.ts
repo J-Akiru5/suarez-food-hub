@@ -1,7 +1,8 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@repo/data-access/client";
+import { upsertRiderLocation } from "@repo/data-access/data/locations";
 
-async function requireRider(supabase: Awaited<ReturnType<typeof createClient>>) {
+async function requireRider(supabase: ReturnType<typeof createServiceClient>) {
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -13,7 +14,7 @@ async function requireRider(supabase: Awaited<ReturnType<typeof createClient>>) 
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const supabase = createServiceClient();
     const rider = await requireRider(supabase);
     if (!rider) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -24,12 +25,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    const { error } = await supabase
-      .from("rider_locations")
-      .upsert(
-        { rider_id, latitude: lat, longitude: lng, order_id: order_id || null, updated_at: new Date().toISOString() },
-        { onConflict: "rider_id" },
-      );
+    const { error } = await upsertRiderLocation(supabase, rider_id, lat, lng, order_id);
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ success: true });
@@ -41,7 +37,7 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const supabase = createServiceClient();
     const rider = await requireRider(supabase);
     if (!rider) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

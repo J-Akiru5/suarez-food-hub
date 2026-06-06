@@ -2,7 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { createContext, useContext, useEffect, useRef, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createBrowserTypedClient } from "@repo/data-access/client";
+import { getProfile } from "@repo/data-access/data/profiles";
 
 interface Profile {
   id: string;
@@ -39,13 +40,13 @@ const AuthContext = createContext<AuthContextValue>({
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
+  const supabaseRef = useRef<ReturnType<typeof createBrowserTypedClient> | null>(null);
   const [user, setUser] = useState<any | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
   if (!supabaseRef.current && typeof window !== "undefined") {
-    supabaseRef.current = createClient();
+    supabaseRef.current = createBrowserTypedClient();
   }
 
   useEffect(() => {
@@ -53,8 +54,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!supabase) return;
 
     const fetchProfile = async (userId: string) => {
-      const { data } = await supabase.from("profiles").select("*").eq("id", userId).single();
-      if (data) setProfile(data as Profile);
+      const profile = await getProfile(supabase, userId);
+      if (profile) setProfile(profile as Profile);
     };
 
     supabase.auth.getUser().then(({ data: { user } }) => {

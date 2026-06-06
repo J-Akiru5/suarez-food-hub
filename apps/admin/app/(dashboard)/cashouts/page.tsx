@@ -4,7 +4,8 @@ import { Badge, Button, Card, CardContent, Input } from "@repo/ui";
 import { formatCurrency } from "@repo/utils";
 import { Banknote, CheckCircle, DollarSign, Loader2, Search, XCircle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createBrowserTypedClient } from "@repo/data-access/client";
+import { getCashouts, updateCashout } from "@repo/data-access/data/earnings";
 
 type CashoutStatus = "requested" | "approved" | "paid" | "rejected";
 
@@ -22,7 +23,7 @@ interface Cashout {
 }
 
 export default function CashoutsPage() {
-  const supabase = createClient();
+  const supabase = createBrowserTypedClient();
   const [cashouts, setCashouts] = useState<Cashout[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -31,17 +32,9 @@ export default function CashoutsPage() {
   const [notesInput, setNotesInput] = useState<Record<string, string>>({});
 
   const fetchCashouts = useCallback(async () => {
-    let query = supabase
-      .from("rider_cashouts")
-      .select("*, rider:profiles!rider_cashouts_rider_id_fkey(first_name, last_name, phone)")
-      .order("created_at", { ascending: false });
-
-    if (filter !== "all") {
-      query = query.eq("status", filter);
-    }
-
-    const { data } = await query;
-    setCashouts((data as Cashout[]) || []);
+    const data = await getCashouts(supabase);
+    const filtered = filter !== "all" ? (data as Cashout[]).filter((c) => c.status === filter) : (data as Cashout[]);
+    setCashouts(filtered || []);
     setLoading(false);
   }, [filter, supabase]);
 
@@ -72,7 +65,7 @@ export default function CashoutsPage() {
     if (notesInput[id]) {
       update.notes = notesInput[id];
     }
-    await supabase.from("rider_cashouts").update(update).eq("id", id);
+    await updateCashout(supabase, id, update);
     setProcessingId(null);
     fetchCashouts();
   }

@@ -1,6 +1,7 @@
 "use client";
 
 import type { Order, Profile } from "@repo/types";
+import type { Database } from "@repo/data-access";
 import {
   Badge,
   Button,
@@ -16,7 +17,9 @@ import { formatCurrency } from "@repo/utils";
 import { ArrowLeft, CheckCircle2, Clock, Loader2, MapPin, Phone, User, XCircle } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createBrowserTypedClient } from "@repo/data-access/client";
+import { getOrderById, updateOrderStatus } from "@repo/data-access/data/orders";
+import { getRiders } from "@repo/data-access/data/profiles";
 
 const statusSteps = [
   { key: "pending", label: "Pending" },
@@ -44,7 +47,7 @@ interface OrderDetail extends Order {
 export default function OrderDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const supabase = createClient();
+  const supabase = createBrowserTypedClient();
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [riders, setRiders] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,33 +61,26 @@ export default function OrderDetailPage() {
   }, [orderId]);
 
   async function fetchOrder() {
-    const { data } = await supabase
-      .from("orders")
-      .select(
-        "*, profile:profiles!orders_user_id_fkey(first_name, last_name, phone, address), rider:profiles!orders_rider_id_fkey(first_name, last_name, phone), items:order_items(quantity, unit_price, total_price, special_instructions, product:products!order_items_product_id_fkey(name, image_url))",
-      )
-      .eq("id", orderId)
-      .single();
-
+    const data = await getOrderById(supabase, orderId);
     setOrder(data as OrderDetail);
     setLoading(false);
   }
 
   async function fetchRiders() {
-    const { data } = await supabase.from("profiles").select("*").eq("role", "rider");
+    const data = await getRiders(supabase);
     setRiders((data as Profile[]) || []);
   }
 
   async function assignRider(riderId: string) {
     setUpdating(true);
-    await supabase.from("orders").update({ rider_id: riderId, status: "confirmed" }).eq("id", orderId);
+    await updateOrderStatus(supabase, orderId, "confirmed", { rider_id: riderId });
     await fetchOrder();
     setUpdating(false);
   }
 
   async function updateStatus(status: string) {
     setUpdating(true);
-    await supabase.from("orders").update({ status }).eq("id", orderId);
+    await updateOrderStatus(supabase, orderId, status as Database["public"]["Enums"]["order_status"]);
     await fetchOrder();
     setUpdating(false);
   }

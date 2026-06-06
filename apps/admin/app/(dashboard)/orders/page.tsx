@@ -20,7 +20,9 @@ import { formatCurrency } from "@repo/utils";
 import { ChevronDown, ChevronUp, Eye, Loader2, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createBrowserTypedClient } from "@repo/data-access/client";
+import { getOrdersWithProfiles } from "@repo/data-access/data/orders";
+import { getRiders } from "@repo/data-access/data/profiles";
 
 const statusTabs = [
   { value: "all", label: "All" },
@@ -55,7 +57,7 @@ interface OrderWithProfile extends Order {
 }
 
 export default function OrdersPage() {
-  const supabase = createClient();
+  const supabase = createBrowserTypedClient();
   const [orders, setOrders] = useState<OrderWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
@@ -63,24 +65,15 @@ export default function OrdersPage() {
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
 
   const fetchOrders = useCallback(async () => {
-    let query = supabase
-      .from("orders")
-      .select(
-        "*, profile:profiles!orders_user_id_fkey(first_name, last_name, phone, address), rider:profiles!orders_rider_id_fkey(first_name, last_name), items:order_items(quantity, unit_price, product:products!order_items_product_id_fkey(name))",
-      )
-      .order("created_at", { ascending: false });
-
-    if (activeTab !== "all") {
-      query = query.eq("status", activeTab);
-    }
-
-    const { data } = await query;
+    const data = await getOrdersWithProfiles(supabase, {
+      status: activeTab !== "all" ? activeTab : undefined,
+    });
     setOrders((data as OrderWithProfile[]) || []);
     setLoading(false);
   }, [activeTab, supabase]);
 
   const fetchRiders = useCallback(async () => {
-    const { data } = await supabase.from("profiles").select("*").eq("role", "rider");
+    const data = await getRiders(supabase);
     setRiders((data as Profile[]) || []);
   }, [supabase]);
 

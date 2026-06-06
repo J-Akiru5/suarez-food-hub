@@ -1,28 +1,22 @@
-import { createClient } from "@supabase/supabase-js";
 import { type NextRequest, NextResponse } from "next/server";
-
-function getServiceSupabase() {
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
-}
+import { createServiceClient } from "@repo/data-access/client";
+import { getAdminIds } from "@repo/data-access/data/profiles";
+import { createNotifications } from "@repo/data-access/data/notifications";
 
 export async function POST(req: NextRequest) {
   try {
-    const serviceSupabase = getServiceSupabase();
+    const serviceSupabase = createServiceClient();
     const { rider_id, rider_name } = await req.json();
 
     if (!rider_id || !rider_name) {
       return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
     }
 
-    const { data: admins, error: adminsError } = await serviceSupabase
-      .from("profiles")
-      .select("id")
-      .eq("role", "admin");
-
-    if (adminsError) return NextResponse.json({ error: adminsError.message }, { status: 500 });
+    const admins = await getAdminIds(serviceSupabase);
     if (!admins || admins.length === 0) return NextResponse.json({ success: true, notified: 0 });
 
-    const { error: notifError } = await serviceSupabase.from("notifications").insert(
+    const { error: notifError } = await createNotifications(
+      serviceSupabase,
       admins.map((admin) => ({
         user_id: admin.id,
         type: "rider_application",

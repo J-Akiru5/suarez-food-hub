@@ -4,10 +4,10 @@ import { Card, CardContent } from "@repo/ui";
 import { CheckCircle, ChevronRight, Clock, Package, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createBrowserTypedClient } from "@repo/data-access/client";
 
 export default function StaffDashboard() {
-  const supabase = createClient();
+  const supabase = createBrowserTypedClient();
   const [stats, setStats] = useState({
     pending: 0,
     preparing: 0,

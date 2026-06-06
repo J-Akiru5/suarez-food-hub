@@ -1,9 +1,11 @@
-import { createClient } from "@repo/supabase/server";
+import { createAuthClient } from "@repo/data-access/client";
+import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const cookieStore = await cookies();
+    const supabase = createAuthClient(cookieStore);
     const {
       data: { user },
     } = await supabase.auth.getUser();

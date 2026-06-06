@@ -1,48 +1,20 @@
-import { createServerClient } from "@supabase/ssr";
-import { createClient } from "@supabase/supabase-js";
-import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
-
-function getServiceSupabase() {
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
-}
-
-async function getUser(req: NextRequest) {
-  const cookieStore = await cookies();
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet: { name: string; value: string; options: any }[]) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
-          } catch {}
-        },
-      },
-    },
-  );
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  return user;
-}
+import { cookies } from "next/headers";
+import { createAuthClient, createServiceClient } from "@repo/data-access/client";
+import { getUser } from "@repo/data-access/auth";
+import { getCart, upsertCart, deleteCart } from "@repo/data-access/data/cart";
 
 export async function GET(req: NextRequest) {
   try {
-    const user = await getUser(req);
+    const cookieStore = await cookies();
+    const authClient = createAuthClient(cookieStore);
+    const user = await getUser(authClient);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const serviceSupabase = getServiceSupabase();
-    const { data, error } = await serviceSupabase.from("user_carts").select("items").eq("user_id", user.id).single();
-
-    if (error && error.code !== "PGRST116") {
-      return NextResponse.json({ error: error.message }, { status: 500 });
-    }
-    return NextResponse.json({ items: data?.items || [] });
+    const serviceSupabase = createServiceClient();
+    const { items, error } = await getCart(serviceSupabase, user.id);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ items });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal server error";
     return NextResponse.json({ error: message }, { status: 500 });
@@ -51,17 +23,16 @@ export async function GET(req: NextRequest) {
 
 export async function PUT(req: NextRequest) {
   try {
-    const user = await getUser(req);
+    const cookieStore = await cookies();
+    const authClient = createAuthClient(cookieStore);
+    const user = await getUser(authClient);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
     const { items } = await req.json();
     if (!Array.isArray(items)) return NextResponse.json({ error: "Items must be an array" }, { status: 400 });
 
-    const serviceSupabase = getServiceSupabase();
-    const { error } = await serviceSupabase
-      .from("user_carts")
-      .upsert({ user_id: user.id, items, updated_at: new Date().toISOString() }, { onConflict: "user_id" });
-
+    const serviceSupabase = createServiceClient();
+    const { error } = await upsertCart(serviceSupabase, user.id, items);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ success: true });
   } catch (err: unknown) {
@@ -72,11 +43,13 @@ export async function PUT(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   try {
-    const user = await getUser(req);
+    const cookieStore = await cookies();
+    const authClient = createAuthClient(cookieStore);
+    const user = await getUser(authClient);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const serviceSupabase = getServiceSupabase();
-    const { error } = await serviceSupabase.from("user_carts").delete().eq("user_id", user.id);
+    const serviceSupabase = createServiceClient();
+    const { error } = await deleteCart(serviceSupabase, user.id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ success: true });
   } catch (err: unknown) {

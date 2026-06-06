@@ -21,7 +21,8 @@ import {
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createBrowserTypedClient } from "@repo/data-access/client";
+import { getProfileById } from "@repo/data-access/data/profiles";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -38,9 +39,9 @@ const navItems = [
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
+  const supabaseRef = useRef<ReturnType<typeof createBrowserTypedClient> | null>(null);
   if (!supabaseRef.current && typeof window !== "undefined") {
-    supabaseRef.current = createClient();
+    supabaseRef.current = createBrowserTypedClient();
   }
 
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
@@ -54,12 +55,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) {
         setUser(data.user);
-        supabase
-          .from("profiles")
-          .select("first_name, last_name")
-          .eq("id", data.user.id)
-          .single()
-          .then(({ data: p }) => setProfile(p));
+        getProfileById(supabase, data.user.id).then((p) => {
+          if (p) setProfile({ first_name: p.first_name, last_name: p.last_name });
+        });
       }
     });
   }, []);

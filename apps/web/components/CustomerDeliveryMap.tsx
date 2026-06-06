@@ -3,7 +3,7 @@
 import L from "leaflet";
 import { useEffect, useState } from "react";
 import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
-import { createClient } from "@/lib/supabase/client";
+import { createBrowserTypedClient } from "@repo/data-access/client";
 
 const riderIcon = new L.DivIcon({
   className: "rider-marker",
@@ -45,7 +45,7 @@ export default function CustomerDeliveryMap({
   storeLng = 123.8854,
 }: Props) {
   const [riderPos, setRiderPos] = useState<[number, number] | null>(null);
-  const supabase = createClient();
+  const supabase = createBrowserTypedClient();
 
   useEffect(() => {
     if (!riderId) return;

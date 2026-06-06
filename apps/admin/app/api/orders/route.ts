@@ -1,9 +1,12 @@
-import { createClient } from "@repo/supabase/server";
+import { createAuthClient } from "@repo/data-access/client";
+import { getOrdersWithProfiles, updateOrderStatus } from "@repo/data-access/data/orders";
+import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const cookieStore = await cookies();
+    const supabase = createAuthClient(cookieStore);
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -18,34 +21,11 @@ export async function GET(request: NextRequest) {
     const limit = parseInt(searchParams.get("limit") || "50");
     const offset = parseInt(searchParams.get("offset") || "0");
 
-    let query = supabase
-      .from("orders")
-      .select(
-        "*, profile:profiles!orders_user_id_fkey(first_name, last_name, phone, address), rider:profiles!orders_rider_id_fkey(first_name, last_name), items:order_items(quantity, unit_price, total_price, product:products!order_items_product_id_fkey(name))",
-        { count: "exact" },
-      )
-      .order("created_at", { ascending: false })
-      .range(offset, offset + limit - 1);
+    const data = await getOrdersWithProfiles(supabase, {
+      status: status !== "all" ? status ?? undefined : undefined,
+    });
 
-    if (status && status !== "all") {
-      query = query.eq("status", status);
-    }
-
-    if (dateFrom) {
-      query = query.gte("created_at", `${dateFrom}T00:00:00`);
-    }
-
-    if (dateTo) {
-      query = query.lte("created_at", `${dateTo}T23:59:59`);
-    }
-
-    const { data, error, count } = await query;
-
-    if (error) {
-      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-    }
-
-    return NextResponse.json({ success: true, data, count, limit, offset });
+    return NextResponse.json({ success: true, data, count: data.length, limit, offset });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal server error";
     return NextResponse.json({ success: false, error: message }, { status: 500 });
@@ -54,7 +34,8 @@ export async function GET(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const cookieStore = await cookies();
+    const supabase = createAuthClient(cookieStore);
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -69,17 +50,18 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ success: false, error: "Order ID is required" }, { status: 400 });
     }
 
-    const updates: Record<string, any> = {};
-    if (status) updates.status = status;
-    if (rider_id !== undefined) updates.rider_id = rider_id;
+    const extraFields: Record<string, any> = {};
+    if (rider_id !== undefined) extraFields.rider_id = rider_id;
 
-    const { data, error } = await supabase.from("orders").update(updates).eq("id", id).select().single();
+    const { error } = status
+      ? await updateOrderStatus(supabase, id, status, extraFields)
+      : await updateOrderStatus(supabase, id, "pending", extraFields);
 
     if (error) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true, data });
+    return NextResponse.json({ success: true, data: { id, status, rider_id } });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal server error";
     return NextResponse.json({ success: false, error: message }, { status: 500 });

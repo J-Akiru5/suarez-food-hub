@@ -3,7 +3,8 @@
 import { ChevronRight, DollarSign, LogOut, Package, Settings, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createBrowserTypedClient } from "@repo/data-access/client";
+import { getProfileById } from "@repo/data-access/data/profiles";
 
 interface Profile {
   full_name: string;
@@ -14,7 +15,7 @@ interface Profile {
 }
 
 export default function ProfilePage() {
-  const supabase = createClient();
+  const supabase = createBrowserTypedClient();
   const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -26,11 +27,7 @@ export default function ProfilePage() {
       } = await supabase.auth.getUser();
       if (!user) return;
 
-      const { data } = await supabase
-        .from("profiles")
-        .select("first_name, last_name, phone")
-        .eq("id", user.id)
-        .single();
+      const data = await getProfileById(supabase, user.id);
 
       const { count: deliveries } = await supabase
         .from("orders")

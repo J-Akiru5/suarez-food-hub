@@ -4,7 +4,7 @@ import { Badge, Button, Card, CardContent } from "@repo/ui";
 import { format } from "date-fns";
 import { CheckCircle, ChefHat, Clock, Loader2, MapPin, Package, Phone, RefreshCw, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createBrowserTypedClient } from "@repo/data-access/client";
 
 const statusFlow: Record<string, { next: string | null; label: string | null; color: string }> = {
   pending: { next: "confirmed", label: "Accept Order", color: "bg-blue-600" },
@@ -25,7 +25,7 @@ const tabs = [
 ];
 
 export default function StaffOrdersPage() {
-  const supabase = createClient();
+  const supabase = createBrowserTypedClient();
   const [orders, setOrders] = useState<any[]>([]);
   const [activeTab, setActiveTab] = useState("active");
   const [loading, setLoading] = useState(true);

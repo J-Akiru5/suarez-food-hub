@@ -1,16 +1,20 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
+import { createAuthClient } from "@repo/data-access/client";
+import { getProfileRole } from "@repo/data-access/data/profiles";
+import { updateOrderStatus, createOrderStatusLog } from "@repo/data-access/data/orders";
 
 export async function PATCH(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const cookieStore = await cookies();
+    const supabase = createAuthClient(cookieStore);
     const {
       data: { user },
     } = await supabase.auth.getUser();
 
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { data: profile } = await supabase.from("profiles").select("role, is_active").eq("id", user.id).single();
+    const profile = await getProfileRole(supabase, user.id);
 
     if (!profile || (profile.role !== "staff" && profile.role !== "admin")) {
       return NextResponse.json({ error: "Forbidden" }, { status: 403 });
@@ -36,19 +40,14 @@ export async function PATCH(request: NextRequest) {
     if (status === "confirmed") timestampPatch.confirmed_at = new Date().toISOString();
     if (status === "preparing") timestampPatch.prepared_at = new Date().toISOString();
 
-    const { error } = await supabase
-      .from("orders")
-      .update({ status, ...timestampPatch, staff_id: user.id })
-      .eq("id", order_id);
+    const { error } = await updateOrderStatus(supabase, order_id, status, {
+      ...timestampPatch,
+      staff_id: user.id,
+    });
 
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-    await supabase.from("order_status_log").insert({
-      order_id,
-      status,
-      changed_by: user.id,
-      notes: `Set by ${profile.role}`,
-    });
+    await createOrderStatusLog(supabase, order_id, status, user.id, `Set by ${profile.role}`);
 
     return NextResponse.json({ success: true });
   } catch (err: unknown) {

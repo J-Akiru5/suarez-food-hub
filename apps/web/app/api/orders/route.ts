@@ -1,39 +1,21 @@
-import { createServerClient } from "@supabase/ssr";
-import { createClient } from "@supabase/supabase-js";
-import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
-
-function getServiceSupabase() {
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
-}
+import { cookies } from "next/headers";
+import { createAuthClient, createServiceClient } from "@repo/data-access/client";
+import type { Database } from "@repo/data-access";
+import { getUser } from "@repo/data-access/auth";
+import { createOrder, createOrderItems, deleteOrder, getOrdersByUser } from "@repo/data-access/data/orders";
+import { getProfileById, upsertProfile, getAdminIds } from "@repo/data-access/data/profiles";
+import { deductStock, markLowStockAlerted } from "@repo/data-access/data/products";
+import { createNotifications } from "@repo/data-access/data/notifications";
 
 export async function POST(req: NextRequest) {
   try {
-    const serviceSupabase = getServiceSupabase();
+    const serviceSupabase = createServiceClient();
     const cookieStore = await cookies();
+    const authClient = createAuthClient(cookieStore);
 
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-          setAll(cookiesToSet: { name: string; value: string; options: any }[]) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
-            } catch {}
-          },
-        },
-      },
-    );
-
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-    if (userError || !user) {
+    const user = await getUser(authClient);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
@@ -58,7 +40,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Invalid payment method" }, { status: 400 });
     }
 
-    // Check stock for all items before creating order
     const stockErrors: string[] = [];
     for (const item of cart) {
       const { data: product } = await serviceSupabase
@@ -78,11 +59,9 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Insufficient stock", details: stockErrors }, { status: 409 });
     }
 
-    // Ensure profile exists
-    const { data: existingProfile } = await supabase.from("profiles").select("id").eq("id", user.id).single();
-
+    const existingProfile = await getProfileById(serviceSupabase, user.id);
     if (!existingProfile) {
-      await serviceSupabase.from("profiles").insert({
+      await upsertProfile(serviceSupabase, {
         id: user.id,
         full_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "Customer",
         phone: delivery_contact,
@@ -91,35 +70,25 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Create order
-    const { data: order, error: orderError } = await serviceSupabase
-      .from("orders")
-      .insert([
-        {
-          user_id: user.id,
-          status: "pending",
-          payment_method: payment_method,
-          payment_status: "pending",
-          gcash_reference_no: payment_method === "gcash" ? gcash_reference || null : null,
-          maya_reference_no: payment_method === "maya" ? maya_reference || null : null,
-          delivery_address,
-          delivery_contact,
-          subtotal,
-          delivery_fee,
-          total,
-        },
-      ])
-      .select()
-      .single();
+    const { data: order, error: orderError } = await createOrder(serviceSupabase, {
+      user_id: user.id,
+      payment_method: payment_method,
+      gcash_reference_no: payment_method === "gcash" ? gcash_reference || null : null,
+      maya_reference_no: payment_method === "maya" ? maya_reference || null : null,
+      delivery_address,
+      delivery_contact,
+      subtotal,
+      delivery_fee,
+      total,
+    });
 
     if (orderError) {
       return NextResponse.json({ error: orderError.message }, { status: 500 });
     }
 
-    // Insert order items and deduct stock with rollback on failure
     let itemInsertFailed = false;
     for (const item of cart) {
-      const { error: itemError } = await serviceSupabase.from("order_items").insert([
+      const { error: itemError } = await createOrderItems(serviceSupabase, [
         {
           order_id: order.id,
           product_id: item.id,
@@ -136,48 +105,35 @@ export async function POST(req: NextRequest) {
         break;
       }
 
-      const { data: currentProduct } = await serviceSupabase
-        .from("products")
-        .select("quantity, buffer_quantity, name")
-        .eq("id", item.id)
-        .single();
+      const result = await deductStock(serviceSupabase, item.id, item.quantity);
+      if (result.error || result.newQuantity == null) {
+        itemInsertFailed = true;
+        break;
+      }
 
-      if (currentProduct) {
-        const newQuantity = currentProduct.quantity - item.quantity;
-        const { error: updateError } = await serviceSupabase
-          .from("products")
-          .update({ quantity: newQuantity, availability: newQuantity <= 0 ? "sold_out" : "available" })
-          .eq("id", item.id);
-
-        if (updateError) {
-          itemInsertFailed = true;
-          break;
-        }
-
-        if (newQuantity <= (currentProduct.buffer_quantity ?? 5) && newQuantity >= 0) {
-          const { data: admins } = await serviceSupabase.from("profiles").select("id").eq("role", "admin");
-          if (admins && admins.length > 0) {
-            await serviceSupabase.from("notifications").insert(
-              admins.map((a) => ({
-                user_id: a.id,
-                type: "low_stock",
-                title: "Low Stock Alert",
-                message: `"${currentProduct.name}" is running low — only ${newQuantity} left (buffer: ${currentProduct.buffer_quantity ?? 5}).`,
-                data: { product_id: item.id, remaining: newQuantity },
-              })),
-            );
-            await serviceSupabase
-              .from("products")
-              .update({ low_stock_alerted_at: new Date().toISOString() })
-              .eq("id", item.id);
-          }
+      if (
+        result.newQuantity <= (result.bufferQuantity ?? 5) &&
+        result.newQuantity >= 0
+      ) {
+        const admins = await getAdminIds(serviceSupabase);
+        if (admins && admins.length > 0) {
+          await createNotifications(
+            serviceSupabase,
+            admins.map((a) => ({
+              user_id: a.id,
+              type: "low_stock",
+              title: "Low Stock Alert",
+              message: `"${result.name}" is running low \u2014 only ${result.newQuantity} left (buffer: ${result.bufferQuantity ?? 5}).`,
+              data: { product_id: item.id, remaining: result.newQuantity },
+            })),
+          );
+          await markLowStockAlerted(serviceSupabase, item.id);
         }
       }
     }
 
     if (itemInsertFailed) {
-      await serviceSupabase.from("orders").delete().eq("id", order.id);
-      await serviceSupabase.from("order_items").delete().eq("order_id", order.id);
+      await deleteOrder(serviceSupabase, order.id);
       return NextResponse.json({ error: "Failed to process order items. Please try again." }, { status: 500 });
     }
 
@@ -190,47 +146,20 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
-    const serviceSupabase = getServiceSupabase();
+    const serviceSupabase = createServiceClient();
     const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-          setAll(cookiesToSet: { name: string; value: string; options: any }[]) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
-            } catch {}
-          },
-        },
-      },
-    );
+    const authClient = createAuthClient(cookieStore);
 
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-    if (userError || !user) {
+    const user = await getUser(authClient);
+    if (!user) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     const { searchParams } = new URL(req.url);
-    const status = searchParams.get("status");
+    const status = searchParams.get("status") as Database["public"]["Enums"]["order_status"] | null;
 
-    let query = serviceSupabase
-      .from("orders")
-      .select("*")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false });
-
-    if (status) query = query.eq("status", status);
-
-    const { data, error } = await query;
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json(data);
+    const orders = await getOrdersByUser(serviceSupabase, user.id, status || undefined);
+    return NextResponse.json(orders);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal server error";
     return NextResponse.json({ error: message }, { status: 500 });

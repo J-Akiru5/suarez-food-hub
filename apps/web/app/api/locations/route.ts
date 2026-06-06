@@ -1,26 +1,25 @@
 import { type NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createServiceClient } from "@repo/data-access/client";
+import { getLocations } from "@repo/data-access/data/locations";
+import type { Database } from "@repo/data-access";
+
+type LocationType = Database["public"]["Enums"]["location_type"];
 
 export async function GET(request: NextRequest) {
   try {
-    const supabase = await createClient();
+    const serviceSupabase = createServiceClient();
     const { searchParams } = new URL(request.url);
     const type = searchParams.get("type");
     const parent = searchParams.get("parent");
     const rider_id = searchParams.get("rider_id");
 
-    // PSGC query (used by profile page for cascading address select)
     if (type) {
-      let query = supabase.from("locations").select("*").eq("type", type).order("name");
-      if (parent) query = query.eq("parent_id", parent);
-      const { data, error } = await query;
-      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-      return NextResponse.json(data || []);
+      const data = await getLocations(serviceSupabase, type as LocationType, parent || undefined);
+      return NextResponse.json(data);
     }
 
-    // Rider location query (used by customer map)
     if (rider_id) {
-      const { data, error } = await supabase
+      const { data, error } = await serviceSupabase
         .from("rider_locations")
         .select("*")
         .eq("rider_id", rider_id)

@@ -1,41 +1,17 @@
-import { createServerClient } from "@supabase/ssr";
-import { createClient } from "@supabase/supabase-js";
 import { type NextRequest, NextResponse } from "next/server";
-
-function getServiceSupabase() {
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
-}
-
-async function requireAdmin() {
-  const supabase = getServiceSupabase();
-  const authSupabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { getAll: () => [], setAll: () => {} } },
-  );
-  const {
-    data: { user },
-  } = await authSupabase.auth.getUser();
-  if (!user) return null;
-  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (profile?.role !== "admin") return null;
-  return user;
-}
+import { createAuthClient, createServiceClient } from "@repo/data-access/client";
+import { getUser, requireAdmin } from "@repo/data-access/auth";
+import { getProducts, createProduct } from "@repo/data-access/data/products";
+import { getCategories, getCategoryByName, createCategory } from "@repo/data-access/data/categories";
 
 export async function GET() {
   try {
-    const supabase = getServiceSupabase();
-    const { data: products, error: productsError } = await supabase
-      .from("products")
-      .select("*")
-      .order("created_at", { ascending: false });
-    if (productsError) return NextResponse.json({ error: productsError.message }, { status: 500 });
+    const supabase = createServiceClient();
+    const products = await getProducts(supabase);
 
-    const { data: categories } = await supabase.from("categories").select("*");
+    const categories = await getCategories(supabase);
     const categoryMap = new Map<string, string>();
-    if (categories) {
-      for (const cat of categories) categoryMap.set(cat.id, cat.name);
-    }
+    for (const cat of categories) categoryMap.set(cat.id, cat.name);
 
     const { data: variants } = await supabase.from("product_variants").select("*");
     const variantMap = new Map<string, any[]>();
@@ -74,10 +50,14 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const admin = await requireAdmin();
-    if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const supabase = createServiceClient();
+    const authSupabase = createAuthClient({ getAll: () => [], setAll: () => {} });
+    const user = await getUser(authSupabase);
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const supabase = getServiceSupabase();
+    const isAdmin = await requireAdmin(supabase, user.id);
+    if (!isAdmin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const formData = await req.formData();
     const name = formData.get("name") as string;
     const categoryStr = formData.get("category") as string;
@@ -100,33 +80,27 @@ export async function POST(req: NextRequest) {
       imageUrl = urlData.publicUrl;
     }
 
-    const { data: existingCat } = await supabase.from("categories").select("id").eq("name", categoryStr).single();
+    const existingCat = await getCategoryByName(supabase, categoryStr);
     let categoryId = existingCat?.id;
     if (!categoryId) {
       const slug = categoryStr.toLowerCase().replace(/\s+/g, "-");
-      const { data: newCat } = await supabase.from("categories").insert({ name: categoryStr, slug }).select().single();
+      const { data: newCat } = await createCategory(supabase, { name: categoryStr, slug });
       categoryId = newCat?.id;
     }
 
     const availability = quantity > 0 ? "available" : "sold_out";
-    const { data, error } = await supabase
-      .from("products")
-      .insert([
-        {
-          name,
-          slug: name.toLowerCase().replace(/\s+/g, "-"),
-          category_id: categoryId,
-          base_price: price,
-          image_url: imageUrl,
-          description,
-          quantity,
-          buffer_quantity: bufferQuantity,
-          availability,
-          rating: 5.0,
-        },
-      ])
-      .select()
-      .single();
+    const { data, error } = await createProduct(supabase, {
+      name,
+      slug: name.toLowerCase().replace(/\s+/g, "-"),
+      category_id: categoryId,
+      base_price: price,
+      image_url: imageUrl,
+      description,
+      quantity,
+      buffer_quantity: bufferQuantity,
+      availability,
+      rating: 5.0,
+    });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json(data);
   } catch (err: unknown) {

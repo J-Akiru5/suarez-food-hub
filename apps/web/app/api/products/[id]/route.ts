@@ -1,33 +1,18 @@
-import { createServerClient } from "@supabase/ssr";
-import { createClient } from "@supabase/supabase-js";
 import { type NextRequest, NextResponse } from "next/server";
-
-function getServiceSupabase() {
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
-}
-
-async function requireAdmin() {
-  const supabase = getServiceSupabase();
-  const authSupabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { getAll: () => [], setAll: () => {} } },
-  );
-  const {
-    data: { user },
-  } = await authSupabase.auth.getUser();
-  if (!user) return null;
-  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (profile?.role !== "admin") return null;
-  return user;
-}
+import { createAuthClient, createServiceClient } from "@repo/data-access/client";
+import { getUser, requireAdmin } from "@repo/data-access/auth";
+import { updateProduct, deleteProduct } from "@repo/data-access/data/products";
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const admin = await requireAdmin();
-    if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const supabase = createServiceClient();
+    const authSupabase = createAuthClient({ getAll: () => [], setAll: () => {} });
+    const user = await getUser(authSupabase);
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const supabase = getServiceSupabase();
+    const isAdmin = await requireAdmin(supabase, user.id);
+    if (!isAdmin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const { id } = await params;
     const formData = await req.formData();
 
@@ -54,23 +39,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       }
     }
 
-    const { data, error } = await supabase
-      .from("products")
-      .update({
-        name,
-        category,
-        price,
-        price_medium,
-        price_large,
-        description,
-        image: imageUrl,
-        quantity,
-        buffer_quantity: bufferQuantity,
-        availability: quantity > 0 ? "Available" : "Sold Out",
-      })
-      .eq("id", id)
-      .select()
-      .single();
+    const { data, error } = await updateProduct(supabase, id, {
+      name,
+      category_id: category,
+      base_price: price,
+      description,
+      image_url: imageUrl,
+      quantity,
+      buffer_quantity: bufferQuantity,
+      availability: quantity > 0 ? "available" : "sold_out",
+    });
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json(data);
   } catch (err: unknown) {
@@ -81,12 +59,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const admin = await requireAdmin();
-    if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const supabase = createServiceClient();
+    const authSupabase = createAuthClient({ getAll: () => [], setAll: () => {} });
+    const user = await getUser(authSupabase);
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const supabase = getServiceSupabase();
+    const isAdmin = await requireAdmin(supabase, user.id);
+    if (!isAdmin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const { id } = await params;
-    const { error } = await supabase.from("products").delete().eq("id", id);
+    const { error } = await deleteProduct(supabase, id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ success: true });
   } catch (err: unknown) {

@@ -4,7 +4,8 @@ import { ArrowLeft, ArrowRight, Bike, Loader2, User } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createBrowserTypedClient } from "@repo/data-access/client";
+import { upsertProfile } from "@repo/data-access/data/profiles";
 
 const PH_REGEX = /^(?:\+63|0)9\d{9}$/;
 
@@ -30,7 +31,7 @@ export default function Register() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const supabase = createClient();
+  const supabase = createBrowserTypedClient();
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,7 +103,7 @@ export default function Register() {
         profileData.is_active = false;
       }
 
-      const { error: profileError } = await supabase.from("profiles").insert(profileData);
+      const { error: profileError } = await upsertProfile(supabase, profileData);
 
       if (profileError) {
         setError("Account created but profile setup failed. Please contact support.");

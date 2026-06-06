@@ -4,7 +4,7 @@ import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createBrowserTypedClient } from "@repo/data-access/client";
 
 function LoginForm() {
   const router = useRouter();
@@ -16,7 +16,7 @@ function LoginForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const supabase = createClient();
+  const supabase = createBrowserTypedClient();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();

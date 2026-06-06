@@ -3,7 +3,8 @@
 import { Button, Card, CardContent, Input } from "@repo/ui";
 import { CheckCircle, Loader2, Shield, UserPlus, Users, XCircle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createBrowserTypedClient } from "@repo/data-access/client";
+import { getProfilesByRole, upsertProfile, updateProfile } from "@repo/data-access/data/profiles";
 
 interface StaffProfile {
   id: string;
@@ -16,7 +17,7 @@ interface StaffProfile {
 }
 
 export default function StaffAccountsPage() {
-  const supabase = createClient();
+  const supabase = createBrowserTypedClient();
   const [staffList, setStaffList] = useState<StaffProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);
@@ -31,11 +32,7 @@ export default function StaffAccountsPage() {
   const [formSuccess, setFormSuccess] = useState("");
 
   const fetchStaff = useCallback(async () => {
-    const { data } = await supabase
-      .from("profiles")
-      .select("id, first_name, last_name, phone, is_active, created_at")
-      .eq("role", "staff")
-      .order("created_at", { ascending: false });
+    const data = await getProfilesByRole(supabase, "staff");
     setStaffList((data as StaffProfile[]) || []);
     setLoading(false);
   }, [supabase]);
@@ -69,8 +66,9 @@ export default function StaffAccountsPage() {
     }
 
     // Profile is created by DB trigger, but just in case upsert it
-    const { error: profileError } = await supabase.from("profiles").upsert({
+    const { error: profileError } = await upsertProfile(supabase, {
       id: authData.user.id,
+      full_name: `${formFirstName} ${formLastName}`,
       first_name: formFirstName,
       last_name: formLastName,
       phone: formPhone,
@@ -93,7 +91,7 @@ export default function StaffAccountsPage() {
   }
 
   async function toggleActive(staffId: string, current: boolean) {
-    await supabase.from("profiles").update({ is_active: !current }).eq("id", staffId);
+    await updateProfile(supabase, staffId, { is_active: !current });
     fetchStaff();
   }
 

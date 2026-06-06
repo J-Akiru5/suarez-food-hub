@@ -4,7 +4,8 @@ import { DollarSign, History, Home, LogOut, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createBrowserTypedClient } from "@repo/data-access/client";
+import { getProfileById } from "@repo/data-access/data/profiles";
 
 const navItems = [
   { href: "/", label: "Home", icon: Home },
@@ -16,27 +17,27 @@ const navItems = [
 export default function RiderLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const supabaseRef = useRef<ReturnType<typeof createClient> | null>(null);
+  const supabaseRef = useRef<ReturnType<typeof createBrowserTypedClient> | null>(null);
   if (!supabaseRef.current && typeof window !== "undefined") {
-    supabaseRef.current = createClient();
+    supabaseRef.current = createBrowserTypedClient();
   }
   const [riderName, setRiderName] = useState("Rider");
 
   useEffect(() => {
     const supabase = supabaseRef.current;
     if (!supabase) return;
-    const getProfile = async () => {
+    const fetchProfile = async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
       if (user) {
-        const { data } = await supabase.from("profiles").select("first_name, last_name").eq("id", user.id).single();
+        const data = await getProfileById(supabase, user.id);
         if (data) {
           setRiderName(data.first_name || data.last_name || "Rider");
         }
       }
     };
-    getProfile();
+    fetchProfile();
   }, []);
 
   const handleLogout = async () => {

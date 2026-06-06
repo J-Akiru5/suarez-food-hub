@@ -60,6 +60,9 @@ importers:
       '@react-pdf/renderer':
         specifier: ^4.5.1
         version: 4.5.1(react@19.2.6)
+      '@repo/data-access':
+        specifier: workspace:*
+        version: link:../../packages/data-access
       '@repo/supabase':
         specifier: workspace:*
         version: link:../../packages/supabase
@@ -133,6 +136,9 @@ importers:
 
   apps/rider:
     dependencies:
+      '@repo/data-access':
+        specifier: workspace:*
+        version: link:../../packages/data-access
       '@repo/supabase':
         specifier: workspace:*
         version: link:../../packages/supabase
@@ -203,6 +209,9 @@ importers:
 
   apps/staff:
     dependencies:
+      '@repo/data-access':
+        specifier: workspace:*
+        version: link:../../packages/data-access
       '@repo/supabase':
         specifier: workspace:*
         version: link:../../packages/supabase
@@ -264,6 +273,15 @@ importers:
 
   apps/web:
     dependencies:
+      '@repo/data-access':
+        specifier: workspace:*
+        version: link:../../packages/data-access
+      '@repo/supabase':
+        specifier: workspace:*
+        version: link:../../packages/supabase
+      '@repo/types':
+        specifier: workspace:*
+        version: link:../../packages/types
       '@repo/ui':
         specifier: workspace:*
         version: link:../../packages/ui
@@ -336,6 +354,21 @@ importers:
         version: 1.60.0
 
   packages/config: {}
+
+  packages/data-access:
+    dependencies:
+      '@repo/supabase':
+        specifier: workspace:*
+        version: link:../supabase
+      '@repo/types':
+        specifier: workspace:*
+        version: link:../types
+      '@supabase/ssr':
+        specifier: ^0.5.0
+        version: 0.5.2(@supabase/supabase-js@2.106.2)
+      '@supabase/supabase-js':
+        specifier: ^2.45.0
+        version: 2.106.2
 
   packages/supabase:
     dependencies:

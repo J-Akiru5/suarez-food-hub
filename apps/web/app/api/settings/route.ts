@@ -1,30 +1,10 @@
-import { createServerClient } from "@supabase/ssr";
-import { createClient } from "@supabase/supabase-js";
 import { type NextRequest, NextResponse } from "next/server";
-
-function getServiceSupabase() {
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
-}
-
-async function requireAdmin() {
-  const supabase = getServiceSupabase();
-  const authSupabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { cookies: { getAll: () => [], setAll: () => {} } },
-  );
-  const {
-    data: { user },
-  } = await authSupabase.auth.getUser();
-  if (!user) return null;
-  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (profile?.role !== "admin") return null;
-  return user;
-}
+import { createAuthClient, createServiceClient } from "@repo/data-access/client";
+import { getUser, requireAdmin } from "@repo/data-access/auth";
 
 export async function GET() {
   try {
-    const supabase = getServiceSupabase();
+    const supabase = createServiceClient();
     const { data, error } = await supabase.from("settings").select("key, value");
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     const settings = data.reduce((acc, row) => ({ ...acc, [row.key]: row.value }), {});
@@ -37,10 +17,14 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   try {
-    const admin = await requireAdmin();
-    if (!admin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const supabase = createServiceClient();
+    const authSupabase = createAuthClient({ getAll: () => [], setAll: () => {} });
+    const user = await getUser(authSupabase);
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const supabase = getServiceSupabase();
+    const isAdmin = await requireAdmin(supabase, user.id);
+    if (!isAdmin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const formData = await req.formData();
     const qrcodeFile = formData.get("gcash_qr") as File | null;
     if (!qrcodeFile || qrcodeFile.size === 0) return NextResponse.json({ error: "No image provided" }, { status: 400 });

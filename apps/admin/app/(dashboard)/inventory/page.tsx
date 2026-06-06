@@ -23,10 +23,12 @@ import { formatCurrency } from "@repo/utils";
 import { Image as ImageIcon, Loader2, Minus, Package, Pencil, Plus, Search, Upload, X } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createBrowserTypedClient } from "@repo/data-access/client";
+import { createProduct, updateProduct } from "@repo/data-access/data/products";
+import { getCategories } from "@repo/data-access/data/categories";
 
 export default function InventoryPage() {
-  const supabase = createClient();
+  const supabase = createBrowserTypedClient();
   const [products, setProducts] = useState<(Product & { category?: Category })[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -53,12 +55,12 @@ export default function InventoryPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchData = useCallback(async () => {
-    const [prodRes, catRes] = await Promise.all([
+    const [prodRes, catData] = await Promise.all([
       supabase.from("products").select("*, category:categories(*)").order("created_at", { ascending: false }),
-      supabase.from("categories").select("*").order("sort_order"),
+      getCategories(supabase),
     ]);
     setProducts((prodRes.data as any[]) || []);
-    setCategories((catRes.data as Category[]) || []);
+    setCategories((catData as Category[]) || []);
     setLoading(false);
   }, [supabase]);
 
@@ -125,7 +127,7 @@ export default function InventoryPage() {
       description: formDescription || null,
       base_price: parseFloat(formPrice) || 0,
       category_id: formCategoryId,
-      availability: formAvailability,
+      availability: formAvailability as "available" | "sold_out",
       image_url: formImageUrl || null,
       is_featured: formIsFeatured,
       quantity: parseInt(formQuantity) || 0,
@@ -133,9 +135,9 @@ export default function InventoryPage() {
     };
 
     if (editingProduct) {
-      await supabase.from("products").update(productData).eq("id", editingProduct.id);
+      await updateProduct(supabase, editingProduct.id, productData);
     } else {
-      await supabase.from("products").insert(productData);
+      await createProduct(supabase, productData);
     }
 
     setDialogOpen(false);

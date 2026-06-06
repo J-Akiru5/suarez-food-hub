@@ -3,7 +3,8 @@
 import { eachDayOfInterval, endOfMonth, endOfWeek, format, startOfMonth, startOfWeek } from "date-fns";
 import { BarChart3, Calendar, DollarSign, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createBrowserTypedClient } from "@repo/data-access/client";
+import { getRiderEarnings } from "@repo/data-access/data/earnings";
 
 interface EarningsData {
   today: number;
@@ -15,7 +16,7 @@ interface EarningsData {
 }
 
 export default function EarningsPage() {
-  const supabase = createClient();
+  const supabase = createBrowserTypedClient();
   const [earnings, setEarnings] = useState<EarningsData>({
     today: 0,
     week: 0,
@@ -40,30 +41,29 @@ export default function EarningsPage() {
       const weekStart = startOfWeek(now, { weekStartsOn: 1 });
       const monthStart = startOfMonth(now);
 
-      const { data: monthEarnings } = await supabase
-        .from("rider_earnings")
-        .select("id, amount, created_at, order_id, status")
-        .eq("rider_id", user.id)
-        .gte("created_at", monthStart.toISOString())
-        .order("created_at", { ascending: false });
+      const allRiderEarnings = await getRiderEarnings(supabase, user.id);
+      const monthEarnings = allRiderEarnings.filter(
+        (e: any) => new Date(e.earned_at || e.created_at) >= monthStart,
+      );
+      const allEarnings = allRiderEarnings;
 
-      const { data: allEarnings } = await supabase.from("rider_earnings").select("amount").eq("rider_id", user.id);
-
-      const { data: recentOrders } = await supabase
-        .from("orders")
-        .select("id, delivery_address, delivered_at, delivery_fee")
-        .eq("rider_id", user.id)
-        .eq("status", "delivered")
-        .order("delivered_at", { ascending: false })
-        .limit(10);
+      const recentOrders = allRiderEarnings
+        .filter((e: any) => e.order)
+        .slice(0, 10)
+        .map((e: any) => ({
+          id: e.order_id,
+          delivery_address: e.order?.delivery_address || "",
+          delivered_at: e.order?.delivered_at,
+          delivery_fee: e.amount,
+        }));
 
       if (monthEarnings) {
         const todayAmt = monthEarnings
-          .filter((e: any) => new Date(e.created_at) >= todayStart)
+          .filter((e: any) => new Date(e.earned_at || e.created_at) >= todayStart)
           .reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
 
         const weekAmt = monthEarnings
-          .filter((e: any) => new Date(e.created_at) >= weekStart)
+          .filter((e: any) => new Date(e.earned_at || e.created_at) >= weekStart)
           .reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
 
         const monthAmt = monthEarnings.reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
@@ -77,7 +77,7 @@ export default function EarningsPage() {
         const dailyEarnings = weekDays.map((day) => {
           const dayStr = format(day, "yyyy-MM-dd");
           const dayAmt = monthEarnings
-            .filter((e: any) => format(new Date(e.created_at), "yyyy-MM-dd") === dayStr)
+            .filter((e: any) => format(new Date(e.earned_at || e.created_at), "yyyy-MM-dd") === dayStr)
             .reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
           return { date: format(day, "EEE"), amount: dayAmt };
         });

@@ -1,17 +1,14 @@
-import { createServerClient } from "@supabase/ssr";
-import { createClient } from "@supabase/supabase-js";
-import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
-
-function getServiceSupabase() {
-  return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
-}
+import { cookies } from "next/headers";
+import { createAuthClient, createServiceClient } from "@repo/data-access/client";
+import { getUser, requireAdmin } from "@repo/data-access/auth";
+import { getBusinessConfig, updateBusinessConfig } from "@repo/data-access/data/business";
 
 export async function GET() {
   try {
-    const serviceSupabase = getServiceSupabase();
-    const { data, error } = await serviceSupabase.from("business").select("*").limit(1).single();
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    const serviceSupabase = createServiceClient();
+    const data = await getBusinessConfig(serviceSupabase);
+    if (!data) return NextResponse.json({ error: "Business config not found" }, { status: 500 });
     return NextResponse.json(data);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal server error";
@@ -21,32 +18,17 @@ export async function GET() {
 
 export async function PATCH(req: NextRequest) {
   try {
-    const serviceSupabase = getServiceSupabase();
     const cookieStore = await cookies();
-    const supabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return cookieStore.getAll();
-          },
-          setAll(cookiesToSet: { name: string; value: string; options: any }[]) {
-            try {
-              cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
-            } catch {}
-          },
-        },
-      },
-    );
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const authClient = createAuthClient(cookieStore);
+    const user = await getUser(authClient);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-    const { data: profile } = await serviceSupabase.from("profiles").select("role").eq("id", user.id).single();
-    if (profile?.role !== "admin") return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const serviceSupabase = createServiceClient();
+    const isAdmin = await requireAdmin(serviceSupabase, user.id);
+    if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+
+    const config = await getBusinessConfig(serviceSupabase);
+    if (!config) return NextResponse.json({ error: "Business config not found" }, { status: 500 });
 
     const body = await req.json();
     const allowedFields = [
@@ -61,17 +43,12 @@ export async function PATCH(req: NextRequest) {
       "delivery_fee",
       "free_delivery_min",
     ];
-    const updateData: any = { updated_at: new Date().toISOString() };
+    const updateData: Record<string, unknown> = {};
     for (const key of allowedFields) {
       if (body[key] !== undefined) updateData[key] = body[key];
     }
 
-    const { data, error } = await serviceSupabase
-      .from("business")
-      .update(updateData)
-      .neq("id", "00000000-0000-0000-0000-000000000000")
-      .select()
-      .single();
+    const { data, error } = await updateBusinessConfig(serviceSupabase, config.id, updateData);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json(data);
   } catch (err: unknown) {

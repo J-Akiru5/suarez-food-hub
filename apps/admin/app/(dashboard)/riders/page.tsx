@@ -4,7 +4,11 @@ import type { Profile } from "@repo/types";
 import { Button, Card, CardContent } from "@repo/ui";
 import { Bike, CheckCircle, Clock, Loader2, MapPin, Package, XCircle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createBrowserTypedClient } from "@repo/data-access/client";
+import { getRiders, updateRiderStatus } from "@repo/data-access/data/profiles";
+import { getOrdersCountForRider, getCompletedOrdersCount } from "@repo/data-access/data/orders";
+import { getRiderLocations } from "@repo/data-access/data/locations";
+import { createNotification } from "@repo/data-access/data/notifications";
 
 interface RiderWithStats extends Profile {
   activeDeliveries: number;
@@ -13,50 +17,35 @@ interface RiderWithStats extends Profile {
 }
 
 export default function RidersPage() {
-  const supabase = createClient();
+  const supabase = createBrowserTypedClient();
   const [riders, setRiders] = useState<RiderWithStats[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedRider, setSelectedRider] = useState<RiderWithStats | null>(null);
 
   const fetchRiders = useCallback(async () => {
-    const { data: riderProfiles } = await supabase.from("profiles").select("*").eq("role", "rider").order("created_at");
-
+    const riderProfiles = await getRiders(supabase);
     const ridersList = (riderProfiles as Profile[]) || [];
 
     const ridersWithStats = await Promise.all(
       ridersList.map(async (rider) => {
-        const [activeRes, totalRes, locationRes] = await Promise.all([
-          supabase
-            .from("orders")
-            .select("id", { count: "exact", head: true })
-            .eq("rider_id", rider.id)
-            .in("status", [
-              "confirmed",
-              "preparing",
-              "ready_for_pickup",
-              "claimed_by_rider",
-              "out_for_delivery",
-              "near_customer",
-            ]),
-          supabase
-            .from("orders")
-            .select("id", { count: "exact", head: true })
-            .eq("rider_id", rider.id)
-            .eq("status", "delivered"),
-          supabase
-            .from("rider_locations")
-            .select("latitude, longitude")
-            .eq("rider_id", rider.id)
-            .order("updated_at", { ascending: false })
-            .limit(1)
-            .maybeSingle(),
+        const [activeDeliveries, totalDeliveries, location] = await Promise.all([
+          getOrdersCountForRider(supabase, rider.id, [
+            "confirmed",
+            "preparing",
+            "ready_for_pickup",
+            "claimed_by_rider",
+            "out_for_delivery",
+            "near_customer",
+          ]),
+          getCompletedOrdersCount(supabase, rider.id),
+          getRiderLocations(supabase, rider.id),
         ]);
 
         return {
           ...rider,
-          activeDeliveries: activeRes.count || 0,
-          totalDeliveries: totalRes.count || 0,
-          location: locationRes.data || null,
+          activeDeliveries,
+          totalDeliveries,
+          location: location || null,
         };
       }),
     );
@@ -83,8 +72,8 @@ export default function RidersPage() {
   }, [supabase, fetchRiders]);
 
   async function approveRider(riderId: string) {
-    await supabase.from("profiles").update({ rider_status: "available", is_active: true }).eq("id", riderId);
-    await supabase.from("notifications").insert({
+    await updateRiderStatus(supabase, riderId, "available", true);
+    await createNotification(supabase, {
       user_id: riderId,
       type: "rider_approved",
       title: "Welcome to the team!",
@@ -95,8 +84,8 @@ export default function RidersPage() {
 
   async function rejectRider(riderId: string) {
     if (!confirm("Reject this rider application? They will not be able to log in.")) return;
-    await supabase.from("profiles").update({ rider_status: "rejected", is_active: false }).eq("id", riderId);
-    await supabase.from("notifications").insert({
+    await updateRiderStatus(supabase, riderId, "rejected", false);
+    await createNotification(supabase, {
       user_id: riderId,
       type: "rider_rejected",
       title: "Application Update",

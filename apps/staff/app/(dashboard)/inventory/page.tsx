@@ -4,10 +4,11 @@ import { Badge, Button, Card, CardContent, Input } from "@repo/ui";
 import { AlertTriangle, ImageIcon, Loader2, Package, Save, Search } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createBrowserTypedClient } from "@repo/data-access/client";
+import { updateProduct } from "@repo/data-access/data/products";
 
 export default function StaffInventoryPage() {
-  const supabase = createClient();
+  const supabase = createBrowserTypedClient();
   const [products, setProducts] = useState<any[]>([]);
   const [categories, setCategories] = useState<any[]>([]);
   const [search, setSearch] = useState("");
@@ -39,14 +40,11 @@ export default function StaffInventoryPage() {
     setSavingId(productId);
     try {
       const availability = newQty > 0 ? "available" : "sold_out";
-      await supabase
-        .from("products")
-        .update({
-          quantity: newQty,
-          availability,
-          low_stock_alerted_at: null, // Reset so re-alerting works
-        })
-        .eq("id", productId);
+      await updateProduct(supabase, productId, {
+        quantity: newQty,
+        availability,
+        low_stock_alerted_at: null,
+      });
       // Clear edit
       setQtyEdits((prev) => {
         const next = { ...prev };

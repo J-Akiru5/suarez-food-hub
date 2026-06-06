@@ -4,7 +4,8 @@ import { Button, Input } from "@repo/ui";
 import { ChefHat, Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createBrowserTypedClient } from "@repo/data-access/client";
+import { getProfileRole } from "@repo/data-access/data/profiles";
 
 function LoginForm() {
   const router = useRouter();
@@ -16,7 +17,7 @@ function LoginForm() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const supabase = createClient();
+  const supabase = createBrowserTypedClient();
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -35,11 +36,7 @@ function LoginForm() {
     }
 
     if (data.user) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role, is_active")
-        .eq("id", data.user.id)
-        .single();
+      const profile = await getProfileRole(supabase, data.user.id);
 
       if (!profile || (profile.role !== "staff" && profile.role !== "admin")) {
         setError("You do not have staff access. Please contact the administrator.");

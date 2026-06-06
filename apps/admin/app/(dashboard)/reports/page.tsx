@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { createClient } from "@/lib/supabase/client";
+import { createBrowserTypedClient } from "@repo/data-access/client";
 import PdfReport from "./pdf-report";
 
 interface ReportData {
@@ -31,7 +31,7 @@ interface ReportData {
 type Preset = "today" | "week" | "month" | "last_month" | "custom";
 
 export default function ReportsPage() {
-  const supabase = createClient();
+  const supabase = createBrowserTypedClient();
   const [loading, setLoading] = useState(true);
   const [preset, setPreset] = useState<Preset>("week");
   const [dateFrom, setDateFrom] = useState("");

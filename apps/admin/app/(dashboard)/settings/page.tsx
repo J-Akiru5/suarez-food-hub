@@ -15,7 +15,8 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { createBrowserTypedClient } from "@repo/data-access/client";
+import { getBusinessConfig, updateBusinessConfig } from "@repo/data-access/data/business";
 
 interface BusinessConfig {
   id?: string;
@@ -32,7 +33,7 @@ interface BusinessConfig {
 }
 
 export default function SettingsPage() {
-  const supabase = createClient();
+  const supabase = createBrowserTypedClient();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingGcash, setUploadingGcash] = useState(false);
@@ -58,7 +59,7 @@ export default function SettingsPage() {
   }, []);
 
   async function fetchConfig() {
-    const { data } = await supabase.from("business").select("*").limit(1).maybeSingle();
+    const data = await getBusinessConfig(supabase);
     if (data) {
       setConfig({
         id: data.id,
@@ -114,7 +115,7 @@ export default function SettingsPage() {
     };
 
     if (config.id) {
-      await supabase.from("business").update(payload).eq("id", config.id);
+      await updateBusinessConfig(supabase, config.id, payload);
     } else {
       const { data } = await supabase.from("business").insert(payload).select().single();
       if (data) setConfig((prev) => ({ ...prev, id: data.id }));

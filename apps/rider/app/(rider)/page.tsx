@@ -4,7 +4,9 @@ import { CheckCircle, MapPin, Navigation, Package, Phone, TrendingUp } from "luc
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getCurrentPosition, watchPosition } from "@/lib/geolocation";
-import { createClient } from "@/lib/supabase/client";
+import { createBrowserTypedClient } from "@repo/data-access/client";
+import { getActiveOrderForRider } from "@repo/data-access/data/orders";
+import { getTodayEarnings } from "@repo/data-access/data/earnings";
 
 const DeliveryMap = dynamic(() => import("@/components/DeliveryMap"), {
   ssr: false,
@@ -38,7 +40,7 @@ interface TodayStats {
 }
 
 export default function RiderDashboard() {
-  const supabase = createClient();
+  const supabase = createBrowserTypedClient();
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [todayStats, setTodayStats] = useState<TodayStats>({ deliveries: 0, earnings: 0 });
   const [hasNewOrder, setHasNewOrder] = useState(false);
@@ -55,14 +57,7 @@ export default function RiderDashboard() {
 
     setRiderId(user.id);
 
-    const { data: order } = await supabase
-      .from("orders")
-      .select("*, customer:profiles!orders_user_id_fkey(first_name, last_name, phone)")
-      .eq("rider_id", user.id)
-      .in("status", ["claimed_by_rider", "out_for_delivery", "near_customer"])
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
+    const order = await getActiveOrderForRider(supabase, user.id);
 
     if (order) {
       setActiveOrder(order as any);
@@ -71,14 +66,7 @@ export default function RiderDashboard() {
       setActiveOrder(null);
     }
 
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const { data: todayEarnings } = await supabase
-      .from("rider_earnings")
-      .select("amount")
-      .eq("rider_id", user.id)
-      .gte("created_at", today.toISOString());
+    const todayEarnings = await getTodayEarnings(supabase, user.id);
 
     if (todayEarnings) {
       setTodayStats({
