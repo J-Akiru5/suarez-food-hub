@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Suarez Food Hub — Tech Stack</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <header class="hero">
+    <div class="container">
+      <h1>Suarez Food Hub — Project Documentation</h1>
+      <p class="tagline">Monorepo overview, tech stack, and deployment notes (Vercel)</p>
+    </div>
+  </header>
+
+  <main class="container">
+    <section class="card">
+      <h2>Quick summary</h2>
+      <p>This monorepo contains multiple Next.js apps (web, admin, rider, staff), shared packages, Prisma for Postgres, and is deployed to Vercel.</p>
+    </section>
+
+    <section class="card">
+      <h2>Tech Stack & Dependencies</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Tool / Dependency</th>
+              <th>Function</th>
+              <th>Simple explanation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Language / Runtime</td>
+              <td>Node.js</td>
+              <td>Runtime</td>
+              <td>Runs Next, build tools and scripts</td>
+            </tr>
+            <tr>
+              <td>Package manager</td>
+              <td>pnpm</td>
+              <td>Package manager</td>
+              <td>Installs and links workspace packages efficiently</td>
+            </tr>
+            <tr>
+              <td>Monorepo / Build</td>
+              <td>turbo</td>
+              <td>Build orchestration</td>
+              <td>Fast, cached builds across the monorepo</td>
+            </tr>
+            <tr>
+              <td>Framework</td>
+              <td>Next.js</td>
+              <td>Web framework</td>
+              <td>Server/edge-rendered React apps</td>
+            </tr>
+            <tr>
+              <td>UI</td>
+              <td>React, React DOM</td>
+              <td>UI library</td>
+              <td>Builds interactive UI for the apps</td>
+            </tr>
+            <tr>
+              <td>Type system</td>
+              <td>TypeScript</td>
+              <td>Static typing</td>
+              <td>Type safety and tooling across packages</td>
+            </tr>
+            <tr>
+              <td>Styling</td>
+              <td>Tailwind CSS</td>
+              <td>CSS framework</td>
+              <td>Utility-first styling for components</td>
+            </tr>
+            <tr>
+              <td>Database / ORM</td>
+              <td>Prisma, @prisma/client, pg</td>
+              <td>DB schema & client</td>
+              <td>Defines schema, migrations, and typed DB client for Postgres</td>
+            </tr>
+            <tr>
+              <td>Auth / DB SDK</td>
+              <td>@supabase/supabase-js, @supabase/ssr</td>
+              <td>Backend service SDK</td>
+              <td>Client & SSR helpers for Supabase (DB + auth)</td>
+            </tr>
+            <tr>
+              <td>UI primitives</td>
+              <td>@radix-ui, lucide-react</td>
+              <td>UI components</td>
+              <td>Accessible primitives and icons used by @repo/ui</td>
+            </tr>
+            <tr>
+              <td>Maps</td>
+              <td>Leaflet, react-leaflet</td>
+              <td>Mapping</td>
+              <td>Display delivery maps and locations</td>
+            </tr>
+            <tr>
+              <td>Charts</td>
+              <td>recharts</td>
+              <td>Visualization</td>
+              <td>Charts for admin dashboards</td>
+            </tr>
+            <tr>
+              <td>Testing</td>
+              <td>vitest, @playwright/test</td>
+              <td>Unit & E2E testing</td>
+              <td>Unit tests with Vitest; browser E2E with Playwright</td>
+            </tr>
+            <tr>
+              <td>Dev tooling</td>
+              <td>tsx, prisma CLI</td>
+              <td>Dev helpers</td>
+              <td>Run TS scripts and DB migrations/seeds</td>
+            </tr>
+            <tr>
+              <td>Lint / Format</td>
+              <td>biome, prettier</td>
+              <td>Formatting & lint</td>
+              <td>Code style and static checks</td>
+            </tr>
+            <tr>
+              <td>Git hooks & audit</td>
+              <td>lefthook, knip</td>
+              <td>Pre-commit / audit</td>
+              <td>Run hooks and find unused deps</td>
+            </tr>
+            <tr>
+              <td>PDF</td>
+              <td>@react-pdf/renderer</td>
+              <td>PDF generation</td>
+              <td>Generate PDF reports/invoices in admin</td>
+            </tr>
+            <tr>
+              <td>Internal packages</td>
+              <td>@repo/*</td>
+              <td>Shared code</td>
+              <td>Shared UI, utils, types, data-access and supabase wrappers</td>
+            </tr>
+            <tr>
+              <td>Deployment</td>
+              <td>Vercel (via vercel.json + Next)</td>
+              <td>Hosting</td>
+              <td>Deploys Next apps and functions to Vercel platform</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Deployment & Run Notes</h2>
+      <ul>
+        <li>Deploy target: Vercel — apps contain `vercel.json` and Next configs.</li>
+        <li>Local dev: run `pnpm dev` from repo root to start Turbo-powered dev for all apps.</li>
+        <li>Database: Prisma is configured at `prisma/schema.prisma`. Use `pnpm db:migrate` / `pnpm db:seed`.</li>
+      </ul>
+    </section>
+
+    <footer class="credits">
+      <p>Generated documentation — place any project-specific notes below.</p>
+    </footer>
+  </main>
+
+</body>
+</html>

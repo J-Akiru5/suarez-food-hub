@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Tech Stack — Suarez Food Hub</title>
+  <style>
+    :root{--bg:#0b1220;--card:#071226;--muted:#9aa4b2;--accent:#7c3aed}
+    html,body{height:100%;margin:0;background:linear-gradient(180deg,#061427,#021019);color:#e6eef8;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+    .wrap{max-width:1100px;margin:28px auto;padding:20px}
+    header{margin-bottom:18px}
+    h1{color:var(--accent);margin:0 0 6px;font-size:22px}
+    p.lead{margin:0;color:var(--muted)}
+    .card{background:var(--card);padding:16px;border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,0.6);margin-top:16px}
+    table{width:100%;border-collapse:collapse;font-size:14px}
+    th,td{padding:10px;border-bottom:1px solid rgba(255,255,255,0.03);text-align:left}
+    thead th{color:#a9c6ff;background:rgba(255,255,255,0.02);position:sticky;top:0}
+    tbody tr:hover{background:rgba(255,255,255,0.02)}
+    ul{color:var(--muted);margin:8px 0 0 20px}
+    footer{margin-top:18px;color:var(--muted);font-size:13px}
+    @media (max-width:700px){h1{font-size:18px}}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>Suarez Food Hub — Tech Stack</h1>
+      <p class="lead">Monorepo overview, dependencies and deployment notes (Vercel). Open this file directly in your browser.</p>
+    </header>
+
+    <section class="card">
+      <h2 style="margin:0 0 8px">Quick summary</h2>
+      <p style="margin:0;color:var(--muted)">Multiple Next.js apps (web, admin, rider, staff), shared workspace packages, Prisma + Postgres, Supabase integrations, and Vercel deployment.</p>
+    </section>
+
+    <section class="card">
+      <h2 style="margin:0 0 12px">Tech Stack & Dependencies</h2>
+      <div style="overflow:auto">
+        <table>
+          <thead>
+            <tr>
+              <th>Category</th>
+              <th>Tool / Dependency</th>
+              <th>Function</th>
+              <th>Simple explanation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr><td>Language / Runtime</td><td>Node.js</td><td>Runtime</td><td>Runs Next.js, build tools and scripts</td></tr>
+            <tr><td>Package manager</td><td>pnpm</td><td>Package manager</td><td>Installs and links workspace packages efficiently</td></tr>
+            <tr><td>Monorepo / Build</td><td>turbo</td><td>Build orchestration</td><td>Parallel, cached builds for monorepo</td></tr>
+            <tr><td>Framework</td><td>Next.js</td><td>Web framework</td><td>Server/edge-rendered React apps</td></tr>
+            <tr><td>UI</td><td>React</td><td>UI library</td><td>Builds interactive frontend</td></tr>
+            <tr><td>Types</td><td>TypeScript</td><td>Static typing</td><td>Type safety and tooling</td></tr>
+            <tr><td>Styling</td><td>Tailwind CSS</td><td>Utility CSS</td><td>Rapid component styling</td></tr>
+            <tr><td>DB / ORM</td><td>Prisma, @prisma/client, pg</td><td>DB schema & client</td><td>Schema, migrations and typed Postgres client</td></tr>
+            <tr><td>Auth / DB SDK</td><td>@supabase/supabase-js, @supabase/ssr</td><td>Supabase SDK</td><td>Client and SSR helpers for Supabase (DB & auth)</td></tr>
+            <tr><td>UI primitives</td><td>@radix-ui, lucide-react</td><td>UI components</td><td>Accessible primitives and icons</td></tr>
+            <tr><td>Maps</td><td>Leaflet, react-leaflet</td><td>Mapping</td><td>Delivery maps and geolocation</td></tr>
+            <tr><td>Charts</td><td>recharts</td><td>Charts</td><td>Admin dashboard visualizations</td></tr>
+            <tr><td>Testing</td><td>vitest, @playwright/test</td><td>Unit & E2E</td><td>Unit tests and browser E2E tests</td></tr>
+            <tr><td>Dev tools</td><td>tsx, prisma CLI</td><td>Dev helpers</td><td>Run TS scripts; manage DB migrations & seed</td></tr>
+            <tr><td>Lint / Format</td><td>biome, prettier</td><td>Formatting & lint</td><td>Code style and static checks</td></tr>
+            <tr><td>Git hooks / audit</td><td>lefthook, knip</td><td>Pre-commit / audit</td><td>Run hooks and find unused deps</td></tr>
+            <tr><td>PDF</td><td>@react-pdf/renderer</td><td>PDF generation</td><td>Generate PDF reports/invoices</td></tr>
+            <tr><td>Internal packages</td><td>@repo/*</td><td>Shared code</td><td>Shared UI, utils, types, data-access and supabase wrappers</td></tr>
+            <tr><td>Deployment</td><td>Vercel</td><td>Hosting</td><td>Deploys Next apps and edge functions</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 style="margin:0 0 8px">Deployment & Run Notes</h2>
+      <ul>
+        <li>Deploy target: Vercel — apps include `vercel.json` and Next configs.</li>
+        <li>Local dev: run <code>pnpm dev</code> at repo root to start Turbo-powered dev.</li>
+        <li>Database: Prisma is configured at <code>prisma/schema.prisma</code>. Use <code>pnpm db:migrate</code> / <code>pnpm db:seed</code>.</li>
+      </ul>
+    </section>
+
+    <footer style="margin-top:18px;color:var(--muted)">Tech stack snapshot — generated in-repo.</footer>
+  </div>
+</body>
+</html>
