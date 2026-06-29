@@ -133,7 +133,7 @@ export default function ProfilePage() {
 
   if (authLoading) {
     return (
-      <div style={{ minHeight: "100vh", background: "var(--color-creamson)", fontFamily: "var(--plus-jakarta-sans)" }}>
+      <div style={{ minHeight: "100vh", background: "var(--color-cream)", fontFamily: "var(--plus-jakarta-sans)" }}>
         <AuthNavbar />
         <div style={{ maxWidth: 600, margin: "0 auto", padding: "120px 24px 60px" }}>
           <div style={{ background: "#fff", borderRadius: 28, padding: 32, boxShadow: "0 8px 32px rgba(0,0,0,0.04)" }}>
@@ -147,7 +147,7 @@ export default function ProfilePage() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--color-creamson)", fontFamily: "var(--plus-jakarta-sans)" }}>
+    <div style={{ minHeight: "100vh", background: "var(--color-cream)", fontFamily: "var(--plus-jakarta-sans)" }}>
       <AuthNavbar />
       <div style={{ maxWidth: 600, margin: "0 auto", padding: "120px 24px 60px" }}>
         <button

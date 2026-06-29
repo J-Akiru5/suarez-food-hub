@@ -136,7 +136,7 @@ function OrdersPageInner() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--color-creamson)", fontFamily: "var(--plus-jakarta-sans)" }}>
+    <div style={{ minHeight: "100vh", background: "var(--color-cream)", fontFamily: "var(--plus-jakarta-sans)" }}>
       <AuthNavbar />
       <div style={{ maxWidth: 800, margin: "0 auto", padding: "120px 24px 60px" }}>
         <h1
@@ -546,7 +546,7 @@ export default function OrdersPage() {
         <div
           style={{
             minHeight: "100vh",
-            background: "var(--color-creamson)",
+            background: "var(--color-cream)",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",

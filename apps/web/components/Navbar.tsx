@@ -108,7 +108,7 @@ export default function Navbar({ onCartClick, cartItemCount = 0, showCartIcon = 
                       justifyContent: "center",
                       fontWeight: 800,
                       padding: "0 6px",
-                      border: "2px solid var(--color-creamson)",
+                      border: "2px solid var(--color-cream)",
                     }}
                   >
                     {localCount}
@@ -137,7 +137,7 @@ export default function Navbar({ onCartClick, cartItemCount = 0, showCartIcon = 
             top: 80,
             left: 0,
             width: "100%",
-            background: "var(--color-creamson)",
+            background: "var(--color-cream)",
             zIndex: 1000,
             borderBottom: "1px solid rgba(255,255,255,0.1)",
             boxShadow: "0 10px 30px rgba(0,0,0,0.2)",

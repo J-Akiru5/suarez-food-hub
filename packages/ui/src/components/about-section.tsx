@@ -26,19 +26,19 @@ const AboutSection = React.forwardRef<HTMLDivElement, AboutSectionProps>(
     ref,
   ) => {
     return (
-      <section ref={ref} className={cn("bg-[#FFF8F0]", className)}>
+      <section ref={ref} className={cn("", className)} style={{ background: "var(--color-cream)" }}>
         <div className="max-w-[1280px] mx-auto">
           <div className="flex flex-col lg:flex-row min-h-[600px]">
             {/* Left: About Us */}
             <div className="flex-1 py-16 px-6 md:px-12 lg:px-16 flex flex-col justify-center" data-aos="fade-right">
-              <p className="text-[#B85C38] text-sm font-semibold uppercase tracking-wider mb-3">{subtitle}</p>
+              <p className="text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--primary-color)" }}>{subtitle}</p>
               <h2
-                className="text-3xl md:text-4xl font-bold text-[#1A1A1A] leading-tight mb-6"
-                style={{ fontFamily: "var(--playfair-display)" }}
+                className="text-3xl md:text-4xl font-bold leading-tight mb-6"
+                style={{ color: "var(--secondary-color)", fontFamily: "var(--playfair-display)" }}
               >
                 {title}
               </h2>
-              <p className="text-[#1A1A1A]/60 text-base leading-relaxed mb-8 max-w-md">{description}</p>
+              <p className="text-base leading-relaxed mb-8 max-w-md" style={{ color: "color-mix(in srgb, var(--secondary-color) 60%, transparent)" }}>{description}</p>
 
               {/* Overlapping Images */}
               <div className="flex gap-4">
@@ -67,10 +67,11 @@ const AboutSection = React.forwardRef<HTMLDivElement, AboutSectionProps>(
 
             {/* Right: Visit Us */}
             <div
-              className="flex-1 bg-[#1A1A1A] py-16 px-6 md:px-12 lg:px-16 flex flex-col justify-center"
+              className="flex-1 py-16 px-6 md:px-12 lg:px-16 flex flex-col justify-center"
+              style={{ background: "var(--secondary-color)" }}
               data-aos="fade-left"
             >
-              <p className="text-[#B85C38] text-sm font-semibold uppercase tracking-wider mb-3">Find Us</p>
+              <p className="text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--primary-color)" }}>Find Us</p>
               <h2
                 className="text-3xl md:text-4xl font-bold text-white leading-tight mb-8"
                 style={{ fontFamily: "var(--playfair-display)" }}
@@ -95,15 +96,15 @@ const AboutSection = React.forwardRef<HTMLDivElement, AboutSectionProps>(
               {/* Contact Info */}
               <div className="space-y-4">
                 <div className="flex items-center gap-3 text-white/70 text-sm">
-                  <MapPin size={16} className="text-[#B85C38] flex-shrink-0" />
+                  <MapPin size={16} className="flex-shrink-0" style={{ color: "var(--primary-color)" }} />
                   <span>Janiuay, Western Visayas, Philippines</span>
                 </div>
                 <div className="flex items-center gap-3 text-white/70 text-sm">
-                  <Phone size={16} className="text-[#B85C38] flex-shrink-0" />
+                  <Phone size={16} className="flex-shrink-0" style={{ color: "var(--primary-color)" }} />
                   <span>+63 912 345 6789</span>
                 </div>
                 <div className="flex items-center gap-3 text-white/70 text-sm">
-                  <Mail size={16} className="text-[#B85C38] flex-shrink-0" />
+                  <Mail size={16} className="flex-shrink-0" style={{ color: "var(--primary-color)" }} />
                   <span>info@suarezfoodhub.com</span>
                 </div>
               </div>

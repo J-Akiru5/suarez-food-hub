@@ -35,26 +35,26 @@ const defaultSteps: StepProps[] = [
 
 const HowItWorks = React.forwardRef<HTMLDivElement, HowItWorksProps>(({ steps = defaultSteps, className }, ref) => {
   return (
-    <section ref={ref} className={cn("py-20 md:py-28 bg-[#FFF8F0]", className)}>
+    <section ref={ref} className={cn("py-20 md:py-28", className)} style={{ background: "var(--color-cream)" }}>
       <div className="max-w-[1280px] mx-auto px-6 text-center">
         <h2
-          className="text-3xl md:text-4xl lg:text-[44px] font-bold text-[#1A1A1A] mb-4 leading-tight"
-          style={{ fontFamily: "var(--playfair-display)" }}
+          className="text-3xl md:text-4xl lg:text-[44px] font-bold mb-4 leading-tight"
+          style={{ color: "var(--secondary-color)", fontFamily: "var(--playfair-display)" }}
         >
           Order in 3 Easy Steps
         </h2>
-        <p className="text-[#1A1A1A]/50 text-sm mb-16 max-w-md mx-auto">Interactive high-resolution food gallery</p>
+        <p className="text-sm mb-16 max-w-md mx-auto" style={{ color: "color-mix(in srgb, var(--secondary-color) 50%, transparent)" }}>Interactive high-resolution food gallery</p>
 
         <div className="flex flex-col md:flex-row items-stretch justify-center gap-6">
           {steps.map((step, index) => (
             <div key={index} className="glass-card p-8 text-center flex-1 max-w-sm w-full mx-auto">
-              <div className="w-14 h-14 mx-auto mb-5 rounded-2xl bg-[#B85C38]/10 flex items-center justify-center text-[#B85C38]">
+              <div className="w-14 h-14 mx-auto mb-5 rounded-2xl flex items-center justify-center" style={{ background: "color-mix(in srgb, var(--primary-color) 10%, transparent)", color: "var(--primary-color)" }}>
                 {step.icon}
               </div>
-              <h3 className="text-lg font-bold text-[#1A1A1A] mb-2" style={{ fontFamily: "var(--playfair-display)" }}>
+              <h3 className="text-lg font-bold mb-2" style={{ color: "var(--secondary-color)", fontFamily: "var(--playfair-display)" }}>
                 {step.title}
               </h3>
-              <p className="text-[#1A1A1A]/50 text-sm leading-relaxed">{step.description}</p>
+              <p className="text-sm leading-relaxed" style={{ color: "color-mix(in srgb, var(--secondary-color) 50%, transparent)" }}>{step.description}</p>
             </div>
           ))}
         </div>

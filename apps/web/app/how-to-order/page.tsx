@@ -50,7 +50,7 @@ const STEPS = [
 
 export default function HowToOrderPage() {
   return (
-    <div style={{ backgroundColor: "var(--color-creamson)", minHeight: "100vh" }}>
+    <div style={{ backgroundColor: "var(--color-cream)", minHeight: "100vh" }}>
       {/* Header */}
       <AuthNavbar />
 

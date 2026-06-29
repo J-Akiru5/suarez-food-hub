@@ -1,3 +1,5 @@
+"use client";
+
 import { Footer } from "@repo/ui";
 import { Camera, Clock, Globe, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import AuthNavbar from "../../components/AuthNavbar";
@@ -52,11 +54,11 @@ const socialLinks = [
 
 export default function ContactPage() {
   return (
-    <div className="min-h-screen bg-[#fff0de]">
+    <div className="min-h-screen" style={{ background: "color-mix(in srgb, var(--primary-color) 5%, white)" }}>
       <AuthNavbar showCartIcon={false} />
 
       {/* Hero */}
-      <section className="bg-[#b1454a] pt-[74px] pb-16 md:py-24">
+      <section className="pt-[74px] py-16 md:py-24" style={{ background: "var(--primary-color)" }}>
         <div className="max-w-[1280px] mx-auto px-6 text-center">
           <p className="text-white/60 text-sm font-semibold uppercase tracking-wider mb-3">Get in Touch</p>
           <h1
@@ -78,9 +80,12 @@ export default function ContactPage() {
             {contactInfo.map((info) => (
               <div
                 key={info.title}
-                className="bg-white/65 backdrop-blur-xl border border-white/40 rounded-32 p-6 text-center hover:-translate-y-1 hover:shadow-xl transition-all duration-300"
+                className="glass-card p-6 text-center hover:-translate-y-1 transition-all duration-300"
               >
-                <div className="w-14 h-14 mx-auto mb-5 bg-[#b1454a]/10 rounded-2xl flex items-center justify-center text-[#b1454a]">
+                <div
+                  className="w-14 h-14 mx-auto mb-5 rounded-2xl flex items-center justify-center"
+                  style={{ background: "color-mix(in srgb, var(--primary-color) 10%, transparent)", color: "var(--primary-color)" }}
+                >
                   <info.icon className="w-6 h-6" />
                 </div>
                 <h3
@@ -95,7 +100,9 @@ export default function ContactPage() {
                       {info.action && info.details.indexOf(detail) === 0 ? (
                         <a
                           href={info.action}
-                          className="hover:text-[#b1454a] transition-colors"
+                          className="transition-colors"
+                          onMouseEnter={(e) => (e.currentTarget.style.color = "var(--primary-color)")}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = "")}
                           target={info.action.startsWith("http") ? "_blank" : undefined}
                           rel={info.action.startsWith("http") ? "noopener noreferrer" : undefined}
                         >
@@ -114,7 +121,7 @@ export default function ContactPage() {
       </section>
 
       {/* Map & Social */}
-      <section className="py-16 md:py-24 bg-white/50">
+      <section className="py-16 md:py-24" style={{ background: "color-mix(in srgb, var(--primary-color) 3%, white)" }}>
         <div className="max-w-[1280px] mx-auto px-6">
           <div className="grid gap-12 lg:grid-cols-2">
             {/* Map */}
@@ -162,7 +169,7 @@ export default function ContactPage() {
               </div>
 
               {/* FAQ */}
-              <div className="bg-white/65 backdrop-blur-xl border border-white/40 rounded-32 p-6">
+              <div className="glass-card p-6">
                 <h3 className="text-lg font-bold text-gray-900 mb-4" style={{ fontFamily: "var(--playfair-display)" }}>
                   Frequently Asked Questions
                 </h3>

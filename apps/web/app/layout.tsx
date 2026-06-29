@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import "./globals.css";
 import "aos/dist/aos.css";
 import { AuthProvider } from "../components/auth-provider";
+import { GuestThemeProvider } from "../components/guest-theme-provider";
 import { FeedbackFab } from "../components/feedback-fab";
 
 export const metadata: Metadata = {
@@ -24,8 +25,10 @@ export default function RootLayout({
       </head>
       <body>
         <AuthProvider>
-          {children}
-          <FeedbackFab />
+          <GuestThemeProvider>
+            {children}
+            <FeedbackFab />
+          </GuestThemeProvider>
         </AuthProvider>
       </body>
     </html>

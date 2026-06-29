@@ -236,7 +236,7 @@ export default function MenuPage() {
   };
 
   return (
-    <div style={{ background: "var(--color-creamson)", minHeight: "100vh", fontFamily: "var(--plus-jakarta-sans)" }}>
+    <div style={{ background: "var(--color-cream)", minHeight: "100vh", fontFamily: "var(--plus-jakarta-sans)" }}>
       {/* ── Toast ── */}
       <div
         onClick={() => {
@@ -493,7 +493,7 @@ export default function MenuPage() {
                     alignItems: "center",
                     gap: 10,
                     transition: "transform 0.1s, box-shadow 0.2s",
-                    boxShadow: modalProduct.availability === "Sold Out" ? "none" : "0 8px 24px rgba(177, 69, 74, 0.3)",
+                    boxShadow: modalProduct.availability === "Sold Out" ? "none" : "0 8px 24px color-mix(in srgb, var(--primary-color) 30%, transparent)",
                   }}
                   onMouseDown={(e) => {
                     if (modalProduct.availability !== "Sold Out") e.currentTarget.style.transform = "scale(0.96)";
@@ -532,7 +532,7 @@ export default function MenuPage() {
       <div
         className="mobile-padding"
         style={{
-          background: "var(--primary-color)",
+          background: "linear-gradient(to bottom right, var(--primary-color), var(--primary-dark))",
           padding: "160px 64px 80px",
           textAlign: "center",
           position: "relative",
@@ -662,14 +662,14 @@ export default function MenuPage() {
                   borderRadius: 28,
                   overflow: "hidden",
                   height: 380,
-                  border: "1px solid rgba(177, 69, 74, 0.1)",
+                  border: "1px solid color-mix(in srgb, var(--primary-color) 10%, transparent)",
                 }}
               >
                 <div
                   style={{
                     width: "100%",
                     height: 200,
-                    background: "rgba(177, 69, 74, 0.08)",
+                    background: "color-mix(in srgb, var(--primary-color) 8%, transparent)",
                     animation: "pulse 1.5s infinite ease-in-out",
                   }}
                 />
@@ -678,7 +678,7 @@ export default function MenuPage() {
                     style={{
                       width: "60%",
                       height: 24,
-                      background: "rgba(177, 69, 74, 0.12)",
+                      background: "color-mix(in srgb, var(--primary-color) 12%, transparent)",
                       borderRadius: 6,
                       marginBottom: 12,
                       animation: "pulse 1.5s infinite ease-in-out",
@@ -688,7 +688,7 @@ export default function MenuPage() {
                     style={{
                       width: "90%",
                       height: 14,
-                      background: "rgba(177, 69, 74, 0.05)",
+                      background: "color-mix(in srgb, var(--primary-color) 5%, transparent)",
                       borderRadius: 4,
                       marginBottom: 8,
                     }}
@@ -697,7 +697,7 @@ export default function MenuPage() {
                     style={{
                       width: "70%",
                       height: 14,
-                      background: "rgba(177, 69, 74, 0.05)",
+                      background: "color-mix(in srgb, var(--primary-color) 5%, transparent)",
                       borderRadius: 4,
                       marginBottom: 24,
                     }}
@@ -706,7 +706,7 @@ export default function MenuPage() {
                     style={{
                       width: "100%",
                       height: 40,
-                      background: "rgba(177, 69, 74, 0.08)",
+                      background: "color-mix(in srgb, var(--primary-color) 8%, transparent)",
                       borderRadius: 20,
                       animation: "pulse 1.5s infinite ease-in-out",
                     }}
@@ -730,7 +730,7 @@ export default function MenuPage() {
               style={{
                 width: 100,
                 height: 100,
-                background: "rgba(239,68,68,0.05)",
+                background: "color-mix(in srgb, #ef4444 5%, transparent)",
                 borderRadius: "50%",
                 display: "flex",
                 alignItems: "center",
@@ -777,7 +777,7 @@ export default function MenuPage() {
               style={{
                 width: 100,
                 height: 100,
-                background: "rgba(177, 69, 74, 0.05)",
+                background: "color-mix(in srgb, var(--primary-color) 5%, transparent)",
                 borderRadius: "50%",
                 display: "flex",
                 alignItems: "center",
@@ -785,7 +785,7 @@ export default function MenuPage() {
                 marginBottom: 24,
               }}
             >
-              <SearchX size={48} color="var(--primary-color)" style={{ opacity: 0.5 }} />
+              <SearchX size={48} className="opacity-50" style={{ color: "var(--primary-color)" }} />
             </div>
             <h3
               style={{
@@ -823,7 +823,7 @@ export default function MenuPage() {
                   borderRadius: 32,
                   overflow: "hidden",
                   border: isAiMatch ? "2px solid var(--primary-color)" : "1px solid rgba(255, 255, 255, 0.4)",
-                  boxShadow: isAiMatch ? "0 0 40px rgba(177,69,74,0.6)" : "0 8px 32px rgba(0,0,0,0.04)",
+                  boxShadow: isAiMatch ? "0 0 40px color-mix(in srgb, var(--primary-color) 60%, transparent)" : "0 8px 32px rgba(0,0,0,0.04)",
                   cursor: item.availability === "Sold Out" ? "not-allowed" : "pointer",
                   opacity: item.availability === "Sold Out" ? 0.6 : isDimmed ? 0.3 : 1,
                   transform: isAiMatch ? "scale(1.02)" : "scale(1)",
@@ -836,7 +836,7 @@ export default function MenuPage() {
                 onMouseEnter={(e) => {
                   if (item.availability !== "Sold Out") {
                     (e.currentTarget as HTMLDivElement).style.transform = "translateY(-6px) scale(1.02)";
-                    (e.currentTarget as HTMLDivElement).style.boxShadow = "0 24px 48px rgba(177,69,74,0.12)";
+                    (e.currentTarget as HTMLDivElement).style.boxShadow = "0 24px 48px color-mix(in srgb, var(--primary-color) 12%, transparent)";
                     (e.currentTarget as HTMLDivElement).style.background = "rgba(255, 255, 255, 0.9)";
                     (e.currentTarget as HTMLDivElement).style.border = "1px solid rgba(255, 255, 255, 0.8)";
                     (e.currentTarget as HTMLDivElement).style.zIndex = "20";
@@ -847,7 +847,7 @@ export default function MenuPage() {
                     ? "scale(1.02)"
                     : "translateY(0) scale(1)";
                   (e.currentTarget as HTMLDivElement).style.boxShadow = isAiMatch
-                    ? "0 0 40px rgba(177,69,74,0.6)"
+                    ? "0 0 40px color-mix(in srgb, var(--primary-color) 60%, transparent)"
                     : "0 8px 32px rgba(0,0,0,0.04)";
                   (e.currentTarget as HTMLDivElement).style.background = isAiMatch
                     ? "rgba(255, 255, 255, 0.9)"
@@ -983,7 +983,7 @@ export default function MenuPage() {
                       style={{
                         padding: "10px 20px",
                         borderRadius: 24,
-                        background: item.availability === "Sold Out" ? "#f1f5f9" : "rgba(177, 69, 74, 0.08)",
+                        background: item.availability === "Sold Out" ? "#f1f5f9" : "color-mix(in srgb, var(--primary-color) 8%, transparent)",
                         color: item.availability === "Sold Out" ? "#94a3b8" : "var(--primary-color)",
                         fontSize: 14,
                         fontWeight: 700,
@@ -994,11 +994,11 @@ export default function MenuPage() {
                       }}
                       onMouseEnter={(e) => {
                         if (item.availability !== "Sold Out")
-                          e.currentTarget.style.background = "rgba(177, 69, 74, 0.15)";
+                          e.currentTarget.style.background = "color-mix(in srgb, var(--primary-color) 15%, transparent)";
                       }}
                       onMouseLeave={(e) => {
                         if (item.availability !== "Sold Out")
-                          e.currentTarget.style.background = "rgba(177, 69, 74, 0.08)";
+                          e.currentTarget.style.background = "color-mix(in srgb, var(--primary-color) 8%, transparent)";
                       }}
                     >
                       {item.availability === "Sold Out" ? (
@@ -1040,7 +1040,7 @@ export default function MenuPage() {
               padding: 24,
               borderRadius: 24,
               width: 320,
-              boxShadow: "0 20px 40px rgba(177, 69, 74, 0.2)",
+              boxShadow: "0 20px 40px color-mix(in srgb, var(--primary-color) 20%, transparent)",
               marginBottom: 16,
               animation: "slideUp 0.3s ease-out",
             }}
@@ -1081,7 +1081,7 @@ export default function MenuPage() {
                 width: "100%",
                 padding: "12px 16px",
                 borderRadius: 12,
-                border: "2px solid rgba(177, 69, 74, 0.2)",
+                border: "2px solid color-mix(in srgb, var(--primary-color) 20%, transparent)",
                 outline: "none",
                 background: "#fff",
                 color: "var(--secondary-color)",
@@ -1090,7 +1090,7 @@ export default function MenuPage() {
                 boxSizing: "border-box",
               }}
               onFocus={(e) => (e.currentTarget.style.borderColor = "var(--primary-color)")}
-              onBlur={(e) => (e.currentTarget.style.borderColor = "rgba(177, 69, 74, 0.2)")}
+              onBlur={(e) => (e.currentTarget.style.borderColor = "color-mix(in srgb, var(--primary-color) 20%, transparent)")}
             />
           </div>
         )}
@@ -1110,7 +1110,7 @@ export default function MenuPage() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            boxShadow: "0 10px 24px rgba(177, 69, 74, 0.4)",
+            boxShadow: "0 10px 24px color-mix(in srgb, var(--primary-color) 40%, transparent)",
             transition: "transform 0.2s",
           }}
           onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.1)")}

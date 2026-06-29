@@ -18,17 +18,17 @@ export interface TrendingSectionProps {
 const TrendingSection = React.forwardRef<HTMLDivElement, TrendingSectionProps>(
   ({ title, description, items, className }, ref) => {
     return (
-      <section ref={ref} className={cn("py-16 md:py-24 bg-[#FFF8F0]", className)}>
+      <section ref={ref} className={cn("py-16 md:py-24", className)} style={{ background: "var(--color-cream)" }}>
         <div className="max-w-[1280px] mx-auto px-6">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-10">
             <div>
               <h2
-                className="text-3xl md:text-4xl font-bold text-[#1A1A1A] leading-tight"
-                style={{ fontFamily: "var(--playfair-display)" }}
+                className="text-3xl md:text-4xl font-bold leading-tight"
+                style={{ color: "var(--secondary-color)", fontFamily: "var(--playfair-display)" }}
               >
                 {title}
               </h2>
-              {description && <p className="text-[#1A1A1A]/50 text-sm mt-2 max-w-md">{description}</p>}
+              {description && <p className="text-sm mt-2 max-w-md" style={{ color: "color-mix(in srgb, var(--secondary-color) 50%, transparent)" }}>{description}</p>}
             </div>
           </div>
 
@@ -43,8 +43,8 @@ const TrendingSection = React.forwardRef<HTMLDivElement, TrendingSectionProps>(
                   }}
                 />
                 <p
-                  className="text-sm font-medium text-[#1A1A1A] mt-3 text-center"
-                  style={{ fontFamily: "var(--plus-jakarta-sans)" }}
+                  className="text-sm font-medium mt-3 text-center"
+                  style={{ color: "var(--secondary-color)", fontFamily: "var(--plus-jakarta-sans)" }}
                 >
                   {item.name}
                 </p>

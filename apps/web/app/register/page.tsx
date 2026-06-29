@@ -142,7 +142,7 @@ export default function Register() {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          backgroundColor: "var(--color-creamson)",
+          backgroundColor: "var(--color-cream)",
           padding: "20px",
         }}
       >
@@ -303,7 +303,7 @@ export default function Register() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "var(--color-creamson)",
+        backgroundColor: "var(--color-cream)",
         padding: "20px",
       }}
     >

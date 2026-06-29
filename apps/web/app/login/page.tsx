@@ -155,7 +155,7 @@ export default function Login() {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: "var(--color-creamson)",
+        backgroundColor: "var(--color-cream)",
         padding: "20px",
       }}
     >

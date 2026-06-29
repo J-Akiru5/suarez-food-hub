@@ -14,7 +14,14 @@ export interface AuthNavbarProps {
   className?: string;
 }
 
-const navLinks = [
+const guestNavLinks = [
+  { label: "Home", href: "/" },
+  { label: "Menu", href: "/menu" },
+  { label: "About", href: "/about" },
+  { label: "Contact", href: "/contact" },
+];
+
+const authNavLinks = [
   { label: "Home", href: "/" },
   { label: "Menu", href: "/menu" },
 ];
@@ -25,7 +32,17 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
     const pathname = usePathname();
     const [mobileOpen, setMobileOpen] = React.useState(false);
     const [dropdownOpen, setDropdownOpen] = React.useState(false);
+    const [isGuest, setIsGuest] = React.useState(false);
     const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+    React.useEffect(() => {
+      setIsGuest(document.documentElement.classList.contains("guest-mode"));
+      const observer = new MutationObserver(() => {
+        setIsGuest(document.documentElement.classList.contains("guest-mode"));
+      });
+      observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
+      return () => observer.disconnect();
+    }, []);
 
     React.useEffect(() => {
       const handleClickOutside = (e: MouseEvent) => {
@@ -39,14 +56,19 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
 
     const displayName = profile?.full_name || user?.email?.split("@")[0] || "User";
     const avatarLetter = displayName.charAt(0).toUpperCase();
+    const navLinks = isGuest ? guestNavLinks : authNavLinks;
 
     return (
       <header
         ref={ref}
         className={cn(
-          "fixed top-0 left-0 right-0 z-[999] bg-[#f9f3ec]/90 backdrop-blur-xl border-b border-black/5 shadow-sm",
+          "fixed top-0 left-0 right-0 z-[999] backdrop-blur-xl border-b shadow-sm",
           className,
         )}
+        style={{
+          background: isGuest ? "rgba(255,255,255,0.9)" : "color-mix(in srgb, var(--primary-color) 5%, rgba(255,255,255,0.9))",
+          borderColor: isGuest ? "rgba(0,0,0,0.05)" : "color-mix(in srgb, var(--primary-color) 10%, transparent)",
+        }}
       >
         {/* Full-width Rectangle Navbar */}
         <nav className="w-full max-w-[1280px] mx-auto flex items-center justify-between px-6 py-3 relative">
@@ -56,8 +78,8 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
               <img src="/logo.svg" alt="Suarez Food Hub Logo" className="w-full h-full" />
             </div>
             <span
-              className="hidden sm:inline text-lg font-bold text-[#1A1A1A]"
-              style={{ fontFamily: "var(--playfair-display)" }}
+              className="hidden sm:inline text-lg font-bold"
+              style={{ color: "var(--secondary-color)", fontFamily: isGuest ? "var(--plus-jakarta-sans)" : "var(--playfair-display)" }}
             >
               Suarez Food Hub
             </span>
@@ -71,11 +93,18 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
                   href={link.href}
                   className={cn(
                     "text-[15px] font-medium transition-all px-5 py-2.5 rounded-full",
-                    pathname === link.href
-                      ? "bg-[#8B3A2B] text-white shadow-sm"
-                      : "text-[#1A1A1A]/80 hover:text-[#1A1A1A] hover:bg-black/5",
                   )}
-                  style={{ fontFamily: "var(--plus-jakarta-sans)" }}
+                  style={{
+                    fontFamily: "var(--plus-jakarta-sans)",
+                    background: pathname === link.href ? (isGuest ? "var(--primary-color)" : "var(--primary-dark)") : "transparent",
+                    color: pathname === link.href ? "#fff" : "color-mix(in srgb, var(--secondary-color) 80%, transparent)",
+                  }}
+                  onMouseEnter={(e) => {
+                    if (pathname !== link.href) e.currentTarget.style.background = "rgba(0,0,0,0.05)";
+                  }}
+                  onMouseLeave={(e) => {
+                    if (pathname !== link.href) e.currentTarget.style.background = "transparent";
+                  }}
                 >
                   {link.label}
                 </Link>
@@ -89,11 +118,17 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
             {showCartIcon && (
               <button
                 onClick={onCartClick}
-                className="relative w-10 h-10 flex items-center justify-center rounded-full bg-white/50 hover:bg-white/80 transition-colors shadow-sm border-none cursor-pointer"
+                className="relative w-10 h-10 flex items-center justify-center rounded-full transition-colors shadow-sm border-none cursor-pointer"
+                style={{ background: "rgba(255,255,255,0.5)" }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.8)")}
+                onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.5)")}
               >
-                <ShoppingCart className="w-5 h-5 text-[#1A1A1A]" />
+                <ShoppingCart className="w-5 h-5" style={{ color: "var(--secondary-color)" }} />
                 {cartItemCount > 0 && (
-                  <span className="absolute -top-1 -right-1 w-[18px] h-[18px] bg-[#8B3A2B] text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white">
+                  <span
+                    className="absolute -top-1 -right-1 w-[18px] h-[18px] text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white"
+                    style={{ background: "var(--primary-dark)" }}
+                  >
                     {cartItemCount > 99 ? "99+" : cartItemCount}
                   </span>
                 )}
@@ -105,12 +140,18 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
               <div ref={dropdownRef} className="relative">
                 <button
                   onClick={() => setDropdownOpen(!dropdownOpen)}
-                  className="h-10 flex items-center gap-1.5 pl-1 pr-3 rounded-full bg-white/50 hover:bg-white/80 transition-colors shadow-sm border-none cursor-pointer"
+                  className="h-10 flex items-center gap-1.5 pl-1 pr-3 rounded-full transition-colors shadow-sm border-none cursor-pointer"
+                  style={{ background: "rgba(255,255,255,0.5)" }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.8)")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "rgba(255,255,255,0.5)")}
                 >
-                  <div className="w-8 h-8 rounded-full bg-[#8B3A2B] text-white font-bold text-[14px] flex items-center justify-center flex-shrink-0">
+                  <div
+                    className="w-8 h-8 rounded-full text-white font-bold text-[14px] flex items-center justify-center flex-shrink-0"
+                    style={{ background: "var(--primary-dark)" }}
+                  >
                     {avatarLetter}
                   </div>
-                  <ChevronDown className="w-4 h-4 text-[#1A1A1A]" />
+                  <ChevronDown className="w-4 h-4" style={{ color: "var(--secondary-color)" }} />
                 </button>
 
                 {dropdownOpen && (
@@ -157,7 +198,10 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
             ) : (
               <Link
                 href="/login"
-                className="hidden md:inline-flex items-center px-6 py-2.5 rounded-full bg-[#1A1A1A] text-white text-[15px] font-medium hover:bg-[#1A1A1A]/80 transition-colors no-underline"
+                className="hidden md:inline-flex items-center px-6 py-2.5 rounded-full text-white text-[15px] font-medium transition-colors no-underline"
+                style={{ background: "var(--secondary-color)" }}
+                onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.8")}
+                onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
               >
                 Login
               </Link>
@@ -166,11 +210,13 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
             {/* Mobile Hamburger */}
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="md:hidden w-10 h-10 flex items-center justify-center rounded-full bg-white/50 hover:bg-white/80 border-none cursor-pointer"
+              className="md:hidden w-10 h-10 flex items-center justify-center rounded-full border-none cursor-pointer"
+              style={{ background: "rgba(255,255,255,0.5)" }}
             >
               {mobileOpen ? (
                 <svg
-                  className="w-5 h-5 text-[#1A1A1A]"
+                  className="w-5 h-5"
+                  style={{ color: "var(--secondary-color)" }}
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -180,7 +226,8 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
                 </svg>
               ) : (
                 <svg
-                  className="w-5 h-5 text-[#1A1A1A]"
+                  className="w-5 h-5"
+                  style={{ color: "var(--secondary-color)" }}
                   fill="none"
                   viewBox="0 0 24 24"
                   stroke="currentColor"
@@ -200,10 +247,11 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
               <Link
                 key={link.label}
                 href={link.href}
-                className={cn(
-                  "block px-6 py-4 text-[15px] font-medium transition-colors no-underline",
-                  pathname === link.href ? "text-[#8B3A2B] bg-[#F3E7D3]/30" : "text-[#1A1A1A] hover:bg-gray-50",
-                )}
+                className="block px-6 py-4 text-[15px] font-medium transition-colors no-underline"
+                style={{
+                  color: pathname === link.href ? "var(--primary-color)" : "var(--secondary-color)",
+                  background: pathname === link.href ? "color-mix(in srgb, var(--primary-color) 10%, transparent)" : "transparent",
+                }}
                 onClick={() => setMobileOpen(false)}
               >
                 {link.label}
@@ -213,21 +261,24 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
               <>
                 <Link
                   href="/profile"
-                  className="block px-6 py-4 text-[15px] font-medium text-[#1A1A1A] hover:bg-gray-50 transition-colors no-underline border-t border-gray-100"
+                  className="block px-6 py-4 text-[15px] font-medium hover:bg-gray-50 transition-colors no-underline border-t border-gray-100"
+                  style={{ color: "var(--secondary-color)" }}
                   onClick={() => setMobileOpen(false)}
                 >
                   My Profile
                 </Link>
                 <Link
                   href="/orders"
-                  className="block px-6 py-4 text-[15px] font-medium text-[#1A1A1A] hover:bg-gray-50 transition-colors no-underline"
+                  className="block px-6 py-4 text-[15px] font-medium hover:bg-gray-50 transition-colors no-underline"
+                  style={{ color: "var(--secondary-color)" }}
                   onClick={() => setMobileOpen(false)}
                 >
                   My Orders
                 </Link>
                 <Link
                   href="/orders?active=true"
-                  className="block px-6 py-4 text-[15px] font-medium text-[#1A1A1A] hover:bg-gray-50 transition-colors no-underline"
+                  className="block px-6 py-4 text-[15px] font-medium hover:bg-gray-50 transition-colors no-underline"
+                  style={{ color: "var(--secondary-color)" }}
                   onClick={() => setMobileOpen(false)}
                 >
                   Track Order
@@ -245,7 +296,8 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
             ) : (
               <Link
                 href="/login"
-                className="block px-6 py-4 text-[15px] font-medium text-[#8B3A2B] hover:bg-gray-50 transition-colors no-underline border-t border-gray-100"
+                className="block px-6 py-4 text-[15px] font-medium hover:bg-gray-50 transition-colors no-underline border-t border-gray-100"
+                style={{ color: "var(--primary-color)" }}
                 onClick={() => setMobileOpen(false)}
               >
                 Login

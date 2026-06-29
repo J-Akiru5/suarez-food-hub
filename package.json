@@ -17,13 +17,16 @@
     "db:push": "prisma db push",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
-    "db:generate": "prisma generate"
+    "db:generate": "prisma generate",
+    "prepare": "husky"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.16",
     "@prisma/client": "^5.20.0",
+    "husky": "^9.1.7",
     "knip": "^6.15.0",
     "lefthook": "^2.1.9",
+    "lint-staged": "^17.0.8",
     "pg": "^8.21.0",
     "prettier": "^3.3.0",
     "prisma": "^5.20.0",

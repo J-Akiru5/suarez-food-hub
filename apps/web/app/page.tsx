@@ -42,7 +42,7 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-[#FFF8F0]">
+    <div className="min-h-screen" style={{ background: "var(--color-cream)" }}>
       <AuthNavbar showCartIcon={false} />
 
       {/* Hero Section */}
@@ -64,23 +64,24 @@ export default function HomePage() {
       <HowItWorks />
 
       {/* Popular Foods - Horizontal Scroll */}
-      <section className="py-16 md:py-24 bg-[#FFF8F0]" id="menu">
+      <section className="py-16 md:py-24" style={{ background: "var(--color-cream)" }} id="menu">
         <div className="max-w-[1280px] mx-auto px-6">
           <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-10" data-aos="fade-up">
             <div>
               <h2
-                className="text-3xl md:text-4xl font-bold text-[#1A1A1A] leading-tight"
-                style={{ fontFamily: "var(--playfair-display)" }}
+                className="text-3xl md:text-4xl font-bold leading-tight"
+                style={{ color: "var(--secondary-color)", fontFamily: "var(--playfair-display)" }}
               >
                 Popular Food
               </h2>
-              <p className="text-[#1A1A1A]/50 text-sm mt-2 max-w-md">
+              <p className="text-sm mt-2 max-w-md" style={{ color: "color-mix(in srgb, var(--secondary-color) 50%, transparent)" }}>
                 Our most loved dishes, chosen by thousands of happy customers
               </p>
             </div>
             <Link
               href="/menu"
-              className="text-sm font-medium text-[#B85C38] hover:text-[#A0522D] transition-colors inline-flex items-center gap-1"
+              className="text-sm font-medium transition-colors inline-flex items-center gap-1"
+              style={{ color: "var(--primary-color)" }}
             >
               Explore All Food <ArrowRight size={14} />
             </Link>
@@ -92,14 +93,14 @@ export default function HomePage() {
                 .fill(0)
                 .map((_, i) => (
                   <div key={i} className="flex flex-col items-center">
-                    <div className="w-full aspect-square rounded-[24px] bg-[#B85C38]/10 animate-pulse" />
-                    <div className="w-20 h-3 bg-[#B85C38]/10 rounded mt-4 mx-auto animate-pulse" />
+                    <div className="w-full aspect-square rounded-[24px] animate-pulse" style={{ background: "color-mix(in srgb, var(--primary-color) 10%, transparent)" }} />
+                    <div className="w-20 h-3 rounded mt-4 mx-auto animate-pulse" style={{ background: "color-mix(in srgb, var(--primary-color) 10%, transparent)" }} />
                   </div>
                 ))
             ) : fetchError ? (
               <div className="col-span-full text-center w-full py-10">
                 <Utensils size={48} color="#ef4444" className="mx-auto mb-4 opacity-30" />
-                <p className="text-[#1A1A1A]/50 text-lg font-medium">
+                <p className="text-lg font-medium" style={{ color: "color-mix(in srgb, var(--secondary-color) 50%, transparent)" }}>
                   Could not load featured items.
                   <br />
                   Please refresh the page.
@@ -107,8 +108,8 @@ export default function HomePage() {
               </div>
             ) : popularFoods.length === 0 ? (
               <div className="col-span-full text-center w-full py-10">
-                <Utensils size={48} color="#B85C38" className="mx-auto mb-4 opacity-30" />
-                <p className="text-[#1A1A1A]/50 text-lg font-medium">
+                <Utensils size={48} className="mx-auto mb-4 opacity-30" style={{ color: "var(--primary-color)" }} />
+                <p className="text-lg font-medium" style={{ color: "color-mix(in srgb, var(--secondary-color) 50%, transparent)" }}>
                   Our chefs are preparing the popular menu.
                   <br />
                   Check back soon!
@@ -128,8 +129,10 @@ export default function HomePage() {
                     />
                   </div>
                   <p
-                    className="text-base font-semibold text-[#1A1A1A] text-center group-hover:text-[#B85C38] transition-colors"
-                    style={{ fontFamily: "var(--plus-jakarta-sans)" }}
+                    className="text-base font-semibold text-center transition-colors"
+                    style={{ color: "var(--secondary-color)", fontFamily: "var(--plus-jakarta-sans)" }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "var(--primary-color)")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "var(--secondary-color)")}
                   >
                     {item.name}
                   </p>
