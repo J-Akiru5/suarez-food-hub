@@ -1,11 +1,11 @@
 "use client";
 
+import { createBrowserTypedClient } from "@repo/data-access/client";
+import { getProfileById } from "@repo/data-access/data/profiles";
 import { DollarSign, History, Home, LogOut, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { createBrowserTypedClient } from "@repo/data-access/client";
-import { getProfileById } from "@repo/data-access/data/profiles";
 
 const navItems = [
   { href: "/", label: "Home", icon: Home },

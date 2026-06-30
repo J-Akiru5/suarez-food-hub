@@ -1,5 +1,7 @@
 "use client";
 
+import { createBrowserTypedClient } from "@repo/data-access/client";
+import { getProfileById } from "@repo/data-access/data/profiles";
 import {
   Bell,
   Bike,
@@ -21,8 +23,6 @@ import {
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { createBrowserTypedClient } from "@repo/data-access/client";
-import { getProfileById } from "@repo/data-access/data/profiles";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },

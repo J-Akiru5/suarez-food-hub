@@ -1,5 +1,5 @@
-import type { TypedSupabaseClient } from "./client";
 import type { Profile } from "@repo/types";
+import type { TypedSupabaseClient } from "./client";
 
 export async function getUser(supabase: TypedSupabaseClient) {
   const {
@@ -23,21 +23,13 @@ export async function requireAuth(supabase: TypedSupabaseClient) {
 }
 
 export async function requireAdmin(serviceSupabase: TypedSupabaseClient, userId: string) {
-  const { data: profile } = await serviceSupabase
-    .from("profiles")
-    .select("role")
-    .eq("id", userId)
-    .single();
+  const { data: profile } = await serviceSupabase.from("profiles").select("role").eq("id", userId).single();
   if (profile?.role !== "admin") return false;
   return true;
 }
 
 export async function requireStaffOrAdmin(serviceSupabase: TypedSupabaseClient, userId: string) {
-  const { data: profile } = await serviceSupabase
-    .from("profiles")
-    .select("role, is_active")
-    .eq("id", userId)
-    .single();
+  const { data: profile } = await serviceSupabase.from("profiles").select("role, is_active").eq("id", userId).single();
   if (!profile || (profile.role !== "staff" && profile.role !== "admin")) return null;
   if (profile.is_active === false) return null;
   return profile;

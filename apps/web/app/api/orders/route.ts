@@ -1,12 +1,12 @@
-import { type NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { createAuthClient, createServiceClient } from "@repo/data-access/client";
 import type { Database } from "@repo/data-access";
 import { getUser } from "@repo/data-access/auth";
-import { createOrder, createOrderItems, deleteOrder, getOrdersByUser } from "@repo/data-access/data/orders";
-import { getProfileById, upsertProfile, getAdminIds } from "@repo/data-access/data/profiles";
-import { deductStock, markLowStockAlerted } from "@repo/data-access/data/products";
+import { createAuthClient, createServiceClient } from "@repo/data-access/client";
 import { createNotifications } from "@repo/data-access/data/notifications";
+import { createOrder, createOrderItems, deleteOrder, getOrdersByUser } from "@repo/data-access/data/orders";
+import { deductStock, markLowStockAlerted } from "@repo/data-access/data/products";
+import { getAdminIds, getProfileById, upsertProfile } from "@repo/data-access/data/profiles";
+import { cookies } from "next/headers";
+import { type NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
   try {
@@ -111,10 +111,7 @@ export async function POST(req: NextRequest) {
         break;
       }
 
-      if (
-        result.newQuantity <= (result.bufferQuantity ?? 5) &&
-        result.newQuantity >= 0
-      ) {
+      if (result.newQuantity <= (result.bufferQuantity ?? 5) && result.newQuantity >= 0) {
         const admins = await getAdminIds(serviceSupabase);
         if (admins && admins.length > 0) {
           await createNotifications(

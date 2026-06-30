@@ -43,18 +43,37 @@ const HowItWorks = React.forwardRef<HTMLDivElement, HowItWorksProps>(({ steps = 
         >
           Order in 3 Easy Steps
         </h2>
-        <p className="text-sm mb-16 max-w-md mx-auto" style={{ color: "color-mix(in srgb, var(--secondary-color) 50%, transparent)" }}>Interactive high-resolution food gallery</p>
+        <p
+          className="text-sm mb-16 max-w-md mx-auto"
+          style={{ color: "color-mix(in srgb, var(--secondary-color) 50%, transparent)" }}
+        >
+          Interactive high-resolution food gallery
+        </p>
 
         <div className="flex flex-col md:flex-row items-stretch justify-center gap-6">
           {steps.map((step, index) => (
             <div key={index} className="glass-card p-8 text-center flex-1 max-w-sm w-full mx-auto">
-              <div className="w-14 h-14 mx-auto mb-5 rounded-2xl flex items-center justify-center" style={{ background: "color-mix(in srgb, var(--primary-color) 10%, transparent)", color: "var(--primary-color)" }}>
+              <div
+                className="w-14 h-14 mx-auto mb-5 rounded-2xl flex items-center justify-center"
+                style={{
+                  background: "color-mix(in srgb, var(--primary-color) 10%, transparent)",
+                  color: "var(--primary-color)",
+                }}
+              >
                 {step.icon}
               </div>
-              <h3 className="text-lg font-bold mb-2" style={{ color: "var(--secondary-color)", fontFamily: "var(--playfair-display)" }}>
+              <h3
+                className="text-lg font-bold mb-2"
+                style={{ color: "var(--secondary-color)", fontFamily: "var(--playfair-display)" }}
+              >
                 {step.title}
               </h3>
-              <p className="text-sm leading-relaxed" style={{ color: "color-mix(in srgb, var(--secondary-color) 50%, transparent)" }}>{step.description}</p>
+              <p
+                className="text-sm leading-relaxed"
+                style={{ color: "color-mix(in srgb, var(--secondary-color) 50%, transparent)" }}
+              >
+                {step.description}
+              </p>
             </div>
           ))}
         </div>

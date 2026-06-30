@@ -74,7 +74,10 @@ export default function HomePage() {
               >
                 Popular Food
               </h2>
-              <p className="text-sm mt-2 max-w-md" style={{ color: "color-mix(in srgb, var(--secondary-color) 50%, transparent)" }}>
+              <p
+                className="text-sm mt-2 max-w-md"
+                style={{ color: "color-mix(in srgb, var(--secondary-color) 50%, transparent)" }}
+              >
                 Our most loved dishes, chosen by thousands of happy customers
               </p>
             </div>
@@ -93,14 +96,23 @@ export default function HomePage() {
                 .fill(0)
                 .map((_, i) => (
                   <div key={i} className="flex flex-col items-center">
-                    <div className="w-full aspect-square rounded-[24px] animate-pulse" style={{ background: "color-mix(in srgb, var(--primary-color) 10%, transparent)" }} />
-                    <div className="w-20 h-3 rounded mt-4 mx-auto animate-pulse" style={{ background: "color-mix(in srgb, var(--primary-color) 10%, transparent)" }} />
+                    <div
+                      className="w-full aspect-square rounded-[24px] animate-pulse"
+                      style={{ background: "color-mix(in srgb, var(--primary-color) 10%, transparent)" }}
+                    />
+                    <div
+                      className="w-20 h-3 rounded mt-4 mx-auto animate-pulse"
+                      style={{ background: "color-mix(in srgb, var(--primary-color) 10%, transparent)" }}
+                    />
                   </div>
                 ))
             ) : fetchError ? (
               <div className="col-span-full text-center w-full py-10">
                 <Utensils size={48} color="#ef4444" className="mx-auto mb-4 opacity-30" />
-                <p className="text-lg font-medium" style={{ color: "color-mix(in srgb, var(--secondary-color) 50%, transparent)" }}>
+                <p
+                  className="text-lg font-medium"
+                  style={{ color: "color-mix(in srgb, var(--secondary-color) 50%, transparent)" }}
+                >
                   Could not load featured items.
                   <br />
                   Please refresh the page.
@@ -109,7 +121,10 @@ export default function HomePage() {
             ) : popularFoods.length === 0 ? (
               <div className="col-span-full text-center w-full py-10">
                 <Utensils size={48} className="mx-auto mb-4 opacity-30" style={{ color: "var(--primary-color)" }} />
-                <p className="text-lg font-medium" style={{ color: "color-mix(in srgb, var(--secondary-color) 50%, transparent)" }}>
+                <p
+                  className="text-lg font-medium"
+                  style={{ color: "color-mix(in srgb, var(--secondary-color) 50%, transparent)" }}
+                >
                   Our chefs are preparing the popular menu.
                   <br />
                   Check back soon!

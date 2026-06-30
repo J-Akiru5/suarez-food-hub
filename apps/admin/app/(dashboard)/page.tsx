@@ -1,11 +1,11 @@
 "use client";
 
+import { createBrowserTypedClient } from "@repo/data-access/client";
 import { Badge, Card, CardContent } from "@repo/ui";
 import { formatCurrency } from "@repo/utils";
 import { ArrowDownRight, ArrowUpRight, Bike, DollarSign, Package, ShoppingBag, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { createBrowserTypedClient } from "@repo/data-access/client";
 
 interface DashboardStats {
   todayOrders: number;

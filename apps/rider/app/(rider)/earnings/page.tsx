@@ -1,10 +1,10 @@
 "use client";
 
+import { createBrowserTypedClient } from "@repo/data-access/client";
+import { getRiderEarnings } from "@repo/data-access/data/earnings";
 import { eachDayOfInterval, endOfMonth, endOfWeek, format, startOfMonth, startOfWeek } from "date-fns";
 import { BarChart3, Calendar, DollarSign, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
-import { createBrowserTypedClient } from "@repo/data-access/client";
-import { getRiderEarnings } from "@repo/data-access/data/earnings";
 
 interface EarningsData {
   today: number;
@@ -42,9 +42,7 @@ export default function EarningsPage() {
       const monthStart = startOfMonth(now);
 
       const allRiderEarnings = await getRiderEarnings(supabase, user.id);
-      const monthEarnings = allRiderEarnings.filter(
-        (e: any) => new Date(e.earned_at || e.created_at) >= monthStart,
-      );
+      const monthEarnings = allRiderEarnings.filter((e: any) => new Date(e.earned_at || e.created_at) >= monthStart);
       const allEarnings = allRiderEarnings;
 
       const recentOrders = allRiderEarnings

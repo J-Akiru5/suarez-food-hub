@@ -1,6 +1,7 @@
 "use client";
 
 import { PDFDownloadLink } from "@react-pdf/renderer";
+import { createBrowserTypedClient } from "@repo/data-access/client";
 import { Button, Card, CardContent } from "@repo/ui";
 import { formatCurrency } from "@repo/utils";
 import { endOfMonth, endOfWeek, format, startOfMonth, startOfWeek, subDays } from "date-fns";
@@ -16,7 +17,6 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { createBrowserTypedClient } from "@repo/data-access/client";
 import PdfReport from "./pdf-report";
 
 interface ReportData {

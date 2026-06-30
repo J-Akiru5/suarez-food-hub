@@ -1,9 +1,9 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { createContext, useContext, useEffect, useRef, useState } from "react";
 import { createBrowserTypedClient } from "@repo/data-access/client";
 import { getProfile } from "@repo/data-access/data/profiles";
+import { useRouter } from "next/navigation";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
 
 interface Profile {
   id: string;

@@ -1,9 +1,9 @@
 "use client";
 
+import { createBrowserTypedClient } from "@repo/data-access/client";
 import L from "leaflet";
 import { useEffect, useState } from "react";
 import { MapContainer, Marker, Popup, TileLayer, useMap } from "react-leaflet";
-import { createBrowserTypedClient } from "@repo/data-access/client";
 
 const riderIcon = new L.DivIcon({
   className: "rider-marker",

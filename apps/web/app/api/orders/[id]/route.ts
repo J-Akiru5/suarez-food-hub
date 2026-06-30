@@ -1,7 +1,7 @@
-import { type NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { createAuthClient, createServiceClient } from "@repo/data-access/client";
 import { getUser } from "@repo/data-access/auth";
+import { createAuthClient, createServiceClient } from "@repo/data-access/client";
+import { cookies } from "next/headers";
+import { type NextRequest, NextResponse } from "next/server";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {

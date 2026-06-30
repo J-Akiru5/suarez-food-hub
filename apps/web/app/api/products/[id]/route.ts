@@ -1,7 +1,7 @@
-import { type NextRequest, NextResponse } from "next/server";
-import { createAuthClient, createServiceClient } from "@repo/data-access/client";
 import { getUser, requireAdmin } from "@repo/data-access/auth";
-import { updateProduct, deleteProduct } from "@repo/data-access/data/products";
+import { createAuthClient, createServiceClient } from "@repo/data-access/client";
+import { deleteProduct, updateProduct } from "@repo/data-access/data/products";
+import { type NextRequest, NextResponse } from "next/server";
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {

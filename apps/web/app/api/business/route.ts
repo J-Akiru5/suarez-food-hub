@@ -1,8 +1,8 @@
-import { type NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
-import { createAuthClient, createServiceClient } from "@repo/data-access/client";
 import { getUser, requireAdmin } from "@repo/data-access/auth";
+import { createAuthClient, createServiceClient } from "@repo/data-access/client";
 import { getBusinessConfig, updateBusinessConfig } from "@repo/data-access/data/business";
+import { cookies } from "next/headers";
+import { type NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
   try {

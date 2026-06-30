@@ -1,10 +1,10 @@
 "use client";
 
+import { createBrowserTypedClient } from "@repo/data-access/client";
+import { getOrdersForRider } from "@repo/data-access/data/orders";
 import { format } from "date-fns";
 import { Package, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
-import { createBrowserTypedClient } from "@repo/data-access/client";
-import { getOrdersForRider } from "@repo/data-access/data/orders";
 
 interface Delivery {
   id: string;

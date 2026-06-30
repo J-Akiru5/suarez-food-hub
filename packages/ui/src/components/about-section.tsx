@@ -31,14 +31,24 @@ const AboutSection = React.forwardRef<HTMLDivElement, AboutSectionProps>(
           <div className="flex flex-col lg:flex-row min-h-[600px]">
             {/* Left: About Us */}
             <div className="flex-1 py-16 px-6 md:px-12 lg:px-16 flex flex-col justify-center" data-aos="fade-right">
-              <p className="text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--primary-color)" }}>{subtitle}</p>
+              <p
+                className="text-sm font-semibold uppercase tracking-wider mb-3"
+                style={{ color: "var(--primary-color)" }}
+              >
+                {subtitle}
+              </p>
               <h2
                 className="text-3xl md:text-4xl font-bold leading-tight mb-6"
                 style={{ color: "var(--secondary-color)", fontFamily: "var(--playfair-display)" }}
               >
                 {title}
               </h2>
-              <p className="text-base leading-relaxed mb-8 max-w-md" style={{ color: "color-mix(in srgb, var(--secondary-color) 60%, transparent)" }}>{description}</p>
+              <p
+                className="text-base leading-relaxed mb-8 max-w-md"
+                style={{ color: "color-mix(in srgb, var(--secondary-color) 60%, transparent)" }}
+              >
+                {description}
+              </p>
 
               {/* Overlapping Images */}
               <div className="flex gap-4">
@@ -71,7 +81,12 @@ const AboutSection = React.forwardRef<HTMLDivElement, AboutSectionProps>(
               style={{ background: "var(--secondary-color)" }}
               data-aos="fade-left"
             >
-              <p className="text-sm font-semibold uppercase tracking-wider mb-3" style={{ color: "var(--primary-color)" }}>Find Us</p>
+              <p
+                className="text-sm font-semibold uppercase tracking-wider mb-3"
+                style={{ color: "var(--primary-color)" }}
+              >
+                Find Us
+              </p>
               <h2
                 className="text-3xl md:text-4xl font-bold text-white leading-tight mb-8"
                 style={{ fontFamily: "var(--playfair-display)" }}

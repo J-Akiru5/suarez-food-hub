@@ -10,23 +10,27 @@ export interface FooterProps {
 
 const Footer = React.forwardRef<HTMLElement, FooterProps>(({ className }, ref) => {
   return (
-    <footer ref={ref} className={cn("bg-gray-50 border-t py-12", className)} style={{ borderColor: "color-mix(in srgb, var(--primary-color) 10%, transparent)" }}>
+    <footer
+      ref={ref}
+      className={cn("bg-gray-50 border-t py-12", className)}
+      style={{ borderColor: "color-mix(in srgb, var(--primary-color) 10%, transparent)" }}
+    >
       <div className="max-w-[1280px] mx-auto px-6">
         <div className="grid gap-8 md:grid-cols-4">
           <div>
             <div className="flex items-center gap-2">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg text-white" style={{ background: "var(--primary-color)" }}>
+              <div
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-white"
+                style={{ background: "var(--primary-color)" }}
+              >
                 <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
                 </svg>
               </div>
-              <span className="text-lg font-bold text-gray-900">
-                Suarez Food Hub
-              </span>
+              <span className="text-lg font-bold text-gray-900">Suarez Food Hub</span>
             </div>
             <p className="mt-3 text-sm text-gray-500">
-              Authentic Filipino food delivered to your doorstep in Janiuay,
-              Iloilo.
+              Authentic Filipino food delivered to your doorstep in Janiuay, Iloilo.
             </p>
           </div>
           <div>

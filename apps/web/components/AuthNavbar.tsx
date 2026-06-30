@@ -61,12 +61,11 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
     return (
       <header
         ref={ref}
-        className={cn(
-          "fixed top-0 left-0 right-0 z-[999] backdrop-blur-xl border-b shadow-sm",
-          className,
-        )}
+        className={cn("fixed top-0 left-0 right-0 z-[999] backdrop-blur-xl border-b shadow-sm", className)}
         style={{
-          background: isGuest ? "rgba(255,255,255,0.9)" : "color-mix(in srgb, var(--primary-color) 5%, rgba(255,255,255,0.9))",
+          background: isGuest
+            ? "rgba(255,255,255,0.9)"
+            : "color-mix(in srgb, var(--primary-color) 5%, rgba(255,255,255,0.9))",
           borderColor: isGuest ? "rgba(0,0,0,0.05)" : "color-mix(in srgb, var(--primary-color) 10%, transparent)",
         }}
       >
@@ -79,7 +78,10 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
             </div>
             <span
               className="hidden sm:inline text-lg font-bold"
-              style={{ color: "var(--secondary-color)", fontFamily: isGuest ? "var(--plus-jakarta-sans)" : "var(--playfair-display)" }}
+              style={{
+                color: "var(--secondary-color)",
+                fontFamily: isGuest ? "var(--plus-jakarta-sans)" : "var(--playfair-display)",
+              }}
             >
               Suarez Food Hub
             </span>
@@ -91,13 +93,17 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
               <li key={link.label}>
                 <Link
                   href={link.href}
-                  className={cn(
-                    "text-[15px] font-medium transition-all px-5 py-2.5 rounded-full",
-                  )}
+                  className={cn("text-[15px] font-medium transition-all px-5 py-2.5 rounded-full")}
                   style={{
                     fontFamily: "var(--plus-jakarta-sans)",
-                    background: pathname === link.href ? (isGuest ? "var(--primary-color)" : "var(--primary-dark)") : "transparent",
-                    color: pathname === link.href ? "#fff" : "color-mix(in srgb, var(--secondary-color) 80%, transparent)",
+                    background:
+                      pathname === link.href
+                        ? isGuest
+                          ? "var(--primary-color)"
+                          : "var(--primary-dark)"
+                        : "transparent",
+                    color:
+                      pathname === link.href ? "#fff" : "color-mix(in srgb, var(--secondary-color) 80%, transparent)",
                   }}
                   onMouseEnter={(e) => {
                     if (pathname !== link.href) e.currentTarget.style.background = "rgba(0,0,0,0.05)";
@@ -250,7 +256,10 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
                 className="block px-6 py-4 text-[15px] font-medium transition-colors no-underline"
                 style={{
                   color: pathname === link.href ? "var(--primary-color)" : "var(--secondary-color)",
-                  background: pathname === link.href ? "color-mix(in srgb, var(--primary-color) 10%, transparent)" : "transparent",
+                  background:
+                    pathname === link.href
+                      ? "color-mix(in srgb, var(--primary-color) 10%, transparent)"
+                      : "transparent",
                 }}
                 onClick={() => setMobileOpen(false)}
               >

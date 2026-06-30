@@ -1,8 +1,8 @@
-import { type NextRequest, NextResponse } from "next/server";
-import { createAuthClient, createServiceClient } from "@repo/data-access/client";
 import { getUser, requireAdmin } from "@repo/data-access/auth";
-import { getProducts, createProduct } from "@repo/data-access/data/products";
-import { getCategories, getCategoryByName, createCategory } from "@repo/data-access/data/categories";
+import { createAuthClient, createServiceClient } from "@repo/data-access/client";
+import { createCategory, getCategories, getCategoryByName } from "@repo/data-access/data/categories";
+import { createProduct, getProducts } from "@repo/data-access/data/products";
+import { type NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
   try {

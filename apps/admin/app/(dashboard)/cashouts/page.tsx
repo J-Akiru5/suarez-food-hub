@@ -1,11 +1,11 @@
 "use client";
 
+import { createBrowserTypedClient } from "@repo/data-access/client";
+import { getCashouts, updateCashout } from "@repo/data-access/data/earnings";
 import { Badge, Button, Card, CardContent, Input } from "@repo/ui";
 import { formatCurrency } from "@repo/utils";
 import { Banknote, CheckCircle, DollarSign, Loader2, Search, XCircle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { createBrowserTypedClient } from "@repo/data-access/client";
-import { getCashouts, updateCashout } from "@repo/data-access/data/earnings";
 
 type CashoutStatus = "requested" | "approved" | "paid" | "rejected";
 

@@ -1,12 +1,12 @@
 "use client";
 
+import { createBrowserTypedClient } from "@repo/data-access/client";
+import { getTodayEarnings } from "@repo/data-access/data/earnings";
+import { getActiveOrderForRider } from "@repo/data-access/data/orders";
 import { CheckCircle, MapPin, Navigation, Package, Phone, TrendingUp } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { getCurrentPosition, watchPosition } from "@/lib/geolocation";
-import { createBrowserTypedClient } from "@repo/data-access/client";
-import { getActiveOrderForRider } from "@repo/data-access/data/orders";
-import { getTodayEarnings } from "@repo/data-access/data/earnings";
 
 const DeliveryMap = dynamic(() => import("@/components/DeliveryMap"), {
   ssr: false,

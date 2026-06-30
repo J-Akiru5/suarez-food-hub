@@ -1,10 +1,10 @@
 "use client";
 
+import { createBrowserTypedClient } from "@repo/data-access/client";
+import { getProfileById } from "@repo/data-access/data/profiles";
 import { ChevronRight, DollarSign, LogOut, Package, Settings, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { createBrowserTypedClient } from "@repo/data-access/client";
-import { getProfileById } from "@repo/data-access/data/profiles";
 
 interface Profile {
   full_name: string;

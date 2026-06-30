@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import "aos/dist/aos.css";
 import { AuthProvider } from "../components/auth-provider";
-import { GuestThemeProvider } from "../components/guest-theme-provider";
 import { FeedbackFab } from "../components/feedback-fab";
+import { GuestThemeProvider } from "../components/guest-theme-provider";
 
 export const metadata: Metadata = {
   title: "Suarez Food Hub",

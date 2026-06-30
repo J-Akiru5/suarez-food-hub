@@ -1,7 +1,10 @@
 "use client";
 
-import type { Order, Profile } from "@repo/types";
 import type { Database } from "@repo/data-access";
+import { createBrowserTypedClient } from "@repo/data-access/client";
+import { getOrderById, updateOrderStatus } from "@repo/data-access/data/orders";
+import { getRiders } from "@repo/data-access/data/profiles";
+import type { Order, Profile } from "@repo/types";
 import {
   Badge,
   Button,
@@ -17,9 +20,6 @@ import { formatCurrency } from "@repo/utils";
 import { ArrowLeft, CheckCircle2, Clock, Loader2, MapPin, Phone, User, XCircle } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { createBrowserTypedClient } from "@repo/data-access/client";
-import { getOrderById, updateOrderStatus } from "@repo/data-access/data/orders";
-import { getRiders } from "@repo/data-access/data/profiles";
 
 const statusSteps = [
   { key: "pending", label: "Pending" },

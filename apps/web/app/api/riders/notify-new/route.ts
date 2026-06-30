@@ -1,7 +1,7 @@
-import { type NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@repo/data-access/client";
-import { getAdminIds } from "@repo/data-access/data/profiles";
 import { createNotifications } from "@repo/data-access/data/notifications";
+import { getAdminIds } from "@repo/data-access/data/profiles";
+import { type NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
   try {

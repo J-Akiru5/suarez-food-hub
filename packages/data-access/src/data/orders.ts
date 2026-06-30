@@ -7,7 +7,8 @@ type OrderItemInsert = Database["public"]["Tables"]["order_items"]["Insert"];
 type OrderStatus = Database["public"]["Enums"]["order_status"];
 type OrderStatusLogInsert = Database["public"]["Tables"]["order_status_log"]["Insert"];
 
-export interface CreateOrderInput extends Omit<OrderInsert, "id" | "order_number" | "status" | "rider_earnings" | "created_at" | "updated_at"> {}
+export interface CreateOrderInput
+  extends Omit<OrderInsert, "id" | "order_number" | "status" | "rider_earnings" | "created_at" | "updated_at"> {}
 
 export interface CreateOrderItemInput extends Omit<OrderItemInsert, "id"> {}
 
@@ -32,11 +33,7 @@ export async function deleteOrder(supabase: TypedSupabaseClient, orderId: string
 }
 
 export async function getOrdersByUser(supabase: TypedSupabaseClient, userId: string, status?: OrderStatus) {
-  let query = supabase
-    .from("orders")
-    .select("*")
-    .eq("user_id", userId)
-    .order("created_at", { ascending: false });
+  let query = supabase.from("orders").select("*").eq("user_id", userId).order("created_at", { ascending: false });
   if (status) query = query.eq("status", status);
   const { data, error } = await query;
   if (error) return [];
@@ -105,11 +102,7 @@ export async function getOrdersForRider(supabase: TypedSupabaseClient, riderId: 
   return data || [];
 }
 
-export async function getOrdersCountForRider(
-  supabase: TypedSupabaseClient,
-  riderId: string,
-  statuses: OrderStatus[],
-) {
+export async function getOrdersCountForRider(supabase: TypedSupabaseClient, riderId: string, statuses: OrderStatus[]) {
   const { count } = await supabase
     .from("orders")
     .select("id", { count: "exact", head: true })

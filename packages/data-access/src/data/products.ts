@@ -5,10 +5,7 @@ type ProductInsert = Database["public"]["Tables"]["products"]["Insert"];
 type ProductUpdate = Database["public"]["Tables"]["products"]["Update"];
 
 export async function getProducts(supabase: TypedSupabaseClient) {
-  const { data, error } = await supabase
-    .from("products")
-    .select("*")
-    .order("created_at", { ascending: false });
+  const { data, error } = await supabase.from("products").select("*").order("created_at", { ascending: false });
   if (error) return [];
   return data || [];
 }
@@ -43,30 +40,14 @@ export async function getProductsWithCategories(supabase: TypedSupabaseClient) {
   }));
 }
 
-export async function createProduct(
-  supabase: TypedSupabaseClient,
-  product: ProductInsert,
-) {
-  const { data, error } = await supabase
-    .from("products")
-    .insert(product)
-    .select()
-    .single();
+export async function createProduct(supabase: TypedSupabaseClient, product: ProductInsert) {
+  const { data, error } = await supabase.from("products").insert(product).select().single();
   if (error) return { data: null, error };
   return { data, error: null };
 }
 
-export async function updateProduct(
-  supabase: TypedSupabaseClient,
-  productId: string,
-  updates: ProductUpdate,
-) {
-  const { data, error } = await supabase
-    .from("products")
-    .update(updates)
-    .eq("id", productId)
-    .select()
-    .single();
+export async function updateProduct(supabase: TypedSupabaseClient, productId: string, updates: ProductUpdate) {
+  const { data, error } = await supabase.from("products").update(updates).eq("id", productId).select().single();
   if (error) return { data: null, error };
   return { data, error: null };
 }
@@ -77,20 +58,12 @@ export async function deleteProduct(supabase: TypedSupabaseClient, productId: st
 }
 
 export async function getProductById(supabase: TypedSupabaseClient, productId: string) {
-  const { data, error } = await supabase
-    .from("products")
-    .select("*")
-    .eq("id", productId)
-    .single();
+  const { data, error } = await supabase.from("products").select("*").eq("id", productId).single();
   if (error) return null;
   return data;
 }
 
-export async function deductStock(
-  supabase: TypedSupabaseClient,
-  productId: string,
-  quantity: number,
-) {
+export async function deductStock(supabase: TypedSupabaseClient, productId: string, quantity: number) {
   const { data: product } = await supabase
     .from("products")
     .select("quantity, buffer_quantity, name")
@@ -112,8 +85,5 @@ export async function deductStock(
 }
 
 export async function markLowStockAlerted(supabase: TypedSupabaseClient, productId: string) {
-  await supabase
-    .from("products")
-    .update({ low_stock_alerted_at: new Date().toISOString() })
-    .eq("id", productId);
+  await supabase.from("products").update({ low_stock_alerted_at: new Date().toISOString() }).eq("id", productId);
 }

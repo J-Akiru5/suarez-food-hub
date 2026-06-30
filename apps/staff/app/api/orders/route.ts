@@ -1,8 +1,8 @@
-import { type NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
 import { createAuthClient } from "@repo/data-access/client";
+import { createOrderStatusLog, updateOrderStatus } from "@repo/data-access/data/orders";
 import { getProfileRole } from "@repo/data-access/data/profiles";
-import { updateOrderStatus, createOrderStatusLog } from "@repo/data-access/data/orders";
+import { cookies } from "next/headers";
+import { type NextRequest, NextResponse } from "next/server";
 
 export async function PATCH(request: NextRequest) {
   try {

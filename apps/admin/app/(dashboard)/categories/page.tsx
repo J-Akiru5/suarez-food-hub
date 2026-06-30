@@ -1,5 +1,7 @@
 "use client";
 
+import { createBrowserTypedClient } from "@repo/data-access/client";
+import { createCategory, deleteCategory, getCategories, updateCategory } from "@repo/data-access/data/categories";
 import type { Category } from "@repo/types";
 import {
   Button,
@@ -15,8 +17,6 @@ import {
 } from "@repo/ui";
 import { ArrowDown, ArrowUp, Loader2, Pencil, Plus, Tag, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { createBrowserTypedClient } from "@repo/data-access/client";
-import { getCategories, createCategory, updateCategory, deleteCategory } from "@repo/data-access/data/categories";
 
 export default function CategoriesPage() {
   const supabase = createBrowserTypedClient();

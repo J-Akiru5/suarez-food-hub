@@ -1,5 +1,8 @@
 "use client";
 
+import { createBrowserTypedClient } from "@repo/data-access/client";
+import { getOrdersWithProfiles } from "@repo/data-access/data/orders";
+import { getRiders } from "@repo/data-access/data/profiles";
 import type { Order, Profile } from "@repo/types";
 import {
   Badge,
@@ -20,9 +23,6 @@ import { formatCurrency } from "@repo/utils";
 import { ChevronDown, ChevronUp, Eye, Loader2, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { createBrowserTypedClient } from "@repo/data-access/client";
-import { getOrdersWithProfiles } from "@repo/data-access/data/orders";
-import { getRiders } from "@repo/data-access/data/profiles";
 
 const statusTabs = [
   { value: "all", label: "All" },

@@ -5,38 +5,19 @@ type CategoryInsert = Database["public"]["Tables"]["categories"]["Insert"];
 type CategoryUpdate = Database["public"]["Tables"]["categories"]["Update"];
 
 export async function getCategories(supabase: TypedSupabaseClient) {
-  const { data, error } = await supabase
-    .from("categories")
-    .select("*")
-    .order("sort_order", { ascending: true });
+  const { data, error } = await supabase.from("categories").select("*").order("sort_order", { ascending: true });
   if (error) return [];
   return data || [];
 }
 
-export async function createCategory(
-  supabase: TypedSupabaseClient,
-  category: CategoryInsert,
-) {
-  const { data, error } = await supabase
-    .from("categories")
-    .insert(category)
-    .select()
-    .single();
+export async function createCategory(supabase: TypedSupabaseClient, category: CategoryInsert) {
+  const { data, error } = await supabase.from("categories").insert(category).select().single();
   if (error) return { data: null, error };
   return { data, error: null };
 }
 
-export async function updateCategory(
-  supabase: TypedSupabaseClient,
-  categoryId: string,
-  updates: CategoryUpdate,
-) {
-  const { data, error } = await supabase
-    .from("categories")
-    .update(updates)
-    .eq("id", categoryId)
-    .select()
-    .single();
+export async function updateCategory(supabase: TypedSupabaseClient, categoryId: string, updates: CategoryUpdate) {
+  const { data, error } = await supabase.from("categories").update(updates).eq("id", categoryId).select().single();
   if (error) return { data: null, error };
   return { data, error: null };
 }
@@ -47,11 +28,7 @@ export async function deleteCategory(supabase: TypedSupabaseClient, categoryId: 
 }
 
 export async function getCategoryByName(supabase: TypedSupabaseClient, name: string) {
-  const { data } = await supabase
-    .from("categories")
-    .select("id")
-    .eq("name", name)
-    .single();
+  const { data } = await supabase.from("categories").select("id").eq("name", name).single();
   return data;
 }
 

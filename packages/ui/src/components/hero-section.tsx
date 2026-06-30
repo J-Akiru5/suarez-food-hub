@@ -51,12 +51,23 @@ const HeroSection = React.forwardRef<HTMLDivElement, HeroSectionProps>(
 
     if (isGuest) {
       return (
-        <section ref={ref} className="relative overflow-hidden" style={{ background: "linear-gradient(to bottom right, var(--primary-color), white, var(--primary-color))" }}>
+        <section
+          ref={ref}
+          className="relative overflow-hidden"
+          style={{ background: "linear-gradient(to bottom right, var(--primary-color), white, var(--primary-color))" }}
+        >
           <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmOTczMTYiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djItSDI0di0yaDEyem0wLTRWMjhIMjR2Mmgxem0tNC0yYTEgMSAwIDEwMC0yIDAgMSAwIDAwMCAyeiIvPjwvZz48L2c+PC9zdmc+')] opacity-40" />
           <div className="mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-28 lg:px-8">
             <div className="grid items-center gap-12 lg:grid-cols-2">
               <div>
-                <div className="inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium" style={{ borderColor: "var(--primary-color)", color: "var(--primary-color)", background: "color-mix(in srgb, var(--primary-color) 10%, transparent)" }}>
+                <div
+                  className="inline-flex items-center gap-2 rounded-full border px-4 py-1.5 text-sm font-medium"
+                  style={{
+                    borderColor: "var(--primary-color)",
+                    color: "var(--primary-color)",
+                    background: "color-mix(in srgb, var(--primary-color) 10%, transparent)",
+                  }}
+                >
                   <Star className="h-4 w-4 fill-current" />
                   Authentic Filipino Flavors
                 </div>
@@ -64,9 +75,7 @@ const HeroSection = React.forwardRef<HTMLDivElement, HeroSectionProps>(
                   Suarez
                   <span style={{ color: "var(--primary-color)" }}> Food Hub</span>
                 </h1>
-                <p className="mt-6 max-w-lg text-lg text-gray-600">
-                  {description.replace(/\n/g, " ")}
-                </p>
+                <p className="mt-6 max-w-lg text-lg text-gray-600">{description.replace(/\n/g, " ")}</p>
                 <div className="mt-8 flex flex-wrap gap-4">
                   <a
                     href={ctaHref}
@@ -86,7 +95,13 @@ const HeroSection = React.forwardRef<HTMLDivElement, HeroSectionProps>(
                 </div>
               </div>
               <div className="relative hidden lg:block">
-                <div className="absolute -inset-4 rounded-3xl opacity-30 blur-2xl" style={{ background: "linear-gradient(to right, var(--primary-color), color-mix(in srgb, var(--primary-color) 50%, white))" }} />
+                <div
+                  className="absolute -inset-4 rounded-3xl opacity-30 blur-2xl"
+                  style={{
+                    background:
+                      "linear-gradient(to right, var(--primary-color), color-mix(in srgb, var(--primary-color) 50%, white))",
+                  }}
+                />
                 <div className="relative rounded-3xl bg-white p-8 shadow-xl">
                   <div className="grid grid-cols-2 gap-4">
                     {images.slice(0, 4).map((img, i) => (
@@ -117,7 +132,10 @@ const HeroSection = React.forwardRef<HTMLDivElement, HeroSectionProps>(
     return (
       <section ref={ref} className="relative min-h-[90vh] flex overflow-hidden">
         {/* Left: Brown background with text */}
-        <div className="w-full lg:w-1/2 flex flex-col justify-center px-10 md:px-16 lg:px-24 pt-32 pb-20" style={{ background: "var(--primary-dark)" }}>
+        <div
+          className="w-full lg:w-1/2 flex flex-col justify-center px-10 md:px-16 lg:px-24 pt-32 pb-20"
+          style={{ background: "var(--primary-dark)" }}
+        >
           <div className="max-w-[500px]" data-aos="fade-right">
             {/* Logo Badge */}
             <div className="w-32 h-32 mb-8 relative rounded-full overflow-hidden shadow-lg bg-white flex items-center justify-center">
@@ -138,7 +156,10 @@ const HeroSection = React.forwardRef<HTMLDivElement, HeroSectionProps>(
             <a
               href={ctaHref}
               className="inline-flex items-center gap-2 px-6 py-3.5 rounded-full font-medium text-sm transition-all duration-200 hover:-translate-y-0.5"
-              style={{ background: "color-mix(in srgb, var(--primary-color) 20%, white)", color: "var(--secondary-color)" }}
+              style={{
+                background: "color-mix(in srgb, var(--primary-color) 20%, white)",
+                color: "var(--secondary-color)",
+              }}
             >
               {ctaText}
               <ArrowRight size={16} />
@@ -147,7 +168,10 @@ const HeroSection = React.forwardRef<HTMLDivElement, HeroSectionProps>(
         </div>
 
         {/* Right: Food images on cream background */}
-        <div className="hidden lg:flex w-1/2 items-center justify-center px-12 pt-32 pb-20" style={{ background: "color-mix(in srgb, var(--primary-color) 3%, white)" }}>
+        <div
+          className="hidden lg:flex w-1/2 items-center justify-center px-12 pt-32 pb-20"
+          style={{ background: "color-mix(in srgb, var(--primary-color) 3%, white)" }}
+        >
           <div
             className="w-full max-w-[540px] grid grid-cols-2 gap-5"
             data-aos="fade-left"

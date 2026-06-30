@@ -1,5 +1,4 @@
-import { createBrowserClient } from "@supabase/ssr";
-import { createServerClient as createSSRServerClient } from "@supabase/ssr";
+import { createBrowserClient, createServerClient as createSSRServerClient } from "@supabase/ssr";
 import { createClient as createSupabaseClient, type SupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "./types";
 
@@ -57,23 +56,22 @@ export function createBrowserTypedClient(): TypedSupabaseClient {
   ) as unknown as TypedSupabaseClient;
 }
 
-export function createAuthClient(cookieStore: { getAll(): { name: string; value: string }[]; setAll?(cookies: { name: string; value: string; options?: Record<string, unknown> }[]): void }): TypedSupabaseClient {
-  return createSSRServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
-          try {
-            cookieStore.setAll?.(cookiesToSet);
-          } catch {
-            // setAll called from Server Component — safe to ignore with middleware
-          }
-        },
+export function createAuthClient(cookieStore: {
+  getAll(): { name: string; value: string }[];
+  setAll?(cookies: { name: string; value: string; options?: Record<string, unknown> }[]): void;
+}): TypedSupabaseClient {
+  return createSSRServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    cookies: {
+      getAll() {
+        return cookieStore.getAll();
+      },
+      setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
+        try {
+          cookieStore.setAll?.(cookiesToSet);
+        } catch {
+          // setAll called from Server Component — safe to ignore with middleware
+        }
       },
     },
-  ) as unknown as TypedSupabaseClient;
+  }) as unknown as TypedSupabaseClient;
 }

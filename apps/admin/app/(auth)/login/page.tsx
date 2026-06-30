@@ -1,11 +1,11 @@
 "use client";
 
+import { createBrowserTypedClient } from "@repo/data-access/client";
+import { getProfileRole } from "@repo/data-access/data/profiles";
 import { Button, Input } from "@repo/ui";
 import { Loader2, Shield } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
-import { createBrowserTypedClient } from "@repo/data-access/client";
-import { getProfileRole } from "@repo/data-access/data/profiles";
 
 function LoginForm() {
   const router = useRouter();

@@ -1,4 +1,4 @@
-export type { Database, Json } from "./types";
-export { createServiceClient, createAuthClient, createBrowserTypedClient } from "./client";
+export { getProfile, getUser, requireAdmin, requireAuth, requireStaffOrAdmin } from "./auth";
 export type { TypedSupabaseClient } from "./client";
-export { getUser, getProfile, requireAuth, requireAdmin, requireStaffOrAdmin } from "./auth";
+export { createAuthClient, createBrowserTypedClient, createServiceClient } from "./client";
+export type { Database, Json } from "./types";

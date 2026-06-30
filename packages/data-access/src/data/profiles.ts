@@ -1,6 +1,6 @@
+import type { Profile } from "@repo/types";
 import type { TypedSupabaseClient } from "../client";
 import type { Database } from "../types";
-import type { Profile } from "@repo/types";
 
 type ProfileInsert = Database["public"]["Tables"]["profiles"]["Insert"];
 type ProfileUpdate = Database["public"]["Tables"]["profiles"]["Update"];
@@ -15,11 +15,7 @@ export async function getProfileById(supabase: TypedSupabaseClient, userId: stri
 export { getProfileById as getProfile };
 
 export async function getProfileRole(supabase: TypedSupabaseClient, userId: string) {
-  const { data } = await supabase
-    .from("profiles")
-    .select("role, is_active, rider_status")
-    .eq("id", userId)
-    .single();
+  const { data } = await supabase.from("profiles").select("role, is_active, rider_status").eq("id", userId).single();
   return data;
 }
 
@@ -31,22 +27,13 @@ export async function upsertProfile(supabase: TypedSupabaseClient, profile: Prof
 
 export async function updateProfile(supabase: TypedSupabaseClient, userId: string, updates: ProfileUpdate) {
   const updateData: ProfileUpdate = { ...updates, updated_at: new Date().toISOString() };
-  const { data, error } = await supabase
-    .from("profiles")
-    .update(updateData)
-    .eq("id", userId)
-    .select()
-    .single();
+  const { data, error } = await supabase.from("profiles").update(updateData).eq("id", userId).select().single();
   if (error) return { data: null, error };
   return { data, error: null };
 }
 
 export async function getRiders(supabase: TypedSupabaseClient) {
-  const { data, error } = await supabase
-    .from("profiles")
-    .select("*")
-    .eq("role", "rider")
-    .order("created_at");
+  const { data, error } = await supabase.from("profiles").select("*").eq("role", "rider").order("created_at");
   if (error) return [];
   return (data as Profile[]) || [];
 }

@@ -1,10 +1,10 @@
 "use client";
 
+import { createBrowserTypedClient } from "@repo/data-access/client";
 import { Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
-import { createBrowserTypedClient } from "@repo/data-access/client";
 
 function LoginForm() {
   const router = useRouter();

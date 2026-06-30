@@ -1,5 +1,7 @@
 "use client";
 
+import { createBrowserTypedClient } from "@repo/data-access/client";
+import { getBusinessConfig, updateBusinessConfig } from "@repo/data-access/data/business";
 import { Button, Card, CardContent, Input } from "@repo/ui";
 import {
   CreditCard,
@@ -15,8 +17,6 @@ import {
 } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
-import { createBrowserTypedClient } from "@repo/data-access/client";
-import { getBusinessConfig, updateBusinessConfig } from "@repo/data-access/data/business";
 
 interface BusinessConfig {
   id?: string;

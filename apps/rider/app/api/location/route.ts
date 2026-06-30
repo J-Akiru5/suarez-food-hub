@@ -1,6 +1,6 @@
-import { type NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@repo/data-access/client";
 import { upsertRiderLocation } from "@repo/data-access/data/locations";
+import { type NextRequest, NextResponse } from "next/server";
 
 async function requireRider(supabase: ReturnType<typeof createServiceClient>) {
   const {

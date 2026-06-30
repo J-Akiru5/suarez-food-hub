@@ -1,10 +1,10 @@
 "use client";
 
+import { createBrowserTypedClient } from "@repo/data-access/client";
 import { Card, CardContent } from "@repo/ui";
 import { CheckCircle, ChevronRight, Clock, Package, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { createBrowserTypedClient } from "@repo/data-access/client";
 
 export default function StaffDashboard() {
   const supabase = createBrowserTypedClient();

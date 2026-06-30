@@ -28,7 +28,14 @@ const TrendingSection = React.forwardRef<HTMLDivElement, TrendingSectionProps>(
               >
                 {title}
               </h2>
-              {description && <p className="text-sm mt-2 max-w-md" style={{ color: "color-mix(in srgb, var(--secondary-color) 50%, transparent)" }}>{description}</p>}
+              {description && (
+                <p
+                  className="text-sm mt-2 max-w-md"
+                  style={{ color: "color-mix(in srgb, var(--secondary-color) 50%, transparent)" }}
+                >
+                  {description}
+                </p>
+              )}
             </div>
           </div>
 

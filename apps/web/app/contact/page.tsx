@@ -84,7 +84,10 @@ export default function ContactPage() {
               >
                 <div
                   className="w-14 h-14 mx-auto mb-5 rounded-2xl flex items-center justify-center"
-                  style={{ background: "color-mix(in srgb, var(--primary-color) 10%, transparent)", color: "var(--primary-color)" }}
+                  style={{
+                    background: "color-mix(in srgb, var(--primary-color) 10%, transparent)",
+                    color: "var(--primary-color)",
+                  }}
                 >
                   <info.icon className="w-6 h-6" />
                 </div>

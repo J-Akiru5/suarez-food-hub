@@ -45,14 +45,7 @@ export async function getCashouts(supabase: TypedSupabaseClient) {
   return data || [];
 }
 
-export async function updateCashout(
-  supabase: TypedSupabaseClient,
-  cashoutId: string,
-  updates: CashoutUpdate,
-) {
-  const { error } = await supabase
-    .from("rider_cashouts")
-    .update(updates)
-    .eq("id", cashoutId);
+export async function updateCashout(supabase: TypedSupabaseClient, cashoutId: string, updates: CashoutUpdate) {
+  const { error } = await supabase.from("rider_cashouts").update(updates).eq("id", cashoutId);
   return { error };
 }

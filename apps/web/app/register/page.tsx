@@ -1,11 +1,11 @@
 "use client";
 
+import { createBrowserTypedClient } from "@repo/data-access/client";
+import { upsertProfile } from "@repo/data-access/data/profiles";
 import { ArrowLeft, ArrowRight, Bike, Loader2, User } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { createBrowserTypedClient } from "@repo/data-access/client";
-import { upsertProfile } from "@repo/data-access/data/profiles";
 
 const PH_REGEX = /^(?:\+63|0)9\d{9}$/;
 

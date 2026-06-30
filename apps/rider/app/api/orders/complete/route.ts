@@ -1,8 +1,8 @@
-import { type NextRequest, NextResponse } from "next/server";
 import { createServiceClient } from "@repo/data-access/client";
-import { getOrderById, updateOrderStatus } from "@repo/data-access/data/orders";
 import { createRiderEarning } from "@repo/data-access/data/earnings";
 import { createNotification } from "@repo/data-access/data/notifications";
+import { getOrderById, updateOrderStatus } from "@repo/data-access/data/orders";
+import { type NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {

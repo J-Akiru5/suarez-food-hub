@@ -11,18 +11,12 @@ interface NotificationInput {
   data?: Json;
 }
 
-export async function createNotifications(
-  supabase: TypedSupabaseClient,
-  notifications: NotificationInput[],
-) {
+export async function createNotifications(supabase: TypedSupabaseClient, notifications: NotificationInput[]) {
   const { error } = await supabase.from("notifications").insert(notifications as NotificationInsert[]);
   return { error };
 }
 
-export async function createNotification(
-  supabase: TypedSupabaseClient,
-  notification: NotificationInput,
-) {
+export async function createNotification(supabase: TypedSupabaseClient, notification: NotificationInput) {
   const { error } = await supabase.from("notifications").insert(notification as NotificationInsert);
   return { error };
 }
@@ -38,9 +32,6 @@ export async function getNotifications(supabase: TypedSupabaseClient, userId: st
 }
 
 export async function markNotificationRead(supabase: TypedSupabaseClient, notificationId: string) {
-  const { error } = await supabase
-    .from("notifications")
-    .update({ read: true })
-    .eq("id", notificationId);
+  const { error } = await supabase.from("notifications").update({ read: true }).eq("id", notificationId);
   return { error };
 }

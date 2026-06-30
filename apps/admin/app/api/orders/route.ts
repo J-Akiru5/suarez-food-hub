@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get("offset") || "0");
 
     const data = await getOrdersWithProfiles(supabase, {
-      status: status !== "all" ? status ?? undefined : undefined,
+      status: status !== "all" ? (status ?? undefined) : undefined,
     });
 
     return NextResponse.json({ success: true, data, count: data.length, limit, offset });

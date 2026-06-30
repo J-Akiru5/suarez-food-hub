@@ -1,6 +1,6 @@
-import { type NextRequest, NextResponse } from "next/server";
-import { createAuthClient, createServiceClient } from "@repo/data-access/client";
 import { getUser, requireAdmin } from "@repo/data-access/auth";
+import { createAuthClient, createServiceClient } from "@repo/data-access/client";
+import { type NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
   try {

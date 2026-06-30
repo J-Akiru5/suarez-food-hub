@@ -1,10 +1,10 @@
 "use client";
 
+import { createBrowserTypedClient } from "@repo/data-access/client";
+import { getProfilesByRole, updateProfile, upsertProfile } from "@repo/data-access/data/profiles";
 import { Button, Card, CardContent, Input } from "@repo/ui";
 import { CheckCircle, Loader2, Shield, UserPlus, Users, XCircle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { createBrowserTypedClient } from "@repo/data-access/client";
-import { getProfilesByRole, upsertProfile, updateProfile } from "@repo/data-access/data/profiles";
 
 interface StaffProfile {
   id: string;

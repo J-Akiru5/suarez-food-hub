@@ -45,10 +45,16 @@ export default function FeedbackPage() {
         <div className="max-w-[600px] mx-auto px-6">
           {sent ? (
             <div className="glass-card p-12 text-center">
-              <div className="w-16 h-16 mx-auto mb-6 rounded-full flex items-center justify-center" style={{ background: "color-mix(in srgb, var(--primary-color) 10%, transparent)" }}>
+              <div
+                className="w-16 h-16 mx-auto mb-6 rounded-full flex items-center justify-center"
+                style={{ background: "color-mix(in srgb, var(--primary-color) 10%, transparent)" }}
+              >
                 <MessageCircle className="w-8 h-8" style={{ color: "var(--primary-color)" }} />
               </div>
-              <h2 className="text-2xl font-bold mb-3" style={{ color: "var(--secondary-color)", fontFamily: "var(--playfair-display)" }}>
+              <h2
+                className="text-2xl font-bold mb-3"
+                style={{ color: "var(--secondary-color)", fontFamily: "var(--playfair-display)" }}
+              >
                 Thank You!
               </h2>
               <p className="mb-6" style={{ color: "color-mix(in srgb, var(--secondary-color) 60%, transparent)" }}>
@@ -65,14 +71,23 @@ export default function FeedbackPage() {
           ) : (
             <>
               <div className="flex items-center gap-3 mb-8">
-                <div className="w-12 h-12 rounded-full flex items-center justify-center" style={{ background: "color-mix(in srgb, var(--primary-color) 10%, transparent)" }}>
+                <div
+                  className="w-12 h-12 rounded-full flex items-center justify-center"
+                  style={{ background: "color-mix(in srgb, var(--primary-color) 10%, transparent)" }}
+                >
                   <MessageCircle className="w-6 h-6" style={{ color: "var(--primary-color)" }} />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold" style={{ color: "var(--secondary-color)", fontFamily: "var(--playfair-display)" }}>
+                  <h2
+                    className="text-xl font-bold"
+                    style={{ color: "var(--secondary-color)", fontFamily: "var(--playfair-display)" }}
+                  >
                     We'd love to hear from you
                   </h2>
-                  <p className="text-sm" style={{ color: "color-mix(in srgb, var(--secondary-color) 50%, transparent)" }}>
+                  <p
+                    className="text-sm"
+                    style={{ color: "color-mix(in srgb, var(--secondary-color) 50%, transparent)" }}
+                  >
                     Your feedback helps us serve you better
                   </p>
                 </div>
@@ -80,7 +95,9 @@ export default function FeedbackPage() {
 
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
-                  <label className="block text-sm font-semibold mb-2" style={{ color: "var(--secondary-color)" }}>Name</label>
+                  <label className="block text-sm font-semibold mb-2" style={{ color: "var(--secondary-color)" }}>
+                    Name
+                  </label>
                   <input
                     type="text"
                     required
@@ -94,11 +111,15 @@ export default function FeedbackPage() {
                       fontFamily: "var(--plus-jakarta-sans)",
                     }}
                     onFocus={(e) => (e.currentTarget.style.borderColor = "var(--primary-color)")}
-                    onBlur={(e) => (e.currentTarget.style.borderColor = "color-mix(in srgb, var(--primary-color) 15%, transparent)")}
+                    onBlur={(e) =>
+                      (e.currentTarget.style.borderColor = "color-mix(in srgb, var(--primary-color) 15%, transparent)")
+                    }
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-2" style={{ color: "var(--secondary-color)" }}>Email</label>
+                  <label className="block text-sm font-semibold mb-2" style={{ color: "var(--secondary-color)" }}>
+                    Email
+                  </label>
                   <input
                     type="email"
                     required
@@ -112,11 +133,15 @@ export default function FeedbackPage() {
                       fontFamily: "var(--plus-jakarta-sans)",
                     }}
                     onFocus={(e) => (e.currentTarget.style.borderColor = "var(--primary-color)")}
-                    onBlur={(e) => (e.currentTarget.style.borderColor = "color-mix(in srgb, var(--primary-color) 15%, transparent)")}
+                    onBlur={(e) =>
+                      (e.currentTarget.style.borderColor = "color-mix(in srgb, var(--primary-color) 15%, transparent)")
+                    }
                   />
                 </div>
                 <div>
-                  <label className="block text-sm font-semibold mb-2" style={{ color: "var(--secondary-color)" }}>Message</label>
+                  <label className="block text-sm font-semibold mb-2" style={{ color: "var(--secondary-color)" }}>
+                    Message
+                  </label>
                   <textarea
                     required
                     rows={6}
@@ -130,7 +155,9 @@ export default function FeedbackPage() {
                       fontFamily: "var(--plus-jakarta-sans)",
                     }}
                     onFocus={(e) => (e.currentTarget.style.borderColor = "var(--primary-color)")}
-                    onBlur={(e) => (e.currentTarget.style.borderColor = "color-mix(in srgb, var(--primary-color) 15%, transparent)")}
+                    onBlur={(e) =>
+                      (e.currentTarget.style.borderColor = "color-mix(in srgb, var(--primary-color) 15%, transparent)")
+                    }
                   />
                 </div>
                 <button

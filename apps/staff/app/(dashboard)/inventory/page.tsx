@@ -1,11 +1,11 @@
 "use client";
 
+import { createBrowserTypedClient } from "@repo/data-access/client";
+import { updateProduct } from "@repo/data-access/data/products";
 import { Badge, Button, Card, CardContent, Input } from "@repo/ui";
 import { AlertTriangle, ImageIcon, Loader2, Package, Save, Search } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
-import { createBrowserTypedClient } from "@repo/data-access/client";
-import { updateProduct } from "@repo/data-access/data/products";
 
 export default function StaffInventoryPage() {
   const supabase = createBrowserTypedClient();

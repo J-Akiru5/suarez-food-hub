@@ -1,5 +1,8 @@
 "use client";
 
+import { createBrowserTypedClient } from "@repo/data-access/client";
+import { getCategories } from "@repo/data-access/data/categories";
+import { createProduct, updateProduct } from "@repo/data-access/data/products";
 import type { Category, Product } from "@repo/types";
 import {
   Badge,
@@ -23,9 +26,6 @@ import { formatCurrency } from "@repo/utils";
 import { Image as ImageIcon, Loader2, Minus, Package, Pencil, Plus, Search, Upload, X } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createBrowserTypedClient } from "@repo/data-access/client";
-import { createProduct, updateProduct } from "@repo/data-access/data/products";
-import { getCategories } from "@repo/data-access/data/categories";
 
 export default function InventoryPage() {
   const supabase = createBrowserTypedClient();

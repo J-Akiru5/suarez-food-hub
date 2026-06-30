@@ -1,10 +1,10 @@
 "use client";
 
+import { createBrowserTypedClient } from "@repo/data-access/client";
+import { getProfileRole } from "@repo/data-access/data/profiles";
 import { Eye, EyeOff, Truck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { createBrowserTypedClient } from "@repo/data-access/client";
-import { getProfileRole } from "@repo/data-access/data/profiles";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
