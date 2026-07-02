@@ -1,10 +1,14 @@
 "use client";
 
 import { MessageCircle, X } from "lucide-react";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 
 export function FeedbackFab() {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
+
+  if (pathname === "/menu") return null;
 
   return (
     <>

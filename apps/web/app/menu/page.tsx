@@ -1,25 +1,21 @@
 "use client";
 
+import { cn } from "@repo/utils";
 import {
-  ArrowRight,
-  Menu as MenuIcon,
   Minus,
   Plus,
-  Search,
   SearchX,
   ShoppingCart,
   Star,
-  Utensils,
   X,
 } from "lucide-react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import AuthNavbar from "../../components/AuthNavbar";
 import { useAuth } from "../../components/auth-provider";
 import CartSidebar from "../../components/CartSidebar";
 
-// ─── Types ────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Types ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 interface Product {
   id: string;
   name: string;
@@ -43,11 +39,27 @@ interface CartItem {
   variant: string;
 }
 
+// ΓöÇΓöÇΓöÇ Emoji map for categories ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+const categoryEmoji: Record<string, string> = {
+  All: "≡ƒì╜∩╕Å",
+  "Main Dish": "≡ƒì¢",
+  Dumplings: "≡ƒÑƒ",
+  "Spring Rolls": "≡ƒî»",
+  Drinks: "≡ƒÑñ",
+  Desserts: "≡ƒì░",
+  Sides: "≡ƒºå",
+  Noodles: "≡ƒì£",
+};
+
+function getCategoryEmoji(cat: string) {
+  return categoryEmoji[cat] || "≡ƒì╜∩╕Å";
+}
+
 function getVariantPrice(product: Product, variant: string): number {
   if (product.category === "Main Dish") {
     return variant === "Large" ? product.price_large : product.price_medium;
   }
-  return product.price; // Others like Dumplings are same price regardless of steamed/fried
+  return product.price;
 }
 
 function getVariantOptions(product: Product): string[] {
@@ -56,6 +68,10 @@ function getVariantOptions(product: Product): string[] {
   if (product.category === "Spring Rolls") return ["Dynamite", "Regular"];
   if (product.category === "Drinks") return ["100% Sugar", "75% Sugar", "50% Sugar", "Less Sugar", "No Sugar"];
   return [];
+}
+
+function hasVariants(product: Product): boolean {
+  return getVariantOptions(product).length > 0;
 }
 
 export default function MenuPage() {
@@ -77,11 +93,10 @@ export default function MenuPage() {
   // Toast
   const [toast, setToast] = useState<string | null>(null);
 
-  // AI Craving Matcher
-  const [aiCraving, setAiCraving] = useState("");
-  const [showAiWidget, setShowAiWidget] = useState(false);
+  // Guest login modal
+  const [showGuestModal, setShowGuestModal] = useState(false);
 
-  // Receipt number (client-only to avoid hydration mismatch)
+  // Receipt number
   const [receiptNumber, setReceiptNumber] = useState("");
   useEffect(() => {
     setReceiptNumber(`${Math.floor(Math.random() * 90000) + 10000}`);
@@ -100,7 +115,7 @@ export default function MenuPage() {
           setCategories(["All", ...uniqueCats]);
         }
       })
-      .catch((err) => setFetchError("Failed to load menu. Please refresh the page."))
+      .catch(() => setFetchError("Failed to load menu. Please refresh the page."))
       .finally(() => setLoading(false));
   }, []);
 
@@ -126,7 +141,7 @@ export default function MenuPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items }),
       });
-    } catch {}
+    } catch { /* ignore */ }
   };
 
   const saveCart = (updated: CartItem[]) => {
@@ -135,7 +150,7 @@ export default function MenuPage() {
     if (user) syncCartToServer(updated);
   };
 
-  // Load remote cart on login and merge with local
+  // Load remote cart on login
   useEffect(() => {
     if (!user) return;
     fetch("/api/cart")
@@ -144,13 +159,7 @@ export default function MenuPage() {
         if (data?.items?.length > 0) {
           const localRaw = localStorage.getItem("sfh_cart");
           const local: CartItem[] = localRaw
-            ? (() => {
-                try {
-                  return JSON.parse(localRaw);
-                } catch {
-                  return [];
-                }
-              })()
+            ? (() => { try { return JSON.parse(localRaw); } catch { return []; } })()
             : [];
           const merged = [...data.items];
           for (const li of local) {
@@ -171,9 +180,14 @@ export default function MenuPage() {
     setTimeout(() => setToast(null), 2500);
   };
 
+  // ΓöÇΓöÇΓöÇ Guest guard ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  const requireAuth = () => {
+    setShowGuestModal(true);
+  };
+
   const openModal = (product: Product) => {
     if (!user) {
-      showToast("Please log in to add items to your basket");
+      requireAuth();
       return;
     }
     setModalProduct(product);
@@ -182,8 +196,41 @@ export default function MenuPage() {
     setQuantity(1);
   };
 
+  // ΓöÇΓöÇΓöÇ Quick add (no-variant items) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  const quickAdd = (product: Product) => {
+    if (!user) {
+      requireAuth();
+      return;
+    }
+    const price = getVariantPrice(product, "");
+    const cartItem: CartItem = {
+      id: product.id,
+      name: product.name,
+      image: product.image,
+      price,
+      quantity: 1,
+      variant: "",
+    };
+    const existing = cart.findIndex((c) => c.id === product.id && c.variant === "");
+    let updated: CartItem[];
+    if (existing >= 0) {
+      updated = cart.map((c, i) =>
+        i === existing ? { ...c, quantity: c.quantity + 1 } : c,
+      );
+    } else {
+      updated = [...cart, cartItem];
+    }
+    saveCart(updated);
+    showToast(`${product.name} added to basket`);
+  };
+
   const addToCart = () => {
     if (!modalProduct) return;
+    if (!user) {
+      setModalProduct(null);
+      requireAuth();
+      return;
+    }
     const price = getVariantPrice(modalProduct, selectedVariant);
     const cartItem: CartItem = {
       id: modalProduct.id,
@@ -193,11 +240,14 @@ export default function MenuPage() {
       quantity,
       variant: selectedVariant,
     };
-
-    const existing = cart.findIndex((c) => c.id === modalProduct.id && c.variant === selectedVariant);
+    const existing = cart.findIndex(
+      (c) => c.id === modalProduct.id && c.variant === selectedVariant,
+    );
     let updated: CartItem[];
     if (existing >= 0) {
-      updated = cart.map((c, i) => (i === existing ? { ...c, quantity: c.quantity + quantity } : c));
+      updated = cart.map((c, i) =>
+        i === existing ? { ...c, quantity: c.quantity + quantity } : c,
+      );
     } else {
       updated = [...cart, cartItem];
     }
@@ -226,7 +276,10 @@ export default function MenuPage() {
   const totalItems = cart.reduce((s, c) => s + c.quantity, 0);
   const totalPrice = cart.reduce((s, c) => s + c.price * c.quantity, 0);
 
-  const filtered = activeCategory === "All" ? products : products.filter((p) => p.category === activeCategory);
+  const filtered =
+    activeCategory === "All"
+      ? products
+      : products.filter((p) => p.category === activeCategory);
 
   const getImageSrc = (img: string) => {
     if (!img) return "/assets/food-hub.jpg";
@@ -235,150 +288,148 @@ export default function MenuPage() {
     return `/assets/uploads/${img}`;
   };
 
+  // ΓöÇΓöÇΓöÇ Render ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
   return (
-    <div style={{ background: "var(--color-cream)", minHeight: "100vh", fontFamily: "var(--plus-jakarta-sans)" }}>
-      {/* ── Toast ── */}
+    <div className="h-screen flex flex-col bg-cream">
+      {/* ΓöÇΓöÇ Toast ΓöÇΓöÇ */}
       <div
-        onClick={() => {
-          if (toast?.includes("log in")) router.push("/login");
-        }}
+        className={cn(
+          "fixed top-4 right-4 z-[9999] px-5 py-3 rounded-2xl font-bold shadow-xl border border-white/10 transition-all duration-400 flex items-center gap-3",
+          toast ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4 pointer-events-none",
+        )}
         style={{
-          cursor: toast?.includes("log in") ? "pointer" : "default",
-          position: "fixed",
-          top: toast ? 90 : -100,
-          right: 24,
-          zIndex: 9999,
-          background: "rgba(255,255,255,0.9)",
+          background: "rgba(255,255,255,0.95)",
           backdropFilter: "blur(12px)",
           color: "var(--secondary-color)",
-          padding: "14px 24px",
-          borderRadius: "30px",
-          fontWeight: 700,
-          boxShadow: "0 8px 30px rgba(0,0,0,0.12)",
-          transition: "top 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)",
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          border: "1px solid rgba(0,0,0,0.05)",
         }}
       >
-        <div
-          style={{
-            width: 24,
-            height: 24,
-            borderRadius: "50%",
-            background: toast?.includes("log in") ? "#f59e0b" : "var(--primary-color)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            color: "#fff",
-          }}
-        >
+        <div className="w-6 h-6 rounded-full bg-brand-500 flex items-center justify-center text-white flex-shrink-0">
           <ShoppingCart size={14} />
         </div>
-        {toast?.includes("log in") ? (
-          <span>
-            Please log in to add items — <u>Login</u>
-          </span>
-        ) : (
-          toast
-        )}
+        <span className="text-sm">{toast}</span>
       </div>
 
-      {/* ── Product Modal ── */}
+      {/* ΓöÇΓöÇ Guest Login Modal ΓöÇΓöÇ */}
+      {showGuestModal && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowGuestModal(false);
+          }}
+        >
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-[420px] p-8 relative animate-slideUp">
+            <button
+              onClick={() => setShowGuestModal(false)}
+              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center border-none cursor-pointer hover:bg-gray-200 transition-colors"
+            >
+              <X className="w-4 h-4 text-gray-500" />
+            </button>
+
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 rounded-full bg-brand-50 flex items-center justify-center mx-auto mb-4">
+                <ShoppingCart className="w-7 h-7 text-brand-500" />
+              </div>
+              <h2
+                className="text-2xl font-bold text-near-black m-0"
+                style={{ fontFamily: "var(--playfair-display)" }}
+              >
+                Sign in to Order
+              </h2>
+              <p className="text-sm text-gray-500 mt-2 mb-0 leading-relaxed">
+                Create an account or sign in to start adding items to your basket.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                onClick={() => {
+                  setShowGuestModal(false);
+                  router.push("/login");
+                }}
+                className="w-full py-3.5 rounded-2xl bg-near-black text-white font-semibold text-sm border-none cursor-pointer hover:bg-near-black/90 transition-colors"
+              >
+                Sign In
+              </button>
+              <button
+                onClick={() => {
+                  setShowGuestModal(false);
+                  router.push("/register");
+                }}
+                className="w-full py-3.5 rounded-2xl bg-white text-near-black font-semibold text-sm border-2 border-gray-200 cursor-pointer hover:border-brand-500/30 hover:bg-brand-50/30 transition-all"
+              >
+                Create an Account
+              </button>
+            </div>
+
+            <p className="text-center mt-5 mb-0">
+              <button
+                onClick={() => setShowGuestModal(false)}
+                className="text-xs text-gray-400 hover:text-gray-600 bg-transparent border-none cursor-pointer transition-colors"
+              >
+                Continue browsing
+              </button>
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* ΓöÇΓöÇ Product Modal ΓöÇΓöÇ */}
       {modalProduct && (
         <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 9999,
-            background: "rgba(0,0,0,0.4)",
-            backdropFilter: "blur(8px)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: 24,
-            animation: "fadeIn 0.2s ease-out",
-          }}
+          className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
           onClick={(e) => {
             if (e.target === e.currentTarget) setModalProduct(null);
           }}
         >
-          <div
-            className="relative flex flex-col md:flex-row bg-white rounded-[32px] overflow-hidden w-full max-w-[480px] md:max-w-[860px] shadow-[0_40px_80px_rgba(0,0,0,0.2)]"
-            style={{ animation: "slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275)" }}
-          >
+          <div className="relative w-full max-w-[480px] md:max-w-[860px] bg-white rounded-3xl overflow-hidden shadow-2xl animate-slideUp flex flex-col md:flex-row">
             <button
               onClick={() => setModalProduct(null)}
-              className="absolute top-5 right-5 w-10 h-10 rounded-full bg-white/80 hover:bg-white backdrop-blur-md border-none flex items-center justify-center text-gray-800 shadow-md cursor-pointer z-30 transition-colors"
+              className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center border-none shadow-md cursor-pointer hover:bg-white transition-colors"
             >
-              <X size={20} />
+              <X className="w-5 h-5 text-near-black" />
             </button>
 
             <div className="relative h-[260px] md:h-auto md:w-1/2 flex-shrink-0 bg-gray-50 overflow-hidden">
-              <div className="absolute inset-0">
-                <img
-                  src={getImageSrc(modalProduct.image)}
-                  alt={modalProduct.name}
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    (e.target as HTMLImageElement).src = "/assets/food-hub.jpg";
-                  }}
-                />
-              </div>
+              <img
+                src={getImageSrc(modalProduct.image)}
+                alt={modalProduct.name}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = "/assets/food-hub.jpg";
+                }}
+              />
             </div>
 
-            <div className="p-8 md:p-10 md:w-1/2 flex flex-col justify-center">
+            <div className="p-6 md:p-8 md:w-1/2 flex flex-col justify-center">
               <h2
-                style={{
-                  fontFamily: "var(--playfair-display)",
-                  fontSize: 32,
-                  color: "var(--secondary-color)",
-                  margin: "0 0 12px",
-                }}
+                className="text-2xl md:text-3xl font-bold text-near-black m-0 mb-2"
+                style={{ fontFamily: "var(--playfair-display)" }}
               >
                 {modalProduct.name}
               </h2>
-              <p style={{ fontSize: 15, color: "#64748b", lineHeight: 1.7, margin: "0 0 24px" }}>
-                {modalProduct.description}
-              </p>
+              <p className="text-sm text-gray-500 leading-relaxed m-0 mb-6">{modalProduct.description}</p>
 
               {/* Variant Options */}
-              {getVariantOptions(modalProduct).length > 0 && (
-                <div style={{ marginBottom: 24 }}>
-                  <p
-                    style={{
-                      fontWeight: 700,
-                      fontSize: 12,
-                      color: "#94a3b8",
-                      textTransform: "uppercase",
-                      marginBottom: 12,
-                      letterSpacing: 1,
-                    }}
-                  >
+              {hasVariants(modalProduct) && (
+                <div className="mb-5">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest m-0 mb-3">
                     {modalProduct.category === "Main Dish"
                       ? "Select Size"
                       : modalProduct.category === "Drinks"
                         ? "Sugar Level"
                         : "Preparation"}
                   </p>
-                  <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                  <div className="flex flex-wrap gap-2">
                     {getVariantOptions(modalProduct).map((opt) => (
                       <button
                         key={opt}
                         onClick={() => setSelectedVariant(opt)}
-                        style={{
-                          padding: "10px 20px",
-                          borderRadius: 24,
-                          border: "2px solid",
-                          borderColor: selectedVariant === opt ? "var(--primary-color)" : "#e2e8f0",
-                          background: selectedVariant === opt ? "var(--primary-color)" : "transparent",
-                          color: selectedVariant === opt ? "#fff" : "var(--secondary-color)",
-                          fontWeight: 600,
-                          cursor: "pointer",
-                          fontSize: 14,
-                          transition: "all 0.2s",
-                        }}
+                        className={cn(
+                          "px-5 py-2 rounded-full text-sm font-semibold border-2 transition-all duration-200 cursor-pointer",
+                          selectedVariant === opt
+                            ? "bg-brand-500 text-white border-brand-500"
+                            : "bg-white text-gray-600 border-gray-200 hover:border-brand-500/50",
+                        )}
                       >
                         {opt}
                       </button>
@@ -388,127 +439,52 @@ export default function MenuPage() {
               )}
 
               {/* Quantity */}
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  marginBottom: 32,
-                  padding: "16px 20px",
-                  background: "#f8fafc",
-                  borderRadius: 20,
-                }}
-              >
-                <p style={{ fontWeight: 700, fontSize: 14, color: "var(--secondary-color)", margin: 0 }}>Quantity</p>
-                <div style={{ display: "flex", alignItems: "center", gap: 20 }}>
+              <div className="flex items-center justify-between mb-6 p-4 bg-gray-50 rounded-2xl">
+                <span className="text-sm font-bold text-near-black">Quantity</span>
+                <div className="flex items-center gap-4">
                   <button
                     onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                    style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: "50%",
-                      border: "none",
-                      background: "#fff",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-                    }}
+                    className="w-9 h-9 rounded-full bg-white border-none flex items-center justify-center cursor-pointer shadow-sm hover:shadow transition-shadow"
                   >
-                    <Minus size={16} />
+                    <Minus className="w-4 h-4 text-gray-600" />
                   </button>
                   <span
-                    style={{
-                      fontFamily: "var(--playfair-display)",
-                      fontSize: 24,
-                      fontWeight: 700,
-                      minWidth: 24,
-                      textAlign: "center",
-                      color: "var(--secondary-color)",
-                    }}
+                    className="text-2xl font-bold text-near-black min-w-[24px] text-center"
+                    style={{ fontFamily: "var(--playfair-display)" }}
                   >
                     {quantity}
                   </span>
                   <button
                     onClick={() => setQuantity((q) => Math.min(modalProduct.quantity, q + 1))}
-                    style={{
-                      width: 36,
-                      height: 36,
-                      borderRadius: "50%",
-                      border: "none",
-                      background: "#fff",
-                      cursor: "pointer",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-                    }}
+                    className="w-9 h-9 rounded-full bg-white border-none flex items-center justify-center cursor-pointer shadow-sm hover:shadow transition-shadow"
                   >
-                    <Plus size={16} />
+                    <Plus className="w-4 h-4 text-gray-600" />
                   </button>
                 </div>
               </div>
 
               {/* Price + Add */}
-              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+              <div className="flex items-center justify-between">
                 <div>
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest m-0 mb-1">Total</p>
                   <p
-                    style={{
-                      fontSize: 12,
-                      color: "#94a3b8",
-                      margin: "0 0 4px",
-                      fontWeight: 600,
-                      textTransform: "uppercase",
-                      letterSpacing: 1,
-                    }}
+                    className="text-2xl md:text-3xl font-bold text-brand-500 m-0"
+                    style={{ fontFamily: "var(--playfair-display)" }}
                   >
-                    Total
-                  </p>
-                  <p
-                    style={{
-                      fontFamily: "var(--playfair-display)",
-                      fontSize: 32,
-                      fontWeight: 700,
-                      color: "var(--primary-color)",
-                      margin: 0,
-                    }}
-                  >
-                    ₱{getVariantPrice(modalProduct, selectedVariant) * quantity}.00
+                    Γé▒{getVariantPrice(modalProduct, selectedVariant) * quantity}.00
                   </p>
                 </div>
                 <button
                   onClick={addToCart}
                   disabled={modalProduct.availability === "Sold Out"}
-                  style={{
-                    padding: "16px 36px",
-                    background: modalProduct.availability === "Sold Out" ? "#cbd5e1" : "var(--primary-color)",
-                    border: "none",
-                    borderRadius: "30px",
-                    color: "#fff",
-                    fontWeight: 700,
-                    fontSize: 16,
-                    cursor: modalProduct.availability === "Sold Out" ? "not-allowed" : "pointer",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: 10,
-                    transition: "transform 0.1s, box-shadow 0.2s",
-                    boxShadow:
-                      modalProduct.availability === "Sold Out"
-                        ? "none"
-                        : "0 8px 24px color-mix(in srgb, var(--primary-color) 30%, transparent)",
-                  }}
-                  onMouseDown={(e) => {
-                    if (modalProduct.availability !== "Sold Out") e.currentTarget.style.transform = "scale(0.96)";
-                  }}
-                  onMouseUp={(e) => {
-                    if (modalProduct.availability !== "Sold Out") e.currentTarget.style.transform = "scale(1)";
-                  }}
-                  onMouseLeave={(e) => {
-                    if (modalProduct.availability !== "Sold Out") e.currentTarget.style.transform = "scale(1)";
-                  }}
+                  className={cn(
+                    "px-6 py-3.5 rounded-full font-bold text-sm flex items-center gap-2 border-none transition-all duration-200",
+                    modalProduct.availability === "Sold Out"
+                      ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                      : "bg-brand-500 text-white hover:bg-brand-600 cursor-pointer shadow-lg shadow-brand-500/25 active:scale-95",
+                  )}
                 >
-                  <ShoppingCart size={18} />
+                  <ShoppingCart className="w-4 h-4" />
                   {modalProduct.availability === "Sold Out" ? "Sold Out" : "Add to Basket"}
                 </button>
               </div>
@@ -517,7 +493,237 @@ export default function MenuPage() {
         </div>
       )}
 
-      {/* ── Cart Sidebar (Live Receipt) ── */}
+      {/* ΓöÇΓöÇ Top Bar (kiosk mode) ΓöÇΓöÇ */}
+      <AuthNavbar
+        kioskMode
+        showCartIcon
+        cartItemCount={totalItems}
+        onCartClick={() => {
+          if (window.innerWidth < 1024) setShowCart(true);
+        }}
+      />
+
+      {/* ΓöÇΓöÇ Main Split View ΓöÇΓöÇ */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* ΓöÇΓöÇ Left: Products ΓöÇΓöÇ */}
+        <div className="flex-1 flex flex-col min-w-0">
+          {/* Category Pills */}
+          <div className="sticky top-0 z-10 bg-cream/95 backdrop-blur-xl border-b border-black/5">
+            <div className="flex items-center gap-2 px-4 md:px-6 py-3 overflow-x-auto hide-scrollbar">
+              {loading
+                ? Array(5).fill(0).map((_, i) => (
+                    <div
+                      key={i}
+                      className="w-24 h-10 rounded-full bg-gray-200 animate-pulse flex-shrink-0"
+                    />
+                  ))
+                : categories.map((cat) => (
+                    <button
+                      key={cat}
+                      onClick={() => setActiveCategory(cat)}
+                      className={cn(
+                        "flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap border-none cursor-pointer transition-all duration-200 flex-shrink-0",
+                        activeCategory === cat
+                          ? "bg-brand-500 text-white shadow-lg shadow-brand-500/25"
+                          : "bg-white/70 text-gray-500 hover:bg-white hover:text-gray-700 hover:shadow-sm",
+                      )}
+                    >
+                      <span className="text-base">{getCategoryEmoji(cat)}</span>
+                      {cat}
+                    </button>
+                  ))}
+            </div>
+          </div>
+
+          {/* Product Grid */}
+          <div className="flex-1 overflow-y-auto">
+            <div className="px-4 md:px-6 py-6">
+              {loading ? (
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                  {Array(6).fill(0).map((_, i) => (
+                    <div key={i} className="bg-white rounded-2xl overflow-hidden animate-pulse">
+                      <div className="aspect-[4/3] bg-gray-200" />
+                      <div className="p-4 space-y-2">
+                        <div className="h-4 bg-gray-200 rounded w-3/4" />
+                        <div className="h-3 bg-gray-100 rounded w-1/2" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : fetchError ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                  <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center mb-4">
+                    <SearchX className="w-8 h-8 text-red-400" />
+                  </div>
+                  <h3 className="text-xl font-bold text-near-black m-0 mb-2" style={{ fontFamily: "var(--playfair-display)" }}>
+                    Something went wrong
+                  </h3>
+                  <p className="text-sm text-gray-500 max-w-sm m-0 leading-relaxed">{fetchError}</p>
+                  <button
+                    onClick={() => window.location.reload()}
+                    className="mt-5 px-6 py-3 rounded-full bg-brand-500 text-white font-semibold text-sm border-none cursor-pointer hover:bg-brand-600 transition-colors"
+                  >
+                    Refresh Page
+                  </button>
+                </div>
+              ) : filtered.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-20 text-center">
+                  <div className="w-20 h-20 rounded-full bg-brand-50 flex items-center justify-center mb-4">
+                    <SearchX className="w-8 h-8 text-brand-500/50" />
+                  </div>
+                  <h3 className="text-xl font-bold text-near-black m-0 mb-2" style={{ fontFamily: "var(--playfair-display)" }}>
+                    No items found
+                  </h3>
+                  <p className="text-sm text-gray-500 max-w-sm m-0 leading-relaxed">
+                    We couldn't find any items in this category. Try a different category.
+                  </p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filtered.map((item) => {
+                    const isSoldOut = item.availability === "Sold Out";
+                    const hasVar = hasVariants(item);
+
+                    return (
+                      <div
+                        key={item.id}
+                        className={cn(
+                          "group relative bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden border border-white/60 transition-all duration-300",
+                          isSoldOut
+                            ? "opacity-60 cursor-not-allowed"
+                            : "cursor-pointer hover:shadow-xl hover:-translate-y-1 hover:border-white/80",
+                        )}
+                        onClick={() => {
+                          if (!isSoldOut) {
+                            if (hasVar) openModal(item);
+                            else quickAdd(item);
+                          }
+                        }}
+                      >
+                        {/* Image */}
+                        <div className="relative aspect-[4/3] overflow-hidden bg-gray-50">
+                          <img
+                            src={getImageSrc(item.image)}
+                            alt={item.name}
+                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).src = "/assets/food-hub.jpg";
+                            }}
+                          />
+
+                          {/* Rating Badge */}
+                          <div className="absolute top-3 right-3 flex items-center gap-1 bg-white/90 backdrop-blur-sm rounded-full px-2.5 py-1 shadow-md">
+                            <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+                            <span className="text-[11px] font-bold text-near-black">{item.rating}</span>
+                          </div>
+
+                          {/* Sold Out Overlay */}
+                          {isSoldOut && (
+                            <div className="absolute inset-0 bg-white/50 backdrop-blur-sm flex items-center justify-center">
+                              <span className="bg-near-black/80 text-white text-sm font-bold px-4 py-2 rounded-full">
+                                Sold Out
+                              </span>
+                            </div>
+                          )}
+
+                          {/* Gradient overlay for text */}
+                          <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-black/60 via-black/20 to-transparent" />
+
+                          {/* Name + Price on image */}
+                          <div className="absolute bottom-0 left-0 right-0 p-4">
+                            <h3
+                              className="text-base font-bold text-white m-0 leading-tight"
+                              style={{ fontFamily: "var(--playfair-display)" }}
+                            >
+                              {item.name}
+                            </h3>
+                            <p className="text-sm font-bold text-white/90 m-0 mt-1">
+                              {item.category === "Main Dish"
+                                ? `Γé▒${item.price_medium} ΓÇô Γé▒${item.price_large}`
+                                : `Γé▒${item.price}.00`}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Bottom section ΓÇö quick add or variant hint */}
+                        <div className="p-3 flex items-center justify-between">
+                          <span className="text-[11px] font-medium text-gray-400 uppercase tracking-wider">
+                            {item.category}
+                          </span>
+                          {!isSoldOut && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (hasVar) openModal(item);
+                                else quickAdd(item);
+                              }}
+                              className={cn(
+                                "w-9 h-9 rounded-full flex items-center justify-center border-none cursor-pointer transition-all duration-200 shadow-sm",
+                                hasVar
+                                  ? "bg-brand-50 text-brand-500 hover:bg-brand-100"
+                                  : "bg-brand-500 text-white hover:bg-brand-600 active:scale-90",
+                              )}
+                              title={hasVar ? "Select options" : "Add to basket"}
+                            >
+                              {hasVar ? (
+                                <span className="text-xs font-bold">+</span>
+                              ) : (
+                                <Plus className="w-4 h-4" />
+                              )}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* ΓöÇΓöÇ Right: Persistent Cart Panel ΓöÇΓöÇ */}
+        <div className="w-[380px] xl:w-[420px] hidden lg:flex flex-col flex-shrink-0">
+          <CartSidebar
+            showCart={showCart}
+            setShowCart={setShowCart}
+            cart={cart}
+            updateCartQty={updateCartQty}
+            removeFromCart={removeFromCart}
+            totalPrice={totalPrice}
+            receiptNumber={receiptNumber}
+            persistent
+          />
+        </div>
+      </div>
+
+      {/* ΓöÇΓöÇ Mobile Bottom Cart Bar ΓöÇΓöÇ */}
+      {cart.length > 0 && (
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-gray-200/50 px-4 py-3 shadow-2xl">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs text-gray-500 m-0">
+                {totalItems} item{totalItems !== 1 ? "s" : ""} in basket
+              </p>
+              <p
+                className="text-lg font-bold text-brand-500 m-0"
+                style={{ fontFamily: "var(--playfair-display)" }}
+              >
+                Γé▒{totalPrice}.00
+              </p>
+            </div>
+            <button
+              onClick={() => setShowCart(true)}
+              className="flex items-center gap-2 px-6 py-3 rounded-2xl bg-brand-500 text-white font-semibold text-sm border-none cursor-pointer hover:bg-brand-600 transition-colors shadow-lg shadow-brand-500/25"
+            >
+              <ShoppingCart className="w-4 h-4" />
+              View Basket
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ΓöÇΓöÇ Mobile Cart Overlay ΓöÇΓöÇ */}
       <CartSidebar
         showCart={showCart}
         setShowCart={setShowCart}
@@ -528,609 +734,18 @@ export default function MenuPage() {
         receiptNumber={receiptNumber}
       />
 
-      {/* ── Header ── */}
-      <AuthNavbar showCartIcon={true} onCartClick={() => setShowCart(true)} cartItemCount={totalItems} />
-
-      {/* ── Hero Banner ── */}
-      <div
-        className="mobile-padding"
-        style={{
-          background: "linear-gradient(to bottom right, var(--primary-color), var(--primary-dark))",
-          padding: "160px 64px 80px",
-          textAlign: "center",
-          position: "relative",
-          overflow: "hidden",
-        }}
-      >
-        <div
-          style={{
-            position: "absolute",
-            top: -50,
-            left: -50,
-            width: 200,
-            height: 200,
-            background: "rgba(255,255,255,0.05)",
-            borderRadius: "50%",
-            filter: "blur(40px)",
-          }}
-        />
-        <div
-          style={{
-            position: "absolute",
-            bottom: -80,
-            right: -50,
-            width: 300,
-            height: 300,
-            background: "rgba(255,255,255,0.03)",
-            borderRadius: "50%",
-            filter: "blur(60px)",
-          }}
-        />
-        <h1
-          style={{
-            fontFamily: "var(--playfair-display)",
-            fontSize: 64,
-            color: "#fff",
-            margin: 0,
-            position: "relative",
-            zIndex: 2,
-          }}
-        >
-          Our Menu
-        </h1>
-        <p
-          style={{
-            color: "rgba(255,255,255,0.85)",
-            fontSize: 18,
-            marginTop: 16,
-            fontWeight: 500,
-            position: "relative",
-            zIndex: 2,
-          }}
-        >
-          Handcrafted authentic Filipino flavors
-        </p>
-      </div>
-
-      {/* ── Category Filters ── */}
-      <div
-        className="mobile-padding"
-        style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 12, padding: "40px 64px 20px" }}
-      >
-        {loading
-          ? Array(5)
-              .fill(0)
-              .map((_, i) => (
-                <div
-                  key={i}
-                  style={{
-                    width: 100,
-                    height: 42,
-                    background: "#e2e8f0",
-                    borderRadius: 30,
-                    animation: "pulse 1.5s infinite ease-in-out",
-                  }}
-                />
-              ))
-          : categories.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                style={{
-                  padding: "12px 28px",
-                  borderRadius: "30px",
-                  border: "none",
-                  background: activeCategory === cat ? "var(--primary-color)" : "#fff",
-                  color: activeCategory === cat ? "#fff" : "#64748b",
-                  fontWeight: 700,
-                  fontSize: 15,
-                  cursor: "pointer",
-                  boxShadow:
-                    activeCategory === cat ? "0 8px 20px rgba(177, 69, 74, 0.25)" : "0 4px 12px rgba(0,0,0,0.04)",
-                  transition: "all 0.3s cubic-bezier(0.165, 0.84, 0.44, 1)",
-                }}
-                onMouseEnter={(e) => {
-                  if (activeCategory !== cat) e.currentTarget.style.transform = "translateY(-2px)";
-                }}
-                onMouseLeave={(e) => {
-                  if (activeCategory !== cat) e.currentTarget.style.transform = "translateY(0)";
-                }}
-              >
-                {cat}
-              </button>
-            ))}
-      </div>
-
-      {/* ── Food Grid ── */}
-      <div
-        className="mobile-padding"
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(320px, 1fr))",
-          gridAutoRows: "400px",
-          gridAutoFlow: "dense",
-          gap: 32,
-          padding: "24px 64px 120px",
-        }}
-      >
-        {loading ? (
-          // Skeletons
-          Array(8)
-            .fill(0)
-            .map((_, i) => (
-              <div
-                key={i}
-                style={{
-                  background: "#fff",
-                  borderRadius: 28,
-                  overflow: "hidden",
-                  height: 380,
-                  border: "1px solid color-mix(in srgb, var(--primary-color) 10%, transparent)",
-                }}
-              >
-                <div
-                  style={{
-                    width: "100%",
-                    height: 200,
-                    background: "color-mix(in srgb, var(--primary-color) 8%, transparent)",
-                    animation: "pulse 1.5s infinite ease-in-out",
-                  }}
-                />
-                <div style={{ padding: 24 }}>
-                  <div
-                    style={{
-                      width: "60%",
-                      height: 24,
-                      background: "color-mix(in srgb, var(--primary-color) 12%, transparent)",
-                      borderRadius: 6,
-                      marginBottom: 12,
-                      animation: "pulse 1.5s infinite ease-in-out",
-                    }}
-                  />
-                  <div
-                    style={{
-                      width: "90%",
-                      height: 14,
-                      background: "color-mix(in srgb, var(--primary-color) 5%, transparent)",
-                      borderRadius: 4,
-                      marginBottom: 8,
-                    }}
-                  />
-                  <div
-                    style={{
-                      width: "70%",
-                      height: 14,
-                      background: "color-mix(in srgb, var(--primary-color) 5%, transparent)",
-                      borderRadius: 4,
-                      marginBottom: 24,
-                    }}
-                  />
-                  <div
-                    style={{
-                      width: "100%",
-                      height: 40,
-                      background: "color-mix(in srgb, var(--primary-color) 8%, transparent)",
-                      borderRadius: 20,
-                      animation: "pulse 1.5s infinite ease-in-out",
-                    }}
-                  />
-                </div>
-              </div>
-            ))
-        ) : fetchError ? (
-          <div
-            style={{
-              gridColumn: "1 / -1",
-              textAlign: "center",
-              padding: "100px 0",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <div
-              style={{
-                width: 100,
-                height: 100,
-                background: "color-mix(in srgb, #ef4444 5%, transparent)",
-                borderRadius: "50%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                marginBottom: 24,
-              }}
-            >
-              <SearchX size={48} color="#ef4444" style={{ opacity: 0.5 }} />
-            </div>
-            <h3 style={{ fontFamily: "var(--playfair-display)", fontSize: 28, color: "#ef4444", margin: "0 0 12px" }}>
-              Something went wrong
-            </h3>
-            <p style={{ fontSize: 16, color: "#64748b", maxWidth: 400, margin: 0, lineHeight: 1.6 }}>{fetchError}</p>
-            <button
-              onClick={() => window.location.reload()}
-              style={{
-                marginTop: 20,
-                padding: "14px 32px",
-                borderRadius: 30,
-                border: "none",
-                background: "var(--primary-color)",
-                color: "#fff",
-                fontWeight: 700,
-                fontSize: 15,
-                cursor: "pointer",
-              }}
-            >
-              Refresh Page
-            </button>
-          </div>
-        ) : filtered.length === 0 ? (
-          <div
-            style={{
-              gridColumn: "1 / -1",
-              textAlign: "center",
-              padding: "100px 0",
-              display: "flex",
-              flexDirection: "column",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <div
-              style={{
-                width: 100,
-                height: 100,
-                background: "color-mix(in srgb, var(--primary-color) 5%, transparent)",
-                borderRadius: "50%",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                marginBottom: 24,
-              }}
-            >
-              <SearchX size={48} className="opacity-50" style={{ color: "var(--primary-color)" }} />
-            </div>
-            <h3
-              style={{
-                fontFamily: "var(--playfair-display)",
-                fontSize: 28,
-                color: "var(--secondary-color)",
-                margin: "0 0 12px",
-              }}
-            >
-              No items found
-            </h3>
-            <p style={{ fontSize: 16, color: "#64748b", maxWidth: 400, margin: 0, lineHeight: 1.6 }}>
-              We couldn't find any food items in this category. Please try selecting a different category.
-            </p>
-          </div>
-        ) : (
-          filtered.map((item, index) => {
-            const isFeatured = index === 0 && !aiCraving.trim();
-            const isAiMatch = aiCraving.trim()
-              ? item.name.toLowerCase().includes(aiCraving.toLowerCase()) ||
-                item.description.toLowerCase().includes(aiCraving.toLowerCase()) ||
-                item.category.toLowerCase().includes(aiCraving.toLowerCase())
-              : false;
-            const isDimmed = aiCraving.trim() && !isAiMatch;
-
-            return (
-              <div
-                key={item.id}
-                onClick={() => item.availability !== "Sold Out" && openModal(item)}
-                className={isFeatured ? "bento-featured" : ""}
-                style={{
-                  background: isAiMatch ? "rgba(255, 255, 255, 0.9)" : "rgba(255, 255, 255, 0.65)",
-                  backdropFilter: "blur(24px)",
-                  WebkitBackdropFilter: "blur(24px)",
-                  borderRadius: 32,
-                  overflow: "hidden",
-                  border: isAiMatch ? "2px solid var(--primary-color)" : "1px solid rgba(255, 255, 255, 0.4)",
-                  boxShadow: isAiMatch
-                    ? "0 0 40px color-mix(in srgb, var(--primary-color) 60%, transparent)"
-                    : "0 8px 32px rgba(0,0,0,0.04)",
-                  cursor: item.availability === "Sold Out" ? "not-allowed" : "pointer",
-                  opacity: item.availability === "Sold Out" ? 0.6 : isDimmed ? 0.3 : 1,
-                  transform: isAiMatch ? "scale(1.02)" : "scale(1)",
-                  transition: "all 0.4s cubic-bezier(0.165, 0.84, 0.44, 1)",
-                  position: "relative",
-                  display: "flex",
-                  flexDirection: "column",
-                  zIndex: isAiMatch ? 10 : 1,
-                }}
-                onMouseEnter={(e) => {
-                  if (item.availability !== "Sold Out") {
-                    (e.currentTarget as HTMLDivElement).style.transform = "translateY(-6px) scale(1.02)";
-                    (e.currentTarget as HTMLDivElement).style.boxShadow =
-                      "0 24px 48px color-mix(in srgb, var(--primary-color) 12%, transparent)";
-                    (e.currentTarget as HTMLDivElement).style.background = "rgba(255, 255, 255, 0.9)";
-                    (e.currentTarget as HTMLDivElement).style.border = "1px solid rgba(255, 255, 255, 0.8)";
-                    (e.currentTarget as HTMLDivElement).style.zIndex = "20";
-                  }
-                }}
-                onMouseLeave={(e) => {
-                  (e.currentTarget as HTMLDivElement).style.transform = isAiMatch
-                    ? "scale(1.02)"
-                    : "translateY(0) scale(1)";
-                  (e.currentTarget as HTMLDivElement).style.boxShadow = isAiMatch
-                    ? "0 0 40px color-mix(in srgb, var(--primary-color) 60%, transparent)"
-                    : "0 8px 32px rgba(0,0,0,0.04)";
-                  (e.currentTarget as HTMLDivElement).style.background = isAiMatch
-                    ? "rgba(255, 255, 255, 0.9)"
-                    : "rgba(255, 255, 255, 0.65)";
-                  (e.currentTarget as HTMLDivElement).style.border = isAiMatch
-                    ? "2px solid var(--primary-color)"
-                    : "1px solid rgba(255, 255, 255, 0.4)";
-                  (e.currentTarget as HTMLDivElement).style.zIndex = isAiMatch ? "10" : "1";
-                }}
-              >
-                <div
-                  className="bento-image-container"
-                  style={{ position: "relative", flex: isFeatured ? "1.2" : "none", height: isFeatured ? "100%" : 200 }}
-                >
-                  <img
-                    src={getImageSrc(item.image)}
-                    alt={item.name}
-                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                    onError={(e) => {
-                      (e.target as HTMLImageElement).src = "/assets/food-hub.jpg";
-                    }}
-                  />
-
-                  {/* Rating Badge */}
-                  <div
-                    style={{
-                      position: "absolute",
-                      top: 16,
-                      right: 16,
-                      background: "rgba(255,255,255,0.9)",
-                      backdropFilter: "blur(4px)",
-                      padding: "6px 12px",
-                      borderRadius: 20,
-                      display: "flex",
-                      alignItems: "center",
-                      gap: 6,
-                      boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                    }}
-                  >
-                    <Star size={14} fill="#f59e0b" color="#f59e0b" />
-                    <span style={{ fontSize: 13, fontWeight: 700, color: "var(--secondary-color)" }}>
-                      {item.rating}
-                    </span>
-                  </div>
-
-                  {item.availability === "Sold Out" && (
-                    <div
-                      style={{
-                        position: "absolute",
-                        inset: 0,
-                        background: "rgba(255,255,255,0.6)",
-                        backdropFilter: "blur(4px)",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                      }}
-                    >
-                      <span
-                        style={{
-                          color: "var(--secondary-color)",
-                          fontFamily: "var(--playfair-display)",
-                          fontSize: 24,
-                          fontWeight: 800,
-                          padding: "12px 24px",
-                          background: "#fff",
-                          borderRadius: 30,
-                          boxShadow: "0 8px 24px rgba(0,0,0,0.1)",
-                        }}
-                      >
-                        Sold Out
-                      </span>
-                    </div>
-                  )}
-                </div>
-                <div
-                  style={{ padding: 24, flex: 1, display: "flex", flexDirection: "column", justifyContent: "center" }}
-                >
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "flex-start",
-                      marginBottom: 8,
-                    }}
-                  >
-                    <h3
-                      style={{
-                        fontFamily: "var(--playfair-display)",
-                        fontSize: 22,
-                        margin: 0,
-                        color: "var(--secondary-color)",
-                      }}
-                    >
-                      {item.name}
-                    </h3>
-                    <span
-                      style={{
-                        fontWeight: 800,
-                        color: "var(--primary-color)",
-                        fontSize: 18,
-                        whiteSpace: "nowrap",
-                        marginLeft: 12,
-                      }}
-                    >
-                      {item.category === "Main Dish" ? `₱${item.price_medium}–${item.price_large}` : `₱${item.price}`}
-                    </span>
-                  </div>
-                  <p
-                    style={{
-                      fontSize: 14,
-                      color: "#64748b",
-                      lineHeight: 1.6,
-                      margin: "0 0 24px",
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
-                      overflow: "hidden",
-                    }}
-                  >
-                    {item.description}
-                  </p>
-
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginTop: "auto",
-                    }}
-                  >
-                    <span style={{ fontSize: 13, color: "#94a3b8", fontWeight: 600 }}>{item.category}</span>
-                    <span
-                      style={{
-                        padding: "10px 20px",
-                        borderRadius: 24,
-                        background:
-                          item.availability === "Sold Out"
-                            ? "#f1f5f9"
-                            : "color-mix(in srgb, var(--primary-color) 8%, transparent)",
-                        color: item.availability === "Sold Out" ? "#94a3b8" : "var(--primary-color)",
-                        fontSize: 14,
-                        fontWeight: 700,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 6,
-                        transition: "background 0.2s",
-                      }}
-                      onMouseEnter={(e) => {
-                        if (item.availability !== "Sold Out")
-                          e.currentTarget.style.background =
-                            "color-mix(in srgb, var(--primary-color) 15%, transparent)";
-                      }}
-                      onMouseLeave={(e) => {
-                        if (item.availability !== "Sold Out")
-                          e.currentTarget.style.background = "color-mix(in srgb, var(--primary-color) 8%, transparent)";
-                      }}
-                    >
-                      {item.availability === "Sold Out" ? (
-                        "Sold Out"
-                      ) : (
-                        <>
-                          <Plus size={16} /> Select
-                        </>
-                      )}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            );
-          })
-        )}
-      </div>
-
       <style
         dangerouslySetInnerHTML={{
           __html: `
-        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
-        @keyframes slideUp { from { transform: translateY(40px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @media (max-width: 768px) {
-          .mobile-padding { padding-left: 24px !important; padding-right: 24px !important; }
+        @keyframes slideUp {
+          from { transform: translateY(20px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
         }
+        .hide-scrollbar::-webkit-scrollbar { display: none; }
+        .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
       `,
         }}
       />
-
-      {/* ── AI Craving Matcher Widget ── */}
-      <div style={{ position: "fixed", bottom: 40, left: 40, zIndex: 600 }}>
-        {showAiWidget && (
-          <div
-            style={{
-              background: "rgba(255,255,255,0.95)",
-              backdropFilter: "blur(12px)",
-              padding: 24,
-              borderRadius: 24,
-              width: 320,
-              boxShadow: "0 20px 40px color-mix(in srgb, var(--primary-color) 20%, transparent)",
-              marginBottom: 16,
-              animation: "slideUp 0.3s ease-out",
-            }}
-          >
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 20 }}>✨</span>
-                <h4
-                  style={{
-                    margin: 0,
-                    fontFamily: "var(--playfair-display)",
-                    fontSize: 18,
-                    color: "var(--primary-color)",
-                  }}
-                >
-                  Craving Matcher
-                </h4>
-              </div>
-              <button
-                onClick={() => {
-                  setShowAiWidget(false);
-                  setAiCraving("");
-                }}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "#94a3b8" }}
-              >
-                <X size={16} />
-              </button>
-            </div>
-            <p style={{ fontSize: 13, color: "#64748b", margin: "0 0 16px", lineHeight: 1.5 }}>
-              Tell me what you're craving (e.g. "spicy", "crunchy", "sweet"), and I'll find it for you.
-            </p>
-            <input
-              type="text"
-              placeholder="I'm craving..."
-              value={aiCraving}
-              onChange={(e) => setAiCraving(e.target.value)}
-              style={{
-                width: "100%",
-                padding: "12px 16px",
-                borderRadius: 12,
-                border: "2px solid color-mix(in srgb, var(--primary-color) 20%, transparent)",
-                outline: "none",
-                background: "#fff",
-                color: "var(--secondary-color)",
-                fontFamily: "var(--plus-jakarta-sans)",
-                fontWeight: 700,
-                boxSizing: "border-box",
-              }}
-              onFocus={(e) => (e.currentTarget.style.borderColor = "var(--primary-color)")}
-              onBlur={(e) =>
-                (e.currentTarget.style.borderColor = "color-mix(in srgb, var(--primary-color) 20%, transparent)")
-              }
-            />
-          </div>
-        )}
-        <button
-          onClick={() => {
-            setShowAiWidget(!showAiWidget);
-            if (showAiWidget) setAiCraving("");
-          }}
-          style={{
-            width: 64,
-            height: 64,
-            borderRadius: "50%",
-            background: "var(--primary-color)",
-            border: "none",
-            color: "#fff",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            boxShadow: "0 10px 24px color-mix(in srgb, var(--primary-color) 40%, transparent)",
-            transition: "transform 0.2s",
-          }}
-          onMouseEnter={(e) => (e.currentTarget.style.transform = "scale(1.1)")}
-          onMouseLeave={(e) => (e.currentTarget.style.transform = "scale(1)")}
-        >
-          {showAiWidget ? <X size={28} /> : <span style={{ fontSize: 28, animation: "pulse 2s infinite" }}>✨</span>}
-        </button>
-      </div>
     </div>
   );
 }

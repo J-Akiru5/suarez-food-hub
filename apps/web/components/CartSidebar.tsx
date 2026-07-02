@@ -1,8 +1,9 @@
 "use client";
 
-import { ArrowRight, X } from "lucide-react";
+import { ArrowRight, Minus, Plus, ShoppingBag, Trash2, X } from "lucide-react";
 import Link from "next/link";
 import React from "react";
+import { cn } from "@repo/utils";
 
 interface CartItem {
   id: string;
@@ -21,6 +22,7 @@ interface CartSidebarProps {
   removeFromCart: (id: string, variant: string) => void;
   totalPrice: number;
   receiptNumber: string;
+  persistent?: boolean;
 }
 
 export default function CartSidebar({
@@ -31,224 +33,196 @@ export default function CartSidebar({
   removeFromCart,
   totalPrice,
   receiptNumber,
+  persistent,
 }: CartSidebarProps) {
-  return (
-    <div
-      style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", pointerEvents: showCart ? "auto" : "none" }}
-    >
-      <div
-        style={{
-          flex: 1,
-          background: "rgba(0,0,0,0.5)",
-          backdropFilter: "blur(6px)",
-          opacity: showCart ? 1 : 0,
-          transition: "opacity 0.3s ease",
-        }}
-        onClick={() => setShowCart(false)}
-      />
-      <div
-        style={{
-          width: 440,
-          maxWidth: "100%",
-          background: "#f1f5f9",
-          height: "100%",
-          display: "flex",
-          flexDirection: "column",
-          boxShadow: "-20px 0 60px rgba(0,0,0,0.2)",
-          transform: showCart ? "translateX(0)" : "translateX(100%)",
-          transition: "transform 0.4s cubic-bezier(0.165, 0.84, 0.44, 1)",
-          position: "relative",
-        }}
-      >
-        <div style={{ padding: "24px 32px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-          <h2
-            style={{ fontFamily: "var(--playfair-display)", fontSize: 24, margin: 0, color: "var(--secondary-color)" }}
-          >
-            Your Basket
-          </h2>
-          <button
-            onClick={() => setShowCart(false)}
-            style={{
-              background: "#fff",
-              border: "none",
-              width: 40,
-              height: 40,
-              borderRadius: "50%",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              cursor: "pointer",
-              color: "var(--secondary-color)",
-              boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-            }}
-          >
-            <X size={20} />
-          </button>
-        </div>
-
-        {/* The Receipt Paper */}
-        <div
-          style={{
-            flex: 1,
-            margin: "0 24px 24px",
-            background: "#fff",
-            display: "flex",
-            flexDirection: "column",
-            boxShadow: "0 10px 40px rgba(0,0,0,0.08)",
-            clipPath:
-              "polygon(0 0, 100% 0, 100% calc(100% - 10px), 98% 100%, 96% calc(100% - 10px), 94% 100%, 92% calc(100% - 10px), 90% 100%, 88% calc(100% - 10px), 86% 100%, 84% calc(100% - 10px), 82% 100%, 80% calc(100% - 10px), 78% 100%, 76% calc(100% - 10px), 74% 100%, 72% calc(100% - 10px), 70% 100%, 68% calc(100% - 10px), 66% 100%, 64% calc(100% - 10px), 62% 100%, 60% calc(100% - 10px), 58% 100%, 56% calc(100% - 10px), 54% 100%, 52% calc(100% - 10px), 50% 100%, 48% calc(100% - 10px), 46% 100%, 44% calc(100% - 10px), 42% 100%, 40% calc(100% - 10px), 38% 100%, 36% calc(100% - 10px), 34% 100%, 32% calc(100% - 10px), 30% 100%, 28% calc(100% - 10px), 26% 100%, 24% calc(100% - 10px), 22% 100%, 20% calc(100% - 10px), 18% 100%, 16% calc(100% - 10px), 14% 100%, 12% calc(100% - 10px), 10% 100%, 8% calc(100% - 10px), 6% 100%, 4% calc(100% - 10px), 2% 100%, 0 calc(100% - 10px))",
-          }}
-        >
-          <div style={{ padding: "32px 32px 24px", borderBottom: "2px dashed #cbd5e1", textAlign: "center" }}>
-            <h3 style={{ fontFamily: "monospace", margin: 0, fontSize: 18, color: "#334155", letterSpacing: 2 }}>
-              SUAREZ FOOD HUB
+  const content = (
+    <div className="flex flex-col h-full bg-[#f1f5f9]">
+      {/* Receipt Paper */}
+      <div className="flex-1 flex flex-col mx-4 mt-4 mb-0 overflow-hidden">
+        <div className="bg-white rounded-t-2xl shadow-sm flex-shrink-0">
+          <div className="px-5 py-4 border-b-2 border-dashed border-gray-200 text-center">
+            <h3
+              className="text-sm font-bold text-gray-700 tracking-widest m-0 uppercase"
+              style={{ fontFamily: "monospace" }}
+            >
+              Suarez Food Hub
             </h3>
-            <p style={{ fontFamily: "monospace", margin: "8px 0 0", fontSize: 12, color: "#94a3b8" }}>
+            <p className="text-[10px] text-gray-400 mt-1 mb-0" style={{ fontFamily: "monospace" }}>
               RECEIPT # {receiptNumber}
             </p>
           </div>
+        </div>
 
-          <div
-            style={{
-              flex: 1,
-              overflowY: "auto",
-              padding: "24px 32px",
-              display: "flex",
-              flexDirection: "column",
-              gap: 20,
-            }}
-          >
-            {cart.length === 0 ? (
-              <div style={{ textAlign: "center", padding: "40px 0" }}>
-                <p style={{ fontFamily: "monospace", color: "#94a3b8", fontSize: 14 }}>-- EMPTY --</p>
-              </div>
-            ) : (
-              cart.map((item) => (
+        <div
+          className={cn(
+            "flex-1 bg-white overflow-y-auto",
+            cart.length > 0 ? "px-5 py-3" : "px-5 py-3",
+          )}
+        >
+          {cart.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full py-16 text-center">
+              <ShoppingBag className="w-10 h-10 text-gray-300 mb-3" />
+              <p className="text-sm text-gray-400" style={{ fontFamily: "monospace" }}>
+                Tap items to start your order
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {cart.map((item) => (
                 <div
                   key={`${item.id}-${item.variant}`}
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    fontFamily: "monospace",
-                    color: "#334155",
-                  }}
+                  className="pb-4 border-b border-dashed border-gray-200 last:border-0 last:pb-0"
                 >
-                  <div style={{ flex: 1, paddingRight: 16 }}>
-                    <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
-                      <span style={{ fontWeight: 700 }}>{item.quantity}x</span>
-                      <div>
-                        <p style={{ margin: "0 0 4px", fontWeight: 700 }}>{item.name.toUpperCase()}</p>
-                        {item.variant && (
-                          <p style={{ margin: "0 0 8px", fontSize: 12, color: "#64748b" }}>
-                            - {item.variant.toUpperCase()}
-                          </p>
-                        )}
-
-                        <div style={{ display: "flex", gap: 8 }}>
-                          <button
-                            onClick={() => updateCartQty(item.id, item.variant, -1)}
-                            style={{
-                              background: "none",
-                              border: "1px solid #cbd5e1",
-                              width: 24,
-                              height: 24,
-                              borderRadius: 4,
-                              cursor: "pointer",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                            }}
-                          >
-                            -
-                          </button>
-                          <button
-                            onClick={() => updateCartQty(item.id, item.variant, 1)}
-                            style={{
-                              background: "none",
-                              border: "1px solid #cbd5e1",
-                              width: 24,
-                              height: 24,
-                              borderRadius: 4,
-                              cursor: "pointer",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                            }}
-                          >
-                            +
-                          </button>
-                          <button
-                            onClick={() => removeFromCart(item.id, item.variant)}
-                            style={{
-                              background: "none",
-                              border: "none",
-                              color: "#ef4444",
-                              textDecoration: "underline",
-                              cursor: "pointer",
-                              fontSize: 12,
-                              marginLeft: 8,
-                            }}
-                          >
-                            Rem
-                          </button>
-                        </div>
-                      </div>
+                  <div className="flex items-start gap-3">
+                    <img
+                      src={item.image || "/assets/food-hub.jpg"}
+                      alt={item.name}
+                      className="w-12 h-12 rounded-xl object-cover flex-shrink-0"
+                      onError={(e) => {
+                        (e.target as HTMLImageElement).src = "/assets/food-hub.jpg";
+                      }}
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p
+                        className="text-xs font-bold text-gray-800 uppercase tracking-wide truncate m-0"
+                        style={{ fontFamily: "monospace" }}
+                      >
+                        {item.quantity}x {item.name}
+                      </p>
+                      {item.variant && (
+                        <p className="text-[10px] text-gray-400 mt-0.5 mb-1" style={{ fontFamily: "monospace" }}>
+                          {item.variant}
+                        </p>
+                      )}
+                      <p className="text-xs font-bold text-brand-500 m-0" style={{ fontFamily: "monospace" }}>
+                        ₱{(item.price * item.quantity).toFixed(2)}
+                      </p>
                     </div>
                   </div>
-                  <div style={{ fontWeight: 700 }}>₱{item.price * item.quantity}.00</div>
-                </div>
-              ))
-            )}
-          </div>
 
-          <div
-            style={{ padding: "24px 32px", borderTop: "2px dashed #cbd5e1", background: "#f8fafc", paddingBottom: 80 }}
-          >
-            <div
-              style={{
-                display: "flex",
-                justifyContent: "space-between",
-                marginBottom: 24,
-                fontFamily: "monospace",
-                fontSize: 18,
-                color: "#334155",
-                fontWeight: 800,
-              }}
-            >
-              <span>TOTAL</span>
-              <span>₱{totalPrice}.00</span>
+                  <div className="flex items-center justify-between mt-2">
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => updateCartQty(item.id, item.variant, -1)}
+                        className="w-6 h-6 rounded-full border border-gray-200 flex items-center justify-center hover:border-brand-500 transition-colors bg-white"
+                      >
+                        <Minus className="w-3 h-3 text-gray-500" />
+                      </button>
+                      <span
+                        className="text-xs font-bold text-gray-800 w-5 text-center"
+                        style={{ fontFamily: "monospace" }}
+                      >
+                        {item.quantity}
+                      </span>
+                      <button
+                        onClick={() => updateCartQty(item.id, item.variant, 1)}
+                        className="w-6 h-6 rounded-full border border-gray-200 flex items-center justify-center hover:border-brand-500 transition-colors bg-white"
+                      >
+                        <Plus className="w-3 h-3 text-gray-500" />
+                      </button>
+                    </div>
+                    <button
+                      onClick={() => removeFromCart(item.id, item.variant)}
+                      className="flex items-center gap-1 text-[10px] text-gray-400 hover:text-red-500 transition-colors bg-transparent border-none cursor-pointer"
+                      style={{ fontFamily: "monospace" }}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                      Remove
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="bg-white rounded-b-2xl shadow-sm flex-shrink-0">
+          <div className="px-5 py-3 border-t-2 border-dashed border-gray-300">
+            <div className="flex items-center justify-between">
+              <span
+                className="text-sm font-bold text-gray-800 uppercase tracking-wider"
+                style={{ fontFamily: "monospace" }}
+              >
+                TOTAL
+              </span>
+              <span className="text-base font-bold text-brand-500" style={{ fontFamily: "monospace" }}>
+                ₱{totalPrice.toFixed(2)}
+              </span>
             </div>
           </div>
         </div>
+      </div>
 
-        {/* Checkout Button overlaying the bottom of the receipt */}
-        <div style={{ position: "absolute", bottom: 40, left: 40, right: 40 }}>
-          <Link
-            href="/checkout"
-            onClick={() => {
-              localStorage.setItem("sfh_cart", JSON.stringify(cart));
-              setShowCart(false);
-            }}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 12,
-              padding: "18px",
-              background: "var(--primary-color)",
-              color: "#fff",
-              borderRadius: "16px",
-              fontWeight: 800,
-              fontSize: 16,
-              textDecoration: "none",
-              boxShadow: "0 10px 30px rgba(177, 69, 74, 0.3)",
-              transition: "transform 0.2s",
-            }}
-          >
-            Proceed to Checkout <ArrowRight size={18} />
-          </Link>
-        </div>
+      {/* Checkout Button */}
+      <div className="px-4 pb-4 pt-3 flex-shrink-0">
+        <Link
+          href="/checkout"
+          onClick={() => {
+            localStorage.setItem("sfh_cart", JSON.stringify(cart));
+            setShowCart(false);
+          }}
+          className={cn(
+            "flex items-center justify-center gap-2 w-full py-3.5 rounded-2xl text-sm font-bold text-white no-underline transition-all duration-200",
+            cart.length > 0
+              ? "bg-brand-500 hover:bg-brand-600 shadow-lg shadow-brand-500/25 active:scale-[0.98]"
+              : "bg-gray-300 pointer-events-none",
+          )}
+        >
+          Proceed to Checkout
+          <ArrowRight className="w-4 h-4" />
+        </Link>
       </div>
     </div>
+  );
+
+  // Persistent desktop panel (always visible, no transition)
+  if (persistent) {
+    return (
+      <div className="hidden lg:flex flex-col h-full w-full bg-[#f1f5f9] border-l border-gray-200/50">
+        {content}
+      </div>
+    );
+  }
+
+  // Mobile slide-over
+  return (
+    <>
+      <div
+        className={cn(
+          "fixed inset-0 z-[9999] flex",
+          showCart ? "pointer-events-auto" : "pointer-events-none",
+        )}
+      >
+        <div
+          className={cn(
+            "flex-1 bg-black/40 backdrop-blur-sm transition-opacity duration-300",
+            showCart ? "opacity-100" : "opacity-0",
+          )}
+          onClick={() => setShowCart(false)}
+        />
+        <div
+          className={cn(
+            "w-[400px] max-w-full bg-[#f1f5f9] h-full shadow-2xl transition-transform duration-300 ease-in-out",
+            showCart ? "translate-x-0" : "translate-x-full",
+          )}
+        >
+          <div className="flex items-center justify-between px-5 py-4">
+            <h2
+              className="text-lg font-bold text-near-black m-0"
+              style={{ fontFamily: "var(--playfair-display)" }}
+            >
+              Your Basket
+            </h2>
+            <button
+              onClick={() => setShowCart(false)}
+              className="w-9 h-9 rounded-full bg-white flex items-center justify-center border-none cursor-pointer shadow-sm hover:bg-gray-50 transition-colors"
+            >
+              <X className="w-4 h-4 text-near-black" />
+            </button>
+          </div>
+          {content}
+        </div>
+      </div>
+    </>
   );
 }
