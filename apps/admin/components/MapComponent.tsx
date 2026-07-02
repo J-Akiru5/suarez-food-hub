@@ -26,11 +26,7 @@ export default function MapComponent({ position, setPosition, className, readOnl
   const readOnlyRef = useRef(readOnly);
   readOnlyRef.current = readOnly;
 
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     if (!containerRef.current || mapRef.current) return;
@@ -59,6 +55,11 @@ export default function MapComponent({ position, setPosition, className, readOnl
       }
     });
 
+    map.whenReady(() => {
+      map.invalidateSize();
+      setReady(true);
+    });
+
     mapRef.current = map;
 
     return () => {
@@ -83,9 +84,13 @@ export default function MapComponent({ position, setPosition, className, readOnl
     }
   }, [position?.lat, position?.lng]);
 
-  if (!mounted) {
-    return <div className={className || "h-64 w-full z-0"} style={{ minHeight: "100%" }} />;
-  }
-
-  return <div ref={containerRef} className={className || "h-64 w-full z-0"} style={{ minHeight: "100%" }} />;
+  return (
+    <div ref={containerRef} className={className || "h-64 w-full z-0"} style={{ minHeight: "100%" }}>
+      {!ready && (
+        <div className="flex h-full w-full items-center justify-center bg-neutral-100 text-neutral-400 text-sm">
+          Loading map...
+        </div>
+      )}
+    </div>
+  );
 }
