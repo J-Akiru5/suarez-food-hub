@@ -123,6 +123,7 @@ export async function POST(req: NextRequest) {
           const { error: notifError } = await createNotifications(
             serviceSupabase,
             admins.map((a) => ({
+              id: crypto.randomUUID(),
               user_id: a.id,
               type: "low_stock",
               title: "Low Stock Alert",

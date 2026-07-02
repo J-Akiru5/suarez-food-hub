@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
+  reactStrictMode: false,
   transpilePackages: ["@repo/ui", "@repo/utils", "@repo/types", "@repo/supabase", "@repo/utils"],
 };
 
