@@ -30,6 +30,8 @@ export async function POST(req: NextRequest) {
       subtotal,
       delivery_fee,
       total,
+      delivery_lat,
+      delivery_lng,
     } = body;
 
     if (!cart?.length || !delivery_address || !delivery_contact) {
@@ -76,6 +78,8 @@ export async function POST(req: NextRequest) {
       gcash_reference_no: payment_method === "gcash" ? gcash_reference || null : null,
       maya_reference_no: payment_method === "maya" ? maya_reference || null : null,
       delivery_address,
+      delivery_lat,
+      delivery_lng,
       delivery_contact,
       subtotal,
       delivery_fee,
@@ -86,7 +90,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: orderError.message }, { status: 500 });
     }
 
-    let itemInsertFailed = false;
     for (const item of cart) {
       const { error: itemError } = await createOrderItems(serviceSupabase, [
         {
@@ -101,20 +104,23 @@ export async function POST(req: NextRequest) {
       ]);
 
       if (itemError) {
-        itemInsertFailed = true;
-        break;
+        await deleteOrder(serviceSupabase, order.id);
+        return NextResponse.json({ error: "Item error: " + itemError.message }, { status: 500 });
       }
 
       const result = await deductStock(serviceSupabase, item.id, item.quantity);
       if (result.error || result.newQuantity == null) {
-        itemInsertFailed = true;
-        break;
+        await deleteOrder(serviceSupabase, order.id);
+        return NextResponse.json(
+          { error: "Stock error: " + (result.error?.message || "Unknown error") },
+          { status: 500 },
+        );
       }
 
       if (result.newQuantity <= (result.bufferQuantity ?? 5) && result.newQuantity >= 0) {
         const admins = await getAdminIds(serviceSupabase);
         if (admins && admins.length > 0) {
-          await createNotifications(
+          const { error: notifError } = await createNotifications(
             serviceSupabase,
             admins.map((a) => ({
               user_id: a.id,
@@ -124,14 +130,10 @@ export async function POST(req: NextRequest) {
               data: { product_id: item.id, remaining: result.newQuantity },
             })),
           );
+          if (notifError) console.error("Notif error:", notifError);
           await markLowStockAlerted(serviceSupabase, item.id);
         }
       }
-    }
-
-    if (itemInsertFailed) {
-      await deleteOrder(serviceSupabase, order.id);
-      return NextResponse.json({ error: "Failed to process order items. Please try again." }, { status: 500 });
     }
 
     return NextResponse.json({ success: true, orderId: order.id });

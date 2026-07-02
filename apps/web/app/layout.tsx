@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import "aos/dist/aos.css";
 import { AuthProvider } from "../components/auth-provider";
 import { FeedbackFab } from "../components/feedback-fab";
 import { GuestThemeProvider } from "../components/guest-theme-provider";

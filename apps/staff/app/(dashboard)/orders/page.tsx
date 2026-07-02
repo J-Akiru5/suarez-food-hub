@@ -1,238 +1,310 @@
 "use client";
 
 import { createBrowserTypedClient } from "@repo/data-access/client";
-import { Badge, Button, Card, CardContent } from "@repo/ui";
-import { format } from "date-fns";
-import { CheckCircle, ChefHat, Clock, Loader2, MapPin, Package, Phone, RefreshCw, X } from "lucide-react";
+import { getOrdersWithProfiles } from "@repo/data-access/data/orders";
+import { getRiders } from "@repo/data-access/data/profiles";
+import type { Order, Profile } from "@repo/types";
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@repo/ui";
+import { formatCurrency } from "@repo/utils";
+import { ChevronDown, ChevronUp, Eye, Loader2, RefreshCw } from "lucide-react";
+import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
-const statusFlow: Record<string, { next: string | null; label: string | null; color: string }> = {
-  pending: { next: "confirmed", label: "Accept Order", color: "bg-blue-600" },
-  confirmed: { next: "preparing", label: "Start Preparing", color: "bg-purple-600" },
-  preparing: { next: "ready_for_pickup", label: "Mark Ready", color: "bg-indigo-600" },
-  ready_for_pickup: { next: null, label: null, color: "" },
-  claimed_by_rider: { next: null, label: null, color: "" },
-  out_for_delivery: { next: null, label: null, color: "" },
-  near_customer: { next: null, label: null, color: "" },
-  delivered: { next: null, label: null, color: "" },
-  cancelled: { next: null, label: null, color: "" },
-};
-
-const tabs = [
-  { value: "active", label: "Active Kitchen" },
-  { value: "ready", label: "Ready for Pickup" },
-  { value: "delivered", label: "Completed" },
+const statusTabs = [
+  { value: "all", label: "All" },
+  { value: "pending", label: "Pending" },
+  { value: "confirmed", label: "Confirmed" },
+  { value: "preparing", label: "Preparing" },
+  { value: "out_for_delivery", label: "Out for Delivery" },
+  { value: "delivered", label: "Delivered" },
+  { value: "cancelled", label: "Cancelled" },
 ];
 
-export default function StaffOrdersPage() {
+const statusColors: Record<string, string> = {
+  pending: "bg-yellow-100 text-yellow-800",
+  confirmed: "bg-blue-100 text-blue-800",
+  preparing: "bg-purple-100 text-purple-800",
+  ready_for_pickup: "bg-indigo-100 text-indigo-800",
+  out_for_delivery: "bg-orange-100 text-orange-800",
+  delivered: "bg-green-100 text-green-800",
+  cancelled: "bg-red-100 text-red-800",
+};
+
+const paymentColors: Record<string, string> = {
+  pending: "bg-yellow-100 text-yellow-800",
+  verified: "bg-green-100 text-green-800",
+  rejected: "bg-red-100 text-red-800",
+  refunded: "bg-gray-100 text-gray-800",
+};
+
+interface OrderWithProfile extends Order {
+  profile?: Profile | null;
+  items?: any[];
+}
+
+export default function OrdersPage() {
   const supabase = createBrowserTypedClient();
-  const [orders, setOrders] = useState<any[]>([]);
-  const [activeTab, setActiveTab] = useState("active");
+  const [orders, setOrders] = useState<OrderWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [updating, setUpdating] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("all");
+  const [riders, setRiders] = useState<Profile[]>([]);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
 
   const fetchOrders = useCallback(async () => {
-    let statusFilter: string[] = [];
-    if (activeTab === "active") {
-      statusFilter = ["pending", "confirmed", "preparing"];
-    } else if (activeTab === "ready") {
-      statusFilter = ["ready_for_pickup", "claimed_by_rider"];
-    } else {
-      statusFilter = ["delivered", "cancelled"];
-    }
-
-    const { data } = await supabase
-      .from("orders")
-      .select(`
-        *,
-        customer:profiles!orders_user_id_fkey(first_name, last_name, phone),
-        items:order_items(quantity, product_name, variant_name, special_instructions, product:products!order_items_product_id_fkey(name, image_url))
-      `)
-      .in("status", statusFilter)
-      .order("created_at", { ascending: false });
-
-    setOrders(data || []);
+    const data = await getOrdersWithProfiles(supabase, {
+      status: activeTab !== "all" ? activeTab : undefined,
+    });
+    setOrders((data as OrderWithProfile[]) || []);
     setLoading(false);
   }, [activeTab, supabase]);
 
+  const fetchRiders = useCallback(async () => {
+    const data = await getRiders(supabase);
+    setRiders((data as Profile[]) || []);
+  }, [supabase]);
+
   useEffect(() => {
     fetchOrders();
+    fetchRiders();
+  }, [fetchOrders, fetchRiders]);
+
+  useEffect(() => {
     const channel = supabase
-      .channel("staff-orders")
-      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => fetchOrders())
+      .channel("orders-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
+        fetchOrders();
+      })
       .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [fetchOrders, supabase]);
+  }, [supabase, fetchOrders]);
 
-  async function advanceStatus(orderId: string, currentStatus: string) {
-    const next = statusFlow[currentStatus]?.next;
-    if (!next) return;
-    setUpdating(orderId);
-    try {
-      await fetch("/api/orders", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ order_id: orderId, status: next }),
-      });
-      fetchOrders();
-    } finally {
-      setUpdating(null);
-    }
+  async function assignRider(orderId: string, riderId: string) {
+    await supabase.from("orders").update({ rider_id: riderId, status: "confirmed" }).eq("id", orderId);
+    fetchOrders();
+  }
+
+  async function updateStatus(orderId: string, status: string) {
+    await supabase.from("orders").update({ status }).eq("id", orderId);
+    fetchOrders();
+  }
+
+  async function updatePaymentStatus(orderId: string, payment_status: string) {
+    await supabase.from("orders").update({ payment_status }).eq("id", orderId);
+    fetchOrders();
   }
 
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Orders</h1>
-          <p className="text-sm text-muted-foreground">Kitchen workflow management</p>
+          <h1 className="text-2xl font-bold text-gray-900 font-display">Orders</h1>
+          <p className="text-sm text-muted-foreground">Manage and track all orders</p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => {
-            setLoading(true);
-            fetchOrders();
-          }}
-        >
-          <RefreshCw size={14} className="mr-1" /> Refresh
+        <Button variant="outline" onClick={() => fetchOrders()} className="gap-2">
+          <RefreshCw className="h-4 w-4" />
+          Refresh
         </Button>
       </div>
 
-      <div className="flex gap-2 border-b border-gray-200 overflow-x-auto">
-        {tabs.map((t) => (
-          <button
-            key={t.value}
-            onClick={() => setActiveTab(t.value)}
-            className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
-              activeTab === t.value
-                ? "border-brand-500 text-brand-600"
-                : "border-transparent text-gray-500 hover:text-gray-700"
-            }`}
-          >
-            {t.label}
-          </button>
-        ))}
-      </div>
-
-      {loading ? (
-        <div className="space-y-3">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-32 bg-gray-100 rounded-xl animate-pulse" />
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="w-full justify-start overflow-x-auto">
+          {statusTabs.map((tab) => (
+            <TabsTrigger key={tab.value} value={tab.value}>
+              {tab.label}
+            </TabsTrigger>
           ))}
-        </div>
-      ) : orders.length === 0 ? (
-        <Card>
-          <CardContent className="py-12 text-center">
-            <ChefHat className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-muted-foreground">No orders in this queue</p>
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="space-y-3">
-          {orders.map((order) => {
-            const customer = order.customer;
-            const customerName = customer
-              ? `${customer.first_name || ""} ${customer.last_name || ""}`.trim() || "Customer"
-              : "Customer";
-            const flow = statusFlow[order.status];
-            const isExpanded = expandedOrder === order.id;
-            return (
-              <Card key={order.id}>
-                <CardContent className="p-4">
-                  <div className="flex items-start justify-between gap-3 flex-wrap">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <span className="text-xs font-mono text-gray-500">
-                          #{order.order_number?.slice(0, 8) || order.id.slice(0, 8)}
-                        </span>
-                        <Badge
-                          className={
-                            order.status === "pending"
-                              ? "bg-yellow-100 text-yellow-800"
-                              : order.status === "confirmed"
-                                ? "bg-blue-100 text-blue-800"
-                                : order.status === "preparing"
-                                  ? "bg-purple-100 text-purple-800"
-                                  : order.status === "ready_for_pickup"
-                                    ? "bg-indigo-100 text-indigo-800"
-                                    : order.status === "delivered"
-                                      ? "bg-green-100 text-green-800"
-                                      : "bg-red-100 text-red-800"
-                          }
-                        >
-                          {order.status.replace(/_/g, " ")}
-                        </Badge>
-                        <span className="text-xs text-gray-500">
-                          {format(new Date(order.created_at), "MMM d, h:mm a")}
-                        </span>
-                      </div>
-                      <p className="text-sm font-medium text-gray-900">{customerName}</p>
-                      <p className="text-xs text-gray-500 flex items-center gap-1 mt-1">
-                        <Phone size={12} /> {customer?.phone || order.delivery_contact}
-                      </p>
-                      <button
-                        onClick={() => setExpandedOrder(isExpanded ? null : order.id)}
-                        className="text-xs text-brand-600 font-medium mt-2 hover:underline"
-                      >
-                        {isExpanded ? "Hide" : "View"} {order.items?.length || 0} item
-                        {order.items?.length !== 1 ? "s" : ""}
-                      </button>
-                    </div>
+        </TabsList>
 
-                    <div className="text-right">
-                      <p className="text-lg font-bold text-gray-900">₱{Number(order.total).toFixed(2)}</p>
-                      <p className="text-xs text-gray-500 capitalize">
-                        {order.payment_method} · {order.payment_status}
-                      </p>
-                    </div>
-                  </div>
-
-                  {isExpanded && (
-                    <div className="mt-3 pt-3 border-t border-gray-100 space-y-2">
-                      {order.items?.map((item: any, i: number) => (
-                        <div key={i} className="flex items-center justify-between text-sm">
-                          <span className="text-gray-700">
-                            <span className="font-medium">{item.quantity}x</span>{" "}
-                            {item.product_name || item.product?.name}
-                            {item.variant_name && <span className="text-xs text-gray-500"> ({item.variant_name})</span>}
+        <TabsContent value={activeTab} className="mt-4">
+          {loading ? (
+            <div className="space-y-3">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="h-20 bg-gray-100 rounded-lg animate-pulse" />
+              ))}
+            </div>
+          ) : orders.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <p className="text-muted-foreground">No orders found</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-3">
+              {orders.map((order) => (
+                <Card key={order.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <p className="font-bold text-sm">{order.order_number}</p>
+                          <span
+                            className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                              statusColors[order.status] || "bg-gray-100 text-gray-800"
+                            }`}
+                          >
+                            {order.status.replace(/_/g, " ")}
                           </span>
-                          <span className="text-gray-600">₱{Number(item.unit_price).toFixed(2)}</span>
+                          <span
+                            className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${
+                              paymentColors[order.payment_status] || "bg-gray-100 text-gray-800"
+                            }`}
+                          >
+                            Payment: {order.payment_status}
+                          </span>
                         </div>
-                      ))}
-                      {order.delivery_notes && (
-                        <div className="text-xs bg-yellow-50 border border-yellow-200 rounded p-2 mt-2">
-                          <strong>Note:</strong> {order.delivery_notes}
+                        <p className="text-sm text-muted-foreground">
+                          {order.profile ? `${order.profile.first_name} ${order.profile.last_name}` : "Customer"}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {new Date(order.created_at).toLocaleString()}
+                        </p>
+                      </div>
+
+                      <div className="text-right shrink-0">
+                        <p className="font-bold">{formatCurrency(order.total)}</p>
+                        <div className="flex gap-1 mt-2">
+                          <Link href={`/orders/${order.id}`}>
+                            <Button variant="outline" size="sm" className="gap-1">
+                              <Eye className="h-3 w-3" />
+                              View
+                            </Button>
+                          </Link>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Expandable Details */}
+                    <div className="mt-3">
+                      <button
+                        onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
+                        className="flex items-center gap-1 text-xs text-crimson-600 font-medium hover:text-crimson-700"
+                      >
+                        {expandedOrder === order.id ? (
+                          <ChevronUp className="h-3 w-3" />
+                        ) : (
+                          <ChevronDown className="h-3 w-3" />
+                        )}
+                        {expandedOrder === order.id ? "Hide" : "Show"} details
+                      </button>
+
+                      {expandedOrder === order.id && (
+                        <div className="mt-3 p-3 bg-gray-50 rounded-lg space-y-3">
+                          {/* Order Items */}
+                          <div>
+                            <p className="text-xs font-medium text-gray-500 mb-1">Items</p>
+                            {order.items?.map((item: any, idx: number) => (
+                              <div key={idx} className="flex justify-between text-sm">
+                                <span>
+                                  {item.product?.name || "Product"} x{item.quantity}
+                                </span>
+                                <span>{formatCurrency(item.unit_price * item.quantity)}</span>
+                              </div>
+                            ))}
+                            <div className="flex justify-between text-sm font-bold mt-1 pt-1 border-t">
+                              <span>Total</span>
+                              <span>{formatCurrency(order.total)}</span>
+                            </div>
+                          </div>
+
+                          {/* Delivery Address */}
+                          <div>
+                            <p className="text-xs font-medium text-gray-500">Delivery Address</p>
+                            <p className="text-sm">{order.delivery_address}</p>
+                          </div>
+
+                          {/* Assign Rider */}
+                          {!order.rider_id && order.status !== "cancelled" && order.status !== "delivered" && (
+                            <div>
+                              <p className="text-xs font-medium text-gray-500 mb-1">Assign Rider</p>
+                              <Select onValueChange={(value) => assignRider(order.id, value)}>
+                                <SelectTrigger className="w-full">
+                                  <SelectValue
+                                    placeholder={riders.length === 0 ? "No riders available" : "Select rider"}
+                                  />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {riders.length === 0 ? (
+                                    <SelectItem value="none" disabled>
+                                      No riders available
+                                    </SelectItem>
+                                  ) : (
+                                    riders.map((rider) => (
+                                      <SelectItem key={rider.id} value={rider.id}>
+                                        {rider.first_name || rider.full_name} {rider.last_name || ""}
+                                      </SelectItem>
+                                    ))
+                                  )}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
+
+                          {/* Status Actions */}
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                            <div>
+                              <p className="text-xs font-medium text-gray-500 mb-1">Payment Status</p>
+                              <Select
+                                value={order.payment_status}
+                                onValueChange={(value) => updatePaymentStatus(order.id, value)}
+                              >
+                                <SelectTrigger className="w-full h-8 text-xs">
+                                  <SelectValue placeholder="Select payment status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="pending">Pending</SelectItem>
+                                  <SelectItem value="verified">Verified</SelectItem>
+                                  <SelectItem value="rejected">Rejected</SelectItem>
+                                  <SelectItem value="refunded">Refunded</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            <div>
+                              <p className="text-xs font-medium text-gray-500 mb-1">Order Status</p>
+                              <Select value={order.status} onValueChange={(value) => updateStatus(order.id, value)}>
+                                <SelectTrigger className="w-full h-8 text-xs">
+                                  <SelectValue placeholder="Select order status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="pending">Pending</SelectItem>
+                                  <SelectItem value="confirmed">Confirmed</SelectItem>
+                                  <SelectItem value="preparing">Preparing</SelectItem>
+                                  <SelectItem value="out_for_delivery">Out for Delivery</SelectItem>
+                                  <SelectItem value="delivered">Delivered</SelectItem>
+                                  <SelectItem value="cancelled" className="text-red-600">
+                                    Cancelled
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>
-                  )}
-
-                  {flow?.label && (
-                    <div className="mt-3 pt-3 border-t border-gray-100">
-                      <Button
-                        onClick={() => advanceStatus(order.id, order.status)}
-                        disabled={updating === order.id}
-                        className={`w-full ${flow.color} hover:opacity-90 text-white`}
-                      >
-                        {updating === order.id ? (
-                          <Loader2 size={14} className="animate-spin mr-2" />
-                        ) : (
-                          <CheckCircle size={14} className="mr-2" />
-                        )}
-                        {flow.label}
-                      </Button>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
-      )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

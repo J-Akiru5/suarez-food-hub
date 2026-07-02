@@ -6,52 +6,50 @@ import AuthNavbar from "../../components/AuthNavbar";
 const values = [
   {
     icon: Heart,
-    title: "Passion for Food",
-    description:
-      "Every dish is prepared with genuine love and care. We believe great food starts with passion in the kitchen.",
+    title: "Home-Style Cooking",
+    description: "We cook exactly how we cook for our own family—no shortcuts, just honest, traditional methods.",
   },
   {
     icon: Users,
-    title: "Community First",
-    description:
-      "We are proud to serve the Janiuay community. Our neighbors are our customers, and we treat them like family.",
+    title: "Rooted in Janiuay",
+    description: "Operating from our hometown in Iloilo, we rely on local suppliers and serve our immediate neighbors.",
   },
   {
     icon: Leaf,
-    title: "Fresh Ingredients",
-    description: "We source the freshest local ingredients daily. Quality is never compromised — from market to plate.",
+    title: "Market Fresh",
+    description: "Our ingredients come straight from the local market each morning to ensure our food is always fresh.",
   },
   {
     icon: Award,
-    title: "Authentic Recipes",
-    description: "Our recipes are rooted in Filipino culinary tradition, passed down and perfected over generations.",
+    title: "Family Recipes",
+    description: "Our menu is built on generations of Suarez family recipes that have stood the test of time.",
   },
 ];
 
 const timeline = [
   {
     year: "2019",
-    title: "The Beginning",
+    title: "Starting Out",
     description:
-      "Suarez Food Hub started as a small home kitchen serving neighbors in Janiuay. Armed with family recipes and a passion for cooking, we began taking orders from friends and family.",
+      "We began as a small neighborhood kitchen, cooking our signature meals for friends and nearby families in Janiuay.",
   },
   {
     year: "2020",
-    title: "Growing Demand",
+    title: "Expanding Reach",
     description:
-      "Word spread quickly about our authentic Filipino dishes. We expanded our menu and started offering delivery services to more areas in Janiuay.",
+      "As demand grew through word of mouth, we expanded our daily menu and introduced a dedicated delivery service.",
   },
   {
     year: "2022",
-    title: "Formal Operations",
+    title: "Full Operations",
     description:
-      "We formalized our operations, invested in proper kitchen equipment, and built a team of dedicated cooks and delivery riders.",
+      "We officially structured our kitchen and logistics, allowing us to handle larger volumes and catering orders.",
   },
   {
     year: "2024",
-    title: "Digital Presence",
+    title: "Going Digital",
     description:
-      "We launched our online ordering platform, making it easier for customers to browse our menu and place orders from anywhere.",
+      "To streamline ordering, we launched our online food hub, giving our customers an easier way to browse and order.",
   },
 ];
 
@@ -62,8 +60,9 @@ export default function AboutPage() {
 
       {/* Hero */}
       <section
-        className="pt-[74px] py-16 sm:py-24"
+        className="py-16 sm:py-24"
         style={{
+          marginTop: "72px",
           background:
             "linear-gradient(to bottom right, color-mix(in srgb, var(--primary-color) 8%, white), var(--color-cream))",
         }}
@@ -105,9 +104,8 @@ export default function AboutPage() {
                 Our Mission
               </h2>
               <p className="mt-4" style={{ color: "color-mix(in srgb, var(--secondary-color) 60%, transparent)" }}>
-                To share the rich and diverse flavors of Filipino cuisine with our community. We aim to provide
-                convenient access to authentic, high-quality home-cooked meals that bring joy and comfort to every
-                table.
+                To bring real, home-cooked Filipino food straight to our neighbors in Janiuay. We focus on consistent
+                quality, fair prices, and food that actually tastes like it came from a family kitchen.
               </p>
             </div>
             <div className="glass-card p-8">
@@ -124,9 +122,8 @@ export default function AboutPage() {
                 Our Vision
               </h2>
               <p className="mt-4" style={{ color: "color-mix(in srgb, var(--secondary-color) 60%, transparent)" }}>
-                To become the most trusted Filipino food hub in Iloilo, known for our unwavering commitment to quality,
-                authenticity, and customer satisfaction. We envision a future where great Filipino food is accessible to
-                everyone.
+                To be the most reliable local food hub in Iloilo—the place people think of first when they want a good,
+                hearty meal without having to cook it themselves.
               </p>
             </div>
           </div>

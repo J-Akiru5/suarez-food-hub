@@ -1,7 +1,8 @@
 import { getUser, requireAdmin } from "@repo/data-access/auth";
-import { createAuthClient, createServiceClient } from "@repo/data-access/client";
+import { createServiceClient } from "@repo/data-access/client";
 import { createCategory, getCategories, getCategoryByName } from "@repo/data-access/data/categories";
 import { createProduct, getProducts } from "@repo/data-access/data/products";
+import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
@@ -23,24 +24,36 @@ export async function GET() {
       }
     }
 
-    const transformed = (products || []).map((p: any) => {
-      const pv = variantMap.get(p.id) || [];
-      const medium = pv.find((v: any) => v.name === "Medium" || v.name === "Steamed");
-      const large = pv.find((v: any) => v.name === "Large" || v.name === "Fried");
-      return {
-        id: p.id,
-        name: p.name,
-        price: Number(p.base_price),
-        price_medium: medium ? Number(medium.price) : Number(p.base_price),
-        price_large: large ? Number(large.price) : Number(p.base_price),
-        description: p.description || "",
-        image: p.image_url || "",
-        category: categoryMap.get(p.category_id) || "",
-        quantity: p.quantity ?? p.stocks ?? 0,
-        availability: p.availability,
-        rating: Number(p.rating),
-      };
-    });
+    const transformed = (products || [])
+      .map((p: any) => {
+        const pv = variantMap.get(p.id) || [];
+        return {
+          id: p.id,
+          name: p.name,
+          price: Number(p.base_price),
+          description: p.description || "",
+          image: p.image_url || "",
+          category: categoryMap.get(p.category_id) || "",
+          quantity: p.quantity ?? 0,
+          availability: p.availability,
+          rating: Number(p.rating),
+          variant_type: p.variant_type || "none",
+          variants: pv
+            .filter((v: any) => v.is_active !== false)
+            .sort((a: any, b: any) => (a.sort_order || 0) - (b.sort_order || 0))
+            .map((v: any) => ({
+              id: v.id,
+              name: v.name,
+              price: Number(v.price),
+              quantity: v.quantity ?? 0,
+            })),
+        };
+      })
+      .filter(
+        (p) =>
+          p.availability === "available" &&
+          (p.quantity > 0 || (p.variant_type !== "none" && p.variants.some((v: any) => v.quantity > 0))),
+      );
     return NextResponse.json(transformed);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal server error";
@@ -51,7 +64,18 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const supabase = createServiceClient();
-    const authSupabase = createAuthClient({ getAll: () => [], setAll: () => {} });
+    const authSupabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return req.cookies.getAll();
+          },
+          setAll() {},
+        },
+      },
+    );
     const user = await getUser(authSupabase);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -63,7 +87,7 @@ export async function POST(req: NextRequest) {
     const categoryStr = formData.get("category") as string;
     const price = parseFloat(formData.get("price") as string) || 0;
     const description = formData.get("description") as string;
-    const quantity = parseInt(formData.get("quantity") as string) || parseInt(formData.get("stocks") as string) || 0;
+    const quantity = parseInt(formData.get("quantity") as string) || 0;
     const bufferQuantity = parseInt(formData.get("buffer_quantity") as string) || 5;
     const imageFile = formData.get("image") as File | null;
     let imageUrl = (formData.get("existing_image") as string) || "";

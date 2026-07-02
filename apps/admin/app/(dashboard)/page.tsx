@@ -6,6 +6,7 @@ import { formatCurrency } from "@repo/utils";
 import { ArrowDownRight, ArrowUpRight, Bike, DollarSign, Package, ShoppingBag, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { toast } from "@/lib/use-toast";
 
 interface DashboardStats {
   todayOrders: number;
@@ -80,71 +81,75 @@ export default function DashboardPage() {
     yesterday.setDate(yesterday.getDate() - 1);
     const yesterdayISO = yesterday.toISOString();
 
-    const [todayOrdersRes, yesterdayOrdersRes, productsRes, ridersRes, ordersRes, orderItemsRes] = await Promise.all([
-      supabase.from("orders").select("id, total", { count: "exact" }).gte("created_at", todayISO),
-      supabase
-        .from("orders")
-        .select("id, total", { count: "exact" })
-        .gte("created_at", yesterdayISO)
-        .lt("created_at", todayISO),
-      supabase.from("products").select("id", { count: "exact" }),
-      supabase.from("profiles").select("id", { count: "exact" }).eq("role", "rider"),
-      supabase
-        .from("orders")
-        .select(
-          "id, order_number, total, status, created_at, profile:profiles!orders_user_id_fkey(first_name, last_name)",
-        )
-        .order("created_at", { ascending: false })
-        .limit(10),
-      supabase.from("order_items").select("quantity, unit_price, product:products!order_items_product_id_fkey(name)"),
-    ]);
+    try {
+      const [todayOrdersRes, yesterdayOrdersRes, productsRes, ridersRes, ordersRes, orderItemsRes] = await Promise.all([
+        supabase.from("orders").select("id, total", { count: "exact" }).gte("created_at", todayISO),
+        supabase
+          .from("orders")
+          .select("id, total", { count: "exact" })
+          .gte("created_at", yesterdayISO)
+          .lt("created_at", todayISO),
+        supabase.from("products").select("id", { count: "exact" }),
+        supabase.from("profiles").select("id", { count: "exact" }).eq("role", "rider"),
+        supabase
+          .from("orders")
+          .select(
+            "id, order_number, total, status, created_at, profile:profiles!orders_user_id_fkey(first_name, last_name)",
+          )
+          .order("created_at", { ascending: false })
+          .limit(10),
+        supabase.from("order_items").select("quantity, unit_price, product:products!order_items_product_id_fkey(name)"),
+      ]);
 
-    const todayOrders = todayOrdersRes.data || [];
-    const todayRevenue = todayOrders.reduce((sum, o) => sum + (o.total || 0), 0);
-    const yesterdayOrders = yesterdayOrdersRes.data || [];
-    const yesterdayRevenue = yesterdayOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+      const todayOrders = todayOrdersRes.data || [];
+      const todayRevenue = todayOrders.reduce((sum, o) => sum + (o.total || 0), 0);
+      const yesterdayOrders = yesterdayOrdersRes.data || [];
+      const yesterdayRevenue = yesterdayOrders.reduce((sum, o) => sum + (o.total || 0), 0);
 
-    const ordersTrend =
-      yesterdayOrders.length > 0
-        ? ((todayOrders.length - yesterdayOrders.length) / yesterdayOrders.length) * 100
-        : todayOrders.length > 0
-          ? 100
-          : 0;
+      const ordersTrend =
+        yesterdayOrders.length > 0
+          ? ((todayOrders.length - yesterdayOrders.length) / yesterdayOrders.length) * 100
+          : todayOrders.length > 0
+            ? 100
+            : 0;
 
-    const revenueTrend =
-      yesterdayRevenue > 0 ? ((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 100 : todayRevenue > 0 ? 100 : 0;
+      const revenueTrend =
+        yesterdayRevenue > 0
+          ? ((todayRevenue - yesterdayRevenue) / yesterdayRevenue) * 100
+          : todayRevenue > 0
+            ? 100
+            : 0;
 
-    setStats({
-      todayOrders: todayOrders.length,
-      todayRevenue,
-      totalProducts: productsRes.count || 0,
-      activeRiders: ridersRes.count || 0,
-      ordersTrend: Math.round(ordersTrend),
-      revenueTrend: Math.round(revenueTrend),
-    });
+      setStats({
+        todayOrders: todayOrders.length,
+        todayRevenue,
+        totalProducts: productsRes.count || 0,
+        activeRiders: ridersRes.count || 0,
+        ordersTrend: Math.round(ordersTrend),
+        revenueTrend: Math.round(revenueTrend),
+      });
 
-    setRecentOrders(
-      (ordersRes.data || []).map((o: any) => ({
-        ...o,
-        profile: o.profile,
-      })),
-    );
+      setRecentOrders((ordersRes.data || []) as unknown as RecentOrder[]);
 
-    const items = (orderItemsRes.data || []) as any[];
-    const productMap = new Map<string, TopProduct>();
-    items.forEach((item) => {
-      const name = item.product?.name || "Unknown";
-      const existing = productMap.get(name) || { name, totalQuantity: 0, totalRevenue: 0 };
-      existing.totalQuantity += item.quantity;
-      existing.totalRevenue += item.unit_price * item.quantity;
-      productMap.set(name, existing);
-    });
-    const top5 = Array.from(productMap.values())
-      .sort((a, b) => b.totalRevenue - a.totalRevenue)
-      .slice(0, 5);
-    setTopProducts(top5);
-
-    setLoading(false);
+      const items = (orderItemsRes.data || []) as any[];
+      const productMap = new Map<string, TopProduct>();
+      items.forEach((item) => {
+        const name = item.product?.name || "Unknown";
+        const existing = productMap.get(name) || { name, totalQuantity: 0, totalRevenue: 0 };
+        existing.totalQuantity += item.quantity;
+        existing.totalRevenue += item.unit_price * item.quantity;
+        productMap.set(name, existing);
+      });
+      setTopProducts(
+        Array.from(productMap.values())
+          .sort((a, b) => b.totalRevenue - a.totalRevenue)
+          .slice(0, 5),
+      );
+    } catch {
+      toast({ title: "Failed to load dashboard data", variant: "destructive" });
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function fetchChartData() {
@@ -164,8 +169,7 @@ export default function DashboardPage() {
     for (let i = 0; i < days; i++) {
       const d = new Date(startDate);
       d.setDate(d.getDate() + i);
-      const key = d.toISOString().split("T")[0];
-      dailyMap.set(key, { revenue: 0, orders: 0 });
+      dailyMap.set(d.toISOString().split("T")[0], { revenue: 0, orders: 0 });
     }
 
     (orders || []).forEach((o) => {
@@ -177,17 +181,16 @@ export default function DashboardPage() {
       }
     });
 
-    const data = Array.from(dailyMap.entries()).map(([date, val]) => ({
-      date: new Date(date).toLocaleDateString("en-US", {
-        month: "short",
-        day: "numeric",
-      }),
-      revenue: val.revenue,
-      orders: val.orders,
-    }));
-
-    setChartData(data);
+    setChartData(
+      Array.from(dailyMap.entries()).map(([date, val]) => ({
+        date: new Date(date).toLocaleDateString("en-US", { month: "short", day: "numeric" }),
+        revenue: val.revenue,
+        orders: val.orders,
+      })),
+    );
   }
+
+  const currencyFormatter = (value: number) => `${formatCurrency(value)}`;
 
   const statCards = [
     {
@@ -195,7 +198,7 @@ export default function DashboardPage() {
       value: stats.todayOrders,
       trend: stats.ordersTrend,
       icon: ShoppingBag,
-      color: "bg-crimson-100 text-crimson-700",
+      color: "bg-brand-100 text-brand-600",
     },
     {
       label: "Today's Revenue",
@@ -227,7 +230,6 @@ export default function DashboardPage() {
         <p className="text-sm text-muted-foreground">Overview of your business operations</p>
       </div>
 
-      {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {statCards.map((stat) => {
           const Icon = stat.icon;
@@ -240,9 +242,7 @@ export default function DashboardPage() {
                     <p className="text-2xl font-bold mt-1">{stat.value}</p>
                     {stat.trend !== null && (
                       <div
-                        className={`flex items-center gap-1 mt-1 text-xs font-medium ${
-                          stat.trend >= 0 ? "text-green-600" : "text-red-600"
-                        }`}
+                        className={`flex items-center gap-1 mt-1 text-xs font-medium ${stat.trend >= 0 ? "text-green-600" : "text-red-600"}`}
                       >
                         {stat.trend >= 0 ? (
                           <ArrowUpRight className="h-3 w-3" />
@@ -263,12 +263,11 @@ export default function DashboardPage() {
         })}
       </div>
 
-      {/* Revenue Chart */}
       <Card>
         <CardContent className="p-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
-              <TrendingUp className="h-5 w-5 text-crimson-600" />
+              <TrendingUp className="h-5 w-5 text-brand-500" />
               <h2 className="font-bold text-lg font-display">Revenue Trend</h2>
             </div>
             <div className="flex bg-gray-100 rounded-lg p-0.5">
@@ -295,7 +294,7 @@ export default function DashboardPage() {
               <LineChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="date" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
-                <YAxis tick={{ fontSize: 12 }} tickLine={false} axisLine={false} tickFormatter={(v) => `₱${v}`} />
+                <YAxis tick={{ fontSize: 12 }} tickLine={false} axisLine={false} tickFormatter={currencyFormatter} />
                 <Tooltip
                   formatter={(value: number) => [formatCurrency(value), "Revenue"]}
                   contentStyle={{
@@ -307,7 +306,7 @@ export default function DashboardPage() {
                 <Line
                   type="monotone"
                   dataKey="revenue"
-                  stroke="#b1454a"
+                  stroke="hsl(var(--primary))"
                   strokeWidth={2}
                   dot={false}
                   activeDot={{ r: 6 }}
@@ -319,7 +318,6 @@ export default function DashboardPage() {
       </Card>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Recent Orders */}
         <Card>
           <CardContent className="p-4">
             <h2 className="font-bold text-lg mb-4 font-display">Recent Orders</h2>
@@ -347,9 +345,7 @@ export default function DashboardPage() {
                     <div className="text-right shrink-0 ml-3">
                       <p className="text-sm font-bold">{formatCurrency(order.total)}</p>
                       <span
-                        className={`inline-block text-[10px] font-medium px-2 py-0.5 rounded-full ${
-                          statusColors[order.status] || "bg-gray-100 text-gray-800"
-                        }`}
+                        className={`inline-block text-[10px] font-medium px-2 py-0.5 rounded-full ${statusColors[order.status] || "bg-gray-100 text-gray-800"}`}
                       >
                         {order.status.replace(/_/g, " ")}
                       </span>
@@ -361,7 +357,6 @@ export default function DashboardPage() {
           </CardContent>
         </Card>
 
-        {/* Top Products */}
         <Card>
           <CardContent className="p-4">
             <h2 className="font-bold text-lg mb-4 font-display">Best Selling Products</h2>
@@ -377,7 +372,7 @@ export default function DashboardPage() {
               <div className="space-y-2">
                 {topProducts.map((product, idx) => (
                   <div key={product.name} className="flex items-center gap-3 p-3 rounded-lg bg-gray-50">
-                    <div className="h-8 w-8 rounded-full bg-crimson-100 flex items-center justify-center text-crimson-700 text-xs font-bold shrink-0">
+                    <div className="h-8 w-8 rounded-full bg-brand-100 flex items-center justify-center text-brand-600 text-xs font-bold shrink-0">
                       #{idx + 1}
                     </div>
                     <div className="min-w-0 flex-1">

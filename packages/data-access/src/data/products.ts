@@ -41,13 +41,23 @@ export async function getProductsWithCategories(supabase: TypedSupabaseClient) {
 }
 
 export async function createProduct(supabase: TypedSupabaseClient, product: ProductInsert) {
-  const { data, error } = await supabase.from("products").insert(product).select().single();
+  const insertPayload = {
+    id: crypto.randomUUID(),
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+    ...product,
+  } as ProductInsert;
+  const { data, error } = await supabase.from("products").insert(insertPayload).select().single();
   if (error) return { data: null, error };
   return { data, error: null };
 }
 
 export async function updateProduct(supabase: TypedSupabaseClient, productId: string, updates: ProductUpdate) {
-  const { data, error } = await supabase.from("products").update(updates).eq("id", productId).select().single();
+  const updatePayload = {
+    ...updates,
+    updated_at: new Date().toISOString(),
+  };
+  const { data, error } = await supabase.from("products").update(updatePayload).eq("id", productId).select().single();
   if (error) return { data: null, error };
   return { data, error: null };
 }
@@ -78,6 +88,7 @@ export async function deductStock(supabase: TypedSupabaseClient, productId: stri
     .update({
       quantity: newQuantity,
       availability: newQuantity <= 0 ? "sold_out" : "available",
+      updated_at: new Date().toISOString(),
     })
     .eq("id", productId);
 

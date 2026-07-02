@@ -17,8 +17,10 @@ import {
 } from "@repo/ui";
 import { ArrowDown, ArrowUp, Loader2, Pencil, Plus, Tag, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { useToast } from "@/lib/use-toast";
 
 export default function CategoriesPage() {
+  const { toast } = useToast();
   const supabase = createBrowserTypedClient();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -82,21 +84,53 @@ export default function CategoriesPage() {
       is_active: formIsActive,
     };
 
+    let resultError = null;
+
     if (editingCategory) {
-      await updateCategory(supabase, editingCategory.id, categoryData);
+      const { error } = await updateCategory(supabase, editingCategory.id, categoryData);
+      resultError = error;
     } else {
       const maxOrder = categories.reduce((max, c) => Math.max(max, c.sort_order), 0);
-      await createCategory(supabase, { ...categoryData, sort_order: maxOrder + 1 });
+      const { error } = await createCategory(supabase, {
+        id: crypto.randomUUID(),
+        ...categoryData,
+        sort_order: maxOrder + 1,
+      });
+      resultError = error;
     }
 
-    setDialogOpen(false);
     setSaving(false);
+
+    if (resultError) {
+      toast({
+        title: "Error",
+        description: resultError.message || "Something went wrong.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Success",
+      description: editingCategory ? "Category updated successfully." : "Category created successfully.",
+    });
+
+    setDialogOpen(false);
     fetchCategories();
   }
 
   async function handleDeleteCategory(id: string) {
     if (!confirm("Are you sure you want to delete this category?")) return;
-    await deleteCategory(supabase, id);
+    const { error } = await deleteCategory(supabase, id);
+    if (error) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to delete category.",
+        variant: "destructive",
+      });
+      return;
+    }
+    toast({ title: "Success", description: "Category deleted." });
     fetchCategories();
   }
 

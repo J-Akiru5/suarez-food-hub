@@ -16,7 +16,7 @@ export interface Product {
   description: string;
   image: string;
   base_price: number;
-  stocks: number;
+  quantity: number;
   availability: string;
   variants?: ProductVariant[];
 }
@@ -127,10 +127,10 @@ const ProductModal = React.forwardRef<HTMLDivElement, ProductModalProps>(({ prod
           {/* Add to Basket Button */}
           <button
             onClick={handleAddToCart}
-            disabled={product.stocks === 0}
+            disabled={product.quantity <= 0}
             className={cn(
               "w-full py-4 rounded-30 text-white font-semibold text-base flex items-center justify-center gap-2 transition-all duration-200",
-              product.stocks === 0
+              product.quantity <= 0
                 ? "bg-gray-300 cursor-not-allowed"
                 : "bg-[#b1454a] hover:bg-[#9a3a3f] active:scale-[0.98]",
             )}

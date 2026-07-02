@@ -2,7 +2,7 @@
 
 import { createBrowserTypedClient } from "@repo/data-access/client";
 import { upsertProfile } from "@repo/data-access/data/profiles";
-import { ArrowLeft, ArrowRight, Bike, Loader2, User } from "lucide-react";
+import { ArrowLeft, Bike, Eye, EyeOff, Loader2, User } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
@@ -22,6 +22,8 @@ export default function Register() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [phone, setPhone] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   // Rider-specific
   const [vehicleType, setVehicleType] = useState("motorcycle");
@@ -112,7 +114,6 @@ export default function Register() {
       }
 
       if (role === "rider") {
-        // Notify all admins about the new rider application
         try {
           await fetch("/api/riders/notify-new", {
             method: "POST",
@@ -134,396 +135,246 @@ export default function Register() {
     router.refresh();
   };
 
-  if (step === "role") {
-    return (
-      <div
-        style={{
-          minHeight: "100vh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          backgroundColor: "var(--color-cream)",
-          padding: "20px",
-        }}
-      >
-        <div
-          style={{
-            backgroundColor: "#fff",
-            padding: "48px",
-            borderRadius: "36px",
-            boxShadow: "0 10px 30px rgba(0,0,0,0.05)",
-            width: "100%",
-            maxWidth: "500px",
-            textAlign: "center",
-          }}
-        >
-          <h2
-            style={{
-              fontFamily: "var(--playfair-display)",
-              fontSize: "40px",
-              color: "var(--secondary-color)",
-              marginBottom: "8px",
-            }}
-          >
-            Create Account
-          </h2>
-
-          <p
-            style={{
-              fontFamily: "var(--plus-jakarta-sans)",
-              color: "var(--secondary-color)",
-              opacity: 0.7,
-              marginBottom: "32px",
-            }}
-          >
-            How will you use Suarez Food Hub?
-          </p>
-
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <button
-              onClick={() => {
-                setRole("customer");
-                setStep("form");
-              }}
-              style={{
-                padding: "20px",
-                borderRadius: "24px",
-                border: "2px solid #e2e8f0",
-                background: "#fff",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: 16,
-                textAlign: "left",
-                fontFamily: "var(--plus-jakarta-sans)",
-                transition: "all 0.2s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "var(--primary-color)";
-                e.currentTarget.style.background = "#fff8f0";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "#e2e8f0";
-                e.currentTarget.style.background = "#fff";
-              }}
-            >
-              <div
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 16,
-                  background: "rgba(177, 69, 74, 0.1)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <User size={24} color="var(--primary-color)" />
-              </div>
-              <div style={{ flex: 1 }}>
-                <p style={{ margin: 0, fontWeight: 700, color: "var(--secondary-color)", fontSize: 16 }}>
-                  I'm a Customer
-                </p>
-                <p style={{ margin: "4px 0 0", fontSize: 13, color: "#94a3b8" }}>I want to order food</p>
-              </div>
-              <ArrowRight size={20} color="#94a3b8" />
-            </button>
-
-            <button
-              onClick={() => {
-                setRole("rider");
-                setStep("form");
-              }}
-              style={{
-                padding: "20px",
-                borderRadius: "24px",
-                border: "2px solid #e2e8f0",
-                background: "#fff",
-                cursor: "pointer",
-                display: "flex",
-                alignItems: "center",
-                gap: 16,
-                textAlign: "left",
-                fontFamily: "var(--plus-jakarta-sans)",
-                transition: "all 0.2s",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = "var(--primary-color)";
-                e.currentTarget.style.background = "#fff8f0";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = "#e2e8f0";
-                e.currentTarget.style.background = "#fff";
-              }}
-            >
-              <div
-                style={{
-                  width: 48,
-                  height: 48,
-                  borderRadius: 16,
-                  background: "rgba(59, 130, 246, 0.1)",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-              >
-                <Bike size={24} color="#3b82f6" />
-              </div>
-              <div style={{ flex: 1 }}>
-                <p style={{ margin: 0, fontWeight: 700, color: "var(--secondary-color)", fontSize: 16 }}>I'm a Rider</p>
-                <p style={{ margin: "4px 0 0", fontSize: 13, color: "#94a3b8" }}>I want to deliver orders</p>
-              </div>
-              <ArrowRight size={20} color="#94a3b8" />
-            </button>
-          </div>
-
-          <p
-            style={{
-              marginTop: "32px",
-              fontFamily: "var(--plus-jakarta-sans)",
-              color: "var(--secondary-color)",
-              opacity: 0.7,
-              fontSize: 14,
-            }}
-          >
-            Already have an account?{" "}
-            <Link href="/login" style={{ color: "var(--primary-color)", fontWeight: 600, textDecoration: "none" }}>
-              Login here
-            </Link>
-          </p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "var(--color-cream)",
-        padding: "20px",
-      }}
-    >
+    <div className="min-h-screen relative flex items-center justify-center p-4">
+      {/* Blurred Background */}
       <div
-        style={{
-          backgroundColor: "#fff",
-          padding: "48px",
-          borderRadius: "36px",
-          boxShadow: "0 10px 30px rgba(0,0,0,0.05)",
-          width: "100%",
-          maxWidth: "500px",
-          textAlign: "center",
-        }}
+        className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat fixed"
+        style={{ backgroundImage: "url('/assets/store1.jpg')" }}
       >
-        <button
-          onClick={() => setStep("role")}
-          style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: 6,
-            color: "#64748b",
-            fontSize: 13,
-            marginBottom: 16,
-            padding: 0,
-          }}
-        >
-          <ArrowLeft size={16} /> Back to role selection
-        </button>
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+      </div>
 
-        <h2
-          style={{
-            fontFamily: "var(--playfair-display)",
-            fontSize: "36px",
-            color: "var(--secondary-color)",
-            marginBottom: "8px",
-          }}
-        >
-          {role === "rider" ? "Rider Sign Up" : "Create Account"}
-        </h2>
-
-        <p
-          style={{
-            fontFamily: "var(--plus-jakarta-sans)",
-            color: "var(--secondary-color)",
-            opacity: 0.7,
-            marginBottom: "32px",
-            fontSize: 14,
-          }}
-        >
-          {role === "rider" ? "Your application will be reviewed by our team" : "Join Suarez Food Hub today!"}
-        </p>
-
-        {error && (
-          <div
-            style={{
-              padding: "12px 20px",
-              borderRadius: 12,
-              background: "#fef2f2",
-              border: "1px solid #fecaca",
-              color: "#dc2626",
-              fontSize: 14,
-              fontFamily: "var(--plus-jakarta-sans)",
-              marginBottom: 20,
-              textAlign: "left",
-            }}
+      {/* Register Card */}
+      <div className="relative z-10 w-full max-w-[440px] bg-[#fdfdfd] rounded-[24px] shadow-2xl p-8 text-center my-8">
+        {step === "form" && (
+          <button
+            onClick={() => setStep("role")}
+            className="absolute top-6 left-6 text-gray-400 hover:text-gray-600 transition-colors flex items-center gap-1 text-xs font-medium bg-transparent border-none cursor-pointer"
           >
-            {error}
-          </div>
+            <ArrowLeft size={14} /> Back
+          </button>
         )}
 
-        <form onSubmit={handleRegister} style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-            <input
-              type="text"
-              placeholder="First Name"
-              value={firstName}
-              onChange={(e) => setFirstName(e.target.value)}
-              required
-              style={inputStyle}
-            />
-            <input
-              type="text"
-              placeholder="Last Name"
-              value={lastName}
-              onChange={(e) => setLastName(e.target.value)}
-              required
-              style={inputStyle}
-            />
+        <div className="flex flex-col items-center justify-center mb-6 mt-2">
+          <div className="w-[72px] h-[72px] rounded-full bg-white shadow-sm border border-gray-100 flex items-center justify-center p-2 mb-3">
+            <img src="/logo.svg" alt="Logo" className="w-full h-full object-contain" />
           </div>
+          <span className="text-[10px] font-bold text-gray-600 uppercase tracking-[0.2em]">
+            {step === "role" ? "Create Account" : role === "rider" ? "RIDER REGISTRATION" : "CUSTOMER REGISTRATION"}
+          </span>
+        </div>
 
-          <input
-            type="email"
-            placeholder="Email Address"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            style={inputStyle}
-          />
+        {step === "role" ? (
+          <div className="animate-fadeIn">
+            <h1
+              className="text-2xl font-extrabold text-[#F08013] mb-2"
+              style={{ fontFamily: "var(--plus-jakarta-sans)" }}
+            >
+              Join Suarez Food Hub
+            </h1>
+            <p className="text-sm text-gray-500 mb-6">How will you use our platform?</p>
 
-          <input
-            type="password"
-            placeholder="Password (min. 6 characters)"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            minLength={6}
-            required
-            style={inputStyle}
-          />
+            <div className="flex flex-col gap-3">
+              <button
+                onClick={() => {
+                  setRole("customer");
+                  setStep("form");
+                }}
+                className="group flex items-center p-4 rounded-2xl border-2 border-gray-100 bg-white hover:border-[#F08013] hover:bg-orange-50/30 transition-all cursor-pointer text-left w-full"
+              >
+                <div className="w-12 h-12 rounded-xl bg-orange-50 flex items-center justify-center group-hover:bg-orange-100 transition-colors">
+                  <User size={24} className="text-[#F08013]" />
+                </div>
+                <div className="ml-4 flex-1">
+                  <p className="m-0 font-bold text-gray-800 text-[15px]">I'm a Customer</p>
+                  <p className="m-0 mt-0.5 text-xs text-gray-400">I want to order food</p>
+                </div>
+              </button>
 
-          <input
-            type="password"
-            placeholder="Confirm Password"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-            required
-            style={inputStyle}
-          />
+              <button
+                onClick={() => {
+                  setRole("rider");
+                  setStep("form");
+                }}
+                className="group flex items-center p-4 rounded-2xl border-2 border-gray-100 bg-white hover:border-[#F08013] hover:bg-orange-50/30 transition-all cursor-pointer text-left w-full"
+              >
+                <div className="w-12 h-12 rounded-xl bg-blue-50 flex items-center justify-center group-hover:bg-blue-100 transition-colors">
+                  <Bike size={24} className="text-blue-500" />
+                </div>
+                <div className="ml-4 flex-1">
+                  <p className="m-0 font-bold text-gray-800 text-[15px]">I'm a Rider</p>
+                  <p className="m-0 mt-0.5 text-xs text-gray-400">I want to deliver orders</p>
+                </div>
+              </button>
+            </div>
 
-          <input
-            type="tel"
-            placeholder="Phone Number (e.g. 09123456789)"
-            value={phone}
-            onChange={(e) => setPhone(e.target.value)}
-            style={inputStyle}
-          />
+            <p className="mt-8 text-xs text-gray-500 text-center">
+              Already have an account?{" "}
+              <Link href="/login" className="text-[#F08013] font-bold no-underline hover:underline">
+                Login here
+              </Link>
+            </p>
+          </div>
+        ) : (
+          <div className="animate-fadeIn">
+            <h1
+              className="text-2xl font-extrabold text-[#F08013] mb-6"
+              style={{ fontFamily: "var(--plus-jakarta-sans)" }}
+            >
+              {role === "rider" ? "Rider Details" : "Your Details"}
+            </h1>
 
-          {role === "rider" && (
-            <>
-              <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 16, marginTop: 8 }}>
-                <p
-                  style={{
-                    margin: "0 0 12px",
-                    fontSize: 13,
-                    fontWeight: 700,
-                    color: "var(--secondary-color)",
-                    textAlign: "left",
-                  }}
-                >
-                  Vehicle Information
-                </p>
-                <select value={vehicleType} onChange={(e) => setVehicleType(e.target.value)} style={inputStyle}>
-                  <option value="motorcycle">Motorcycle</option>
-                  <option value="bicycle">Bicycle</option>
-                  <option value="car">Car</option>
-                </select>
+            {error && (
+              <div className="px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm font-medium mb-5 text-left">
+                {error}
+              </div>
+            )}
+
+            <form onSubmit={handleRegister} className="flex flex-col gap-4 text-left">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-gray-700 ml-1">First Name</label>
+                  <input
+                    type="text"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    required
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white"
+                  />
+                </div>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-xs font-bold text-gray-700 ml-1">Last Name</label>
+                  <input
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    required
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white"
+                  />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-gray-700 ml-1">Email</label>
                 <input
-                  type="text"
-                  placeholder="Plate Number"
-                  value={plateNumber}
-                  onChange={(e) => setPlateNumber(e.target.value)}
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
-                  style={{ ...inputStyle, marginTop: 12 }}
-                />
-                <input
-                  type="text"
-                  placeholder="Driver's License Number"
-                  value={licenseNumber}
-                  onChange={(e) => setLicenseNumber(e.target.value)}
-                  required
-                  style={{ ...inputStyle, marginTop: 12 }}
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white"
                 />
               </div>
-            </>
-          )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            style={{
-              padding: "18px",
-              borderRadius: "30px",
-              backgroundColor: "var(--primary-color)",
-              color: "#fff",
-              border: "none",
-              fontFamily: "var(--plus-jakarta-sans)",
-              fontSize: "16px",
-              fontWeight: 700,
-              cursor: loading ? "not-allowed" : "pointer",
-              marginTop: 8,
-              opacity: loading ? 0.7 : 1,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-            }}
-          >
-            {loading && <Loader2 size={20} className="animate-spin" />}
-            {role === "rider" ? "Submit Application" : "Create Account"}
-          </button>
-        </form>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-gray-700 ml-1">Phone Number</label>
+                <input
+                  type="tel"
+                  placeholder="e.g. 09123456789"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white"
+                />
+              </div>
 
-        <p
-          style={{
-            marginTop: "24px",
-            fontFamily: "var(--plus-jakarta-sans)",
-            color: "var(--secondary-color)",
-            opacity: 0.7,
-            fontSize: 14,
-          }}
-        >
-          Already have an account?{" "}
-          <Link href="/login" style={{ color: "var(--primary-color)", fontWeight: 600, textDecoration: "none" }}>
-            Login here
-          </Link>
-        </p>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-gray-700 ml-1">Password</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    minLength={6}
+                    required
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none bg-transparent border-none"
+                  >
+                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-gray-700 ml-1">Confirm Password</label>
+                <div className="relative">
+                  <input
+                    type={showConfirmPassword ? "text" : "password"}
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    required
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white pr-10"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none bg-transparent border-none"
+                  >
+                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                  </button>
+                </div>
+              </div>
+
+              {role === "rider" && (
+                <div className="mt-2 pt-4 border-t border-gray-100 flex flex-col gap-4">
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-gray-700 ml-1">Vehicle Type</label>
+                    <select
+                      value={vehicleType}
+                      onChange={(e) => setVehicleType(e.target.value)}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white"
+                    >
+                      <option value="motorcycle">Motorcycle</option>
+                      <option value="bicycle">Bicycle</option>
+                      <option value="car">Car</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-gray-700 ml-1">Plate Number</label>
+                    <input
+                      type="text"
+                      value={plateNumber}
+                      onChange={(e) => setPlateNumber(e.target.value)}
+                      required
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-xs font-bold text-gray-700 ml-1">License Number</label>
+                    <input
+                      type="text"
+                      value={licenseNumber}
+                      onChange={(e) => setLicenseNumber(e.target.value)}
+                      required
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full mt-4 py-3.5 rounded-xl bg-[#F08013] text-white font-bold text-sm hover:bg-[#d6700c] transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed shadow-md shadow-orange-500/20 border-none cursor-pointer"
+              >
+                {loading && <Loader2 size={18} className="animate-spin" />}
+                {role === "rider" ? "Submit Application" : "Create Account"}
+              </button>
+            </form>
+
+            <p className="mt-6 text-xs text-gray-500 text-center">
+              Already have an account?{" "}
+              <Link href="/login" className="text-[#F08013] font-bold no-underline hover:underline">
+                Login here
+              </Link>
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
 }
-
-const inputStyle: React.CSSProperties = {
-  padding: "14px 20px",
-  borderRadius: "30px",
-  border: "1px solid rgba(0,0,0,0.1)",
-  fontFamily: "var(--plus-jakarta-sans)",
-  fontSize: "15px",
-  outline: "none",
-  width: "100%",
-  boxSizing: "border-box",
-};

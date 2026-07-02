@@ -14,7 +14,6 @@ interface Cashout {
   rider_id: string;
   amount: number;
   status: CashoutStatus;
-  gcash_reference_no?: string | null;
   notes: string | null;
   processed_by: string | null;
   processed_at: string | null;
@@ -60,9 +59,8 @@ export default function CashoutsPage() {
       processed_at: new Date().toISOString(),
     };
     if (status === "paid" && gcashRefInput[id]) {
-      update.gcash_reference_no = gcashRefInput[id];
-    }
-    if (notesInput[id]) {
+      update.notes = `GCash Ref: ${gcashRefInput[id]}${notesInput[id] ? ` | ${notesInput[id]}` : ""}`;
+    } else if (notesInput[id]) {
       update.notes = notesInput[id];
     }
     await updateCashout(supabase, id, update);
@@ -189,10 +187,10 @@ export default function CashoutsPage() {
                     </div>
                   )}
 
-                  {c.status === "paid" && c.gcash_reference_no && (
-                    <div className="mt-2 text-xs text-gray-500">Ref: {c.gcash_reference_no}</div>
+                  {c.status === "paid" && c.notes && <div className="mt-2 text-xs text-gray-500">{c.notes}</div>}
+                  {c.status !== "paid" && c.notes && (
+                    <div className="mt-1 text-xs text-gray-400 italic">Note: {c.notes}</div>
                   )}
-                  {c.notes && <div className="mt-1 text-xs text-gray-400 italic">Note: {c.notes}</div>}
                 </CardContent>
               </Card>
             );

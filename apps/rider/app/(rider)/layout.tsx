@@ -1,11 +1,11 @@
 "use client";
 
 import { createBrowserTypedClient } from "@repo/data-access/client";
-import { getProfileById } from "@repo/data-access/data/profiles";
+import { getProfileById, updateProfile } from "@repo/data-access/data/profiles";
 import { DollarSign, History, Home, LogOut, User } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const navItems = [
   { href: "/", label: "Home", icon: Home },
@@ -22,6 +22,8 @@ export default function RiderLayout({ children }: { children: React.ReactNode })
     supabaseRef.current = createBrowserTypedClient();
   }
   const [riderName, setRiderName] = useState("Rider");
+  const [online, setOnline] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
 
   useEffect(() => {
     const supabase = supabaseRef.current;
@@ -31,16 +33,32 @@ export default function RiderLayout({ children }: { children: React.ReactNode })
         data: { user },
       } = await supabase.auth.getUser();
       if (user) {
+        setUserId(user.id);
         const data = await getProfileById(supabase, user.id);
         if (data) {
           setRiderName(data.first_name || data.last_name || "Rider");
+          setOnline(data.is_active ?? false);
         }
       }
     };
     fetchProfile();
   }, []);
 
+  const toggleAvailability = useCallback(async () => {
+    const supabase = supabaseRef.current;
+    if (!supabase || !userId) return;
+    const next = !online;
+    setOnline(next);
+    await updateProfile(supabase, userId, { is_active: next });
+  }, [online, userId]);
+
   const handleLogout = async () => {
+    if (online) {
+      const supabase = supabaseRef.current;
+      if (supabase && userId) {
+        await updateProfile(supabase, userId, { is_active: false });
+      }
+    }
     const supabase = supabaseRef.current;
     if (!supabase) return;
     await supabase.auth.signOut();
@@ -52,7 +70,16 @@ export default function RiderLayout({ children }: { children: React.ReactNode })
     <div className="min-h-screen flex flex-col pb-16">
       <header className="bg-white border-b border-gray-200 px-4 py-3 safe-top sticky top-0 z-30">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={toggleAvailability}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                online ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-500"
+              }`}
+            >
+              <span className={`h-2 w-2 rounded-full ${online ? "bg-green-500" : "bg-gray-400"}`} />
+              {online ? "Online" : "Offline"}
+            </button>
             <span className="text-lg font-bold text-brand-600">SFH Rider</span>
           </div>
           <div className="flex items-center gap-3">

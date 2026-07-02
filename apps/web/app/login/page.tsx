@@ -1,7 +1,7 @@
 "use client";
 
 import { createBrowserTypedClient } from "@repo/data-access/client";
-import { Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
@@ -13,6 +13,7 @@ function LoginForm() {
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -41,161 +42,113 @@ function LoginForm() {
   return (
     <>
       {error && (
-        <div
-          style={{
-            padding: "12px 20px",
-            borderRadius: 12,
-            background: "#fef2f2",
-            border: "1px solid #fecaca",
-            color: "#dc2626",
-            fontSize: 14,
-            fontFamily: "var(--plus-jakarta-sans)",
-            marginBottom: 20,
-            textAlign: "left",
-          }}
-        >
+        <div className="px-4 py-3 rounded-xl bg-red-50 border border-red-200 text-red-600 text-sm font-medium mb-5 text-left">
           {error}
         </div>
       )}
 
-      <form onSubmit={handleLogin} style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
-        <input
-          type="email"
-          placeholder="Email Address"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          style={{
-            padding: "16px 24px",
-            borderRadius: "30px",
-            border: "1px solid rgba(0,0,0,0.1)",
-            fontFamily: "var(--plus-jakarta-sans)",
-            fontSize: "16px",
-            outline: "none",
-          }}
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-          style={{
-            padding: "16px 24px",
-            borderRadius: "30px",
-            border: "1px solid rgba(0,0,0,0.1)",
-            fontFamily: "var(--plus-jakarta-sans)",
-            fontSize: "16px",
-            outline: "none",
-          }}
-        />
+      <form onSubmit={handleLogin} className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1.5 text-left">
+          <label className="text-xs font-bold text-gray-700 ml-1">Email</label>
+          <input
+            type="email"
+            placeholder="Enter your email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors bg-white"
+          />
+        </div>
+
+        <div className="flex flex-col gap-1.5 text-left">
+          <label className="text-xs font-bold text-gray-700 ml-1">Password</label>
+          <div className="relative">
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Enter your password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors bg-white pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword(!showPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+            >
+              {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+            </button>
+          </div>
+        </div>
 
         <button
           type="submit"
           disabled={loading}
-          style={{
-            padding: "20px",
-            borderRadius: "36px",
-            backgroundColor: "var(--primary-color)",
-            color: "#fff",
-            border: "none",
-            fontFamily: "var(--plus-jakarta-sans)",
-            fontSize: "18px",
-            fontWeight: 600,
-            cursor: loading ? "not-allowed" : "pointer",
-            marginTop: "10px",
-            opacity: loading ? 0.7 : 1,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            gap: 8,
-          }}
+          className="w-full mt-2 py-3.5 rounded-xl bg-[#F08013] text-white font-bold text-sm hover:bg-[#d6700c] transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed shadow-md shadow-orange-500/20"
         >
-          {loading && <Loader2 size={20} className="animate-spin" />}
+          {loading && <Loader2 size={18} className="animate-spin" />}
           Login
         </button>
       </form>
 
-      <p
-        style={{
-          marginTop: "32px",
-          fontFamily: "var(--plus-jakarta-sans)",
-          color: "var(--secondary-color)",
-          opacity: 0.8,
-        }}
-      >
-        Don&apos;t have an account?{" "}
-        <Link href="/register" style={{ color: "var(--primary-color)", fontWeight: 600, textDecoration: "none" }}>
-          Register here
+      <div className="mt-4 text-center">
+        <Link href="#" className="text-xs text-gray-500 hover:text-gray-800 transition-colors">
+          Forgot password?
         </Link>
-      </p>
+      </div>
+
+      <div className="flex items-center gap-3 my-6">
+        <div className="h-px bg-gray-200 flex-1"></div>
+        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">OR</span>
+        <div className="h-px bg-gray-200 flex-1"></div>
+      </div>
 
       <Link
-        href="/"
-        style={{
-          display: "block",
-          marginTop: "16px",
-          fontFamily: "var(--plus-jakarta-sans)",
-          color: "var(--secondary-color)",
-          opacity: 0.6,
-          textDecoration: "underline",
-        }}
+        href="/menu"
+        className="w-full flex items-center justify-center py-3.5 rounded-xl border border-gray-200 bg-gray-50/50 text-gray-800 font-bold text-sm hover:bg-gray-100 transition-colors no-underline"
       >
-        Back to Home
+        Continue as Guest
       </Link>
+
+      <p className="mt-6 text-xs text-gray-500 text-center">
+        Don't have an account?{" "}
+        <Link href="/register" className="text-[#F08013] font-bold no-underline hover:underline">
+          Create account
+        </Link>
+      </p>
     </>
   );
 }
 
 export default function Login() {
   return (
-    <div
-      style={{
-        minHeight: "100vh",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        backgroundColor: "var(--color-cream)",
-        padding: "20px",
-      }}
-    >
+    <div className="min-h-screen relative flex items-center justify-center p-4">
+      {/* Blurred Background */}
       <div
-        style={{
-          backgroundColor: "#fff",
-          padding: "64px",
-          borderRadius: "36px",
-          boxShadow: "0 10px 30px rgba(0,0,0,0.05)",
-          width: "100%",
-          maxWidth: "500px",
-          textAlign: "center",
-        }}
+        className="absolute inset-0 z-0 bg-cover bg-center bg-no-repeat"
+        style={{ backgroundImage: "url('/assets/store1.jpg')" }}
       >
-        <h2
-          style={{
-            fontFamily: "var(--playfair-display)",
-            fontSize: "48px",
-            color: "var(--secondary-color)",
-            marginBottom: "16px",
-          }}
-        >
-          Welcome Back
-        </h2>
+        {/* Dark overlay and blur */}
+        <div className="absolute inset-0 bg-black/40 backdrop-blur-sm"></div>
+      </div>
 
-        <p
-          style={{
-            fontFamily: "var(--plus-jakarta-sans)",
-            color: "var(--secondary-color)",
-            opacity: 0.8,
-            marginBottom: "32px",
-          }}
-        >
-          Login to Suarez Food Hub
-        </p>
+      {/* Login Card */}
+      <div className="relative z-10 w-full max-w-[400px] bg-[#fdfdfd] rounded-[24px] shadow-2xl p-8 text-center">
+        <h1 className="text-3xl font-extrabold text-[#F08013] mb-4" style={{ fontFamily: "var(--plus-jakarta-sans)" }}>
+          Welcome
+        </h1>
+
+        <div className="flex flex-col items-center justify-center mb-6">
+          <div className="w-[72px] h-[72px] rounded-full bg-white shadow-sm border border-gray-100 flex items-center justify-center p-2 mb-3">
+            <img src="/logo.svg" alt="Logo" className="w-full h-full object-contain" />
+          </div>
+          <span className="text-[10px] font-bold text-gray-600 uppercase tracking-[0.2em]">ONLINE STORE</span>
+        </div>
 
         <Suspense
           fallback={
-            <div style={{ display: "flex", justifyContent: "center", padding: 40 }}>
-              <Loader2 size={32} className="animate-spin" style={{ color: "var(--primary-color)" }} />
+            <div className="flex justify-center py-10">
+              <Loader2 size={32} className="animate-spin text-brand-500" />
             </div>
           }
         >

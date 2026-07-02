@@ -1,14 +1,15 @@
 import { getUser, requireAdmin } from "@repo/data-access/auth";
-import { createAuthClient, createServiceClient } from "@repo/data-access/client";
+import { createServiceClient } from "@repo/data-access/client";
+import { getBusinessConfig } from "@repo/data-access/data/business";
+import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function GET() {
   try {
     const supabase = createServiceClient();
-    const { data, error } = await supabase.from("settings").select("key, value");
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    const settings = data.reduce((acc, row) => ({ ...acc, [row.key]: row.value }), {});
-    return NextResponse.json(settings);
+    const config = await getBusinessConfig(supabase);
+    if (!config) return NextResponse.json({ error: "Business config not found" }, { status: 500 });
+    return NextResponse.json(config);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal server error";
     return NextResponse.json({ error: message }, { status: 500 });
@@ -18,7 +19,18 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const supabase = createServiceClient();
-    const authSupabase = createAuthClient({ getAll: () => [], setAll: () => {} });
+    const authSupabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return req.cookies.getAll();
+          },
+          setAll() {},
+        },
+      },
+    );
     const user = await getUser(authSupabase);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -32,15 +44,20 @@ export async function POST(req: NextRequest) {
     const ext = qrcodeFile.name.split(".").pop();
     const filename = `gcash_qr_${Date.now()}.${ext}`;
     const { error: uploadError } = await supabase.storage
-      .from("admin-settings")
+      .from("business_qr")
       .upload(filename, qrcodeFile, { contentType: qrcodeFile.type, upsert: true });
     if (uploadError)
       return NextResponse.json({ error: "Image upload failed: " + uploadError.message }, { status: 500 });
 
-    const { data: urlData } = supabase.storage.from("admin-settings").getPublicUrl(filename);
+    const { data: urlData } = supabase.storage.from("business_qr").getPublicUrl(filename);
+
+    const config = await getBusinessConfig(supabase);
+    if (!config) return NextResponse.json({ error: "Business config not found" }, { status: 500 });
+
     const { error: dbError } = await supabase
-      .from("settings")
-      .upsert({ key: "gcash_qr_url", value: urlData.publicUrl, updated_at: new Date().toISOString() });
+      .from("business")
+      .update({ gcash_qr_url: urlData.publicUrl, updated_at: new Date().toISOString() })
+      .eq("id", config.id);
     if (dbError) return NextResponse.json({ error: dbError.message }, { status: 500 });
 
     return NextResponse.json({ success: true, url: urlData.publicUrl });

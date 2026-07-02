@@ -13,17 +13,16 @@ export interface CreateOrderInput
 export interface CreateOrderItemInput extends Omit<OrderItemInsert, "id"> {}
 
 export async function createOrder(supabase: TypedSupabaseClient, order: CreateOrderInput) {
-  const { data, error } = await supabase
-    .from("orders")
-    .insert([order as OrderInsert])
-    .select()
-    .single();
+  const now = new Date().toISOString();
+  const insertPayload = { id: crypto.randomUUID(), created_at: now, updated_at: now, ...order } as OrderInsert;
+  const { data, error } = await supabase.from("orders").insert([insertPayload]).select().single();
   if (error) return { data: null, error };
   return { data, error: null };
 }
 
 export async function createOrderItems(supabase: TypedSupabaseClient, items: CreateOrderItemInput[]) {
-  const { error } = await supabase.from("order_items").insert(items as OrderItemInsert[]);
+  const insertPayload = items.map((item) => ({ id: crypto.randomUUID(), ...item })) as OrderItemInsert[];
+  const { error } = await supabase.from("order_items").insert(insertPayload);
   return { error };
 }
 
@@ -33,7 +32,11 @@ export async function deleteOrder(supabase: TypedSupabaseClient, orderId: string
 }
 
 export async function getOrdersByUser(supabase: TypedSupabaseClient, userId: string, status?: OrderStatus) {
-  let query = supabase.from("orders").select("*").eq("user_id", userId).order("created_at", { ascending: false });
+  let query = supabase
+    .from("orders")
+    .select("*, order_items(*)")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false });
   if (status) query = query.eq("status", status);
   const { data, error } = await query;
   if (error) return [];
@@ -135,7 +138,10 @@ export async function createOrderStatusLog(
   changedBy: string,
   notes?: string,
 ) {
+  const now = new Date().toISOString();
   const entry: OrderStatusLogInsert = {
+    id: crypto.randomUUID(),
+    changed_at: now,
     order_id: orderId,
     status,
     changed_by: changedBy,

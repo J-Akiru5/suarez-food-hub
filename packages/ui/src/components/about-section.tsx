@@ -1,8 +1,5 @@
-"use client";
-
-import { Mail, MapPin, Phone } from "lucide-react";
+import { MapPin } from "lucide-react";
 import * as React from "react";
-import { cn } from "../lib/utils";
 
 export interface AboutSectionProps {
   title?: string;
@@ -10,6 +7,10 @@ export interface AboutSectionProps {
   description?: string;
   storeImage?: string;
   foodImage?: string;
+  mapSrc?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
   className?: string;
 }
 
@@ -21,51 +22,42 @@ const AboutSection = React.forwardRef<HTMLDivElement, AboutSectionProps>(
       description = "At Suarez Food Hub, we serve a wide variety of freshly prepared Filipino dishes — from steamed and fried siomai, crispy lumpia, hearty main dishes, to sweet desserts and refreshing drinks. Every order is made with quality ingredients and passion.",
       storeImage = "/assets/store1.jpg",
       foodImage = "/assets/steamed-siomai.jpg",
+      mapSrc = "https://www.google.com/maps/embed?pb=!4v1780205155562!6m8!1m7!1sLdyddZPCgOh3axiDrqs4JQ!2m2!1d10.95008737384947!2d122.5065507710989!3f4.489574006221211!4f0.3963730569948183!5f0.4000000000000002",
+      address = "Janiuay, Western Visayas, Philippines",
+      phone = "+63 912 345 6789",
+      email = "info@suarezfoodhub.com",
       className,
     },
     ref,
   ) => {
     return (
-      <section ref={ref} className={cn("", className)} style={{ background: "var(--color-cream)" }}>
+      <section ref={ref} className="bg-cream">
         <div className="max-w-[1280px] mx-auto">
           <div className="flex flex-col lg:flex-row min-h-[600px]">
-            {/* Left: About Us */}
-            <div className="flex-1 py-16 px-6 md:px-12 lg:px-16 flex flex-col justify-center" data-aos="fade-right">
-              <p
-                className="text-sm font-semibold uppercase tracking-wider mb-3"
-                style={{ color: "var(--primary-color)" }}
-              >
+            <div className="flex-1 py-16 px-6 md:px-12 lg:px-16 flex flex-col justify-center">
+              <span className="text-xs font-semibold uppercase tracking-[0.15em] text-[var(--primary-color)] mb-3">
                 {subtitle}
-              </p>
-              <h2
-                className="text-3xl md:text-4xl font-bold leading-tight mb-6"
-                style={{ color: "var(--secondary-color)", fontFamily: "var(--playfair-display)" }}
-              >
+              </span>
+              <h2 className="text-3xl md:text-4xl font-bold text-[var(--secondary-color)] leading-tight mb-6 font-heading">
                 {title}
               </h2>
-              <p
-                className="text-base leading-relaxed mb-8 max-w-md"
-                style={{ color: "color-mix(in srgb, var(--secondary-color) 60%, transparent)" }}
-              >
-                {description}
-              </p>
+              <p className="text-base leading-relaxed mb-10 max-w-md text-[var(--secondary-color)]/60">{description}</p>
 
-              {/* Overlapping Images */}
-              <div className="flex gap-4">
+              <div className="flex gap-4 items-end">
                 <div className="relative w-40 h-32 rounded-xl overflow-hidden shadow-lg -rotate-3">
                   <img
                     src={storeImage}
-                    alt="Store"
+                    alt=""
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = "/assets/food-hub.jpg";
                     }}
                   />
                 </div>
-                <div className="relative w-48 h-36 rounded-xl overflow-hidden shadow-lg rotate-2 -mt-4">
+                <div className="relative w-48 h-36 rounded-xl overflow-hidden shadow-lg rotate-2 -mb-2">
                   <img
                     src={foodImage}
-                    alt="Food"
+                    alt=""
                     className="w-full h-full object-cover"
                     onError={(e) => {
                       (e.target as HTMLImageElement).src = "/assets/food-hub.jpg";
@@ -75,29 +67,17 @@ const AboutSection = React.forwardRef<HTMLDivElement, AboutSectionProps>(
               </div>
             </div>
 
-            {/* Right: Visit Us */}
-            <div
-              className="flex-1 py-16 px-6 md:px-12 lg:px-16 flex flex-col justify-center"
-              style={{ background: "var(--secondary-color)" }}
-              data-aos="fade-left"
-            >
-              <p
-                className="text-sm font-semibold uppercase tracking-wider mb-3"
-                style={{ color: "var(--primary-color)" }}
-              >
+            <div className="flex-1 py-16 px-6 md:px-12 lg:px-16 flex flex-col justify-center bg-near-black">
+              <span className="text-xs font-semibold uppercase tracking-[0.15em] text-[var(--primary-color)] mb-3">
                 Find Us
-              </p>
-              <h2
-                className="text-3xl md:text-4xl font-bold text-white leading-tight mb-8"
-                style={{ fontFamily: "var(--playfair-display)" }}
-              >
+              </span>
+              <h2 className="text-3xl md:text-4xl font-bold text-white leading-tight mb-8 font-heading">
                 Visit Us in Person
               </h2>
 
-              {/* Map */}
-              <div className="rounded-2xl overflow-hidden mb-8 h-[240px]">
+              <div className="rounded-2xl overflow-hidden h-[320px]">
                 <iframe
-                  src="https://www.google.com/maps/embed?pb=!4v1780205155562!6m8!1m7!1sLdyddZPCgOh3axiDrqs4JQ!2m2!1d10.95008737384947!2d122.5065507710989!3f4.489574006221211!4f0.3963730569948183!5f0.4000000000000002"
+                  src={mapSrc}
                   width="100%"
                   height="100%"
                   style={{ border: 0 }}
@@ -108,21 +88,9 @@ const AboutSection = React.forwardRef<HTMLDivElement, AboutSectionProps>(
                 />
               </div>
 
-              {/* Contact Info */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-3 text-white/70 text-sm">
-                  <MapPin size={16} className="flex-shrink-0" style={{ color: "var(--primary-color)" }} />
-                  <span>Janiuay, Western Visayas, Philippines</span>
-                </div>
-                <div className="flex items-center gap-3 text-white/70 text-sm">
-                  <Phone size={16} className="flex-shrink-0" style={{ color: "var(--primary-color)" }} />
-                  <span>+63 912 345 6789</span>
-                </div>
-                <div className="flex items-center gap-3 text-white/70 text-sm">
-                  <Mail size={16} className="flex-shrink-0" style={{ color: "var(--primary-color)" }} />
-                  <span>info@suarezfoodhub.com</span>
-                </div>
-              </div>
+              <p className="text-white/50 text-sm mt-4">
+                <span className="text-[var(--primary-color)]">📍</span> {address}
+              </p>
             </div>
           </div>
         </div>

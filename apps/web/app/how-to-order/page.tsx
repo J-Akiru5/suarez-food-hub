@@ -1,50 +1,46 @@
 "use client";
 
+import { Banknote, CheckCircle, PackageSearch, ShoppingBag, ShoppingCart, Truck } from "lucide-react";
 import Link from "next/link";
 import AuthNavbar from "../../components/AuthNavbar";
 
 const STEPS = [
   {
     step: "01",
-    title: "Browse Our Menu",
+    title: "Browse the Menu",
     description:
-      "Visit our Menu page and explore our wide selection of Filipino food — dumplings, spring rolls, main dishes, desserts, and refreshing drinks.",
-    icon: "🍽️",
+      "Explore our selection of authentic Filipino dishes, ranging from fresh appetizers to full main courses.",
+    icon: PackageSearch,
   },
   {
     step: "02",
-    title: "Add to Cart",
-    description:
-      "Click 'Add to Cart' on your favorite items. You can add multiple items and adjust quantities in your cart at any time.",
-    icon: "🛒",
+    title: "Add Items",
+    description: "Select your preferred portions and add items directly to your cart.",
+    icon: ShoppingBag,
   },
   {
     step: "03",
-    title: "Proceed to Checkout",
-    description:
-      "Go to your cart and click 'Proceed to Checkout'. Fill in your delivery details — name, address, and contact number.",
-    icon: "📝",
+    title: "Checkout",
+    description: "Review your order and provide your accurate delivery details.",
+    icon: ShoppingCart,
   },
   {
     step: "04",
-    title: "Choose Payment",
-    description:
-      "Select your preferred payment method: Cash on Delivery (COD) or GCash. For GCash, upload your payment screenshot as proof.",
-    icon: "💳",
+    title: "Payment",
+    description: "Choose between Cash on Delivery or GCash. Upload a payment receipt if using GCash.",
+    icon: Banknote,
   },
   {
     step: "05",
-    title: "Place Your Order",
-    description:
-      "Review your order summary and click 'Place Order'. You'll receive an order confirmation with your order ID.",
-    icon: "✅",
+    title: "Confirmation",
+    description: "Receive an instant order confirmation along with your unique order tracking ID.",
+    icon: CheckCircle,
   },
   {
     step: "06",
-    title: "Track Your Order",
-    description:
-      "Use your order ID to track your delivery status in real-time. We'll notify you when your food is on its way!",
-    icon: "🚴",
+    title: "Track Delivery",
+    description: "Monitor your order status in real-time until it arrives at your doorstep.",
+    icon: Truck,
   },
 ];
 
@@ -58,8 +54,9 @@ export default function HowToOrderPage() {
       <div
         className="mobile-padding"
         style={{
+          marginTop: "72px",
           background: "var(--primary-color)",
-          padding: "80px 64px 60px",
+          padding: "60px 64px",
           textAlign: "center",
           position: "relative",
           overflow: "hidden",
@@ -99,7 +96,9 @@ export default function HowToOrderPage() {
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontSize: 48 }}>{s.icon}</span>
+                <span style={{ color: "var(--primary-color)" }}>
+                  <s.icon size={40} strokeWidth={1.5} />
+                </span>
                 <span
                   style={{
                     fontFamily: "var(--playfair-display)",

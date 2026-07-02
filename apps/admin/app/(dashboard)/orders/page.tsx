@@ -105,6 +105,11 @@ export default function OrdersPage() {
     fetchOrders();
   }
 
+  async function updatePaymentStatus(orderId: string, payment_status: string) {
+    await supabase.from("orders").update({ payment_status }).eq("id", orderId);
+    fetchOrders();
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -161,7 +166,7 @@ export default function OrdersPage() {
                               paymentColors[order.payment_status] || "bg-gray-100 text-gray-800"
                             }`}
                           >
-                            {order.payment_status}
+                            Payment: {order.payment_status}
                           </span>
                         </div>
                         <p className="text-sm text-muted-foreground">
@@ -230,71 +235,66 @@ export default function OrdersPage() {
                               <p className="text-xs font-medium text-gray-500 mb-1">Assign Rider</p>
                               <Select onValueChange={(value) => assignRider(order.id, value)}>
                                 <SelectTrigger className="w-full">
-                                  <SelectValue placeholder="Select rider" />
+                                  <SelectValue
+                                    placeholder={riders.length === 0 ? "No riders available" : "Select rider"}
+                                  />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  {riders.map((rider) => (
-                                    <SelectItem key={rider.id} value={rider.id}>
-                                      {rider.first_name || rider.full_name} {rider.last_name || ""}
+                                  {riders.length === 0 ? (
+                                    <SelectItem value="none" disabled>
+                                      No riders available
                                     </SelectItem>
-                                  ))}
+                                  ) : (
+                                    riders.map((rider) => (
+                                      <SelectItem key={rider.id} value={rider.id}>
+                                        {rider.first_name || rider.full_name} {rider.last_name || ""}
+                                      </SelectItem>
+                                    ))
+                                  )}
                                 </SelectContent>
                               </Select>
                             </div>
                           )}
 
                           {/* Status Actions */}
-                          {order.status !== "cancelled" && order.status !== "delivered" && (
+                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                              <p className="text-xs font-medium text-gray-500 mb-1">Update Status</p>
-                              <div className="flex flex-wrap gap-2">
-                                {order.status === "pending" && (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => updateStatus(order.id, "confirmed")}
-                                  >
-                                    Confirm
-                                  </Button>
-                                )}
-                                {order.status === "confirmed" && (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => updateStatus(order.id, "preparing")}
-                                  >
-                                    Preparing
-                                  </Button>
-                                )}
-                                {order.status === "preparing" && (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => updateStatus(order.id, "out_for_delivery")}
-                                  >
-                                    Out for Delivery
-                                  </Button>
-                                )}
-                                {order.status === "out_for_delivery" && (
-                                  <Button
-                                    size="sm"
-                                    variant="outline"
-                                    onClick={() => updateStatus(order.id, "delivered")}
-                                  >
-                                    Delivered
-                                  </Button>
-                                )}
-                                <Button
-                                  size="sm"
-                                  variant="outline"
-                                  className="text-red-600 hover:text-red-700 hover:bg-red-50"
-                                  onClick={() => updateStatus(order.id, "cancelled")}
-                                >
-                                  Cancel
-                                </Button>
-                              </div>
+                              <p className="text-xs font-medium text-gray-500 mb-1">Payment Status</p>
+                              <Select
+                                value={order.payment_status}
+                                onValueChange={(value) => updatePaymentStatus(order.id, value)}
+                              >
+                                <SelectTrigger className="w-full h-8 text-xs">
+                                  <SelectValue placeholder="Select payment status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="pending">Pending</SelectItem>
+                                  <SelectItem value="verified">Verified</SelectItem>
+                                  <SelectItem value="rejected">Rejected</SelectItem>
+                                  <SelectItem value="refunded">Refunded</SelectItem>
+                                </SelectContent>
+                              </Select>
                             </div>
-                          )}
+
+                            <div>
+                              <p className="text-xs font-medium text-gray-500 mb-1">Order Status</p>
+                              <Select value={order.status} onValueChange={(value) => updateStatus(order.id, value)}>
+                                <SelectTrigger className="w-full h-8 text-xs">
+                                  <SelectValue placeholder="Select order status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="pending">Pending</SelectItem>
+                                  <SelectItem value="confirmed">Confirmed</SelectItem>
+                                  <SelectItem value="preparing">Preparing</SelectItem>
+                                  <SelectItem value="out_for_delivery">Out for Delivery</SelectItem>
+                                  <SelectItem value="delivered">Delivered</SelectItem>
+                                  <SelectItem value="cancelled" className="text-red-600">
+                                    Cancelled
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>

@@ -59,7 +59,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const initials = profile ? `${profile.first_name?.[0] || ""}${profile.last_name?.[0] || ""}`.toUpperCase() : "S";
 
   return (
-    <div className="min-h-dvh bg-gray-50 flex">
+    <div className="h-dvh bg-gray-50 flex overflow-hidden">
       <aside
         className={`hidden lg:flex flex-col bg-white border-r border-gray-200 transition-all duration-300 ${
           sidebarOpen ? "w-64" : "w-20"

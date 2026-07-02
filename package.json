@@ -23,6 +23,7 @@
   "devDependencies": {
     "@biomejs/biome": "^2.4.16",
     "@prisma/client": "^5.20.0",
+    "@types/leaflet": "^1.9.21",
     "husky": "^9.1.7",
     "knip": "^6.15.0",
     "lefthook": "^2.1.9",
@@ -49,8 +50,10 @@
   },
   "dependencies": {
     "eslint-config-next": "^16.2.6",
+    "leaflet": "^1.9.4",
     "next": "^16.2.6",
     "react": "^19.2.6",
-    "react-dom": "^19.2.6"
+    "react-dom": "^19.2.6",
+    "react-leaflet": "^4.2.1"
   }
 }

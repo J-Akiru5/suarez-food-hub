@@ -1,12 +1,24 @@
 import { getUser, requireAdmin } from "@repo/data-access/auth";
-import { createAuthClient, createServiceClient } from "@repo/data-access/client";
+import { createServiceClient } from "@repo/data-access/client";
 import { deleteProduct, updateProduct } from "@repo/data-access/data/products";
+import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
+
+function getAuthClient(req: NextRequest) {
+  return createServerClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    cookies: {
+      getAll() {
+        return req.cookies.getAll();
+      },
+      setAll() {},
+    },
+  });
+}
 
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const supabase = createServiceClient();
-    const authSupabase = createAuthClient({ getAll: () => [], setAll: () => {} });
+    const authSupabase = getAuthClient(req);
     const user = await getUser(authSupabase);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
@@ -17,12 +29,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const formData = await req.formData();
 
     const name = formData.get("name") as string;
-    const category = formData.get("category") as string;
+    const categoryId = (formData.get("category_id") as string) || (formData.get("category") as string);
     const price = parseFloat(formData.get("price") as string) || 0;
-    const price_medium = parseFloat(formData.get("price_medium") as string) || 0;
-    const price_large = parseFloat(formData.get("price_large") as string) || 0;
     const description = formData.get("description") as string;
-    const quantity = parseInt(formData.get("quantity") as string) || parseInt(formData.get("stocks") as string) || 0;
+    const quantity = parseInt(formData.get("quantity") as string) || 0;
     const bufferQuantity = parseInt(formData.get("buffer_quantity") as string) || 5;
     const imageFile = formData.get("image") as File | null;
     let imageUrl = (formData.get("existing_image") as string) || "";
@@ -41,7 +51,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
     const { data, error } = await updateProduct(supabase, id, {
       name,
-      category_id: category,
+      category_id: categoryId,
       base_price: price,
       description,
       image_url: imageUrl,
@@ -60,7 +70,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const supabase = createServiceClient();
-    const authSupabase = createAuthClient({ getAll: () => [], setAll: () => {} });
+    const authSupabase = getAuthClient(_req);
     const user = await getUser(authSupabase);
     if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 

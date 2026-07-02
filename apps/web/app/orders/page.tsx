@@ -68,6 +68,7 @@ function OrdersPageInner() {
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
   const [showActiveOnly, setShowActiveOnly] = useState(searchParams.get("active") === "true");
+  const [receiptOrder, setReceiptOrder] = useState<Order | null>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -427,28 +428,30 @@ function OrdersPageInner() {
                             </div>
                           );
                         })}
-                      </div>
-                      {/* Connector line */}
-                      <div
-                        style={{
-                          position: "relative",
-                          height: 2,
-                          background: "#e2e8f0",
-                          margin: "-20px 18px 0",
-                          zIndex: 0,
-                        }}
-                      >
-                        {order.status !== "cancelled" && (
-                          <div
-                            style={{
-                              height: "100%",
-                              background: "var(--primary-color)",
-                              width: `${Math.max(0, getTimelineProgress(order.status)) * 25}%`,
-                              transition: "width 0.5s",
-                              borderRadius: 2,
-                            }}
-                          />
-                        )}
+                        {/* Connector line */}
+                        <div
+                          style={{
+                            position: "absolute",
+                            top: 17,
+                            left: "10%",
+                            right: "10%",
+                            height: 2,
+                            background: "#e2e8f0",
+                            zIndex: 0,
+                          }}
+                        >
+                          {order.status !== "cancelled" && (
+                            <div
+                              style={{
+                                height: "100%",
+                                background: "var(--primary-color)",
+                                width: `${Math.max(0, getTimelineProgress(order.status)) * 25}%`,
+                                transition: "width 0.5s",
+                                borderRadius: 2,
+                              }}
+                            />
+                          )}
+                        </div>
                       </div>
                     </div>
                   )}
@@ -511,6 +514,30 @@ function OrdersPageInner() {
                         </span>
                       </div>
                     ))}
+
+                    {/* Receipt Summary */}
+                    {order.order_items && order.order_items.length > 0 && (
+                      <div style={{ marginTop: 16, paddingTop: 16, borderTop: "2px dashed #f1f5f9" }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            marginBottom: 8,
+                            fontSize: 13,
+                            color: "#64748b",
+                          }}
+                        >
+                          <span>Subtotal</span>
+                          <span>₱{order.subtotal}</span>
+                        </div>
+                        <div
+                          style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#64748b" }}
+                        >
+                          <span>Delivery Fee</span>
+                          <span>₱{order.delivery_fee}</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   {/* Footer */}
@@ -527,11 +554,167 @@ function OrdersPageInner() {
                       {order.payment_method === "cod" ? "Cash on Delivery" : "GCash"} ·{" "}
                       {order.payment_method === "cod" ? `₱${order.total}` : "Paid"}
                     </div>
-                    <div style={{ fontWeight: 800, fontSize: 18, color: "var(--secondary-color)" }}>₱{order.total}</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                      <button
+                        onClick={() => setReceiptOrder(order)}
+                        style={{
+                          background: "transparent",
+                          border: "1px solid #e2e8f0",
+                          padding: "6px 12px",
+                          borderRadius: 8,
+                          fontSize: 13,
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          color: "#64748b",
+                        }}
+                      >
+                        View Receipt
+                      </button>
+                      <div style={{ fontWeight: 800, fontSize: 18, color: "var(--secondary-color)" }}>
+                        ₱{order.total}
+                      </div>
+                    </div>
                   </div>
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Receipt Modal */}
+        {receiptOrder && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: "rgba(0,0,0,0.5)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 9999,
+              padding: 20,
+            }}
+            onClick={() => setReceiptOrder(null)}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                width: "100%",
+                maxWidth: 340,
+                background: "#f1f5f9",
+                borderRadius: 24,
+                overflow: "hidden",
+                display: "flex",
+                flexDirection: "column",
+                maxHeight: "90vh",
+              }}
+            >
+              {/* Receipt Paper */}
+              <div className="bg-white rounded-t-2xl shadow-sm flex-shrink-0 mx-4 mt-4">
+                <div className="px-5 py-4 border-b-2 border-dashed border-gray-200 text-center relative">
+                  <button
+                    onClick={() => setReceiptOrder(null)}
+                    style={{
+                      position: "absolute",
+                      right: 12,
+                      top: 12,
+                      background: "none",
+                      border: "none",
+                      cursor: "pointer",
+                      color: "#94a3b8",
+                    }}
+                  >
+                    <XCircle size={20} />
+                  </button>
+                  <h3
+                    className="text-sm font-bold text-gray-700 tracking-widest m-0 uppercase"
+                    style={{ fontFamily: "monospace" }}
+                  >
+                    Suarez Food Hub
+                  </h3>
+                  <p className="text-[10px] text-gray-400 mt-1 mb-0" style={{ fontFamily: "monospace" }}>
+                    RECEIPT # {receiptOrder.id.slice(0, 8).toUpperCase()}
+                  </p>
+                  <p className="text-[10px] text-gray-400 mt-1 mb-0" style={{ fontFamily: "monospace" }}>
+                    {new Date(receiptOrder.created_at).toLocaleString()}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex-1 bg-white overflow-y-auto px-5 py-4 mx-4">
+                <div className="space-y-4">
+                  {receiptOrder.order_items?.map((item: any) => (
+                    <div key={item.id} className="pb-3 border-b border-dashed border-gray-200 last:border-0 last:pb-0">
+                      <div className="flex justify-between items-start gap-4">
+                        <div className="flex-1">
+                          <p
+                            className="text-xs font-bold text-gray-800 uppercase tracking-wide m-0"
+                            style={{ fontFamily: "monospace" }}
+                          >
+                            {item.quantity}x {item.product_name}
+                          </p>
+                          {item.variant_name && (
+                            <p className="text-[10px] text-gray-400 mt-0.5 mb-0" style={{ fontFamily: "monospace" }}>
+                              {item.variant_name}
+                            </p>
+                          )}
+                        </div>
+                        <p
+                          className="text-xs font-bold text-gray-800 m-0 text-right"
+                          style={{ fontFamily: "monospace" }}
+                        >
+                          ₱{item.total_price}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="bg-white rounded-b-2xl shadow-sm flex-shrink-0 mx-4 mb-4">
+                <div className="px-5 py-3 border-t-2 border-dashed border-gray-200">
+                  <div className="flex justify-between items-center mb-1">
+                    <span
+                      className="text-[10px] font-bold text-gray-400 uppercase tracking-wider"
+                      style={{ fontFamily: "monospace" }}
+                    >
+                      Subtotal
+                    </span>
+                    <span className="text-[10px] font-bold text-gray-400" style={{ fontFamily: "monospace" }}>
+                      ₱{receiptOrder.subtotal}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center mb-3">
+                    <span
+                      className="text-[10px] font-bold text-gray-400 uppercase tracking-wider"
+                      style={{ fontFamily: "monospace" }}
+                    >
+                      Delivery Fee
+                    </span>
+                    <span className="text-[10px] font-bold text-gray-400" style={{ fontFamily: "monospace" }}>
+                      ₱{receiptOrder.delivery_fee}
+                    </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span
+                      className="text-xs font-bold text-gray-800 uppercase tracking-wider"
+                      style={{ fontFamily: "monospace" }}
+                    >
+                      Total
+                    </span>
+                    <span
+                      className="text-sm font-bold text-brand-500"
+                      style={{ fontFamily: "monospace", color: "var(--primary-color)" }}
+                    >
+                      ₱{receiptOrder.total}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>

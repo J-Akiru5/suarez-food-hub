@@ -1,10 +1,11 @@
 "use client";
 
 import { createBrowserTypedClient } from "@repo/data-access/client";
-import { getProfilesByRole, updateProfile, upsertProfile } from "@repo/data-access/data/profiles";
+import { updateProfile } from "@repo/data-access/data/profiles";
 import { Button, Card, CardContent, Input } from "@repo/ui";
-import { CheckCircle, Loader2, Shield, UserPlus, Users, XCircle } from "lucide-react";
+import { CheckCircle, Loader2, Shield, UserPlus, Users } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "@/lib/use-toast";
 
 interface StaffProfile {
   id: string;
@@ -32,10 +33,17 @@ export default function StaffAccountsPage() {
   const [formSuccess, setFormSuccess] = useState("");
 
   const fetchStaff = useCallback(async () => {
-    const data = await getProfilesByRole(supabase, "staff");
-    setStaffList((data as StaffProfile[]) || []);
+    try {
+      const res = await fetch("/api/staff");
+      if (res.ok) {
+        const { data } = await res.json();
+        setStaffList(data || []);
+      }
+    } catch (e) {
+      console.error(e);
+    }
     setLoading(false);
-  }, [supabase]);
+  }, []);
 
   useEffect(() => {
     fetchStaff();
@@ -53,46 +61,50 @@ export default function StaffAccountsPage() {
       return;
     }
 
-    const { data: authData, error: authError } = await supabase.auth.admin.createUser({
-      email: formEmail,
-      password: formPassword,
-      email_confirm: true,
-    });
+    try {
+      const res = await fetch("/api/staff", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: formEmail,
+          password: formPassword,
+          firstName: formFirstName,
+          lastName: formLastName,
+          phone: formPhone,
+        }),
+      });
 
-    if (authError || !authData.user) {
-      setFormError(authError?.message || "Failed to create account");
-      setCreating(false);
-      return;
-    }
+      const data = await res.json();
 
-    // Profile is created by DB trigger, but just in case upsert it
-    const { error: profileError } = await upsertProfile(supabase, {
-      id: authData.user.id,
-      full_name: `${formFirstName} ${formLastName}`,
-      first_name: formFirstName,
-      last_name: formLastName,
-      phone: formPhone,
-      role: "staff",
-      is_active: true,
-    });
-
-    if (profileError) {
-      setFormError("Account created but profile update failed: " + profileError.message);
-    } else {
-      setFormSuccess(`Staff account created for ${formFirstName} ${formLastName}`);
-      setFormEmail("");
-      setFormPassword("");
-      setFormFirstName("");
-      setFormLastName("");
-      setFormPhone("");
-      fetchStaff();
+      if (!res.ok) {
+        setFormError(data.error || "Failed to create account");
+      } else {
+        setFormSuccess(`Staff account created for ${data.name}`);
+        setFormEmail("");
+        setFormPassword("");
+        setFormFirstName("");
+        setFormLastName("");
+        setFormPhone("");
+        fetchStaff();
+        toast({ title: "Staff created", description: data.name });
+      }
+    } catch {
+      setFormError("Network error. Please try again.");
     }
     setCreating(false);
   }
 
   async function toggleActive(staffId: string, current: boolean) {
-    await updateProfile(supabase, staffId, { is_active: !current });
-    fetchStaff();
+    try {
+      await fetch("/api/staff", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: staffId, is_active: !current }),
+      });
+      fetchStaff();
+    } catch (e) {
+      console.error("Failed to toggle status", e);
+    }
   }
 
   return (

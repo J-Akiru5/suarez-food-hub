@@ -1,11 +1,11 @@
-import { PrismaClient, ProductAvailability, UserRole, VariantType } from "@prisma/client";
+import { PrismaClient, ProductAvailability, VariantType } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log("Seeding database...");
 
-  // Create categories (matching dev-lou's categories)
+  // Create categories
   const categories = await Promise.all([
     prisma.category.create({
       data: {
@@ -59,7 +59,7 @@ async function main() {
 
   const [dumplings, springRolls, mainDish, dessert, drinks, snacks] = categories;
 
-  // Create products (matching dev-lou's 12 products)
+  // Create products with variants
   const products = await Promise.all([
     // Dumplings
     prisma.product.create({
@@ -71,14 +71,14 @@ async function main() {
         basePrice: 60.0,
         imageUrl: "/assets/uploads/steamed-siomai.jpg",
         variantType: VariantType.preparation,
-        stocks: 100,
+        quantity: 100,
         availability: ProductAvailability.available,
         isFeatured: true,
         rating: 5.0,
         variants: {
           create: [
-            { name: "Steamed", price: 60.0, stocks: 100, sortOrder: 1 },
-            { name: "Fried", price: 70.0, stocks: 100, sortOrder: 2 },
+            { name: "Steamed", price: 60.0, quantity: 100, sortOrder: 1 },
+            { name: "Fried", price: 70.0, quantity: 100, sortOrder: 2 },
           ],
         },
       },
@@ -92,7 +92,7 @@ async function main() {
         basePrice: 70.0,
         imageUrl: "/assets/uploads/fried-siomai.jpg",
         variantType: VariantType.none,
-        stocks: 80,
+        quantity: 80,
         availability: ProductAvailability.available,
         rating: 4.8,
       },
@@ -108,7 +108,7 @@ async function main() {
         basePrice: 50.0,
         imageUrl: "/assets/uploads/pork-lumpia.jpg",
         variantType: VariantType.none,
-        stocks: 120,
+        quantity: 120,
         availability: ProductAvailability.available,
         isFeatured: true,
         rating: 4.9,
@@ -123,7 +123,7 @@ async function main() {
         basePrice: 65.0,
         imageUrl: "/assets/uploads/dynamite-lumpia.jpg",
         variantType: VariantType.none,
-        stocks: 80,
+        quantity: 80,
         availability: ProductAvailability.available,
         isFeatured: true,
         rating: 4.7,
@@ -140,13 +140,13 @@ async function main() {
         basePrice: 80.0,
         imageUrl: "/assets/uploads/valenciana.jpg",
         variantType: VariantType.size,
-        stocks: 50,
+        quantity: 50,
         availability: ProductAvailability.available,
         rating: 4.9,
         variants: {
           create: [
-            { name: "Medium", price: 80.0, stocks: 50, sortOrder: 1 },
-            { name: "Large", price: 150.0, stocks: 30, sortOrder: 2 },
+            { name: "Medium", price: 80.0, quantity: 50, sortOrder: 1 },
+            { name: "Large", price: 150.0, quantity: 30, sortOrder: 2 },
           ],
         },
       },
@@ -160,13 +160,13 @@ async function main() {
         basePrice: 75.0,
         imageUrl: "/assets/uploads/chickenadobo.jpg",
         variantType: VariantType.size,
-        stocks: 50,
+        quantity: 50,
         availability: ProductAvailability.available,
         rating: 4.8,
         variants: {
           create: [
-            { name: "Medium", price: 75.0, stocks: 50, sortOrder: 1 },
-            { name: "Large", price: 140.0, stocks: 30, sortOrder: 2 },
+            { name: "Medium", price: 75.0, quantity: 50, sortOrder: 1 },
+            { name: "Large", price: 140.0, quantity: 30, sortOrder: 2 },
           ],
         },
       },
@@ -180,13 +180,13 @@ async function main() {
         basePrice: 90.0,
         imageUrl: "/assets/uploads/beefcalderita.jpg",
         variantType: VariantType.size,
-        stocks: 40,
+        quantity: 40,
         availability: ProductAvailability.available,
         rating: 4.7,
         variants: {
           create: [
-            { name: "Medium", price: 90.0, stocks: 40, sortOrder: 1 },
-            { name: "Large", price: 160.0, stocks: 25, sortOrder: 2 },
+            { name: "Medium", price: 90.0, quantity: 40, sortOrder: 1 },
+            { name: "Large", price: 160.0, quantity: 25, sortOrder: 2 },
           ],
         },
       },
@@ -202,7 +202,7 @@ async function main() {
         basePrice: 45.0,
         imageUrl: "/assets/uploads/lecheflan.jpg",
         variantType: VariantType.none,
-        stocks: 30,
+        quantity: 30,
         availability: ProductAvailability.available,
         rating: 4.9,
       },
@@ -216,7 +216,7 @@ async function main() {
         basePrice: 40.0,
         imageUrl: "/assets/uploads/maja-blanca.jpg",
         variantType: VariantType.none,
-        stocks: 25,
+        quantity: 25,
         availability: ProductAvailability.available,
         rating: 4.6,
       },
@@ -232,13 +232,13 @@ async function main() {
         basePrice: 35.0,
         imageUrl: "/assets/uploads/iced-coffee.jpg",
         variantType: VariantType.sugar_level,
-        stocks: 200,
+        quantity: 200,
         availability: ProductAvailability.available,
         rating: 4.5,
         variants: {
           create: [
-            { name: "100% Sugar", price: 35.0, stocks: 200, sortOrder: 1 },
-            { name: "50% Sugar", price: 35.0, stocks: 200, sortOrder: 2 },
+            { name: "100% Sugar", price: 35.0, quantity: 200, sortOrder: 1 },
+            { name: "50% Sugar", price: 35.0, quantity: 200, sortOrder: 2 },
           ],
         },
       },
@@ -252,7 +252,7 @@ async function main() {
         basePrice: 45.0,
         imageUrl: "/assets/uploads/strawberry-shake.jpg",
         variantType: VariantType.none,
-        stocks: 100,
+        quantity: 100,
         availability: ProductAvailability.available,
         rating: 4.8,
       },

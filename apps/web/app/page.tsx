@@ -1,22 +1,21 @@
 "use client";
 
-import { AboutSection, Footer, HeroSection, HowItWorks, TrendingSection } from "@repo/ui";
-import AOS from "aos";
+import { AboutSection, Footer, HeroSection, HowItWorks } from "@repo/ui";
 import { ArrowRight, Utensils } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import AuthNavbar from "../components/AuthNavbar";
 
 interface Product {
-  id: number;
+  id: string;
   name: string;
   price: number;
-  price_medium: number;
-  price_large: number;
   image: string;
   category: string;
   rating: number;
-  availability: "available" | "unavailable";
+  availability: string;
+  variant_type: string;
+  variants: { id: string; name: string; price: number; quantity: number }[];
 }
 
 const getImageSrc = (img: string) => (img?.startsWith("http") || img?.startsWith("/") ? img : `/assets/uploads/${img}`);
@@ -27,8 +26,6 @@ export default function HomePage() {
   const [fetchError, setFetchError] = useState("");
 
   useEffect(() => {
-    AOS.init({ duration: 600, offset: 50, once: true, disable: "mobile" });
-
     fetch("/api/products")
       .then((r) => r.json())
       .then((data) => {
@@ -42,98 +39,67 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="min-h-screen" style={{ background: "var(--color-cream)" }}>
+    <div className="min-h-screen bg-cream">
       <AuthNavbar showCartIcon={false} />
 
-      {/* Hero Section */}
-      <HeroSection
-        title="Taste Filipino Soul."
-        description="From siomai to lumpia, main dishes to refreshing drinks — Suarez Food Hub brings authentic Filipino flavors straight to your door. Order online anytime!"
-        ctaText="Order Now"
-        ctaHref="/menu"
-        images={[
-          "/assets/steamed-siomai.jpg",
-          "/assets/dynamite-lumpia.jpg",
-          "/assets/fried-siomai.jpg",
-          "/assets/pork-lumpia.jpg",
-          "/assets/uploads/drinks.jpg",
-        ]}
-      />
+      <HeroSection />
 
-      {/* How It Works */}
       <HowItWorks />
 
-      {/* Popular Foods - Horizontal Scroll */}
-      <section className="py-16 md:py-24" style={{ background: "var(--color-cream)" }} id="menu">
+      <section className="py-20 md:py-28 bg-cream" id="menu">
         <div className="max-w-[1280px] mx-auto px-6">
-          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-10" data-aos="fade-up">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-12">
             <div>
-              <h2
-                className="text-3xl md:text-4xl font-bold leading-tight"
-                style={{ color: "var(--secondary-color)", fontFamily: "var(--playfair-display)" }}
-              >
-                Popular Food
+              <span className="text-xs font-semibold uppercase tracking-[0.15em] text-[var(--primary-color)] mb-3 block">
+                From the Kitchen
+              </span>
+              <h2 className="text-3xl md:text-4xl font-bold text-[var(--secondary-color)] leading-tight font-heading">
+                Featured Products
               </h2>
-              <p
-                className="text-sm mt-2 max-w-md"
-                style={{ color: "color-mix(in srgb, var(--secondary-color) 50%, transparent)" }}
-              >
+              <p className="text-sm text-[var(--secondary-color)]/50 mt-2 max-w-md">
                 Our most loved dishes, chosen by thousands of happy customers
               </p>
             </div>
             <Link
               href="/menu"
-              className="text-sm font-medium transition-colors inline-flex items-center gap-1"
-              style={{ color: "var(--primary-color)" }}
+              className="text-sm font-semibold text-[var(--primary-color)] hover:opacity-80 transition-opacity inline-flex items-center gap-1 shrink-0"
             >
               Explore All Food <ArrowRight size={14} />
             </Link>
           </div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8" data-aos="fade-up">
-            {loading ? (
-              Array(4)
-                .fill(0)
-                .map((_, i) => (
-                  <div key={i} className="flex flex-col items-center">
-                    <div
-                      className="w-full aspect-square rounded-[24px] animate-pulse"
-                      style={{ background: "color-mix(in srgb, var(--primary-color) 10%, transparent)" }}
-                    />
-                    <div
-                      className="w-20 h-3 rounded mt-4 mx-auto animate-pulse"
-                      style={{ background: "color-mix(in srgb, var(--primary-color) 10%, transparent)" }}
-                    />
-                  </div>
-                ))
-            ) : fetchError ? (
-              <div className="col-span-full text-center w-full py-10">
-                <Utensils size={48} color="#ef4444" className="mx-auto mb-4 opacity-30" />
-                <p
-                  className="text-lg font-medium"
-                  style={{ color: "color-mix(in srgb, var(--secondary-color) 50%, transparent)" }}
-                >
-                  Could not load featured items.
-                  <br />
-                  Please refresh the page.
-                </p>
-              </div>
-            ) : popularFoods.length === 0 ? (
-              <div className="col-span-full text-center w-full py-10">
-                <Utensils size={48} className="mx-auto mb-4 opacity-30" style={{ color: "var(--primary-color)" }} />
-                <p
-                  className="text-lg font-medium"
-                  style={{ color: "color-mix(in srgb, var(--secondary-color) 50%, transparent)" }}
-                >
-                  Our chefs are preparing the popular menu.
-                  <br />
-                  Check back soon!
-                </p>
-              </div>
-            ) : (
-              popularFoods.map((item) => (
-                <Link key={item.id} href="/menu" className="flex flex-col items-center group">
-                  <div className="w-full aspect-square rounded-[24px] overflow-hidden bg-gray-50 mb-4 shadow-sm group-hover:shadow-md transition-all">
+          {loading ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i}>
+                  <div className="w-full aspect-square rounded-2xl bg-[var(--primary-color)]/5 animate-pulse" />
+                  <div className="w-24 h-3 rounded mt-4 mx-auto bg-[var(--primary-color)]/5 animate-pulse" />
+                </div>
+              ))}
+            </div>
+          ) : fetchError ? (
+            <div className="text-center py-16">
+              <Utensils size={48} className="mx-auto mb-4 text-red-400/50" />
+              <p className="text-lg font-medium text-[var(--secondary-color)]/50">
+                Could not load featured items.
+                <br />
+                Please refresh the page.
+              </p>
+            </div>
+          ) : popularFoods.length === 0 ? (
+            <div className="text-center py-16">
+              <Utensils size={48} className="mx-auto mb-4 text-[var(--primary-color)]/30" />
+              <p className="text-lg font-medium text-[var(--secondary-color)]/50">
+                Our chefs are preparing the popular menu.
+                <br />
+                Check back soon!
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8">
+              {popularFoods.map((item) => (
+                <Link key={item.id} href="/menu" className="group">
+                  <div className="w-full aspect-square rounded-2xl overflow-hidden bg-[var(--primary-color)]/5 mb-4 shadow-sm group-hover:shadow-md transition-shadow duration-300">
                     <img
                       src={getImageSrc(item.image)}
                       alt={item.name}
@@ -143,31 +109,18 @@ export default function HomePage() {
                       }}
                     />
                   </div>
-                  <p
-                    className="text-base font-semibold text-center transition-colors"
-                    style={{ color: "var(--secondary-color)", fontFamily: "var(--plus-jakarta-sans)" }}
-                    onMouseEnter={(e) => (e.currentTarget.style.color = "var(--primary-color)")}
-                    onMouseLeave={(e) => (e.currentTarget.style.color = "var(--secondary-color)")}
-                  >
+                  <p className="text-sm font-semibold text-center text-[var(--secondary-color)] group-hover:text-[var(--primary-color)] transition-colors duration-300">
                     {item.name}
                   </p>
                 </Link>
-              ))
-            )}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
-      {/* About Us + Visit Us */}
-      <AboutSection
-        subtitle="About Us"
-        title="Authentic Filipino food, delivered with love."
-        description="At Suarez Food Hub, we serve a wide variety of freshly prepared Filipino dishes — from steamed and fried siomai, crispy lumpia, hearty main dishes, to sweet desserts and refreshing drinks. Every order is made with quality ingredients and passion."
-        storeImage="/assets/store1.jpg"
-        foodImage="/assets/steamed-siomai.jpg"
-      />
+      <AboutSection />
 
-      {/* Footer */}
       <Footer />
     </div>
   );

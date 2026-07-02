@@ -1,8 +1,5 @@
-"use client";
-
-import { Globe, MapPin, Phone } from "lucide-react";
+import { Globe, Mail, MapPin, Phone } from "lucide-react";
 import * as React from "react";
-import { cn } from "../lib/utils";
 
 export interface FooterProps {
   className?: string;
@@ -10,91 +7,93 @@ export interface FooterProps {
 
 const Footer = React.forwardRef<HTMLElement, FooterProps>(({ className }, ref) => {
   return (
-    <footer
-      ref={ref}
-      className={cn("bg-gray-50 border-t py-12", className)}
-      style={{ borderColor: "color-mix(in srgb, var(--primary-color) 10%, transparent)" }}
-    >
-      <div className="max-w-[1280px] mx-auto px-6">
-        <div className="grid gap-8 md:grid-cols-4">
-          <div>
-            <div className="flex items-center gap-2">
-              <div
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-white"
-                style={{ background: "var(--primary-color)" }}
-              >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              </div>
-              <span className="text-lg font-bold text-gray-900">Suarez Food Hub</span>
-            </div>
-            <p className="mt-3 text-sm text-gray-500">
-              Authentic Filipino food delivered to your doorstep in Janiuay, Iloilo.
+    <footer ref={ref} className="bg-near-black text-white/70">
+      <div className="max-w-[1280px] mx-auto px-6 py-16">
+        <div className="grid gap-10 md:grid-cols-4">
+          <div className="md:col-span-1">
+            <h3 className="text-lg font-bold text-white font-heading mb-3">Suarez Food Hub</h3>
+            <p className="text-sm text-white/50 leading-relaxed max-w-xs">
+              Authentic Filipino food delivered to your doorstep in Janiuay, Iloilo. Made with passion, served with
+              love.
             </p>
           </div>
+
           <div>
-            <h3 className="text-sm font-semibold text-gray-900">Quick Links</h3>
-            <ul className="mt-3 space-y-2">
+            <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-white/40 mb-4">Quick Links</h4>
+            <ul className="space-y-3">
               <li>
-                <a href="/menu" className="text-sm text-gray-500 hover:text-gray-900">
+                <a href="/menu" className="text-sm text-white/60 hover:text-white transition-colors duration-200">
                   Menu
                 </a>
               </li>
               <li>
-                <a href="/about" className="text-sm text-gray-500 hover:text-gray-900">
+                <a href="/about" className="text-sm text-white/60 hover:text-white transition-colors duration-200">
                   About Us
                 </a>
               </li>
               <li>
-                <a href="/contact" className="text-sm text-gray-500 hover:text-gray-900">
+                <a href="/contact" className="text-sm text-white/60 hover:text-white transition-colors duration-200">
                   Contact
+                </a>
+              </li>
+              <li>
+                <a
+                  href="/how-to-order"
+                  className="text-sm text-white/60 hover:text-white transition-colors duration-200"
+                >
+                  How to Order
                 </a>
               </li>
             </ul>
           </div>
+
           <div>
-            <h3 className="text-sm font-semibold text-gray-900">Hours</h3>
-            <ul className="mt-3 space-y-2 text-sm text-gray-500">
-              <li>Monday - Saturday</li>
-              <li>10:00 AM - 9:00 PM</li>
-              <li>Sunday: Closed</li>
+            <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-white/40 mb-4">Hours</h4>
+            <ul className="space-y-2 text-sm text-white/60">
+              <li>Monday — Saturday</li>
+              <li className="font-medium text-white/80">10:00 AM — 9:00 PM</li>
+              <li className="pt-2">Sunday</li>
+              <li className="font-medium text-white/50">Closed</li>
             </ul>
           </div>
+
           <div>
-            <h3 className="text-sm font-semibold text-gray-900">Contact</h3>
-            <ul className="mt-3 space-y-2 text-sm text-gray-500">
-              <li className="flex items-center gap-2">
-                <Phone className="h-4 w-4" />
+            <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-white/40 mb-4">Contact</h4>
+            <ul className="space-y-3 text-sm">
+              <li className="flex items-center gap-2.5 text-white/60">
+                <Phone size={14} className="shrink-0" />
                 +63 912 345 6789
               </li>
-              <li className="flex items-center gap-2">
-                <MapPin className="h-4 w-4" />
+              <li className="flex items-center gap-2.5 text-white/60">
+                <MapPin size={14} className="shrink-0" />
                 Janiuay, Iloilo
               </li>
+              <li className="flex items-center gap-2.5 text-white/60">
+                <Mail size={14} className="shrink-0" />
+                info@suarezfoodhub.com
+              </li>
             </ul>
-            <div className="mt-4 flex gap-3">
+
+            <div className="mt-6 flex gap-3">
               <a
                 href="#"
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-gray-600 hover:text-white transition-colors"
-                style={{ ["--hover-bg" as any]: "var(--primary-color)" }}
-                onMouseEnter={(e) => (e.currentTarget.style.background = "var(--primary-color)")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "")}
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 text-white/40 hover:bg-[var(--primary-color)] hover:text-white hover:border-[var(--primary-color)] transition-all duration-200"
+                aria-label="Facebook"
               >
-                <Globe className="h-4 w-4" />
+                <Globe size={14} />
               </a>
               <a
                 href="#"
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-gray-600 hover:text-white transition-colors"
-                onMouseEnter={(e) => (e.currentTarget.style.background = "var(--primary-color)")}
-                onMouseLeave={(e) => (e.currentTarget.style.background = "")}
+                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 text-white/40 hover:bg-[var(--primary-color)] hover:text-white hover:border-[var(--primary-color)] transition-all duration-200"
+                aria-label="Instagram"
               >
-                <Globe className="h-4 w-4" />
+                <Globe size={14} />
               </a>
             </div>
           </div>
         </div>
-        <div className="mt-8 border-t border-gray-200 pt-6 text-center text-sm text-gray-400">
+
+        <div className="mt-12 pt-8 border-t border-white/10 text-center text-xs text-white/30">
           &copy; {new Date().getFullYear()} Suarez Food Hub. All rights reserved.
         </div>
       </div>

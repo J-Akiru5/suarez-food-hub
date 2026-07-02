@@ -1,33 +1,33 @@
 "use client";
 
 import { cn } from "@repo/utils";
-import {
-  Minus,
-  Plus,
-  SearchX,
-  ShoppingCart,
-  Star,
-  X,
-} from "lucide-react";
+import { Minus, Plus, SearchX, ShoppingCart, Star, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import AuthNavbar from "../../components/AuthNavbar";
 import { useAuth } from "../../components/auth-provider";
 import CartSidebar from "../../components/CartSidebar";
 
-// ΓöÇΓöÇΓöÇ Types ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─── Types ────────────────────────────────────────────
+interface ProductVariant {
+  id: string;
+  name: string;
+  price: number;
+  quantity: number;
+}
+
 interface Product {
   id: string;
   name: string;
   price: number;
-  price_medium: number;
-  price_large: number;
   description: string;
   image: string;
   category: string;
   quantity: number;
   availability: string;
   rating: number;
+  variant_type: string;
+  variants: ProductVariant[];
 }
 
 interface CartItem {
@@ -39,39 +39,47 @@ interface CartItem {
   variant: string;
 }
 
-// ΓöÇΓöÇΓöÇ Emoji map for categories ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+// ─── Emoji map for categories ─────────────────────────
 const categoryEmoji: Record<string, string> = {
-  All: "≡ƒì╜∩╕Å",
-  "Main Dish": "≡ƒì¢",
-  Dumplings: "≡ƒÑƒ",
-  "Spring Rolls": "≡ƒî»",
-  Drinks: "≡ƒÑñ",
-  Desserts: "≡ƒì░",
-  Sides: "≡ƒºå",
-  Noodles: "≡ƒì£",
+  All: "🍽️",
+  "Main Dish": "🍛",
+  Dumplings: "🥟",
+  "Spring Rolls": "🌯",
+  Drinks: "🥤",
+  Desserts: "🍰",
+  Sides: "🧆",
+  Noodles: "🍜",
 };
 
 function getCategoryEmoji(cat: string) {
-  return categoryEmoji[cat] || "≡ƒì╜∩╕Å";
+  return categoryEmoji[cat] || "🍽️";
+}
+
+function getVariantLabel(variantType: string): string {
+  switch (variantType) {
+    case "size":
+      return "Select Size";
+    case "sugar_level":
+      return "Sugar Level";
+    case "preparation":
+      return "Preparation";
+    default:
+      return "Options";
+  }
 }
 
 function getVariantPrice(product: Product, variant: string): number {
-  if (product.category === "Main Dish") {
-    return variant === "Large" ? product.price_large : product.price_medium;
-  }
-  return product.price;
+  if (!variant || product.variants.length === 0) return product.price;
+  const found = product.variants.find((v) => v.name === variant);
+  return found ? found.price : product.price;
 }
 
 function getVariantOptions(product: Product): string[] {
-  if (product.category === "Main Dish") return ["Medium", "Large"];
-  if (product.category === "Dumplings") return ["Steamed", "Fried"];
-  if (product.category === "Spring Rolls") return ["Dynamite", "Regular"];
-  if (product.category === "Drinks") return ["100% Sugar", "75% Sugar", "50% Sugar", "Less Sugar", "No Sugar"];
-  return [];
+  return product.variants.map((v) => v.name);
 }
 
 function hasVariants(product: Product): boolean {
-  return getVariantOptions(product).length > 0;
+  return product.variants.length > 0;
 }
 
 export default function MenuPage() {
@@ -92,9 +100,6 @@ export default function MenuPage() {
 
   // Toast
   const [toast, setToast] = useState<string | null>(null);
-
-  // Guest login modal
-  const [showGuestModal, setShowGuestModal] = useState(false);
 
   // Receipt number
   const [receiptNumber, setReceiptNumber] = useState("");
@@ -141,7 +146,9 @@ export default function MenuPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ items }),
       });
-    } catch { /* ignore */ }
+    } catch {
+      /* ignore */
+    }
   };
 
   const saveCart = (updated: CartItem[]) => {
@@ -159,7 +166,13 @@ export default function MenuPage() {
         if (data?.items?.length > 0) {
           const localRaw = localStorage.getItem("sfh_cart");
           const local: CartItem[] = localRaw
-            ? (() => { try { return JSON.parse(localRaw); } catch { return []; } })()
+            ? (() => {
+                try {
+                  return JSON.parse(localRaw);
+                } catch {
+                  return [];
+                }
+              })()
             : [];
           const merged = [...data.items];
           for (const li of local) {
@@ -180,9 +193,9 @@ export default function MenuPage() {
     setTimeout(() => setToast(null), 2500);
   };
 
-  // ΓöÇΓöÇΓöÇ Guest guard ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ─── Guest guard ─────────────────────────────────────
   const requireAuth = () => {
-    setShowGuestModal(true);
+    setShowCart(true);
   };
 
   const openModal = (product: Product) => {
@@ -196,7 +209,7 @@ export default function MenuPage() {
     setQuantity(1);
   };
 
-  // ΓöÇΓöÇΓöÇ Quick add (no-variant items) ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ─── Quick add (no-variant items) ────────────────────
   const quickAdd = (product: Product) => {
     if (!user) {
       requireAuth();
@@ -214,9 +227,7 @@ export default function MenuPage() {
     const existing = cart.findIndex((c) => c.id === product.id && c.variant === "");
     let updated: CartItem[];
     if (existing >= 0) {
-      updated = cart.map((c, i) =>
-        i === existing ? { ...c, quantity: c.quantity + 1 } : c,
-      );
+      updated = cart.map((c, i) => (i === existing ? { ...c, quantity: c.quantity + 1 } : c));
     } else {
       updated = [...cart, cartItem];
     }
@@ -240,14 +251,10 @@ export default function MenuPage() {
       quantity,
       variant: selectedVariant,
     };
-    const existing = cart.findIndex(
-      (c) => c.id === modalProduct.id && c.variant === selectedVariant,
-    );
+    const existing = cart.findIndex((c) => c.id === modalProduct.id && c.variant === selectedVariant);
     let updated: CartItem[];
     if (existing >= 0) {
-      updated = cart.map((c, i) =>
-        i === existing ? { ...c, quantity: c.quantity + quantity } : c,
-      );
+      updated = cart.map((c, i) => (i === existing ? { ...c, quantity: c.quantity + quantity } : c));
     } else {
       updated = [...cart, cartItem];
     }
@@ -276,10 +283,7 @@ export default function MenuPage() {
   const totalItems = cart.reduce((s, c) => s + c.quantity, 0);
   const totalPrice = cart.reduce((s, c) => s + c.price * c.quantity, 0);
 
-  const filtered =
-    activeCategory === "All"
-      ? products
-      : products.filter((p) => p.category === activeCategory);
+  const filtered = activeCategory === "All" ? products : products.filter((p) => p.category === activeCategory);
 
   const getImageSrc = (img: string) => {
     if (!img) return "/assets/food-hub.jpg";
@@ -288,10 +292,10 @@ export default function MenuPage() {
     return `/assets/uploads/${img}`;
   };
 
-  // ΓöÇΓöÇΓöÇ Render ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
+  // ─── Render ──────────────────────────────────────────
   return (
     <div className="h-screen flex flex-col bg-cream">
-      {/* ΓöÇΓöÇ Toast ΓöÇΓöÇ */}
+      {/* ── Toast ── */}
       <div
         className={cn(
           "fixed top-4 right-4 z-[9999] px-5 py-3 rounded-2xl font-bold shadow-xl border border-white/10 transition-all duration-400 flex items-center gap-3",
@@ -309,71 +313,7 @@ export default function MenuPage() {
         <span className="text-sm">{toast}</span>
       </div>
 
-      {/* ΓöÇΓöÇ Guest Login Modal ΓöÇΓöÇ */}
-      {showGuestModal && (
-        <div
-          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
-          onClick={(e) => {
-            if (e.target === e.currentTarget) setShowGuestModal(false);
-          }}
-        >
-          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-[420px] p-8 relative animate-slideUp">
-            <button
-              onClick={() => setShowGuestModal(false)}
-              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center border-none cursor-pointer hover:bg-gray-200 transition-colors"
-            >
-              <X className="w-4 h-4 text-gray-500" />
-            </button>
-
-            <div className="text-center mb-6">
-              <div className="w-16 h-16 rounded-full bg-brand-50 flex items-center justify-center mx-auto mb-4">
-                <ShoppingCart className="w-7 h-7 text-brand-500" />
-              </div>
-              <h2
-                className="text-2xl font-bold text-near-black m-0"
-                style={{ fontFamily: "var(--playfair-display)" }}
-              >
-                Sign in to Order
-              </h2>
-              <p className="text-sm text-gray-500 mt-2 mb-0 leading-relaxed">
-                Create an account or sign in to start adding items to your basket.
-              </p>
-            </div>
-
-            <div className="space-y-3">
-              <button
-                onClick={() => {
-                  setShowGuestModal(false);
-                  router.push("/login");
-                }}
-                className="w-full py-3.5 rounded-2xl bg-near-black text-white font-semibold text-sm border-none cursor-pointer hover:bg-near-black/90 transition-colors"
-              >
-                Sign In
-              </button>
-              <button
-                onClick={() => {
-                  setShowGuestModal(false);
-                  router.push("/register");
-                }}
-                className="w-full py-3.5 rounded-2xl bg-white text-near-black font-semibold text-sm border-2 border-gray-200 cursor-pointer hover:border-brand-500/30 hover:bg-brand-50/30 transition-all"
-              >
-                Create an Account
-              </button>
-            </div>
-
-            <p className="text-center mt-5 mb-0">
-              <button
-                onClick={() => setShowGuestModal(false)}
-                className="text-xs text-gray-400 hover:text-gray-600 bg-transparent border-none cursor-pointer transition-colors"
-              >
-                Continue browsing
-              </button>
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* ΓöÇΓöÇ Product Modal ΓöÇΓöÇ */}
+      {/* ── Product Modal ── */}
       {modalProduct && (
         <div
           className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
@@ -413,11 +353,7 @@ export default function MenuPage() {
               {hasVariants(modalProduct) && (
                 <div className="mb-5">
                   <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest m-0 mb-3">
-                    {modalProduct.category === "Main Dish"
-                      ? "Select Size"
-                      : modalProduct.category === "Drinks"
-                        ? "Sugar Level"
-                        : "Preparation"}
+                    {getVariantLabel(modalProduct.variant_type)}
                   </p>
                   <div className="flex flex-wrap gap-2">
                     {getVariantOptions(modalProduct).map((opt) => (
@@ -471,21 +407,21 @@ export default function MenuPage() {
                     className="text-2xl md:text-3xl font-bold text-brand-500 m-0"
                     style={{ fontFamily: "var(--playfair-display)" }}
                   >
-                    Γé▒{getVariantPrice(modalProduct, selectedVariant) * quantity}.00
+                    ₱{getVariantPrice(modalProduct, selectedVariant) * quantity}.00
                   </p>
                 </div>
                 <button
                   onClick={addToCart}
-                  disabled={modalProduct.availability === "Sold Out"}
+                  disabled={modalProduct.availability === "sold_out"}
                   className={cn(
                     "px-6 py-3.5 rounded-full font-bold text-sm flex items-center gap-2 border-none transition-all duration-200",
-                    modalProduct.availability === "Sold Out"
+                    modalProduct.availability === "sold_out"
                       ? "bg-gray-200 text-gray-400 cursor-not-allowed"
                       : "bg-brand-500 text-white hover:bg-brand-600 cursor-pointer shadow-lg shadow-brand-500/25 active:scale-95",
                   )}
                 >
                   <ShoppingCart className="w-4 h-4" />
-                  {modalProduct.availability === "Sold Out" ? "Sold Out" : "Add to Basket"}
+                  {modalProduct.availability === "sold_out" ? "Sold Out" : "Add to Basket"}
                 </button>
               </div>
             </div>
@@ -493,7 +429,7 @@ export default function MenuPage() {
         </div>
       )}
 
-      {/* ΓöÇΓöÇ Top Bar (kiosk mode) ΓöÇΓöÇ */}
+      {/* ── Top Bar (kiosk mode) ── */}
       <AuthNavbar
         kioskMode
         showCartIcon
@@ -503,20 +439,19 @@ export default function MenuPage() {
         }}
       />
 
-      {/* ΓöÇΓöÇ Main Split View ΓöÇΓöÇ */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* ΓöÇΓöÇ Left: Products ΓöÇΓöÇ */}
+      {/* ── Main Split View ── */}
+      <div className="flex-1 flex overflow-hidden pt-[72px]">
+        {/* ── Left: Products ── */}
         <div className="flex-1 flex flex-col min-w-0">
           {/* Category Pills */}
           <div className="sticky top-0 z-10 bg-cream/95 backdrop-blur-xl border-b border-black/5">
             <div className="flex items-center gap-2 px-4 md:px-6 py-3 overflow-x-auto hide-scrollbar">
               {loading
-                ? Array(5).fill(0).map((_, i) => (
-                    <div
-                      key={i}
-                      className="w-24 h-10 rounded-full bg-gray-200 animate-pulse flex-shrink-0"
-                    />
-                  ))
+                ? Array(5)
+                    .fill(0)
+                    .map((_, i) => (
+                      <div key={i} className="w-24 h-10 rounded-full bg-gray-200 animate-pulse flex-shrink-0" />
+                    ))
                 : categories.map((cat) => (
                     <button
                       key={cat}
@@ -540,22 +475,27 @@ export default function MenuPage() {
             <div className="px-4 md:px-6 py-6">
               {loading ? (
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                  {Array(6).fill(0).map((_, i) => (
-                    <div key={i} className="bg-white rounded-2xl overflow-hidden animate-pulse">
-                      <div className="aspect-[4/3] bg-gray-200" />
-                      <div className="p-4 space-y-2">
-                        <div className="h-4 bg-gray-200 rounded w-3/4" />
-                        <div className="h-3 bg-gray-100 rounded w-1/2" />
+                  {Array(6)
+                    .fill(0)
+                    .map((_, i) => (
+                      <div key={i} className="bg-white rounded-2xl overflow-hidden animate-pulse">
+                        <div className="aspect-[4/3] bg-gray-200" />
+                        <div className="p-4 space-y-2">
+                          <div className="h-4 bg-gray-200 rounded w-3/4" />
+                          <div className="h-3 bg-gray-100 rounded w-1/2" />
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))}
                 </div>
               ) : fetchError ? (
                 <div className="flex flex-col items-center justify-center py-20 text-center">
                   <div className="w-20 h-20 rounded-full bg-red-50 flex items-center justify-center mb-4">
                     <SearchX className="w-8 h-8 text-red-400" />
                   </div>
-                  <h3 className="text-xl font-bold text-near-black m-0 mb-2" style={{ fontFamily: "var(--playfair-display)" }}>
+                  <h3
+                    className="text-xl font-bold text-near-black m-0 mb-2"
+                    style={{ fontFamily: "var(--playfair-display)" }}
+                  >
                     Something went wrong
                   </h3>
                   <p className="text-sm text-gray-500 max-w-sm m-0 leading-relaxed">{fetchError}</p>
@@ -571,7 +511,10 @@ export default function MenuPage() {
                   <div className="w-20 h-20 rounded-full bg-brand-50 flex items-center justify-center mb-4">
                     <SearchX className="w-8 h-8 text-brand-500/50" />
                   </div>
-                  <h3 className="text-xl font-bold text-near-black m-0 mb-2" style={{ fontFamily: "var(--playfair-display)" }}>
+                  <h3
+                    className="text-xl font-bold text-near-black m-0 mb-2"
+                    style={{ fontFamily: "var(--playfair-display)" }}
+                  >
                     No items found
                   </h3>
                   <p className="text-sm text-gray-500 max-w-sm m-0 leading-relaxed">
@@ -581,7 +524,7 @@ export default function MenuPage() {
               ) : (
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                   {filtered.map((item) => {
-                    const isSoldOut = item.availability === "Sold Out";
+                    const isSoldOut = item.availability === "sold_out";
                     const hasVar = hasVariants(item);
 
                     return (
@@ -638,9 +581,9 @@ export default function MenuPage() {
                               {item.name}
                             </h3>
                             <p className="text-sm font-bold text-white/90 m-0 mt-1">
-                              {item.category === "Main Dish"
-                                ? `Γé▒${item.price_medium} ΓÇô Γé▒${item.price_large}`
-                                : `Γé▒${item.price}.00`}
+                              {hasVariants(item)
+                                ? `₱${Math.min(...item.variants.map((v) => v.price))} – ₱${Math.max(...item.variants.map((v) => v.price))}`
+                                : `₱${item.price}.00`}
                             </p>
                           </div>
                         </div>
@@ -665,11 +608,7 @@ export default function MenuPage() {
                               )}
                               title={hasVar ? "Select options" : "Add to basket"}
                             >
-                              {hasVar ? (
-                                <span className="text-xs font-bold">+</span>
-                              ) : (
-                                <Plus className="w-4 h-4" />
-                              )}
+                              {hasVar ? <span className="text-xs font-bold">+</span> : <Plus className="w-4 h-4" />}
                             </button>
                           )}
                         </div>
@@ -682,7 +621,7 @@ export default function MenuPage() {
           </div>
         </div>
 
-        {/* ΓöÇΓöÇ Right: Persistent Cart Panel ΓöÇΓöÇ */}
+        {/* ── Right: Persistent Cart Panel ── */}
         <div className="w-[380px] xl:w-[420px] hidden lg:flex flex-col flex-shrink-0">
           <CartSidebar
             showCart={showCart}
@@ -692,12 +631,13 @@ export default function MenuPage() {
             removeFromCart={removeFromCart}
             totalPrice={totalPrice}
             receiptNumber={receiptNumber}
+            user={user}
             persistent
           />
         </div>
       </div>
 
-      {/* ΓöÇΓöÇ Mobile Bottom Cart Bar ΓöÇΓöÇ */}
+      {/* ── Mobile Bottom Cart Bar ── */}
       {cart.length > 0 && (
         <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-gray-200/50 px-4 py-3 shadow-2xl">
           <div className="flex items-center justify-between">
@@ -705,11 +645,8 @@ export default function MenuPage() {
               <p className="text-xs text-gray-500 m-0">
                 {totalItems} item{totalItems !== 1 ? "s" : ""} in basket
               </p>
-              <p
-                className="text-lg font-bold text-brand-500 m-0"
-                style={{ fontFamily: "var(--playfair-display)" }}
-              >
-                Γé▒{totalPrice}.00
+              <p className="text-lg font-bold text-brand-500 m-0" style={{ fontFamily: "var(--playfair-display)" }}>
+                ₱{totalPrice}.00
               </p>
             </div>
             <button
@@ -723,16 +660,20 @@ export default function MenuPage() {
         </div>
       )}
 
-      {/* ΓöÇΓöÇ Mobile Cart Overlay ΓöÇΓöÇ */}
-      <CartSidebar
-        showCart={showCart}
-        setShowCart={setShowCart}
-        cart={cart}
-        updateCartQty={updateCartQty}
-        removeFromCart={removeFromCart}
-        totalPrice={totalPrice}
-        receiptNumber={receiptNumber}
-      />
+      {/* ── Mobile Cart Overlay ── */}
+      <div className="hidden lg:block" />
+      <div className="lg:hidden">
+        <CartSidebar
+          showCart={showCart}
+          setShowCart={setShowCart}
+          cart={cart}
+          updateCartQty={updateCartQty}
+          removeFromCart={removeFromCart}
+          totalPrice={totalPrice}
+          receiptNumber={receiptNumber}
+          user={user}
+        />
+      </div>
 
       <style
         dangerouslySetInnerHTML={{

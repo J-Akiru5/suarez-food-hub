@@ -4,7 +4,7 @@ import { createBrowserTypedClient } from "@repo/data-access/client";
 import { updateProduct } from "@repo/data-access/data/products";
 import { Badge, Button, Card, CardContent, Input } from "@repo/ui";
 import { AlertTriangle, ImageIcon, Loader2, Package, Save, Search } from "lucide-react";
-import Image from "next/image";
+
 import { useCallback, useEffect, useState } from "react";
 
 export default function StaffInventoryPage() {
@@ -141,14 +141,7 @@ export default function StaffInventoryPage() {
                         <div className="flex items-center gap-3">
                           <div className="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden shrink-0">
                             {product.image_url ? (
-                              <Image
-                                src={product.image_url}
-                                alt={product.name}
-                                width={40}
-                                height={40}
-                                className="object-cover w-full h-full"
-                                unoptimized
-                              />
+                              <img src={product.image_url} alt={product.name} className="object-cover w-full h-full" />
                             ) : (
                               <ImageIcon className="h-5 w-5 text-gray-400" />
                             )}

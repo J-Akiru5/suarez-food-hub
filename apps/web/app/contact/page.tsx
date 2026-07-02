@@ -58,9 +58,9 @@ export default function ContactPage() {
       <AuthNavbar showCartIcon={false} />
 
       {/* Hero */}
-      <section className="pt-[74px] py-16 md:py-24" style={{ background: "var(--primary-color)" }}>
+      <section className="py-16 md:py-24" style={{ marginTop: "72px", background: "var(--primary-color)" }}>
         <div className="max-w-[1280px] mx-auto px-6 text-center">
-          <p className="text-white/60 text-sm font-semibold uppercase tracking-wider mb-3">Get in Touch</p>
+          <p className="text-white/60 text-sm font-semibold uppercase tracking-wider mb-3">Customer Support</p>
           <h1
             className="text-4xl md:text-5xl lg:text-[56px] font-bold text-white mb-6 leading-tight"
             style={{ fontFamily: "var(--playfair-display)" }}
@@ -68,7 +68,7 @@ export default function ContactPage() {
             Contact Us
           </h1>
           <p className="text-white/70 text-lg max-w-2xl mx-auto">
-            Have questions, special requests, or want to place an order? We would love to hear from you!
+            Need help with a large order, catering, or have a question about our menu? Reach out to us directly.
           </p>
         </div>
       </section>

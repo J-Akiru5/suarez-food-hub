@@ -2,7 +2,7 @@
 
 import { createBrowserTypedClient } from "@repo/data-access/client";
 import { getCategories } from "@repo/data-access/data/categories";
-import { createProduct, updateProduct } from "@repo/data-access/data/products";
+import { createProduct, deleteProduct, updateProduct } from "@repo/data-access/data/products";
 import type { Category, Product } from "@repo/types";
 import {
   Badge,
@@ -23,9 +23,10 @@ import {
   SelectValue,
 } from "@repo/ui";
 import { formatCurrency } from "@repo/utils";
-import { Image as ImageIcon, Loader2, Minus, Package, Pencil, Plus, Search, Upload, X } from "lucide-react";
+import { Image as ImageIcon, Loader2, Minus, Package, Pencil, Plus, Search, Trash2, Upload, X } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
+import Swal from "sweetalert2";
 
 export default function InventoryPage() {
   const supabase = createBrowserTypedClient();
@@ -114,6 +115,26 @@ export default function InventoryPage() {
     if (!error) {
       const { data } = supabase.storage.from("images").getPublicUrl(filePath);
       setFormImageUrl(data.publicUrl);
+      Swal.fire({
+        title: "Success",
+        text: "Image uploaded successfully!",
+        icon: "success",
+        toast: true,
+        position: "top-end",
+        showConfirmButton: false,
+        timer: 3000,
+      });
+    } else {
+      console.error("Supabase Storage Error:", error);
+      Swal.fire({
+        title: "Error",
+        text: `Failed to upload image: ${error.message || "Unknown error"}`,
+        icon: "error",
+        toast: true,
+        position: "top-end",
+        showConfirmButton: false,
+        timer: 4000,
+      });
     }
 
     setUploading(false);
@@ -134,21 +155,82 @@ export default function InventoryPage() {
       buffer_quantity: parseInt(formBuffer) || 5,
     };
 
+    let result;
     if (editingProduct) {
-      await updateProduct(supabase, editingProduct.id, productData);
+      result = await updateProduct(supabase, editingProduct.id, productData);
     } else {
-      await createProduct(supabase, productData);
+      result = await createProduct(supabase, productData);
     }
 
-    setDialogOpen(false);
+    if (result.error) {
+      console.error("Product Save Error:", result.error);
+      Swal.fire({
+        title: "Error",
+        text: `Failed to save product: ${result.error.message || "Unknown error"}`,
+        icon: "error",
+        toast: true,
+        position: "top-end",
+        showConfirmButton: false,
+        timer: 4000,
+      });
+    } else {
+      Swal.fire({
+        title: "Success",
+        text: `Product ${editingProduct ? "updated" : "created"} successfully!`,
+        icon: "success",
+        toast: true,
+        position: "top-end",
+        showConfirmButton: false,
+        timer: 3000,
+      });
+      setDialogOpen(false);
+      fetchData();
+    }
     setSaving(false);
-    fetchData();
   }
 
   async function toggleAvailability(product: Product) {
-    const newStatus = product.availability === "available" ? "unavailable" : "available";
+    const newStatus = product.availability === "available" ? "sold_out" : "available";
     await supabase.from("products").update({ availability: newStatus }).eq("id", product.id);
     fetchData();
+  }
+
+  async function handleDeleteProduct(product: Product) {
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: `Do you want to delete ${product.name}?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Yes, delete it!",
+    });
+
+    if (result.isConfirmed) {
+      const { error } = await deleteProduct(supabase, product.id);
+      if (error) {
+        Swal.fire({
+          title: "Error",
+          text: `Failed to delete product: ${error.message || "Unknown error"}`,
+          icon: "error",
+          toast: true,
+          position: "top-end",
+          showConfirmButton: false,
+          timer: 3000,
+        });
+      } else {
+        Swal.fire({
+          title: "Deleted!",
+          text: "Product has been deleted.",
+          icon: "success",
+          toast: true,
+          position: "top-end",
+          showConfirmButton: false,
+          timer: 3000,
+        });
+        fetchData();
+      }
+    }
   }
 
   const filteredProducts = products.filter((p) => {
@@ -247,13 +329,7 @@ export default function InventoryPage() {
                       <div className="flex items-center gap-3">
                         <div className="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden shrink-0">
                           {product.image_url ? (
-                            <Image
-                              src={product.image_url}
-                              alt={product.name}
-                              width={40}
-                              height={40}
-                              className="object-cover w-full h-full"
-                            />
+                            <img src={product.image_url} alt={product.name} className="object-cover w-full h-full" />
                           ) : (
                             <ImageIcon className="h-5 w-5 text-gray-400" />
                           )}
@@ -301,10 +377,21 @@ export default function InventoryPage() {
                       </button>
                     </td>
                     <td className="px-4 py-3 text-right">
-                      <Button variant="outline" size="sm" onClick={() => openEditDialog(product)} className="gap-1">
-                        <Pencil className="h-3 w-3" />
-                        Edit
-                      </Button>
+                      <div className="flex items-center justify-end gap-2">
+                        <Button variant="outline" size="sm" onClick={() => openEditDialog(product)} className="gap-1">
+                          <Pencil className="h-3 w-3" />
+                          Edit
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteProduct(product)}
+                          className="gap-1 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                          Delete
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -316,160 +403,153 @@ export default function InventoryPage() {
 
       {/* Create/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+        <DialogContent aria-describedby={undefined} className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editingProduct ? "Edit Product" : "Add Product"}</DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4 py-4">
-            {/* Image Upload */}
-            <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1">Product Image</label>
-              <div className="flex items-center gap-4">
-                <div className="h-20 w-20 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden">
-                  {formImageUrl ? (
-                    <Image
-                      src={formImageUrl}
-                      alt="Product"
-                      width={80}
-                      height={80}
-                      className="object-cover w-full h-full"
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-4">
+            {/* Left Column */}
+            <div className="space-y-5">
+              {/* Image Upload */}
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-1">Product Image</label>
+                <div className="flex items-center gap-4">
+                  <div className="h-20 w-20 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden shrink-0">
+                    {formImageUrl ? (
+                      <img src={formImageUrl} alt="Product" className="object-cover w-full h-full" />
+                    ) : (
+                      <ImageIcon className="h-8 w-8 text-gray-400" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
                     />
-                  ) : (
-                    <ImageIcon className="h-8 w-8 text-gray-400" />
-                  )}
-                </div>
-                <div className="flex-1">
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                  />
-                  <Button
-                    type="button"
-                    variant="outline"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={uploading}
-                    className="gap-2"
-                  >
-                    {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                    Upload Image
-                  </Button>
-                  <p className="text-xs text-muted-foreground mt-1">Or enter URL below</p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                      className="gap-2 w-full sm:w-auto"
+                    >
+                      {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                      Upload Image
+                    </Button>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1">Name</label>
-              <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Product name" />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1">Slug</label>
-              <Input
-                value={formSlug}
-                onChange={(e) => setFormSlug(e.target.value)}
-                placeholder="product-slug (auto-generated if empty)"
-              />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1">Description</label>
-              <textarea
-                value={formDescription}
-                onChange={(e) => setFormDescription(e.target.value)}
-                placeholder="Product description"
-                rows={3}
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-crimson-500 focus:border-transparent"
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">Price</label>
+                <label className="text-sm font-medium text-gray-700 block mb-1">Name</label>
+                <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Product name" />
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-1">Slug</label>
                 <Input
-                  type="number"
-                  value={formPrice}
-                  onChange={(e) => setFormPrice(e.target.value)}
-                  placeholder="0.00"
-                  min="0"
-                  step="0.01"
+                  value={formSlug}
+                  onChange={(e) => setFormSlug(e.target.value)}
+                  placeholder="product-slug (auto-generated if empty)"
                 />
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">Category</label>
-                <Select value={formCategoryId} onValueChange={setFormCategoryId}>
+                <label className="text-sm font-medium text-gray-700 block mb-1">Description</label>
+                <textarea
+                  value={formDescription}
+                  onChange={(e) => setFormDescription(e.target.value)}
+                  placeholder="Product description"
+                  rows={5}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-crimson-500 focus:border-transparent resize-none"
+                />
+              </div>
+            </div>
+
+            {/* Right Column */}
+            <div className="space-y-5">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700 block mb-1">Price</label>
+                  <Input
+                    type="number"
+                    value={formPrice}
+                    onChange={(e) => setFormPrice(e.target.value)}
+                    placeholder="0.00"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+
+                <div>
+                  <label className="text-sm font-medium text-gray-700 block mb-1">Category</label>
+                  <Select value={formCategoryId} onValueChange={setFormCategoryId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700 block mb-1">Stock Quantity</label>
+                  <Input
+                    type="number"
+                    value={formQuantity}
+                    onChange={(e) => setFormQuantity(e.target.value)}
+                    placeholder="0"
+                    min="0"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 block mb-1">Low-stock Buffer</label>
+                  <Input
+                    type="number"
+                    value={formBuffer}
+                    onChange={(e) => setFormBuffer(e.target.value)}
+                    placeholder="5"
+                    min="0"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-1">Availability</label>
+                <Select value={formAvailability} onValueChange={setFormAvailability}>
                   <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {categories.map((cat) => (
-                      <SelectItem key={cat.id} value={cat.id}>
-                        {cat.name}
-                      </SelectItem>
-                    ))}
+                    <SelectItem value="available">Available</SelectItem>
+                    <SelectItem value="sold_out">Sold Out</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-            </div>
 
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">Stock Quantity</label>
-                <Input
-                  type="number"
-                  value={formQuantity}
-                  onChange={(e) => setFormQuantity(e.target.value)}
-                  placeholder="0"
-                  min="0"
+              <div className="flex items-center gap-2 pt-2">
+                <input
+                  type="checkbox"
+                  id="featured"
+                  checked={formIsFeatured}
+                  onChange={(e) => setFormIsFeatured(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300 text-crimson-600 focus:ring-crimson-500"
                 />
+                <label htmlFor="featured" className="text-sm font-medium text-gray-700 cursor-pointer">
+                  Featured Product
+                </label>
               </div>
-              <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">Low-stock Buffer</label>
-                <Input
-                  type="number"
-                  value={formBuffer}
-                  onChange={(e) => setFormBuffer(e.target.value)}
-                  placeholder="5"
-                  min="0"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1">Image URL</label>
-              <Input value={formImageUrl} onChange={(e) => setFormImageUrl(e.target.value)} placeholder="https://..." />
-            </div>
-
-            <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1">Availability</label>
-              <Select value={formAvailability} onValueChange={setFormAvailability}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="available">Available</SelectItem>
-                  <SelectItem value="unavailable">Unavailable</SelectItem>
-                  <SelectItem value="pre_order">Pre-order</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="featured"
-                checked={formIsFeatured}
-                onChange={(e) => setFormIsFeatured(e.target.checked)}
-                className="rounded border-gray-300 text-crimson-600 focus:ring-crimson-500"
-              />
-              <label htmlFor="featured" className="text-sm font-medium text-gray-700">
-                Featured Product
-              </label>
             </div>
           </div>
 
