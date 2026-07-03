@@ -10,7 +10,6 @@ import { formatCurrency } from "@repo/utils";
 import { ArrowLeft, CheckCircle2, Loader2, MapPin, Phone, Printer, User, XCircle } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import LocationPicker from "../../../../components/LocationPicker";
 
 const statusSteps = [
   { key: "pending", label: "Pending" },
@@ -246,21 +245,15 @@ export default function OrderDetailPage() {
                     </a>
                   )}
                 </div>
-                {order.delivery_lat && order.delivery_lng ? (
-                  <LocationPicker
-                    position={{ lat: order.delivery_lat, lng: order.delivery_lng }}
-                    setPosition={() => {}}
-                    readOnly={true}
-                  />
-                ) : (
-                  <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
-                    <div className="text-center">
-                      <MapPin className="h-8 w-8 text-gray-400 mx-auto mb-2" />
-                      <p className="text-sm text-muted-foreground">{order.delivery_address}</p>
-                      <p className="text-[10px] text-gray-400 mt-1">No GPS coordinates provided for this order</p>
-                    </div>
-                  </div>
-                )}
+                <div className="h-64 bg-gray-50 rounded-lg border border-gray-100 flex flex-col items-center justify-center p-6 text-center">
+                  <MapPin className="h-10 w-10 text-gray-300 mb-3" />
+                  <p className="text-base font-medium text-gray-800">{order.delivery_address}</p>
+                  {order.delivery_lat && order.delivery_lng && (
+                    <p className="text-xs text-gray-400 mt-3 font-mono bg-gray-100 px-2 py-1 rounded">
+                      GPS: {order.delivery_lat.toFixed(6)}, {order.delivery_lng.toFixed(6)}
+                    </p>
+                  )}
+                </div>
               </CardContent>
             </Card>
           </div>

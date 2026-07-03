@@ -11,7 +11,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/";
 
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
@@ -24,8 +24,20 @@ function LoginForm() {
     setError("");
     setLoading(true);
 
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("email")
+      .eq("username", username.trim())
+      .maybeSingle();
+
+    if (!profile?.email) {
+      setError("Invalid username or password");
+      setLoading(false);
+      return;
+    }
+
     const { error: authError } = await supabase.auth.signInWithPassword({
-      email,
+      email: profile.email,
       password,
     });
 
@@ -49,12 +61,12 @@ function LoginForm() {
 
       <form onSubmit={handleLogin} className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5 text-left">
-          <label className="text-xs font-bold text-gray-700 ml-1">Email</label>
+          <label className="text-xs font-bold text-gray-700 ml-1">Username</label>
           <input
-            type="email"
-            placeholder="Enter your email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            type="text"
+            placeholder="Enter your username"
+            value={username}
+            onChange={(e) => setUsername(e.target.value)}
             required
             className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-brand-500 focus:ring-1 focus:ring-brand-500 transition-colors bg-white"
           />

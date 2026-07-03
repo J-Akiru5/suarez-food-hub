@@ -12,7 +12,7 @@ function LoginForm() {
   const searchParams = useSearchParams();
   const redirectTo = searchParams.get("redirect") || "/";
 
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -24,8 +24,20 @@ function LoginForm() {
     setError("");
     setLoading(true);
 
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("email")
+      .eq("username", username.trim())
+      .maybeSingle();
+
+    if (!profile?.email) {
+      setError("Invalid username or password");
+      setLoading(false);
+      return;
+    }
+
     const { data, error: authError } = await supabase.auth.signInWithPassword({
-      email,
+      email: profile.email,
       password,
     });
 
@@ -79,11 +91,11 @@ function LoginForm() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
-              label="Email"
-              type="email"
-              placeholder="staff@suarezfoodhub.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              label="Username"
+              type="text"
+              placeholder="Enter your username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               required
             />
             <Input

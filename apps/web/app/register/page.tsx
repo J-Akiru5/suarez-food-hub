@@ -18,6 +18,7 @@ export default function Register() {
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
+  const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -55,6 +56,14 @@ export default function Register() {
       setError("Passwords do not match");
       return;
     }
+    if (!username.trim()) {
+      setError("Username is required");
+      return;
+    }
+    if (!/^[a-zA-Z0-9_]{3,20}$/.test(username.trim())) {
+      setError("Username must be 3-20 characters (letters, numbers, underscores)");
+      return;
+    }
     if (phone && !PH_REGEX.test(phone.trim())) {
       setError("Enter a valid PH mobile number (e.g. 09123456789)");
       return;
@@ -68,6 +77,17 @@ export default function Register() {
         setError("License number is required for riders");
         return;
       }
+    }
+
+    const { data: existing } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("username", username.trim())
+      .maybeSingle();
+    if (existing) {
+      setError("Username is already taken");
+      setLoading(false);
+      return;
     }
 
     setLoading(true);
@@ -91,6 +111,7 @@ export default function Register() {
         id: data.user.id,
         first_name: firstName,
         last_name: lastName,
+        username: username.trim(),
         full_name: `${firstName} ${lastName}`,
         phone: phone || "N/A",
         role,
@@ -253,6 +274,18 @@ export default function Register() {
                     className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white"
                   />
                 </div>
+              </div>
+
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-bold text-gray-700 ml-1">Username</label>
+                <input
+                  type="text"
+                  placeholder="Choose a username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white"
+                />
               </div>
 
               <div className="flex flex-col gap-1.5">

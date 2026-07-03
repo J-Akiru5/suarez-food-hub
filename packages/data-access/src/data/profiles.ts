@@ -65,3 +65,20 @@ export async function getAdminIds(supabase: TypedSupabaseClient) {
   const { data } = await supabase.from("profiles").select("id").eq("role", "admin");
   return data || [];
 }
+
+export async function getProfileEmailByUsername(supabase: TypedSupabaseClient, username: string) {
+  const { data, error } = await supabase.from("profiles").select("email").eq("username", username).maybeSingle();
+  if (error || !data?.email) return null;
+  return data.email;
+}
+
+export async function getProfileByUsername(supabase: TypedSupabaseClient, username: string) {
+  const { data, error } = await supabase.from("profiles").select("*").eq("username", username).maybeSingle();
+  if (error) return null;
+  return data as Profile;
+}
+
+export async function isUsernameTaken(supabase: TypedSupabaseClient, username: string) {
+  const profile = await getProfileByUsername(supabase, username);
+  return profile !== null;
+}
