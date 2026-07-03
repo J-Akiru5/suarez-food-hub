@@ -20,9 +20,9 @@ export async function POST(request: NextRequest) {
   const auth = await requireAdmin();
   if ("error" in auth) return auth.error;
 
-  const { email, password, firstName, lastName, phone } = await request.json();
+  const { email, password, firstName, lastName, phone, username } = await request.json();
 
-  if (!email || !password || !firstName || !lastName) {
+  if (!email || !password || !firstName || !lastName || !username) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
@@ -45,8 +45,10 @@ export async function POST(request: NextRequest) {
     full_name: `${firstName} ${lastName}`,
     first_name: firstName,
     last_name: lastName,
+    email: email,
     phone: phone || "",
     role: "staff",
+    username: username,
     is_active: true,
     updated_at: new Date().toISOString(),
   });
