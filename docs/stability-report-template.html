@@ -217,6 +217,77 @@
     </table>
   </section>
 
+  <!-- MANUAL TESTING CATEGORIES -->
+  <section class="card">
+    <h2>Manual Testing Scope</h2>
+    <p class="sub">Test categories for QA sign-off — each flow should be verified across 4 apps where applicable</p>
+    <table>
+      <thead><tr><th>Category</th><th>Key Flows</th><th>Apps</th><th>Priority</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><strong>Authentication &amp; Authorization</strong></td>
+          <td>Login / logout (email + password), registration, session persistence, token expiry redirect, role-restricted access (customer → admin route returns 403/redirect), password validation errors</td>
+          <td>web, admin, rider, staff</td>
+          <td><span class="badge err">P1</span></td>
+        </tr>
+        <tr>
+          <td><strong>Menu &amp; Product Browsing</strong></td>
+          <td>Category filter, search by name/price, product card display, image loading, empty category state, pagination / infinite scroll</td>
+          <td>web</td>
+          <td><span class="badge err">P1</span></td>
+        </tr>
+        <tr>
+          <td><strong>Cart &amp; Checkout</strong></td>
+          <td>Add / remove items, quantity adjustments, cart persistence across pages, checkout form validation, order submission confirmation, payment flow (if integrated)</td>
+          <td>web</td>
+          <td><span class="badge err">P1</span></td>
+        </tr>
+        <tr>
+          <td><strong>Order Lifecycle</strong></td>
+          <td>Place order → see status in "My Orders", staff receives and updates status, rider sees delivery assignment, customer sees real-time tracking, status transitions (pending→preparing→out-for-delivery→delivered)</td>
+          <td>web, admin, rider, staff</td>
+          <td><span class="badge err">P1</span></td>
+        </tr>
+        <tr>
+          <td><strong>Rider Delivery Workflow</strong></td>
+          <td>Accept delivery, view delivery details, update location, mark as complete, earnings reflection, past deliveries history</td>
+          <td>rider</td>
+          <td><span class="badge warn">P2</span></td>
+        </tr>
+        <tr>
+          <td><strong>Admin Dashboard</strong></td>
+          <td>Reports view (daily/weekly/monthly), PDF export, staff management (invite, suspend, edit), rider management, cashout requests, QR upload, settings changes</td>
+          <td>admin</td>
+          <td><span class="badge warn">P2</span></td>
+        </tr>
+        <tr>
+          <td><strong>Staff Operations</strong></td>
+          <td>Order list view, order detail, status change workflow, inventory management (add/edit stock), role-based access to admin-only features</td>
+          <td>staff</td>
+          <td><span class="badge warn">P2</span></td>
+        </tr>
+        <tr>
+          <td><strong>Error &amp; Edge Cases</strong></td>
+          <td>Network off-line toast/reconnect, API 4xx/5xx error display, empty states (no orders, no products), invalid form input messages, concurrent session handling, browser back/forward navigation after form submit</td>
+          <td>web, admin, rider, staff</td>
+          <td><span class="badge info">P3</span></td>
+        </tr>
+        <tr>
+          <td><strong>Responsive &amp; Layout</strong></td>
+          <td>Mobile viewport (375px), tablet (768px), desktop (1440px), no horizontal scroll, tap target sizing, font scaling, sidebar collapse on small screens</td>
+          <td>web, admin, rider, staff</td>
+          <td><span class="badge info">P3</span></td>
+        </tr>
+        <tr>
+          <td><strong>Data Integrity &amp; CRUD</strong></td>
+          <td>Create → Read → Update → Delete on all entities (products, categories, orders, profiles, riders, staff), concurrent edit conflict handling, soft-delete vs hard-delete, audit trail for status changes</td>
+          <td>web, admin, rider, staff</td>
+          <td><span class="badge info">P3</span></td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
   <!-- SECURITY QUICK PASS -->
   <section class="card">
     <h2>Security Quick Pass</h2>
@@ -260,6 +331,87 @@
       <strong>10. Add Zod/ validation schemas</strong> — all 19 routes use manual inline checks.<br>
       <strong>11. Write E2E tests</strong> — 9 Playwright specs exist, now runnable since builds pass.
     </div>
+  </section>
+
+  <!-- ACTIONABLE NEXT MOVES -->
+  <section class="card">
+    <h2>Actionable Next Moves</h2>
+    <p class="sub">Ordered steps — each entry is logged, has an owner, and a clear definition of done</p>
+    <table>
+      <thead><tr><th>#</th><th>Action</th><th>Effort</th><th>Owner</th><th>Done When</th></tr></thead>
+      <tbody>
+        <tr>
+          <td>1</td>
+          <td><strong>Run <code>pnpm smoke</code> and fix all Playwright failures</strong> — 9 E2E specs exist but haven't been run yet. Fix any broken selectors/flows before adding new tests.</td>
+          <td><span class="badge warn">2-3h</span></td>
+          <td>QA / Dev</td>
+          <td>All 9 specs pass on clean <code>pnpm smoke</code></td>
+        </tr>
+        <tr>
+          <td>2</td>
+          <td><strong>Add auth guard to <code>web/api/riders/notify-new</code></strong> — only remaining public write endpoint. Use <code>getUser()</code> to require authentication at minimum; consider admin-only.</td>
+          <td><span class="badge ok">30min</span></td>
+          <td>Dev</td>
+          <td>Build passes + curl POST without auth returns 401</td>
+        </tr>
+        <tr>
+          <td>3</td>
+          <td><strong>Enable biome linter + fix all 360 issues</strong> — set <code>"linter": { "enabled": true }</code> in biome.json. Start with <code>useButtonType</code> (86 auto-fixable), then manual fixes for <code>useExhaustiveDependencies</code> (9), a11y rules (~90).</td>
+          <td><span class="badge err">4-6h</span></td>
+          <td>Dev</td>
+          <td><code>biome check</code> returns 0 errors and 0 warnings</td>
+        </tr>
+        <tr>
+          <td>4</td>
+          <td><strong>Add Zod validation to all 19 API routes</strong> — one schema per route, colocated. Start with unauthenticated routes (<code>/api/locations</code>, <code>/api/riders/notify-new</code>), then public GET routes, then authenticated routes. Replace all manual field checks.</td>
+          <td><span class="badge err">4-6h</span></td>
+          <td>Dev</td>
+          <td>Every route has a Zod schema; invalid input returns structured 400</td>
+        </tr>
+        <tr>
+          <td>5</td>
+          <td><strong>Reduce <code>any</code> usage in API &amp; data-access layer</strong> — target 46 <code>: any</code> annotations and 21 <code>as any</code> assertions. Priority on API route handlers and data-access modules (exclude UI components).</td>
+          <td><span class="badge warn">3-4h</span></td>
+          <td>Dev</td>
+          <td>Zero <code>any</code> in <code>apps/*/api/</code> and <code>packages/data-access/</code></td>
+        </tr>
+        <tr>
+          <td>6</td>
+          <td><strong>Add unit tests for data-access layer</strong> — 25 baseline tests pass. Expand coverage for remaining modules (10 data-access modules total). Mock Supabase client.</td>
+          <td><span class="badge err">4-6h</span></td>
+          <td>Dev</td>
+          <td>Each data-access function has a unit test; coverage >40% on the package</td>
+        </tr>
+        <tr>
+          <td>7</td>
+          <td><strong>Write E2E tests for critical user journeys</strong> — customer: browse menu → add to cart → checkout → view order. Staff: login → view orders → update status. Rider: login → accept delivery → complete delivery.</td>
+          <td><span class="badge err">6-8h</span></td>
+          <td>QA / Dev</td>
+          <td>3 end-to-end specs cover the primary happy path per app</td>
+        </tr>
+        <tr>
+          <td>8</td>
+          <td><strong>Suppress remaining knip false positives</strong> — add <code>lib/supabase/*.ts</code> and <code>Navbar.tsx</code> to <code>knip.json ignore</code>. Remove <code>scripts/create-admin.ts</code> from entry or mark as ignored (utility script).</td>
+          <td><span class="badge ok">30min</span></td>
+          <td>Dev</td>
+          <td><code>knip</code> exit code 0 with all entries in knip.json justified</td>
+        </tr>
+        <tr>
+          <td>9</td>
+          <td><strong>Manual QA per category</strong> — execute all 10 manual testing categories above. File bugs per failed flow. Retest after each fix batch.</td>
+          <td><span class="badge err">8-12h</span></td>
+          <td>QA</td>
+          <td>All P1 + P2 test categories pass; P3 reviewed and documented</td>
+        </tr>
+        <tr>
+          <td>10</td>
+          <td><strong>Production smoke test</strong> — deploy to staging, run <code>pnpm smoke</code>, verify all 4 apps load, run through P1 manual categories, check analytics/error reporting, validate env vars, test SSL/HTTPS.</td>
+          <td><span class="badge warn">2-3h</span></td>
+          <td>DevOps / QA</td>
+          <td>Staging health check passes; deploy to prod approved</td>
+        </tr>
+      </tbody>
+    </table>
   </section>
 
   <footer>Report auto-generated from OpenCode audit — 2026-07-03 · Phase 1 fixes (build, auth, hardcoded secrets) applied and verified</footer>

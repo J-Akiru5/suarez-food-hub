@@ -1,0 +1,923 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Workflows — Suarez Food Hub</title>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --card: #071226;
+      --card-hover: #0c1a30;
+      --muted: #9aa4b2;
+      --accent: #7c3aed;
+      --accent-light: #a78bfa;
+      --accent-dim: rgba(124, 58, 237, 0.15);
+      --green: #22c55e;
+      --green-dim: rgba(34, 197, 94, 0.12);
+      --blue: #3b82f6;
+      --blue-dim: rgba(59, 130, 246, 0.12);
+      --orange: #f97316;
+      --orange-dim: rgba(249, 115, 22, 0.12);
+      --red: #ef4444;
+      --red-dim: rgba(239, 68, 68, 0.12);
+      --cyan: #06b6d4;
+      --cyan-dim: rgba(6, 182, 212, 0.12);
+      --yellow: #eab308;
+      --yellow-dim: rgba(234, 179, 8, 0.12);
+      --glass: rgba(255, 255, 255, 0.03);
+      --border: rgba(255, 255, 255, 0.04);
+      --code-bg: #0d1525;
+      --code-border: rgba(255, 255, 255, 0.06);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+      color: #e6eef8;
+      background: linear-gradient(180deg, #061427 0%, #021019 100%);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+    .container { max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
+
+    /* Header */
+    .hero { padding: 40px 0 32px; border-bottom: 1px solid var(--border); margin-bottom: 32px; }
+    .hero h1 { margin: 0; font-size: 32px; color: var(--accent); font-weight: 700; letter-spacing: -0.5px; }
+    .hero .tagline { margin: 8px 0 0; color: var(--muted); font-size: 15px; }
+    .hero .badge-row { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 4px 10px; border-radius: 6px; font-size: 12px; font-weight: 600;
+    }
+    .badge-purple { background: var(--accent-dim); color: var(--accent-light); }
+    .badge-green { background: var(--green-dim); color: var(--green); }
+    .badge-blue { background: var(--blue-dim); color: var(--blue); }
+    .badge-orange { background: var(--orange-dim); color: var(--orange); }
+
+    /* Navigation */
+    .nav-bar {
+      display: flex; gap: 6px; flex-wrap: wrap;
+      padding: 14px 0; margin-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+      position: sticky; top: 0; z-index: 100;
+      background: linear-gradient(180deg, #061427 90%, transparent);
+      backdrop-filter: blur(12px);
+    }
+    .nav-bar a {
+      color: var(--muted); text-decoration: none; font-size: 13px; font-weight: 500;
+      padding: 5px 12px; border-radius: 6px; transition: all 0.15s;
+    }
+    .nav-bar a:hover { color: #fff; background: var(--glass); }
+    .nav-bar a.active { color: var(--accent-light); background: var(--accent-dim); }
+
+    /* Cards */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+      margin: 24px 0;
+      box-shadow: 0 8px 24px rgba(2, 6, 23, 0.5);
+      transition: border-color 0.2s;
+    }
+    .card:hover { border-color: rgba(124, 58, 237, 0.15); }
+    .card h2 {
+      margin: 0 0 6px;
+      font-size: 20px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .card h2 .icon {
+      width: 28px; height: 28px; border-radius: 8px;
+      display: inline-flex; align-items: center; justify-content: center;
+      font-size: 14px; flex-shrink: 0;
+    }
+    .card h3 { margin: 18px 0 8px; font-size: 15px; color: var(--accent-light); }
+    .card p { margin: 4px 0; color: var(--muted); font-size: 14px; }
+    .card p strong { color: #e6eef8; }
+
+    /* Section label */
+    .section-label {
+      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px;
+      color: var(--accent); margin-bottom: 16px; display: flex; align-items: center; gap: 8px;
+    }
+    .section-label::after {
+      content: ''; flex: 1; height: 1px;
+      background: linear-gradient(90deg, var(--accent-dim), transparent);
+    }
+
+    /* Tables */
+    .table-wrap { overflow-x: auto; margin: 10px 0; }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; }
+    thead th {
+      position: sticky; top: 0;
+      background: linear-gradient(90deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
+      backdrop-filter: blur(6px);
+      padding: 10px 12px; text-align: left;
+      color: #a9c6ff; font-weight: 600; font-size: 12px;
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    td, th { padding: 10px 12px; border-bottom: 1px solid var(--border); }
+    tbody tr:hover { background: var(--glass); }
+    td code, p code, li code {
+      background: var(--code-bg);
+      border: 1px solid var(--code-border);
+      padding: 2px 6px; border-radius: 4px;
+      font-size: 12px; font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+      color: var(--accent-light);
+    }
+
+    /* Steps */
+    .steps { counter-reset: step; list-style: none; margin: 12px 0 0; padding: 0; }
+    .steps li {
+      counter-increment: step;
+      position: relative;
+      padding: 10px 12px 10px 48px;
+      margin: 4px 0;
+      border-radius: 8px;
+      font-size: 14px;
+      color: var(--muted);
+      transition: background 0.15s;
+    }
+    .steps li:hover { background: var(--glass); }
+    .steps li::before {
+      content: counter(step);
+      position: absolute; left: 12px; top: 10px;
+      width: 24px; height: 24px; border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700;
+      background: var(--accent-dim); color: var(--accent-light);
+    }
+    .steps li strong { color: #e6eef8; }
+
+    /* Code blocks */
+    pre {
+      background: var(--code-bg);
+      border: 1px solid var(--code-border);
+      border-radius: 8px;
+      padding: 16px;
+      overflow-x: auto;
+      font-size: 12.5px;
+      line-height: 1.7;
+      font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', monospace;
+      margin: 12px 0;
+      color: #c9d1d9;
+    }
+    pre .kw { color: #ff7b72; }
+    pre .str { color: #a5d6ff; }
+    pre .cmt { color: #546678; font-style: italic; }
+    pre .key { color: #79c0ff; }
+    pre .val { color: #a5d6ff; }
+    pre .fn { color: #d2a8ff; }
+
+    /* Flow diagram */
+    .flow {
+      background: var(--code-bg);
+      border: 1px solid var(--code-border);
+      border-radius: 10px;
+      padding: 24px;
+      margin: 16px 0;
+      overflow-x: auto;
+      font-family: 'JetBrains Mono', 'Fira Code', monospace;
+      font-size: 12px;
+      line-height: 1.8;
+      color: var(--muted);
+    }
+    .flow .node {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+    .flow .n-purple { background: var(--accent-dim); color: var(--accent-light); }
+    .flow .n-green { background: var(--green-dim); color: var(--green); }
+    .flow .n-blue { background: var(--blue-dim); color: var(--blue); }
+    .flow .n-orange { background: var(--orange-dim); color: var(--orange); }
+    .flow .n-cyan { background: var(--cyan-dim); color: var(--cyan); }
+    .flow .arrow { color: #546678; margin: 0 4px; }
+
+    /* Tag / pill */
+    .tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 600;
+    }
+    .tag-trigger { background: var(--blue-dim); color: var(--blue); }
+    .tag-parallel { background: var(--orange-dim); color: var(--orange); }
+    .tag-cached { background: var(--green-dim); color: var(--green); }
+    .tag-secret { background: var(--red-dim); color: var(--red); }
+
+    /* Lists */
+    ul.detail { list-style: none; margin: 10px 0; padding: 0; }
+    ul.detail li {
+      padding: 6px 0 6px 20px;
+      position: relative;
+      font-size: 14px;
+      color: var(--muted);
+    }
+    ul.detail li::before {
+      content: '';
+      position: absolute; left: 0; top: 13px;
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent);
+    }
+    ul.detail li strong { color: #e6eef8; }
+
+    /* Two column layout */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+    @media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
+
+    /* Tooltip / note */
+    .note {
+      background: var(--accent-dim);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 8px 8px 0;
+      padding: 12px 16px;
+      margin: 14px 0;
+      font-size: 13px;
+      color: var(--accent-light);
+    }
+    .note strong { color: #fff; }
+
+    /* Footer */
+    footer {
+      margin-top: 40px;
+      padding: 20px 0;
+      border-top: 1px solid var(--border);
+      text-align: center;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.14); }
+
+    @media (max-width: 700px) {
+      .hero h1 { font-size: 24px; }
+      .container { padding: 14px 12px; }
+      .card { padding: 18px 14px; }
+      .nav-bar { gap: 4px; }
+      .nav-bar a { font-size: 12px; padding: 4px 8px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <!-- Hero -->
+    <header class="hero">
+      <h1>Suarez Food Hub &mdash; Workflows</h1>
+      <p class="tagline">Comprehensive documentation of every automation, CI/CD pipeline, and developer workflow in the monorepo.</p>
+      <div class="badge-row">
+        <span class="badge badge-purple">5 Workflow Systems</span>
+        <span class="badge badge-green">3 GitHub Actions</span>
+        <span class="badge badge-blue">1 Local Git Hooks</span>
+        <span class="badge badge-orange">1 Build Orchestrator</span>
+      </div>
+    </header>
+
+    <!-- Navigation -->
+    <nav class="nav-bar" id="top">
+      <a href="#overview">Overview</a>
+      <a href="#flow-diagram">Flow Diagram</a>
+      <a href="#ci">CI Pipeline</a>
+      <a href="#pr-labeler">PR Labeler</a>
+      <a href="#smoke">Smoke Tests</a>
+      <a href="#pre-commit">Pre-commit Hooks</a>
+      <a href="#turbo">Turborepo</a>
+      <a href="#scripts">Scripts Reference</a>
+      <a href="#env">Environment</a>
+    </nav>
+
+    <!-- Overview -->
+    <section class="card" id="overview">
+      <div class="section-label">Overview</div>
+      <h2><span class="icon" style="background:var(--accent-dim);color:var(--accent-light);">&#9881;</span> Workflow Systems at a Glance</h2>
+      <p>The project uses <strong>five interconnected workflow systems</strong> to ensure code quality, automate releases, and streamline development.</p>
+      <div class="table-wrap" style="margin-top:14px">
+        <table>
+          <thead>
+            <tr>
+              <th>System</th>
+              <th>Config File</th>
+              <th>Runs Where</th>
+              <th>Trigger</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>CI Pipeline</strong></td>
+              <td><code>.github/workflows/ci.yml</code></td>
+              <td>GitHub Actions (Ubuntu)</td>
+              <td>Push / PR to <code>main</code></td>
+            </tr>
+            <tr>
+              <td><strong>PR Labeler</strong></td>
+              <td><code>.github/workflows/labeler.yml</code></td>
+              <td>GitHub Actions (Ubuntu)</td>
+              <td>PR opened / synced</td>
+            </tr>
+            <tr>
+              <td><strong>Smoke Tests</strong></td>
+              <td><code>.github/workflows/smoke.yml</code></td>
+              <td>GitHub Actions (Ubuntu)</td>
+              <td>Manual or after CI passes on <code>main</code></td>
+            </tr>
+            <tr>
+              <td><strong>Pre-commit Hooks</strong></td>
+              <td><code>lefthook.yml</code> + <code>.husky/pre-commit</code></td>
+              <td>Local developer machine</td>
+              <td>Every <code>git commit</code></td>
+            </tr>
+            <tr>
+              <td><strong>Turborepo Pipeline</strong></td>
+              <td><code>turbo.json</code></td>
+              <td>Local + CI</td>
+              <td>Via <code>pnpm</code> scripts</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- Flow Diagram -->
+    <section class="card" id="flow-diagram">
+      <div class="section-label">Visual Flow</div>
+      <h2><span class="icon" style="background:var(--blue-dim);color:var(--blue);">&#8644;</span> How Workflows Chain Together</h2>
+      <p>From writing code to production deployment, here is the full lifecycle:</p>
+      <div class="flow">
+<pre style="background:transparent;border:none;padding:0;margin:0;color:inherit;">
+<span class="node n-purple">Developer writes code</span>
+        <span class="arrow">&darr;</span>
+<span class="node n-orange">Pre-commit Hook</span> <span style="color:#546678">(local &mdash; lefthook)</span>
+  <span class="arrow">&rarr;</span> Biome format/lint (staged files)
+  <span class="arrow">&rarr;</span> Turborepo typecheck (affected)
+  <span class="arrow">&rarr;</span> TruffleHog secret scan
+        <span class="arrow">&darr;</span>
+<span class="node n-blue">git push / PR to main</span>
+        <span class="arrow">&darr;</span>
+<span class="node n-green">CI Pipeline</span> <span style="color:#546678">(GitHub Actions &mdash; ci.yml)</span>
+  <span class="arrow">&rarr;</span> Biome check (lint + format)
+  <span class="arrow">&rarr;</span> TypeScript typecheck
+  <span class="arrow">&rarr;</span> Build all apps (Turborepo)
+  <span class="arrow">&rarr;</span> Unit tests (Vitest)
+  <span class="arrow">&rarr;</span> Dead code detection (Knip)
+        <span class="arrow">&darr;</span> <span style="color:#546678">if PR &rarr;</span> <span class="node n-cyan">PR Labeler</span> <span style="color:#546678">(auto-labels by path)</span>
+        <span class="arrow">&darr;</span> <span style="color:#546678">if CI passes on main &rarr;</span>
+<span class="node n-green">Smoke Tests</span> <span style="color:#546678">(GitHub Actions &mdash; smoke.yml)</span>
+  <span class="arrow">&rarr;</span> Playwright e2e tests (web, admin, staff, rider)
+        <span class="arrow">&darr;</span>
+<span class="node n-blue">Vercel Deployment</span> <span style="color:#546678">(auto-deploy per app)</span>
+  <span class="arrow">&rarr;</span> apps/web  &rarr; vercel deploy
+  <span class="arrow">&rarr;</span> apps/admin &rarr; vercel deploy
+  <span class="arrow">&rarr;</span> apps/staff &rarr; vercel deploy
+  <span class="arrow">&rarr;</span> apps/rider &rarr; vercel deploy
+</pre>
+      </div>
+    </section>
+
+    <!-- ==================== CI PIPELINE ==================== -->
+    <section class="card" id="ci">
+      <div class="section-label">GitHub Actions</div>
+      <h2>
+        <span class="icon" style="background:var(--green-dim);color:var(--green);">&#10003;</span>
+        CI Pipeline
+        <span class="tag tag-trigger">ci.yml</span>
+      </h2>
+      <p>The main quality gate. Runs on every push and pull request targeting <code>main</code>. Blocks merging if any step fails.</p>
+
+      <h3>Trigger</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Event</th><th>Branch</th><th>Behavior</th></tr></thead>
+          <tbody>
+            <tr><td><code>push</code></td><td><code>main</code></td><td>Full quality check on latest commit</td></tr>
+            <tr><td><code>pull_request</code></td><td><code>main</code></td><td>Quality check on PR head commit</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Environment Variables (Secrets)</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Secret</th><th>Purpose</th></tr></thead>
+          <tbody>
+            <tr><td><code>NEXT_PUBLIC_SUPABASE_URL</code></td><td>Supabase project URL for builds</td></tr>
+            <tr><td><code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code></td><td>Supabase anonymous key</td></tr>
+            <tr><td><code>SUPABASE_SERVICE_ROLE_KEY</code></td><td>Supabase service role key (server-side)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Steps</h3>
+      <ol class="steps">
+        <li><strong>Checkout code</strong> &mdash; <code>actions/checkout@v4</code> clones the repository</li>
+        <li><strong>Setup pnpm</strong> &mdash; <code>pnpm/action-setup@v4</code> installs pnpm (version from <code>packageManager</code> field)</li>
+        <li><strong>Setup Node.js 20</strong> &mdash; <code>actions/setup-node@v4</code> with pnpm cache enabled</li>
+        <li><strong>Install dependencies</strong> &mdash; <code>pnpm install --frozen-lockfile</code> (deterministic install)</li>
+        <li><strong>Biome check</strong> &mdash; <code>pnpm biome check .</code> validates lint + formatting</li>
+        <li><strong>TypeScript type check</strong> &mdash; <code>pnpm typecheck</code> runs <code>turbo typecheck</code> across all packages</li>
+        <li><strong>Build all apps</strong> &mdash; <code>pnpm build</code> runs <code>turbo build</code> for all Next.js apps</li>
+        <li><strong>Unit tests</strong> &mdash; <code>pnpm --filter @repo/utils test</code> runs Vitest tests</li>
+        <li><strong>Dead code detection</strong> &mdash; <code>pnpm knip</code> finds unused exports and dependencies</li>
+        <li><strong>Cache Turborepo</strong> &mdash; <code>actions/cache@v4</code> caches <code>.turbo</code> directory keyed by OS + SHA</li>
+      </ol>
+
+      <h3>Workflow YAML</h3>
+      <pre><span class="cmt"># .github/workflows/ci.yml</span>
+<span class="key">name</span>: CI
+
+<span class="key">on</span>:
+  <span class="key">push</span>:
+    <span class="key">branches</span>: [<span class="val">main</span>]
+  <span class="key">pull_request</span>:
+    <span class="key">branches</span>: [<span class="val">main</span>]
+
+<span class="key">env</span>:
+  <span class="key">NEXT_PUBLIC_SUPABASE_URL</span>: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+  <span class="key">NEXT_PUBLIC_SUPABASE_ANON_KEY</span>: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+  <span class="key">SUPABASE_SERVICE_ROLE_KEY</span>: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+<span class="key">jobs</span>:
+  <span class="key">quality</span>:
+    <span class="key">name</span>: Quality checks
+    <span class="key">runs-on</span>: ubuntu-latest
+    <span class="key">steps</span>:
+      - <span class="key">uses</span>: actions/checkout@v4
+      - <span class="key">uses</span>: pnpm/action-setup@v4
+      - <span class="key">uses</span>: actions/setup-node@v4
+        <span class="key">with</span>:
+          <span class="key">node-version</span>: <span class="val">20</span>
+          <span class="key">cache</span>: pnpm
+      - <span class="key">name</span>: Install dependencies
+        <span class="key">run</span>: pnpm install --frozen-lockfile
+      - <span class="key">name</span>: Biome check (lint + format)
+        <span class="key">run</span>: pnpm biome check .
+      - <span class="key">name</span>: TypeScript type check
+        <span class="key">run</span>: pnpm typecheck
+      - <span class="key">name</span>: Build all apps
+        <span class="key">run</span>: pnpm build
+      - <span class="key">name</span>: Run unit tests
+        <span class="key">run</span>: pnpm --filter @repo/utils test
+      - <span class="key">name</span>: Dead code detection
+        <span class="key">run</span>: pnpm knip
+      - <span class="key">name</span>: Cache Turbo
+        <span class="key">uses</span>: actions/cache@v4
+        <span class="key">with</span>:
+          <span class="key">path</span>: .turbo
+          <span class="key">key</span>: turbo-${{ runner.os }}-${{ github.sha }}
+          <span class="key">restore-keys</span>: turbo-${{ runner.os }}-</pre>
+    </section>
+
+    <!-- ==================== PR LABELER ==================== -->
+    <section class="card" id="pr-labeler">
+      <div class="section-label">GitHub Actions</div>
+      <h2>
+        <span class="icon" style="background:var(--cyan-dim);color:var(--cyan);">&#9998;</span>
+        PR Labeler
+        <span class="tag tag-trigger">labeler.yml</span>
+      </h2>
+      <p>Automatically applies labels to pull requests based on which files changed. Uses <code>actions/labeler@v5</code> with a custom config.</p>
+
+      <h3>Trigger</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Event</th><th>Types</th><th>Permission</th></tr></thead>
+          <tbody>
+            <tr><td><code>pull_request_target</code></td><td><code>opened</code>, <code>synchronize</code></td><td><code>contents: read</code>, <code>pull-requests: write</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Label Rules</h3>
+      <p>Defined in <code>.github/labeler-config.yml</code>:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Label</th><th>File Pattern</th></tr></thead>
+          <tbody>
+            <tr><td><code>web</code></td><td><code>apps/web/**/*</code></td></tr>
+            <tr><td><code>admin</code></td><td><code>apps/admin/**/*</code></td></tr>
+            <tr><td><code>staff</code></td><td><code>apps/staff/**/*</code></td></tr>
+            <tr><td><code>rider</code></td><td><code>apps/rider/**/*</code></td></tr>
+            <tr><td><code>packages</code></td><td><code>packages/**/*</code></td></tr>
+            <tr><td><code>infra</code></td><td><code>.github/**/*</code>, <code>turbo.json</code>, <code>package.json</code></td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Workflow YAML</h3>
+      <pre><span class="cmt"># .github/workflows/labeler.yml</span>
+<span class="key">name</span>: PR Labeler
+
+<span class="key">on</span>:
+  <span class="key">pull_request_target</span>:
+    <span class="key">types</span>: [<span class="val">opened</span>, <span class="val">synchronize</span>]
+
+<span class="key">jobs</span>:
+  <span class="key">label</span>:
+    <span class="key">runs-on</span>: ubuntu-latest
+    <span class="key">permissions</span>:
+      <span class="key">contents</span>: read
+      <span class="key">pull-requests</span>: write
+    <span class="key">steps</span>:
+      - <span class="key">uses</span>: actions/labeler@v5
+        <span class="key">with</span>:
+          <span class="key">repo-token</span>: ${{ secrets.GITHUB_TOKEN }}
+          <span class="key">configuration-path</span>: .github/labeler-config.yml</pre>
+    </section>
+
+    <!-- ==================== SMOKE TESTS ==================== -->
+    <section class="card" id="smoke">
+      <div class="section-label">GitHub Actions</div>
+      <h2>
+        <span class="icon" style="background:var(--green-dim);color:var(--green);">&#9889;</span>
+        Smoke Tests
+        <span class="tag tag-trigger">smoke.yml</span>
+      </h2>
+      <p>End-to-end Playwright tests that verify all four apps work correctly in a browser environment. Runs automatically after CI passes on <code>main</code>, or can be triggered manually.</p>
+
+      <h3>Trigger</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Event</th><th>Condition</th></tr></thead>
+          <tbody>
+            <tr><td><code>workflow_dispatch</code></td><td>Manual trigger from GitHub UI</td></tr>
+            <tr><td><code>workflow_run</code></td><td>After <strong>CI</strong> workflow completes on <code>main</code> with <code>success</code> conclusion</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Steps</h3>
+      <ol class="steps">
+        <li><strong>Checkout code</strong> &mdash; <code>actions/checkout@v4</code></li>
+        <li><strong>Setup pnpm</strong> &mdash; <code>pnpm/action-setup@v4</code></li>
+        <li><strong>Setup Node.js 20</strong> &mdash; <code>actions/setup-node@v4</code> with pnpm cache</li>
+        <li><strong>Install dependencies</strong> &mdash; <code>pnpm install --frozen-lockfile</code></li>
+        <li><strong>Install Playwright browsers</strong> &mdash; <code>pnpm --filter e2e exec playwright install chromium</code></li>
+        <li><strong>Run smoke tests</strong> &mdash; <code>pnpm smoke</code> which runs <code>pnpm --filter e2e test</code> (Playwright)</li>
+        <li><strong>Upload artifacts on failure</strong> &mdash; uploads <code>e2e/test-results/</code> screenshots as GitHub artifacts</li>
+      </ol>
+
+      <h3>Playwright Projects</h3>
+      <p>The e2e test suite covers four apps via separate Playwright projects:</p>
+      <div class="two-col">
+        <div>
+          <ul class="detail">
+            <li><strong>web</strong> &mdash; Public storefront</li>
+            <li><strong>admin</strong> &mdash; Admin dashboard</li>
+          </ul>
+        </div>
+        <div>
+          <ul class="detail">
+            <li><strong>staff</strong> &mdash; Staff order management</li>
+            <li><strong>rider</strong> &mdash; Rider delivery app</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3>Workflow YAML</h3>
+      <pre><span class="cmt"># .github/workflows/smoke.yml</span>
+<span class="key">name</span>: Smoke Tests
+
+<span class="key">on</span>:
+  <span class="key">workflow_dispatch</span>:
+  <span class="key">workflow_run</span>:
+    <span class="key">workflows</span>: [<span class="val">CI</span>]
+    <span class="key">branches</span>: [<span class="val">main</span>]
+    <span class="key">types</span>: [<span class="val">completed</span>]
+
+<span class="key">jobs</span>:
+  <span class="key">smoke</span>:
+    <span class="key">if</span>: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    <span class="key">runs-on</span>: ubuntu-latest
+    <span class="key">steps</span>:
+      - <span class="key">uses</span>: actions/checkout@v4
+      - <span class="key">uses</span>: pnpm/action-setup@v4
+      - <span class="key">uses</span>: actions/setup-node@v4
+        <span class="key">with</span>:
+          <span class="key">node-version</span>: <span class="val">20</span>
+          <span class="key">cache</span>: pnpm
+      - <span class="key">name</span>: Install dependencies
+        <span class="key">run</span>: pnpm install --frozen-lockfile
+      - <span class="key">name</span>: Install Playwright browsers
+        <span class="key">run</span>: pnpm --filter e2e exec playwright install chromium
+      - <span class="key">name</span>: Run smoke tests
+        <span class="key">run</span>: pnpm smoke
+        <span class="key">env</span>:
+          <span class="key">NEXT_PUBLIC_SUPABASE_URL</span>: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          <span class="key">NEXT_PUBLIC_SUPABASE_ANON_KEY</span>: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+          <span class="key">SUPABASE_SERVICE_ROLE_KEY</span>: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+      - <span class="key">uses</span>: actions/upload-artifact@v4
+        <span class="key">if</span>: failure()
+        <span class="key">with</span>:
+          <span class="key">name</span>: playwright-screenshots
+          <span class="key">path</span>: e2e/test-results/</pre>
+    </section>
+
+    <!-- ==================== PRE-COMMIT HOOKS ==================== -->
+    <section class="card" id="pre-commit">
+      <div class="section-label">Local Developer Hooks</div>
+      <h2>
+        <span class="icon" style="background:var(--orange-dim);color:var(--orange);">&#128274;</span>
+        Pre-commit Hooks
+        <span class="tag tag-parallel">Parallel</span>
+      </h2>
+      <p>Runs three quality checks <strong>in parallel</strong> on every local <code>git commit</code> via <strong>Husky</strong> &rarr; <strong>Lefthook</strong>. Catches issues before code is pushed.</p>
+
+      <h3>Hook Chain</h3>
+      <div class="flow" style="padding:16px 20px">
+<pre style="background:transparent;border:none;padding:0;margin:0;color:inherit;">
+<span class="node n-purple">git commit</span>
+  <span class="arrow">&rarr;</span> <span class="node n-blue">.husky/pre-commit</span> <span style="color:#546678">(&rarr; npx lefthook run pre-commit)</span>
+    <span class="arrow">&rarr;</span> <span class="node n-orange">Lefthook</span> runs 3 commands in parallel:
+       <span class="arrow">&rarr;</span> <span class="node n-green">format-lint</span> &mdash; Biome auto-fix on staged files
+       <span class="arrow">&rarr;</span> <span class="node n-green">typecheck</span> &mdash; Turborepo typecheck on affected packages
+       <span class="arrow">&rarr;</span> <span class="node n-green">secrets</span> &mdash; TruffleHog scans last commit for secrets
+</pre>
+      </div>
+
+      <h3>Commands</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Command</th><th>What it does</th><th>Filter</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>format-lint</code></td>
+              <td>Runs <code>pnpm biome check --write --no-errors-on-unmatched {staged_files}</code> &mdash; auto-fixes lint/format on staged files</td>
+              <td><code>*.{js,ts,jsx,tsx,json,md}</code></td>
+            </tr>
+            <tr>
+              <td><code>typecheck</code></td>
+              <td>Runs <code>pnpm turbo typecheck --affected</code> &mdash; type checks only packages changed since main</td>
+              <td>All staged files</td>
+            </tr>
+            <tr>
+              <td><code>secrets</code></td>
+              <td>Runs <code>npx trufflehog git --since=HEAD~1 --no-verification --fail</code> &mdash; scans for leaked API keys/secrets</td>
+              <td>Last commit</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note">
+        <strong>Note:</strong> The <code>secrets</code> command includes <code>2>/dev/null || true</code> as a fallback, so it won't block commits if TruffleHog encounters non-critical issues. Only actual secret matches will fail the hook.
+      </div>
+
+      <h3>Configuration Files</h3>
+      <div class="two-col">
+        <div>
+          <p><strong><code>lefthook.yml</code></strong></p>
+          <pre><span class="key">pre-commit</span>:
+  <span class="key">parallel</span>: <span class="val">true</span>
+  <span class="key">commands</span>:
+    <span class="key">format-lint</span>:
+      <span class="key">run</span>: pnpm biome check --write --no-errors-on-unmatched {staged_files}
+      <span class="key">glob</span>: <span class="str">"*.{js,ts,jsx,tsx,json,md}"</span>
+    <span class="key">typecheck</span>:
+      <span class="key">run</span>: pnpm turbo typecheck --affected
+    <span class="key">secrets</span>:
+      <span class="key">run</span>: npx trufflehog git --since=HEAD~1 --no-verification --fail 2>/dev/null || true</pre>
+        </div>
+        <div>
+          <p><strong><code>.husky/pre-commit</code></strong></p>
+          <pre><span class="cmt">#!/usr/bin/env sh</span>
+<span class="cmt">. "$(dirname -- "$0")/_/husky.sh"</span>
+
+npx lefthook run pre-commit</pre>
+          <p style="margin-top:12px"><strong>Setup:</strong> <code>pnpm prepare</code> installs Husky git hooks, which delegates to Lefthook.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== TURBOREPO ==================== -->
+    <section class="card" id="turbo">
+      <div class="section-label">Build Orchestrator</div>
+      <h2>
+        <span class="icon" style="background:var(--accent-dim);color:var(--accent-light);">&#9889;</span>
+        Turborepo Pipeline
+        <span class="tag tag-cached">Cached</span>
+      </h2>
+      <p>Turborepo orchestrates all build, typecheck, and dev tasks across the monorepo with <strong>intelligent caching</strong> and <strong>dependency-aware parallelism</strong>.</p>
+
+      <h3>Task Definitions</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Task</th><th>Depends On</th><th>Outputs</th><th>Cached</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>build</code></td>
+              <td><code>^build</code> (dependencies first)</td>
+              <td><code>.next/**</code>, <code>dist/**</code></td>
+              <td><span class="tag tag-cached">Yes</span></td>
+            </tr>
+            <tr>
+              <td><code>dev</code></td>
+              <td>None</td>
+              <td>None (persistent)</td>
+              <td><span class="tag tag-parallel">No</span></td>
+            </tr>
+            <tr>
+              <td><code>lint</code></td>
+              <td><code>^build</code></td>
+              <td>None</td>
+              <td><span class="tag tag-cached">Yes</span></td>
+            </tr>
+            <tr>
+              <td><code>typecheck</code></td>
+              <td><code>^build</code></td>
+              <td>None</td>
+              <td><span class="tag tag-cached">Yes</span></td>
+            </tr>
+            <tr>
+              <td><code>clean</code></td>
+              <td>None</td>
+              <td>None</td>
+              <td><span class="tag tag-parallel">No</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note">
+        <strong>Global env vars:</strong> Turborepo tracks <code>NEXT_PUBLIC_SUPABASE_URL</code>, <code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code>, <code>SUPABASE_SERVICE_ROLE_KEY</code>, and <code>DATABASE_URL</code> as global cache keys. Changing any of these invalidates the cache.
+      </div>
+
+      <h3>Full Configuration</h3>
+      <pre><span class="cmt">// turbo.json</span>
+{
+  <span class="key">"$schema"</span>: <span class="str">"https://v2-10-2.turborepo.dev/schema.json"</span>,
+  <span class="key">"globalDependencies"</span>: [<span class="str">"**/.env.*local"</span>],
+  <span class="key">"globalEnv"</span>: [
+    <span class="str">"NEXT_PUBLIC_SUPABASE_URL"</span>,
+    <span class="str">"NEXT_PUBLIC_SUPABASE_ANON_KEY"</span>,
+    <span class="str">"SUPABASE_SERVICE_ROLE_KEY"</span>,
+    <span class="str">"DATABASE_URL"</span>
+  ],
+  <span class="key">"tasks"</span>: {
+    <span class="key">"build"</span>: {
+      <span class="key">"dependsOn"</span>: [<span class="str">"^build"</span>],
+      <span class="key">"outputs"</span>: [<span class="str">".next/**"</span>, <span class="str">"!.next/cache/**"</span>, <span class="str">"dist/**"</span>]
+    },
+    <span class="key">"dev"</span>: { <span class="key">"cache"</span>: <span class="val">false</span>, <span class="key">"persistent"</span>: <span class="val">true</span> },
+    <span class="key">"lint"</span>: { <span class="key">"dependsOn"</span>: [<span class="str">"^build"</span>] },
+    <span class="key">"typecheck"</span>: {
+      <span class="key">"dependsOn"</span>: [<span class="str">"^build"</span>],
+      <span class="key">"outputs"</span>: [],
+      <span class="key">"inputs"</span>: [<span class="str">"$TURBO_DEFAULT$"</span>, <span class="str">"tsconfig.json"</span>]
+    },
+    <span class="key">"clean"</span>: { <span class="key">"cache"</span>: <span class="val">false</span> }
+  }
+}</pre>
+    </section>
+
+    <!-- ==================== SCRIPTS REFERENCE ==================== -->
+    <section class="card" id="scripts">
+      <div class="section-label">Developer Commands</div>
+      <h2>
+        <span class="icon" style="background:var(--yellow-dim);color:var(--yellow);">&#128196;</span>
+        Scripts Reference
+      </h2>
+      <p>All available <code>pnpm</code> scripts from the root <code>package.json</code>:</p>
+
+      <h3>Development &amp; Build</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Command</th><th>What it runs</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>pnpm dev</code></td><td><code>turbo dev</code></td><td>Start all 5 apps in dev mode (ports 3000&ndash;3003)</td></tr>
+            <tr><td><code>pnpm build</code></td><td><code>turbo build</code></td><td>Build all apps for production (cached)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Quality &amp; Validation</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Command</th><th>What it runs</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>pnpm lint</code></td><td><code>biome check .</code></td><td>Lint and format check (read-only)</td></tr>
+            <tr><td><code>pnpm format</code></td><td><code>biome check --write .</code></td><td>Auto-fix lint and formatting issues</td></tr>
+            <tr><td><code>pnpm typecheck</code></td><td><code>turbo typecheck</code></td><td>TypeScript type checking across all packages</td></tr>
+            <tr><td><code>pnpm test</code></td><td><code>pnpm --filter @repo/utils test</code></td><td>Run unit tests (Vitest) in <code>@repo/utils</code></td></tr>
+            <tr><td><code>pnpm smoke</code></td><td><code>pnpm --filter e2e test</code></td><td>Run Playwright e2e tests against all apps</td></tr>
+            <tr><td><code>pnpm knip</code></td><td><code>knip</code></td><td>Dead code and unused dependency detection</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Combined Pipelines</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Command</th><th>What it runs</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>pnpm check</code></td><td><code>biome check . && turbo typecheck</code></td><td>Combined lint + typecheck (fast local check)</td></tr>
+            <tr><td><code>pnpm pipeline</code></td><td><code>biome check . && turbo typecheck && turbo build && pnpm --filter @repo/utils test</code></td><td>Full CI pipeline locally (mirrors <code>ci.yml</code>)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Database</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Command</th><th>What it runs</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>pnpm db:migrate</code></td><td><code>prisma migrate dev</code></td><td>Create and apply dev migrations</td></tr>
+            <tr><td><code>pnpm db:push</code></td><td><code>prisma db push</code></td><td>Push schema changes directly (no migration file)</td></tr>
+            <tr><td><code>pnpm db:seed</code></td><td><code>prisma db seed</code> (runs <code>tsx prisma/seed.ts</code>)</td><td>Seed database with categories and products</td></tr>
+            <tr><td><code>pnpm db:studio</code></td><td><code>prisma studio</code></td><td>Open Prisma Studio GUI for data browsing</td></tr>
+            <tr><td><code>pnpm db:generate</code></td><td><code>prisma generate</code></td><td>Regenerate Prisma client after schema changes</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h3>Utility</h3>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Command</th><th>What it runs</th><th>Description</th></tr></thead>
+          <tbody>
+            <tr><td><code>pnpm prepare</code></td><td><code>husky</code></td><td>Install Husky git hooks (runs on <code>pnpm install</code>)</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ==================== ENVIRONMENT ==================== -->
+    <section class="card" id="env">
+      <div class="section-label">Configuration</div>
+      <h2>
+        <span class="icon" style="background:var(--red-dim);color:var(--red);">&#128272;</span>
+        Environment Variables &amp; Secrets
+      </h2>
+      <p>Required environment variables used across workflows and builds:</p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Variable</th><th>Used In</th><th>Purpose</th><th>Required</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>NEXT_PUBLIC_SUPABASE_URL</code></td>
+              <td>CI, Smoke, All apps</td>
+              <td>Supabase project URL</td>
+              <td><span class="tag tag-secret">Secret</span></td>
+            </tr>
+            <tr>
+              <td><code>NEXT_PUBLIC_SUPABASE_ANON_KEY</code></td>
+              <td>CI, Smoke, All apps</td>
+              <td>Supabase anonymous/public key</td>
+              <td><span class="tag tag-secret">Secret</span></td>
+            </tr>
+            <tr>
+              <td><code>SUPABASE_SERVICE_ROLE_KEY</code></td>
+              <td>CI, Smoke, Server-side</td>
+              <td>Supabase service role key (bypasses RLS)</td>
+              <td><span class="tag tag-secret">Secret</span></td>
+            </tr>
+            <tr>
+              <td><code>DATABASE_URL</code></td>
+              <td>Turborepo cache key, Prisma</td>
+              <td>Direct Postgres connection string</td>
+              <td><span class="tag tag-secret">Secret</span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="note">
+        <strong>Local development:</strong> Copy <code>.env.example</code> to <code>.env</code> and fill in your Supabase credentials. The <code>.env.*local</code> files are ignored by Turborepo's cache tracking.
+      </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+      <p>Workflows documentation &mdash; Suarez Food Hub monorepo &mdash; Generated in-repo.</p>
+      <p style="margin-top:6px;font-size:12px">Last updated: July 2026</p>
+    </footer>
+
+  </div>
+
+  <script>
+    // Active nav highlighting on scroll
+    const sections = document.querySelectorAll('section[id]');
+    const navLinks = document.querySelectorAll('.nav-bar a');
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          navLinks.forEach(a => a.classList.remove('active'));
+          const link = document.querySelector(`.nav-bar a[href="#${e.target.id}"]`);
+          if (link) link.classList.add('active');
+        }
+      });
+    }, { rootMargin: '-20% 0px -70% 0px' });
+    sections.forEach(s => observer.observe(s));
+  </script>
+</body>
+</html>

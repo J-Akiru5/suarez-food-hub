@@ -1,0 +1,857 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Dataflow Diagrams — Suarez Food Hub</title>
+  <style>
+    :root {
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --text: #1e293b;
+      --muted: #64748b;
+      --border: #e2e8f0;
+      --customer: #3b82f6;
+      --customer-light: #dbeafe;
+      --admin: #ef4444;
+      --admin-light: #fee2e2;
+      --staff: #22c55e;
+      --staff-light: #dcfce7;
+      --rider: #f97316;
+      --rider-light: #ffedd5;
+      --supabase: #7c3aed;
+      --supabase-light: #ede9fe;
+      --shared: #64748b;
+      --shared-light: #f1f5f9;
+      --arrow: #475569;
+      --accent: #7c3aed;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', ui-sans-serif, system-ui, -apple-system, sans-serif;
+      color: var(--text);
+      background: linear-gradient(180deg, #f8fafc 0%, #eef2f7 100%);
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+    .container { max-width: 1200px; margin: 0 auto; padding: 28px 20px; }
+
+    /* Header */
+    .hero { padding: 40px 0 28px; text-align: center; }
+    .hero h1 { font-size: 32px; color: var(--text); font-weight: 800; letter-spacing: -0.5px; }
+    .hero .tagline { margin: 8px 0 0; color: var(--muted); font-size: 15px; }
+    .hero .badge-row { display: flex; gap: 8px; justify-content: center; margin-top: 16px; flex-wrap: wrap; }
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    }
+    .b-customer { background: var(--customer-light); color: var(--customer); }
+    .b-admin { background: var(--admin-light); color: var(--admin); }
+    .b-staff { background: var(--staff-light); color: var(--staff); }
+    .b-rider { background: var(--rider-light); color: var(--rider); }
+    .b-system { background: var(--supabase-light); color: var(--supabase); }
+
+    /* Navigation */
+    .nav-bar {
+      display: flex; gap: 6px; flex-wrap: wrap; justify-content: center;
+      padding: 12px 0; margin-bottom: 12px;
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(248,250,252,0.92);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-bar a {
+      color: var(--muted); text-decoration: none; font-size: 13px; font-weight: 600;
+      padding: 6px 14px; border-radius: 8px; transition: all 0.15s;
+      border: 1px solid transparent;
+    }
+    .nav-bar a:hover { color: var(--text); background: #fff; border-color: var(--border); }
+    .nav-bar a.active { color: var(--accent); background: var(--supabase-light); border-color: var(--supabase); }
+
+    /* Cards */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 28px;
+      margin: 24px 0;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 8px 24px rgba(0,0,0,0.06);
+    }
+    .card h2 {
+      font-size: 22px; font-weight: 700; margin: 0 0 4px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .card h2 .dot {
+      width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0;
+    }
+    .card .subtitle { color: var(--muted); font-size: 14px; margin: 0 0 16px; }
+
+    /* Diagram container */
+    .diagram-wrap {
+      background: #f8fafc;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 20px;
+      overflow-x: auto;
+      margin: 16px 0;
+    }
+    .diagram-svg { display: block; margin: 0 auto; }
+
+    /* Legend */
+    .legend {
+      display: flex; gap: 16px; flex-wrap: wrap;
+      padding: 12px 16px; background: #f8fafc; border-radius: 10px;
+      border: 1px solid var(--border); margin-top: 16px;
+    }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted); font-weight: 500; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+
+    /* Footer */
+    footer {
+      margin-top: 40px; padding: 24px 0; border-top: 1px solid var(--border);
+      text-align: center; color: var(--muted); font-size: 13px;
+    }
+
+    @media (max-width: 700px) {
+      .hero h1 { font-size: 24px; }
+      .container { padding: 14px 10px; }
+      .card { padding: 18px 14px; }
+      .nav-bar { gap: 4px; }
+      .nav-bar a { font-size: 11px; padding: 4px 8px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+
+    <header class="hero">
+      <h1>Suarez Food Hub — Dataflow Diagrams</h1>
+      <p class="tagline">How each user type navigates the system, from login to core actions.</p>
+      <div class="badge-row">
+        <span class="badge b-customer">Customer (Web)</span>
+        <span class="badge b-admin">Admin Dashboard</span>
+        <span class="badge b-staff">Staff Panel</span>
+        <span class="badge b-rider">Rider App</span>
+        <span class="badge b-system">System Overview</span>
+      </div>
+    </header>
+
+    <nav class="nav-bar" id="top">
+      <a href="#customer">Customer</a>
+      <a href="#admin">Admin</a>
+      <a href="#staff">Staff</a>
+      <a href="#rider">Rider</a>
+      <a href="#overview">System Overview</a>
+    </nav>
+
+    <!-- =============================== -->
+    <!-- DIAGRAM 1: CUSTOMER (WEB)        -->
+    <!-- =============================== -->
+    <section class="card" id="customer">
+      <h2><span class="dot" style="background:var(--customer)"></span> Customer App — Web</h2>
+      <p class="subtitle">Public storefront at <strong>apps/web</strong> (port 3000). Customers browse menu, place orders, and track deliveries.</p>
+
+      <div class="diagram-wrap">
+        <svg class="diagram-svg" viewBox="0 0 1080 520" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, sans-serif">
+          <defs>
+            <marker id="ah-blue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#3b82f6"/></marker>
+            <marker id="ah-gray" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#94a3b8"/></marker>
+            <filter id="shadow1"><feDropShadow dx="0" dy="1" stdDeviation="2" flood-opacity="0.08"/></filter>
+            <linearGradient id="cust-grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#eff6ff"/><stop offset="100%" stop-color="#dbeafe"/></linearGradient>
+          </defs>
+
+          <!-- Section labels -->
+          <text x="540" y="22" text-anchor="middle" font-size="11" font-weight="700" fill="#94a3b8" letter-spacing="1.5">GUEST FLOW</text>
+          <text x="540" y="242" text-anchor="middle" font-size="11" font-weight="700" fill="#94a3b8" letter-spacing="1.5">AUTHENTICATED FLOW</text>
+          <line x1="40" y1="230" x2="1040" y2="230" stroke="#e2e8f0" stroke-dasharray="4,4"/>
+
+          <!-- ===== GUEST FLOW (top) ===== -->
+          <!-- Home -->
+          <rect x="20" y="40" width="130" height="56" rx="10" fill="url(#cust-grad)" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="85" y="64" text-anchor="middle" font-size="12" font-weight="700" fill="#1e40af">Home</text>
+          <text x="85" y="80" text-anchor="middle" font-size="9" fill="#3b82f6">/</text>
+
+          <!-- Menu (guest) -->
+          <rect x="190" y="40" width="130" height="56" rx="10" fill="url(#cust-grad)" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="255" y="64" text-anchor="middle" font-size="12" font-weight="700" fill="#1e40af">Menu</text>
+          <text x="255" y="80" text-anchor="middle" font-size="9" fill="#3b82f6">/menu</text>
+
+          <!-- Sign In Prompt -->
+          <rect x="360" y="40" width="150" height="56" rx="10" fill="#fff7ed" stroke="#f97316" stroke-width="1.5" stroke-dasharray="5,3" filter="url(#shadow1)"/>
+          <text x="435" y="62" text-anchor="middle" font-size="11" font-weight="700" fill="#c2410c">Sign In Prompt</text>
+          <text x="435" y="78" text-anchor="middle" font-size="8.5" fill="#f97316">Cart blocks checkout</text>
+
+          <!-- Login -->
+          <rect x="550" y="40" width="130" height="56" rx="10" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="615" y="64" text-anchor="middle" font-size="12" font-weight="700" fill="#dc2626">Login</text>
+          <text x="615" y="80" text-anchor="middle" font-size="9" fill="#ef4444">/login</text>
+
+          <!-- Register -->
+          <rect x="550" y="120" width="130" height="56" rx="10" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="615" y="144" text-anchor="middle" font-size="12" font-weight="700" fill="#dc2626">Register</text>
+          <text x="615" y="160" text-anchor="middle" font-size="9" fill="#ef4444">/register</text>
+
+          <!-- Supabase Auth -->
+          <rect x="730" y="70" width="140" height="56" rx="10" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="800" y="94" text-anchor="middle" font-size="11" font-weight="700" fill="#6d28d9">Supabase Auth</text>
+          <text x="800" y="110" text-anchor="middle" font-size="8.5" fill="#7c3aed">signIn / signUp</text>
+
+          <!-- Profile Created -->
+          <rect x="730" y="148" width="140" height="44" rx="10" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="800" y="175" text-anchor="middle" font-size="11" font-weight="600" fill="#6d28d9">Profile → DB</text>
+
+          <!-- Arrows (guest) -->
+          <path d="M150,68 L188,68" stroke="#3b82f6" stroke-width="1.5" fill="none" marker-end="url(#ah-blue)"/>
+          <path d="M320,68 L358,68" stroke="#3b82f6" stroke-width="1.5" fill="none" marker-end="url(#ah-blue)"/>
+          <path d="M510,68 L548,68" stroke="#f97316" stroke-width="1.5" fill="none" marker-end="url(#ah-gray)"/>
+          <path d="M615,96 L615,118" stroke="#94a3b8" stroke-width="1" fill="none" marker-end="url(#ah-gray)" stroke-dasharray="3,2"/>
+          <path d="M680,68 L728,88" stroke="#ef4444" stroke-width="1.5" fill="none" marker-end="url(#ah-gray)"/>
+          <path d="M680,148 L728,160" stroke="#ef4444" stroke-width="1.5" fill="none" marker-end="url(#ah-gray)"/>
+          <path d="M800,126 L800,146" stroke="#7c3aed" stroke-width="1.5" fill="none" marker-end="url(#ah-gray)"/>
+
+          <!-- ===== AUTHENTICATED FLOW (bottom) ===== -->
+          <!-- Menu (auth) -->
+          <rect x="20" y="260" width="130" height="56" rx="10" fill="url(#cust-grad)" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="85" y="284" text-anchor="middle" font-size="12" font-weight="700" fill="#1e40af">Menu</text>
+          <text x="85" y="300" text-anchor="middle" font-size="9" fill="#3b82f6">Browse + Filter</text>
+
+          <!-- Cart Sidebar -->
+          <rect x="190" y="260" width="130" height="56" rx="10" fill="url(#cust-grad)" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="255" y="284" text-anchor="middle" font-size="12" font-weight="700" fill="#1e40af">Cart Sidebar</text>
+          <text x="255" y="300" text-anchor="middle" font-size="9" fill="#3b82f6">Add / Adjust items</text>
+
+          <!-- Checkout Step 1 -->
+          <rect x="360" y="252" width="140" height="72" rx="10" fill="url(#cust-grad)" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="430" y="274" text-anchor="middle" font-size="11" font-weight="700" fill="#1e40af">Checkout</text>
+          <text x="430" y="290" text-anchor="middle" font-size="9" fill="#3b82f6">Step 1: Address</text>
+          <text x="430" y="304" text-anchor="middle" font-size="8" fill="#94a3b8">Leaflet map + phone</text>
+
+          <!-- Checkout Step 2 -->
+          <rect x="360" y="340" width="140" height="60" rx="10" fill="url(#cust-grad)" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="430" y="364" text-anchor="middle" font-size="11" font-weight="700" fill="#1e40af">Step 2: Payment</text>
+          <text x="430" y="380" text-anchor="middle" font-size="8" fill="#94a3b8">COD / GCash / Maya</text>
+
+          <!-- Checkout Step 3 -->
+          <rect x="360" y="416" width="140" height="60" rx="10" fill="url(#cust-grad)" stroke="#3b82f6" stroke-width="2" filter="url(#shadow1)"/>
+          <text x="430" y="440" text-anchor="middle" font-size="11" font-weight="700" fill="#1e40af">Step 3: Confirm</text>
+          <text x="430" y="456" text-anchor="middle" font-size="8" fill="#94a3b8">Review → Place Order</text>
+
+          <!-- Supabase DB -->
+          <rect x="550" y="260" width="140" height="56" rx="10" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="620" y="284" text-anchor="middle" font-size="11" font-weight="700" fill="#6d28d9">Supabase DB</text>
+          <text x="620" y="300" text-anchor="middle" font-size="8.5" fill="#7c3aed">orders / order_items</text>
+
+          <!-- Orders Page -->
+          <rect x="550" y="340" width="140" height="60" rx="10" fill="url(#cust-grad)" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="620" y="364" text-anchor="middle" font-size="12" font-weight="700" fill="#1e40af">My Orders</text>
+          <text x="620" y="380" text-anchor="middle" font-size="8" fill="#94a3b8">/orders • status timeline</text>
+
+          <!-- Live Tracking -->
+          <rect x="550" y="416" width="140" height="60" rx="10" fill="#ecfdf5" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="5,3" filter="url(#shadow1)"/>
+          <text x="620" y="440" text-anchor="middle" font-size="11" font-weight="700" fill="#16a34a">Live Tracking</text>
+          <text x="620" y="456" text-anchor="middle" font-size="8" fill="#22c55e">Supabase Realtime</text>
+
+          <!-- Profile Page -->
+          <rect x="740" y="260" width="140" height="56" rx="10" fill="url(#cust-grad)" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="810" y="284" text-anchor="middle" font-size="12" font-weight="700" fill="#1e40af">My Profile</text>
+          <text x="810" y="300" text-anchor="middle" font-size="8" fill="#94a3b8">/profile • location picker</text>
+
+          <!-- Cancel Order -->
+          <rect x="740" y="340" width="140" height="50" rx="10" fill="#fef2f2" stroke="#ef4444" stroke-width="1" filter="url(#shadow1)"/>
+          <text x="810" y="362" text-anchor="middle" font-size="10" font-weight="600" fill="#dc2626">Cancel Order</text>
+          <text x="810" y="376" text-anchor="middle" font-size="8" fill="#ef4444">Only if status = pending</text>
+
+          <!-- Rider Location (on orders page) -->
+          <rect x="740" y="416" width="140" height="50" rx="10" fill="#ecfdf5" stroke="#22c55e" stroke-width="1" filter="url(#shadow1)"/>
+          <text x="810" y="438" text-anchor="middle" font-size="10" font-weight="600" fill="#16a34a">Rider Map</text>
+          <text x="810" y="452" text-anchor="middle" font-size="8" fill="#22c55e">Leaflet + Realtime GPS</text>
+
+          <!-- Arrows (authenticated) -->
+          <path d="M150,288 L188,288" stroke="#3b82f6" stroke-width="1.5" fill="none" marker-end="url(#ah-blue)"/>
+          <path d="M320,288 L358,280" stroke="#3b82f6" stroke-width="1.5" fill="none" marker-end="url(#ah-blue)"/>
+          <path d="M430,324 L430,338" stroke="#3b82f6" stroke-width="1.5" fill="none" marker-end="url(#ah-blue)"/>
+          <path d="M430,400 L430,414" stroke="#3b82f6" stroke-width="1.5" fill="none" marker-end="url(#ah-blue)"/>
+          <path d="M500,446 L548,446" stroke="#3b82f6" stroke-width="1.5" fill="none" marker-end="url(#ah-blue)"/>
+          <path d="M500,288 L548,288" stroke="#3b82f6" stroke-width="1.5" fill="none" marker-end="url(#ah-blue)"/>
+          <path d="M500,370 L548,370" stroke="#3b82f6" stroke-width="1.5" fill="none" marker-end="url(#ah-blue)"/>
+          <path d="M620,316 L620,338" stroke="#3b82f6" stroke-width="1.5" fill="none" marker-end="url(#ah-blue)"/>
+          <path d="M620,400 L620,414" stroke="#22c55e" stroke-width="1.5" fill="none" marker-end="url(#ah-blue)"/>
+          <path d="M690,288 L738,288" stroke="#3b82f6" stroke-width="1.5" fill="none" marker-end="url(#ah-blue)"/>
+          <path d="M690,370 L738,365" stroke="#3b82f6" stroke-width="1.5" fill="none" marker-end="url(#ah-blue)"/>
+          <path d="M690,440 L738,440" stroke="#3b82f6" stroke-width="1.5" fill="none" marker-end="url(#ah-blue)"/>
+        </svg>
+      </div>
+
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--customer)"></div> Customer pages</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--admin)"></div> Auth (login/register)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--supabase)"></div> Supabase backend</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--rider)"></div> Gated action</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--staff)"></div> Realtime feature</div>
+      </div>
+    </section>
+
+    <!-- =============================== -->
+    <!-- DIAGRAM 2: ADMIN                 -->
+    <!-- =============================== -->
+    <section class="card" id="admin">
+      <h2><span class="dot" style="background:var(--admin)"></span> Admin Dashboard</h2>
+      <p class="subtitle">Management panel at <strong>apps/admin</strong> (port 3001). Full control over orders, inventory, riders, staff, cashouts, reports, and settings.</p>
+
+      <div class="diagram-wrap">
+        <svg class="diagram-svg" viewBox="0 0 1080 600" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, sans-serif">
+          <defs>
+            <marker id="ah-red" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#ef4444"/></marker>
+            <linearGradient id="admin-grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fef2f2"/><stop offset="100%" stop-color="#fee2e2"/></linearGradient>
+          </defs>
+
+          <!-- Section: Auth -->
+          <text x="540" y="22" text-anchor="middle" font-size="11" font-weight="700" fill="#94a3b8" letter-spacing="1.5">AUTHENTICATION</text>
+
+          <!-- Login -->
+          <rect x="430" y="35" width="140" height="50" rx="10" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="500" y="56" text-anchor="middle" font-size="12" font-weight="700" fill="#dc2626">Admin Login</text>
+          <text x="500" y="72" text-anchor="middle" font-size="9" fill="#ef4444">role check = "admin"</text>
+
+          <!-- Arrow down -->
+          <path d="M500,85 L500,110" stroke="#ef4444" stroke-width="1.5" fill="none" marker-end="url(#ah-red)"/>
+
+          <!-- Section: Dashboard -->
+          <text x="540" y="120" text-anchor="middle" font-size="11" font-weight="700" fill="#94a3b8" letter-spacing="1.5">DASHBOARD</text>
+
+          <!-- Dashboard Home -->
+          <rect x="430" y="130" width="140" height="50" rx="10" fill="url(#admin-grad)" stroke="#ef4444" stroke-width="2" filter="url(#shadow1)"/>
+          <text x="500" y="152" text-anchor="middle" font-size="12" font-weight="700" fill="#dc2626">Dashboard</text>
+          <text x="500" y="168" text-anchor="middle" font-size="9" fill="#ef4444">/ • stats + charts</text>
+
+          <!-- Section: Management Grid -->
+          <text x="540" y="210" text-anchor="middle" font-size="11" font-weight="700" fill="#94a3b8" letter-spacing="1.5">MANAGEMENT SECTIONS</text>
+
+          <!-- Row 1 -->
+          <!-- Orders -->
+          <rect x="20" y="228" width="148" height="80" rx="10" fill="url(#admin-grad)" stroke="#ef4444" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="94" y="252" text-anchor="middle" font-size="12" font-weight="700" fill="#dc2626">Orders</text>
+          <text x="94" y="268" text-anchor="middle" font-size="8" fill="#ef4444">/orders</text>
+          <text x="94" y="284" text-anchor="middle" font-size="7.5" fill="#94a3b8">Filter • Assign rider</text>
+          <text x="94" y="296" text-anchor="middle" font-size="7.5" fill="#94a3b8">Update status + payment</text>
+
+          <!-- Inventory -->
+          <rect x="184" y="228" width="148" height="80" rx="10" fill="url(#admin-grad)" stroke="#ef4444" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="258" y="252" text-anchor="middle" font-size="12" font-weight="700" fill="#dc2626">Inventory</text>
+          <text x="258" y="268" text-anchor="middle" font-size="8" fill="#ef4444">/inventory</text>
+          <text x="258" y="284" text-anchor="middle" font-size="7.5" fill="#94a3b8">CRUD products</text>
+          <text x="258" y="296" text-anchor="middle" font-size="7.5" fill="#94a3b8">Stock + availability</text>
+
+          <!-- Categories -->
+          <rect x="348" y="228" width="148" height="80" rx="10" fill="url(#admin-grad)" stroke="#ef4444" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="422" y="252" text-anchor="middle" font-size="12" font-weight="700" fill="#dc2626">Categories</text>
+          <text x="422" y="268" text-anchor="middle" font-size="8" fill="#ef4444">/categories</text>
+          <text x="422" y="284" text-anchor="middle" font-size="7.5" fill="#94a3b8">CRUD + reorder</text>
+          <text x="422" y="296" text-anchor="middle" font-size="7.5" fill="#94a3b8">Sort order arrows</text>
+
+          <!-- Riders -->
+          <rect x="512" y="228" width="148" height="80" rx="10" fill="url(#admin-grad)" stroke="#ef4444" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="586" y="252" text-anchor="middle" font-size="12" font-weight="700" fill="#dc2626">Riders</text>
+          <text x="586" y="268" text-anchor="middle" font-size="8" fill="#ef4444">/riders</text>
+          <text x="586" y="284" text-anchor="middle" font-size="7.5" fill="#94a3b8">Approve / Reject</text>
+          <text x="586" y="296" text-anchor="middle" font-size="7.5" fill="#94a3b8">View locations</text>
+
+          <!-- Staff -->
+          <rect x="676" y="228" width="148" height="80" rx="10" fill="url(#admin-grad)" stroke="#ef4444" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="750" y="252" text-anchor="middle" font-size="12" font-weight="700" fill="#dc2626">Staff</text>
+          <text x="750" y="268" text-anchor="middle" font-size="8" fill="#ef4444">/staff</text>
+          <text x="750" y="284" text-anchor="middle" font-size="7.5" fill="#94a3b8">Create accounts</text>
+          <text x="750" y="296" text-anchor="middle" font-size="7.5" fill="#94a3b8">Toggle active status</text>
+
+          <!-- Cashouts -->
+          <rect x="840" y="228" width="148" height="80" rx="10" fill="url(#admin-grad)" stroke="#ef4444" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="914" y="252" text-anchor="middle" font-size="12" font-weight="700" fill="#dc2626">Cashouts</text>
+          <text x="914" y="268" text-anchor="middle" font-size="8" fill="#ef4444">/cashouts</text>
+          <text x="914" y="284" text-anchor="middle" font-size="7.5" fill="#94a3b8">Approve / Pay / Reject</text>
+          <text x="914" y="296" text-anchor="middle" font-size="7.5" fill="#94a3b8">GCash reference #</text>
+
+          <!-- Row 2 -->
+          <!-- Reports -->
+          <rect x="100" y="330" width="168" height="80" rx="10" fill="url(#admin-grad)" stroke="#ef4444" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="184" y="354" text-anchor="middle" font-size="12" font-weight="700" fill="#dc2626">Reports</text>
+          <text x="184" y="370" text-anchor="middle" font-size="8" fill="#ef4444">/reports</text>
+          <text x="184" y="386" text-anchor="middle" font-size="7.5" fill="#94a3b8">Date range • Charts</text>
+          <text x="184" y="398" text-anchor="middle" font-size="7.5" fill="#94a3b8">Top products • PDF export</text>
+
+          <!-- Settings -->
+          <rect x="300" y="330" width="168" height="80" rx="10" fill="url(#admin-grad)" stroke="#ef4444" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="384" y="354" text-anchor="middle" font-size="12" font-weight="700" fill="#dc2626">Settings</text>
+          <text x="384" y="370" text-anchor="middle" font-size="8" fill="#ef4444">/settings</text>
+          <text x="384" y="386" text-anchor="middle" font-size="7.5" fill="#94a3b8">Store info + delivery fee</text>
+          <text x="384" y="398" text-anchor="middle" font-size="7.5" fill="#94a3b8">Upload QR codes</text>
+
+          <!-- Order Detail (sub-page) -->
+          <rect x="520" y="330" width="168" height="80" rx="10" fill="#fff" stroke="#fca5a5" stroke-width="1" stroke-dasharray="4,3" filter="url(#shadow1)"/>
+          <text x="604" y="354" text-anchor="middle" font-size="11" font-weight="600" fill="#dc2626">Order Detail</text>
+          <text x="604" y="370" text-anchor="middle" font-size="8" fill="#94a3b8">/orders/:id</text>
+          <text x="604" y="386" text-anchor="middle" font-size="7.5" fill="#94a3b8">Timeline • Map • Print</text>
+          <text x="604" y="398" text-anchor="middle" font-size="7.5" fill="#94a3b8">Customer + Rider info</text>
+
+          <!-- Supabase connections -->
+          <rect x="740" y="330" width="180" height="80" rx="10" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="830" y="354" text-anchor="middle" font-size="11" font-weight="700" fill="#6d28d9">Supabase Backend</text>
+          <text x="830" y="372" text-anchor="middle" font-size="8" fill="#7c3aed">Realtime: orders, riders,</text>
+          <text x="830" y="386" text-anchor="middle" font-size="8" fill="#7c3aed">cashouts, rider_locations</text>
+          <text x="830" y="400" text-anchor="middle" font-size="8" fill="#7c3aed">Service role key for admin ops</text>
+
+          <!-- Arrows from Dashboard to sections -->
+          <path d="M460,155 L180,155 L180,226" stroke="#ef4444" stroke-width="1.2" fill="none" marker-end="url(#ah-red)"/>
+          <path d="M500,180 L500,226" stroke="#ef4444" stroke-width="1.2" fill="none" marker-end="url(#ah-red)"/>
+          <path d="M540,155 L750,155 L750,226" stroke="#ef4444" stroke-width="1.2" fill="none" marker-end="url(#ah-red)"/>
+          <path d="M914,180 L914,226" stroke="#ef4444" stroke-width="1.2" fill="none" marker-end="url(#ah-red)"/>
+
+          <!-- Realtime indicators -->
+          <circle cx="960" cy="358" r="4" fill="#22c55e"><animate attributeName="opacity" values="1;0.3;1" dur="2s" repeatCount="indefinite"/></circle>
+          <text x="948" y="372" font-size="7" fill="#22c55e" text-anchor="end">RT</text>
+        </svg>
+      </div>
+
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--admin)"></div> Admin pages</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#fca5a5;border:1px dashed var(--admin)"></div> Sub-pages (linked from main)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--supabase)"></div> Supabase backend</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--staff)"></div> Realtime subscription</div>
+      </div>
+    </section>
+
+    <!-- =============================== -->
+    <!-- DIAGRAM 3: STAFF                 -->
+    <!-- =============================== -->
+    <section class="card" id="staff">
+      <h2><span class="dot" style="background:var(--staff)"></span> Staff Panel</h2>
+      <p class="subtitle">Order management at <strong>apps/staff</strong> (port 3002). Staff handle orders, update statuses, and manage inventory stock.</p>
+
+      <div class="diagram-wrap">
+        <svg class="diagram-svg" viewBox="0 0 1080 440" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, sans-serif">
+          <defs>
+            <marker id="ah-green" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#22c55e"/></marker>
+            <linearGradient id="staff-grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#f0fdf4"/><stop offset="100%" stop-color="#dcfce7"/></linearGradient>
+          </defs>
+
+          <!-- Auth -->
+          <text x="540" y="22" text-anchor="middle" font-size="11" font-weight="700" fill="#94a3b8" letter-spacing="1.5">AUTHENTICATION</text>
+          <rect x="430" y="35" width="140" height="50" rx="10" fill="#dcfce7" stroke="#22c55e" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="500" y="56" text-anchor="middle" font-size="12" font-weight="700" fill="#16a34a">Staff Login</text>
+          <text x="500" y="72" text-anchor="middle" font-size="9" fill="#22c55e">role = "staff" or "admin"</text>
+
+          <path d="M500,85 L500,115" stroke="#22c55e" stroke-width="1.5" fill="none" marker-end="url(#ah-green)"/>
+
+          <!-- Dashboard -->
+          <text x="540" y="125" text-anchor="middle" font-size="11" font-weight="700" fill="#94a3b8" letter-spacing="1.5">DASHBOARD</text>
+          <rect x="400" y="135" width="180" height="56" rx="10" fill="url(#staff-grad)" stroke="#22c55e" stroke-width="2" filter="url(#shadow1)"/>
+          <text x="490" y="158" text-anchor="middle" font-size="12" font-weight="700" fill="#16a34a">Dashboard</text>
+          <text x="490" y="174" text-anchor="middle" font-size="9" fill="#22c55e">/ • Stats: Pending, Preparing, Ready, Done</text>
+
+          <!-- Low stock alert -->
+          <rect x="620" y="140" width="120" height="44" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="1" filter="url(#shadow1)"/>
+          <text x="680" y="158" text-anchor="middle" font-size="9" font-weight="600" fill="#dc2626">Low Stock Alert</text>
+          <text x="680" y="172" text-anchor="middle" font-size="8" fill="#ef4444">→ link to /inventory</text>
+
+          <path d="M580,163 L618,163" stroke="#ef4444" stroke-width="1" fill="none" marker-end="url(#ah-gray)"/>
+
+          <!-- Main sections -->
+          <text x="540" y="220" text-anchor="middle" font-size="11" font-weight="700" fill="#94a3b8" letter-spacing="1.5">PAGES</text>
+
+          <!-- Orders -->
+          <rect x="60" y="240" width="200" height="90" rx="10" fill="url(#staff-grad)" stroke="#22c55e" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="160" y="264" text-anchor="middle" font-size="13" font-weight="700" fill="#16a34a">Orders</text>
+          <text x="160" y="280" text-anchor="middle" font-size="8.5" fill="#22c55e">/orders</text>
+          <text x="160" y="296" text-anchor="middle" font-size="8" fill="#94a3b8">Filter tabs (All/Pending/Confirmed/</text>
+          <text x="160" y="308" text-anchor="middle" font-size="8" fill="#94a3b8">Preparing/Delivered/Cancelled)</text>
+          <text x="160" y="320" text-anchor="middle" font-size="8" fill="#94a3b8">Assign rider • Update status + payment</text>
+
+          <!-- Order Detail -->
+          <rect x="300" y="240" width="200" height="90" rx="10" fill="#fff" stroke="#86efac" stroke-width="1" stroke-dasharray="4,3" filter="url(#shadow1)"/>
+          <text x="400" y="264" text-anchor="middle" font-size="12" font-weight="600" fill="#16a34a">Order Detail</text>
+          <text x="400" y="280" text-anchor="middle" font-size="8.5" fill="#22c55e">/orders/:id</text>
+          <text x="400" y="296" text-anchor="middle" font-size="8" fill="#94a3b8">Status timeline • Map (Leaflet)</text>
+          <text x="400" y="308" text-anchor="middle" font-size="8" fill="#94a3b8">Customer + Rider info • Print receipt</text>
+          <text x="400" y="320" text-anchor="middle" font-size="8" fill="#94a3b8">Payment status update</text>
+
+          <!-- Inventory -->
+          <rect x="540" y="240" width="200" height="90" rx="10" fill="url(#staff-grad)" stroke="#22c55e" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="640" y="264" text-anchor="middle" font-size="13" font-weight="700" fill="#16a34a">Inventory</text>
+          <text x="640" y="280" text-anchor="middle" font-size="8.5" fill="#22c55e">/inventory</text>
+          <text x="640" y="296" text-anchor="middle" font-size="8" fill="#94a3b8">Search + Category filter</text>
+          <text x="640" y="308" text-anchor="middle" font-size="8" fill="#94a3b8">Inline stock quantity editor</text>
+          <text x="640" y="320" text-anchor="middle" font-size="8" fill="#94a3b8">Low stock badge indicator</text>
+
+          <!-- Supabase -->
+          <rect x="780" y="240" width="200" height="90" rx="10" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="880" y="264" text-anchor="middle" font-size="11" font-weight="700" fill="#6d28d9">Supabase Backend</text>
+          <text x="880" y="282" text-anchor="middle" font-size="8" fill="#7c3aed">Realtime: orders table</text>
+          <text x="880" y="298" text-anchor="middle" font-size="8" fill="#7c3aed">PATCH /api/orders</text>
+          <text x="880" y="314" text-anchor="middle" font-size="8" fill="#7c3aed">Role check: staff or admin</text>
+
+          <!-- Order Status Lifecycle -->
+          <rect x="120" y="358" width="800" height="60" rx="10" fill="#f8fafc" stroke="var(--border)" stroke-width="1"/>
+          <text x="520" y="376" text-anchor="middle" font-size="10" font-weight="700" fill="#64748b" letter-spacing="1">ORDER STATUS LIFECYCLE</text>
+          <!-- Status boxes -->
+          <rect x="155" y="386" width="90" height="24" rx="6" fill="#fef2f2" stroke="#fca5a5" stroke-width="1"/>
+          <text x="200" y="402" text-anchor="middle" font-size="9" font-weight="600" fill="#dc2626">Pending</text>
+          <rect x="265" y="386" width="90" height="24" rx="6" fill="#fff7ed" stroke="#fdba74" stroke-width="1"/>
+          <text x="310" y="402" text-anchor="middle" font-size="9" font-weight="600" fill="#c2410c">Confirmed</text>
+          <rect x="375" y="386" width="90" height="24" rx="6" fill="#fefce8" stroke="#fde047" stroke-width="1"/>
+          <text x="420" y="402" text-anchor="middle" font-size="9" font-weight="600" fill="#a16207">Preparing</text>
+          <rect x="485" y="386" width="110" height="24" rx="6" fill="#f0f9ff" stroke="#93c5fd" stroke-width="1"/>
+          <text x="540" y="402" text-anchor="middle" font-size="9" font-weight="600" fill="#1d4ed8">Out for Delivery</text>
+          <rect x="615" y="386" width="90" height="24" rx="6" fill="#f0fdf4" stroke="#86efac" stroke-width="1"/>
+          <text x="660" y="402" text-anchor="middle" font-size="9" font-weight="600" fill="#16a34a">Delivered</text>
+          <rect x="725" y="386" width="90" height="24" rx="6" fill="#fef2f2" stroke="#fca5a5" stroke-width="1"/>
+          <text x="770" y="402" text-anchor="middle" font-size="9" font-weight="600" fill="#dc2626">Cancelled</text>
+          <!-- Arrows -->
+          <path d="M247,398 L263,398" stroke="#94a3b8" stroke-width="1" fill="none" marker-end="url(#ah-gray)"/>
+          <path d="M357,398 L373,398" stroke="#94a3b8" stroke-width="1" fill="none" marker-end="url(#ah-gray)"/>
+          <path d="M467,398 L483,398" stroke="#94a3b8" stroke-width="1" fill="none" marker-end="url(#ah-gray)"/>
+          <path d="M597,398 L613,398" stroke="#94a3b8" stroke-width="1" fill="none" marker-end="url(#ah-gray)"/>
+
+          <!-- Arrows from Dashboard -->
+          <path d="M440,163 L160,238" stroke="#22c55e" stroke-width="1.2" fill="none" marker-end="url(#ah-green)"/>
+          <path d="M470,191 L400,238" stroke="#22c55e" stroke-width="1.2" fill="none" marker-end="url(#ah-green)"/>
+          <path d="M520,191 L640,238" stroke="#22c55e" stroke-width="1.2" fill="none" marker-end="url(#ah-green)"/>
+          <path d="M560,163 L880,238" stroke="#7c3aed" stroke-width="1.2" fill="none" marker-end="url(#ah-green)"/>
+        </svg>
+      </div>
+
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--staff)"></div> Staff pages</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#86efac;border:1px dashed var(--staff)"></div> Sub-pages</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--admin)"></div> Alert</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--supabase)"></div> Supabase backend</div>
+      </div>
+    </section>
+
+    <!-- =============================== -->
+    <!-- DIAGRAM 4: RIDER                 -->
+    <!-- =============================== -->
+    <section class="card" id="rider">
+      <h2><span class="dot" style="background:var(--rider)"></span> Rider App</h2>
+      <p class="subtitle">Delivery app at <strong>apps/rider</strong> (port 3003). Riders manage deliveries, track GPS location, and view earnings.</p>
+
+      <div class="diagram-wrap">
+        <svg class="diagram-svg" viewBox="0 0 1080 480" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, sans-serif">
+          <defs>
+            <marker id="ah-orange" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#f97316"/></marker>
+            <linearGradient id="rider-grad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fff7ed"/><stop offset="100%" stop-color="#ffedd5"/></linearGradient>
+          </defs>
+
+          <!-- Auth -->
+          <text x="540" y="22" text-anchor="middle" font-size="11" font-weight="700" fill="#94a3b8" letter-spacing="1.5">AUTHENTICATION</text>
+          <rect x="400" y="35" width="200" height="50" rx="10" fill="#ffedd5" stroke="#f97316" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="500" y="56" text-anchor="middle" font-size="12" font-weight="700" fill="#c2410c">Rider Login</text>
+          <text x="500" y="72" text-anchor="middle" font-size="9" fill="#f97316">role = "rider" + status checks</text>
+
+          <path d="M500,85 L500,115" stroke="#f97316" stroke-width="1.5" fill="none" marker-end="url(#ah-orange)"/>
+
+          <!-- Status checks -->
+          <rect x="640" y="40" width="180" height="40" rx="8" fill="#fef2f2" stroke="#ef4444" stroke-width="1"/>
+          <text x="730" y="65" text-anchor="middle" font-size="9" fill="#dc2626">Blocks: pending_approval, rejected, inactive</text>
+
+          <path d="M600,60 L638,60" stroke="#ef4444" stroke-width="1" fill="none" marker-end="url(#ah-gray)"/>
+
+          <!-- Dashboard -->
+          <text x="540" y="125" text-anchor="middle" font-size="11" font-weight="700" fill="#94a3b8" letter-spacing="1.5">MAIN DASHBOARD</text>
+          <rect x="370" y="135" width="220" height="64" rx="10" fill="url(#rider-grad)" stroke="#f97316" stroke-width="2" filter="url(#shadow1)"/>
+          <text x="480" y="158" text-anchor="middle" font-size="13" font-weight="700" fill="#c2410c">Rider Dashboard</text>
+          <text x="480" y="174" text-anchor="middle" font-size="9" fill="#f97316">/ • Online toggle • Active delivery</text>
+          <text x="480" y="188" text-anchor="middle" font-size="8" fill="#94a3b8">Today's stats • Map • Mark delivered</text>
+
+          <!-- Realtime alert -->
+          <rect x="640" y="140" width="170" height="50" rx="10" fill="#ecfdf5" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="5,3" filter="url(#shadow1)"/>
+          <text x="725" y="160" text-anchor="middle" font-size="10" font-weight="700" fill="#16a34a">New Order Alert</text>
+          <text x="725" y="176" text-anchor="middle" font-size="8" fill="#22c55e">Supabase Realtime INSERT</text>
+          <circle cx="650" cy="155" r="4" fill="#22c55e"><animate attributeName="opacity" values="1;0.3;1" dur="1.5s" repeatCount="indefinite"/></circle>
+
+          <path d="M590,167 L638,167" stroke="#22c55e" stroke-width="1.5" fill="none" marker-end="url(#ah-orange)"/>
+
+          <!-- Active Delivery Card -->
+          <rect x="340" y="220" width="280" height="70" rx="10" fill="url(#rider-grad)" stroke="#f97316" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="480" y="244" text-anchor="middle" font-size="12" font-weight="700" fill="#c2410c">Active Delivery</text>
+          <text x="480" y="260" text-anchor="middle" font-size="8.5" fill="#f97316">Customer info • Google Maps link</text>
+          <text x="480" y="276" text-anchor="middle" font-size="8.5" fill="#f97316">DeliveryMap (Leaflet) • Call customer</text>
+
+          <!-- Mark Delivered -->
+          <rect x="340" y="305" width="130" height="40" rx="8" fill="#f0fdf4" stroke="#22c55e" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="405" y="330" text-anchor="middle" font-size="10" font-weight="700" fill="#16a34a">Mark Delivered</text>
+
+          <!-- Earnings calc -->
+          <rect x="490" y="305" width="130" height="40" rx="8" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1" filter="url(#shadow1)"/>
+          <text x="555" y="324" text-anchor="middle" font-size="9" font-weight="600" fill="#6d28d9">Earning = 80%</text>
+          <text x="555" y="338" text-anchor="middle" font-size="8" fill="#7c3aed">of delivery_fee</text>
+
+          <!-- GPS Tracking -->
+          <rect x="660" y="220" width="180" height="70" rx="10" fill="#ecfdf5" stroke="#22c55e" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="750" y="244" text-anchor="middle" font-size="11" font-weight="700" fill="#16a34a">GPS Tracking</text>
+          <text x="750" y="260" text-anchor="middle" font-size="8" fill="#22c55e">watchPosition() → POST /api/location</text>
+          <text x="750" y="276" text-anchor="middle" font-size="8" fill="#94a3b8">rider_locations table (upsert)</text>
+
+          <!-- Bottom nav -->
+          <text x="540" y="370" text-anchor="middle" font-size="11" font-weight="700" fill="#94a3b8" letter-spacing="1.5">BOTTOM TAB NAV</text>
+
+          <!-- Tab buttons -->
+          <rect x="120" y="385" width="160" height="50" rx="10" fill="url(#rider-grad)" stroke="#f97316" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="200" y="408" text-anchor="middle" font-size="11" font-weight="700" fill="#c2410c">Deliveries</text>
+          <text x="200" y="424" text-anchor="middle" font-size="8" fill="#94a3b8">/deliveries • History list</text>
+
+          <rect x="310" y="385" width="160" height="50" rx="10" fill="url(#rider-grad)" stroke="#f97316" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="390" y="408" text-anchor="middle" font-size="11" font-weight="700" fill="#c2410c">Earnings</text>
+          <text x="390" y="424" text-anchor="middle" font-size="8" fill="#94a3b8">/earnings • Bar chart + stats</text>
+
+          <rect x="500" y="385" width="160" height="50" rx="10" fill="url(#rider-grad)" stroke="#f97316" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="580" y="408" text-anchor="middle" font-size="11" font-weight="700" fill="#c2410c">Profile</text>
+          <text x="580" y="424" text-anchor="middle" font-size="8" fill="#94a3b8">/profile • Stats + logout</text>
+
+          <!-- Supabase -->
+          <rect x="720" y="385" width="200" height="50" rx="10" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="820" y="406" text-anchor="middle" font-size="10" font-weight="700" fill="#6d28d9">Supabase Backend</text>
+          <text x="820" y="422" text-anchor="middle" font-size="8" fill="#7c3aed">orders • rider_earnings • rider_locations</text>
+
+          <!-- Arrows from dashboard -->
+          <path d="M480,199 L480,218" stroke="#f97316" stroke-width="1.5" fill="none" marker-end="url(#ah-orange)"/>
+          <path d="M590,167 L660,220" stroke="#22c55e" stroke-width="1.2" fill="none" marker-end="url(#ah-orange)"/>
+          <path d="M480,290 L480,303" stroke="#22c55e" stroke-width="1.5" fill="none" marker-end="url(#ah-orange)"/>
+          <path d="M470,345 L200,383" stroke="#f97316" stroke-width="1" fill="none" marker-end="url(#ah-orange)"/>
+          <path d="M480,345 L390,383" stroke="#f97316" stroke-width="1" fill="none" marker-end="url(#ah-orange)"/>
+          <path d="M490,345 L580,383" stroke="#f97316" stroke-width="1" fill="none" marker-end="url(#ah-orange)"/>
+          <path d="M750,290 L820,383" stroke="#7c3aed" stroke-width="1" fill="none" marker-end="url(#ah-orange)"/>
+        </svg>
+      </div>
+
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--rider)"></div> Rider pages</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--staff)"></div> Realtime / GPS</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--supabase)"></div> Supabase backend</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--admin)"></div> Auth gate</div>
+      </div>
+    </section>
+
+    <!-- =============================== -->
+    <!-- DIAGRAM 5: COMPREHENSIVE         -->
+    <!-- =============================== -->
+    <section class="card" id="overview">
+      <h2><span class="dot" style="background:linear-gradient(135deg,var(--customer),var(--admin),var(--staff),var(--rider))"></span> Comprehensive System Overview</h2>
+      <p class="subtitle">All four apps connected through Supabase. Shows the full order lifecycle from customer placement to rider delivery.</p>
+
+      <div class="diagram-wrap" style="padding:12px">
+        <svg class="diagram-svg" viewBox="0 0 1080 720" width="100%" height="auto" xmlns="http://www.w3.org/2000/svg" font-family="Inter, system-ui, sans-serif">
+          <defs>
+            <marker id="ah-sys" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#475569"/></marker>
+            <marker id="ah-sys-blue" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#3b82f6"/></marker>
+            <marker id="ah-sys-red" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#ef4444"/></marker>
+            <marker id="ah-sys-green" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#22c55e"/></marker>
+            <marker id="ah-sys-orange" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6 Z" fill="#f97316"/></marker>
+          </defs>
+
+          <!-- Title area -->
+          <text x="540" y="24" text-anchor="middle" font-size="13" font-weight="700" fill="#475569" letter-spacing="1.5">FOUR APPS + SUPABASE BACKEND</text>
+
+          <!-- ===== FOUR APP BOXES (top row) ===== -->
+          <!-- Customer Web -->
+          <rect x="20" y="45" width="240" height="120" rx="12" fill="#eff6ff" stroke="#3b82f6" stroke-width="2" filter="url(#shadow1)"/>
+          <rect x="20" y="45" width="240" height="30" rx="12" fill="#3b82f6"/>
+          <rect x="20" y="63" width="240" height="12" fill="#3b82f6"/>
+          <text x="140" y="65" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">Customer (Web)</text>
+          <text x="36" y="94" font-size="9" fill="#1e40af">Home → Menu → Cart</text>
+          <text x="36" y="108" font-size="9" fill="#1e40af">Checkout (3-step wizard)</text>
+          <text x="36" y="122" font-size="9" fill="#1e40af">My Orders + Live tracking</text>
+          <text x="36" y="136" font-size="9" fill="#1e40af">Profile + Location picker</text>
+          <text x="36" y="152" font-size="8" fill="#93c5fd">Port 3000 • Next.js</text>
+
+          <!-- Admin -->
+          <rect x="280" y="45" width="240" height="120" rx="12" fill="#fef2f2" stroke="#ef4444" stroke-width="2" filter="url(#shadow1)"/>
+          <rect x="280" y="45" width="240" height="30" rx="12" fill="#ef4444"/>
+          <rect x="280" y="63" width="240" height="12" fill="#ef4444"/>
+          <text x="400" y="65" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">Admin Dashboard</text>
+          <text x="296" y="94" font-size="9" fill="#dc2626">Orders • Inventory • Categories</text>
+          <text x="296" y="108" font-size="9" fill="#dc2626">Riders • Staff • Cashouts</text>
+          <text x="296" y="122" font-size="9" fill="#dc2626">Reports (PDF) • Settings</text>
+          <text x="296" y="136" font-size="9" fill="#dc2626">9 management sections</text>
+          <text x="296" y="152" font-size="8" fill="#fca5a5">Port 3001 • Next.js</text>
+
+          <!-- Staff -->
+          <rect x="540" y="45" width="240" height="120" rx="12" fill="#f0fdf4" stroke="#22c55e" stroke-width="2" filter="url(#shadow1)"/>
+          <rect x="540" y="45" width="240" height="30" rx="12" fill="#22c55e"/>
+          <rect x="540" y="63" width="240" height="12" fill="#22c55e"/>
+          <text x="660" y="65" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">Staff Panel</text>
+          <text x="556" y="94" font-size="9" fill="#16a34a">Orders (filter + assign)</text>
+          <text x="556" y="108" font-size="9" fill="#16a34a">Order Detail (timeline)</text>
+          <text x="556" y="122" font-size="9" fill="#16a34a">Inventory (stock editor)</text>
+          <text x="556" y="136" font-size="9" fill="#16a34a">Status updates + payment</text>
+          <text x="556" y="152" font-size="8" fill="#86efac">Port 3002 • Next.js</text>
+
+          <!-- Rider -->
+          <rect x="800" y="45" width="240" height="120" rx="12" fill="#fff7ed" stroke="#f97316" stroke-width="2" filter="url(#shadow1)"/>
+          <rect x="800" y="45" width="240" height="30" rx="12" fill="#f97316"/>
+          <rect x="800" y="63" width="240" height="12" fill="#f97316"/>
+          <text x="920" y="65" text-anchor="middle" font-size="12" font-weight="700" fill="#fff">Rider App</text>
+          <text x="816" y="94" font-size="9" fill="#c2410c">Dashboard (online toggle)</text>
+          <text x="816" y="108" font-size="9" fill="#c2410c">Active delivery + Map</text>
+          <text x="816" y="122" font-size="9" fill="#c2410c">GPS tracking → rider_locations</text>
+          <text x="816" y="136" font-size="9" fill="#c2410c">Earnings + Delivery history</text>
+          <text x="816" y="152" font-size="8" fill="#fed7aa">Port 3003 • Next.js (PWA)</text>
+
+          <!-- ===== SUPABASE CENTER ===== -->
+          <rect x="340" y="210" width="400" height="110" rx="14" fill="#f5f3ff" stroke="#7c3aed" stroke-width="2.5" filter="url(#shadow1)"/>
+          <rect x="340" y="210" width="400" height="32" rx="14" fill="#7c3aed"/>
+          <rect x="340" y="232" width="400" height="10" fill="#7c3aed"/>
+          <text x="540" y="232" text-anchor="middle" font-size="14" font-weight="800" fill="#fff">Supabase Backend</text>
+          <!-- Sub items -->
+          <text x="360" y="262" font-size="10" font-weight="600" fill="#6d28d9">Auth</text>
+          <text x="360" y="276" font-size="8.5" fill="#7c3aed">Email/password login</text>
+          <text x="360" y="290" font-size="8.5" fill="#7c3aed">Role-based access</text>
+
+          <text x="490" y="262" font-size="10" font-weight="600" fill="#6d28d9">Database</text>
+          <text x="490" y="276" font-size="8.5" fill="#7c3aed">14 tables (Postgres)</text>
+          <text x="490" y="290" font-size="8.5" fill="#7c3aed">RLS policies per role</text>
+
+          <text x="620" y="262" font-size="10" font-weight="600" fill="#6d28d9">Realtime</text>
+          <text x="620" y="276" font-size="8.5" fill="#7c3aed">orders • rider_locations</text>
+          <text x="620" y="290" font-size="8.5" fill="#7c3aed">cashouts • notifications</text>
+
+          <text x="360" y="310" font-size="8" fill="#a78bfa">Service role key for admin ops • Anon key for client-side</text>
+
+          <!-- ===== SHARED PACKAGES ===== -->
+          <rect x="340" y="340" width="400" height="46" rx="10" fill="#f1f5f9" stroke="#94a3b8" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="540" y="360" text-anchor="middle" font-size="11" font-weight="700" fill="#475569">Shared Packages</text>
+          <text x="540" y="376" text-anchor="middle" font-size="9" fill="#64748b">@repo/data-access  •  @repo/supabase  •  @repo/ui  •  @repo/types  •  @repo/utils</text>
+
+          <!-- ===== ORDER LIFECYCLE (bottom) ===== -->
+          <rect x="20" y="420" width="1040" height="280" rx="14" fill="#fafbfc" stroke="var(--border)" stroke-width="1.5"/>
+          <text x="540" y="445" text-anchor="middle" font-size="13" font-weight="800" fill="#334155" letter-spacing="1">ORDER LIFECYCLE — FULL DATA FLOW</text>
+
+          <!-- Step 1: Customer places order -->
+          <rect x="40" y="465" width="160" height="100" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow1)"/>
+          <circle cx="52" cy="477" r="8" fill="#3b82f6"/>
+          <text x="52" y="481" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">1</text>
+          <text x="120" y="480" text-anchor="middle" font-size="11" font-weight="700" fill="#1e40af">Customer Places Order</text>
+          <text x="52" y="500" font-size="8" fill="#3b82f6">Checkout → POST /api/orders</text>
+          <text x="52" y="514" font-size="8" fill="#3b82f6">Creates: order + order_items</text>
+          <text x="52" y="528" font-size="8" fill="#3b82f6">Deducts: product stock</text>
+          <text x="52" y="542" font-size="8" fill="#3b82f6">Sends: notification to admins</text>
+          <text x="52" y="556" font-size="7.5" fill="#94a3b8">status: pending</text>
+
+          <!-- Arrow 1→2 -->
+          <path d="M200,515 L240,515" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah-sys)"/>
+          <text x="220" y="506" text-anchor="middle" font-size="7" fill="#94a3b8">Supabase</text>
+          <text x="220" y="534" text-anchor="middle" font-size="7" fill="#94a3b8">Realtime</text>
+
+          <!-- Step 2: Admin/Staff manage -->
+          <rect x="248" y="465" width="180" height="100" rx="10" fill="#fef2f2" stroke="#ef4444" stroke-width="1.5" filter="url(#shadow1)"/>
+          <circle cx="260" cy="477" r="8" fill="#ef4444"/>
+          <text x="260" y="481" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">2</text>
+          <text x="338" y="480" text-anchor="middle" font-size="11" font-weight="700" fill="#dc2626">Admin/Staff Manage</text>
+          <text x="260" y="500" font-size="8" fill="#ef4444">View order in dashboard</text>
+          <text x="260" y="514" font-size="8" fill="#ef4444">Verify payment status</text>
+          <text x="260" y="528" font-size="8" fill="#ef4444">Assign rider to order</text>
+          <text x="260" y="542" font-size="8" fill="#ef4444">Update: pending → confirmed</text>
+          <text x="260" y="556" font-size="7.5" fill="#94a3b8">→ preparing → ready_for_pickup</text>
+
+          <!-- Arrow 2→3 -->
+          <path d="M428,515 L468,515" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah-sys)"/>
+
+          <!-- Step 3: Rider delivers -->
+          <rect x="476" y="465" width="180" height="100" rx="10" fill="#fff7ed" stroke="#f97316" stroke-width="1.5" filter="url(#shadow1)"/>
+          <circle cx="488" cy="477" r="8" fill="#f97316"/>
+          <text x="488" y="481" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">3</text>
+          <text x="566" y="480" text-anchor="middle" font-size="11" font-weight="700" fill="#c2410c">Rider Delivers</text>
+          <text x="488" y="500" font-size="8" fill="#f97316">Receives assignment (Realtime)</text>
+          <text x="488" y="514" font-size="8" fill="#f97316">Picks up → out_for_delivery</text>
+          <text x="488" y="528" font-size="8" fill="#f97316">GPS → rider_locations (live)</text>
+          <text x="488" y="542" font-size="8" fill="#f97316">Mark delivered → POST complete</text>
+          <text x="488" y="556" font-size="7.5" fill="#94a3b8">Earning = 80% of delivery_fee</text>
+
+          <!-- Arrow 3→4 -->
+          <path d="M656,515 L696,515" stroke="#475569" stroke-width="2" fill="none" marker-end="url(#ah-sys)"/>
+
+          <!-- Step 4: Customer tracks & reviews -->
+          <rect x="704" y="465" width="170" height="100" rx="10" fill="#eff6ff" stroke="#3b82f6" stroke-width="1.5" filter="url(#shadow1)"/>
+          <circle cx="716" cy="477" r="8" fill="#3b82f6"/>
+          <text x="716" y="481" text-anchor="middle" font-size="9" font-weight="700" fill="#fff">4</text>
+          <text x="790" y="480" text-anchor="middle" font-size="10" font-weight="700" fill="#1e40af">Customer Receives</text>
+          <text x="716" y="500" font-size="8" fill="#3b82f6">Notification: "Delivered"</text>
+          <text x="716" y="514" font-size="8" fill="#3b82f6">Order status → delivered</text>
+          <text x="716" y="528" font-size="8" fill="#3b82f6">Receipt in My Orders</text>
+          <text x="716" y="542" font-size="8" fill="#3b82f6">Can cancel if pending</text>
+          <text x="716" y="556" font-size="7.5" fill="#94a3b8">Live map while out_for_delivery</text>
+
+          <!-- Step 5: Financial -->
+          <rect x="704" y="585" width="170" height="60" rx="10" fill="#f5f3ff" stroke="#7c3aed" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="789" y="608" text-anchor="middle" font-size="10" font-weight="700" fill="#6d28d9">Financial Settlement</text>
+          <text x="716" y="626" font-size="8" fill="#7c3aed">Rider earns 80% delivery fee</text>
+          <text x="716" y="640" font-size="8" fill="#7c3aed">Cashout → Admin approves</text>
+
+          <path d="M789,565 L789,583" stroke="#7c3aed" stroke-width="1.5" fill="none" marker-end="url(#ah-sys)"/>
+
+          <!-- Side: Notifications flow -->
+          <rect x="900" y="465" width="140" height="100" rx="10" fill="#ecfdf5" stroke="#22c55e" stroke-width="1.5" filter="url(#shadow1)"/>
+          <text x="970" y="488" text-anchor="middle" font-size="10" font-weight="700" fill="#16a34a">Notifications</text>
+          <text x="912" y="506" font-size="8" fill="#22c55e">New order → Admin/Staff</text>
+          <text x="912" y="520" font-size="8" fill="#22c55e">Rider assigned → Customer</text>
+          <text x="912" y="534" font-size="8" fill="#22c55e">Delivered → Customer</text>
+          <text x="912" y="548" font-size="8" fill="#22c55e">Low stock → Admin</text>
+          <text x="912" y="558" font-size="7.5" fill="#94a3b8">stored in notifications table</text>
+
+          <!-- Connection arrows to Supabase -->
+          <!-- Customer → Supabase -->
+          <path d="M140,165 L140,190 L440,210" stroke="#3b82f6" stroke-width="1.5" fill="none" marker-end="url(#ah-sys-blue)" stroke-dasharray="4,3"/>
+          <!-- Admin → Supabase -->
+          <path d="M400,165 L400,190 L480,210" stroke="#ef4444" stroke-width="1.5" fill="none" marker-end="url(#ah-sys-red)" stroke-dasharray="4,3"/>
+          <!-- Staff → Supabase -->
+          <path d="M660,165 L660,190 L600,210" stroke="#22c55e" stroke-width="1.5" fill="none" marker-end="url(#ah-sys-green)" stroke-dasharray="4,3"/>
+          <!-- Rider → Supabase -->
+          <path d="M920,165 L920,190 L640,210" stroke="#f97316" stroke-width="1.5" fill="none" marker-end="url(#ah-sys-orange)" stroke-dasharray="4,3"/>
+
+          <!-- Shared packages connection -->
+          <path d="M540,320 L540,338" stroke="#94a3b8" stroke-width="1" fill="none" marker-end="url(#ah-sys)"/>
+
+          <!-- Realtime pulse indicators -->
+          <circle cx="620" cy="276" r="3" fill="#22c55e"><animate attributeName="opacity" values="1;0.2;1" dur="2s" repeatCount="indefinite"/></circle>
+          <circle cx="660" cy="276" r="3" fill="#22c55e"><animate attributeName="opacity" values="1;0.2;1" dur="2.3s" repeatCount="indefinite"/></circle>
+          <circle cx="700" cy="276" r="3" fill="#22c55e"><animate attributeName="opacity" values="1;0.2;1" dur="1.8s" repeatCount="indefinite"/></circle>
+
+          <!-- Deployment note -->
+          <rect x="20" y="690" width="1040" height="22" rx="6" fill="#f1f5f9" stroke="none"/>
+          <text x="540" y="706" text-anchor="middle" font-size="9" fill="#64748b">Deployment: Each app independently deployed to Vercel • CI: GitHub Actions (lint → typecheck → build → test → smoke) • Git hooks: Biome + Typecheck + TruffleHog</text>
+        </svg>
+      </div>
+
+      <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:var(--customer)"></div> Customer</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--admin)"></div> Admin</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--staff)"></div> Staff</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--rider)"></div> Rider</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--supabase)"></div> Supabase</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#94a3b8"></div> Shared packages</div>
+        <div class="legend-item"><div class="legend-dot" style="background:var(--staff);border-radius:50%"></div> Realtime pulse</div>
+      </div>
+    </section>
+
+    <footer>
+      <p>Dataflow diagrams — Suarez Food Hub monorepo — Generated in-repo.</p>
+      <p style="margin-top:4px">Last updated: July 2026</p>
+    </footer>
+  </div>
+
+  <script>
+    // Active nav highlighting on scroll
+    const sections = document.querySelectorAll('section[id]');
+    const navLinks = document.querySelectorAll('.nav-bar a');
+    const observer = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          navLinks.forEach(a => a.classList.remove('active'));
+          const link = document.querySelector(`.nav-bar a[href="#${e.target.id}"]`);
+          if (link) link.classList.add('active');
+        }
+      });
+    }, { rootMargin: '-20% 0px -70% 0px' });
+    sections.forEach(s => observer.observe(s));
+  </script>
+</body>
+</html>
