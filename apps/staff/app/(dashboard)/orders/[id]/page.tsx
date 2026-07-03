@@ -9,7 +9,7 @@ import { Button, Card, CardContent, Select, SelectContent, SelectItem, SelectTri
 import { formatCurrency } from "@repo/utils";
 import { ArrowLeft, CheckCircle2, Loader2, MapPin, Phone, Printer, User, XCircle } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import LocationPicker from "../../../../components/LocationPicker";
 
 const statusSteps = [
@@ -46,21 +46,21 @@ export default function OrderDetailPage() {
 
   const orderId = params.id as string;
 
-  useEffect(() => {
-    fetchOrder();
-    fetchRiders();
-  }, [fetchRiders, fetchOrder]);
-
-  async function fetchOrder() {
+  const fetchOrder = useCallback(async () => {
     const data = await getOrderById(supabase, orderId);
     setOrder(data as OrderDetail);
     setLoading(false);
-  }
+  }, [supabase, orderId]);
 
-  async function fetchRiders() {
+  const fetchRiders = useCallback(async () => {
     const data = await getRiders(supabase);
     setRiders((data as Profile[]) || []);
-  }
+  }, [supabase]);
+
+  useEffect(() => {
+    fetchOrder();
+    fetchRiders();
+  }, [fetchOrder, fetchRiders]);
 
   async function assignRider(riderId: string) {
     setUpdating(true);

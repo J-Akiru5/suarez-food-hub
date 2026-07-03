@@ -5,7 +5,7 @@ import { getBusinessConfig, updateBusinessConfig } from "@repo/data-access/data/
 import { Button, Card, CardContent, Input } from "@repo/ui";
 import { Loader2, MapPin, QrCode, Save, Store, Trash2, Upload } from "lucide-react";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Swal from "sweetalert2";
 
 interface BusinessConfig {
@@ -44,11 +44,7 @@ export default function SettingsPage() {
     base_lng: 0,
   });
 
-  useEffect(() => {
-    fetchConfig();
-  }, [fetchConfig]);
-
-  async function fetchConfig() {
+  const fetchConfig = useCallback(async () => {
     const data = await getBusinessConfig(supabase);
     if (data) {
       setConfig({
@@ -66,7 +62,11 @@ export default function SettingsPage() {
       });
     }
     setLoading(false);
-  }
+  }, [supabase]);
+
+  useEffect(() => {
+    fetchConfig();
+  }, [fetchConfig]);
 
   async function uploadQR(
     file: File,

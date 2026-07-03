@@ -4,7 +4,7 @@ import { createBrowserTypedClient } from "@repo/data-access/client";
 import { Card, CardContent } from "@repo/ui";
 import { formatCurrency } from "@repo/utils";
 import { ArrowDownRight, ArrowUpRight, Bike, DollarSign, Package, ShoppingBag, TrendingUp } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { toast } from "@/lib/use-toast";
 
@@ -64,15 +64,7 @@ export default function DashboardPage() {
   const [topProducts, setTopProducts] = useState<TopProduct[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchDashboardData();
-  }, [fetchDashboardData]);
-
-  useEffect(() => {
-    fetchChartData();
-  }, [fetchChartData]);
-
-  async function fetchDashboardData() {
+  const fetchDashboardData = useCallback(async () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const todayISO = today.toISOString();
@@ -150,9 +142,9 @@ export default function DashboardPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [supabase]);
 
-  async function fetchChartData() {
+  const fetchChartData = useCallback(async () => {
     const now = new Date();
     const days = chartMode === "weekly" ? 7 : 30;
     const startDate = new Date(now);
@@ -188,7 +180,15 @@ export default function DashboardPage() {
         orders: val.orders,
       })),
     );
-  }
+  }, [supabase, chartMode]);
+
+  useEffect(() => {
+    fetchDashboardData();
+  }, [fetchDashboardData]);
+
+  useEffect(() => {
+    fetchChartData();
+  }, [fetchChartData]);
 
   const currencyFormatter = (value: number) => `${formatCurrency(value)}`;
 
