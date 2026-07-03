@@ -1,7 +1,22 @@
 import { createClient } from "@supabase/supabase-js";
-import { NextResponse } from "next/server";
+import { createAuthClient } from "@repo/data-access/client";
+import { cookies } from "next/headers";
+import { type NextRequest, NextResponse } from "next/server";
 
-export async function POST(request: Request) {
+async function requireAdmin() {
+  const cookieStore = await cookies();
+  const supabase = createAuthClient(cookieStore);
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error: NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 }) };
+  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
+  if (profile?.role !== "admin") return { error: NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 }) };
+  return { user, profile };
+}
+
+export async function POST(request: NextRequest) {
+  const auth = await requireAdmin();
+  if ("error" in auth) return auth.error;
+
   const { email, password, firstName, lastName, phone } = await request.json();
 
   if (!email || !password || !firstName || !lastName) {
@@ -41,6 +56,9 @@ export async function POST(request: Request) {
 }
 
 export async function GET() {
+  const auth = await requireAdmin();
+  if ("error" in auth) return auth.error;
+
   const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
   const { data, error } = await supabaseAdmin
@@ -56,7 +74,10 @@ export async function GET() {
   return NextResponse.json({ data: data || [] });
 }
 
-export async function PATCH(request: Request) {
+export async function PATCH(request: NextRequest) {
+  const auth = await requireAdmin();
+  if ("error" in auth) return auth.error;
+
   const { id, is_active } = await request.json();
 
   if (!id) {

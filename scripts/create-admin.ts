@@ -2,9 +2,16 @@ import { createClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const adminEmail = process.env.ADMIN_SEED_EMAIL;
+const adminPassword = process.env.ADMIN_SEED_PASSWORD;
 
 if (!supabaseUrl || !serviceRoleKey) {
   console.error("Missing Supabase env vars. Make sure .env is configured.");
+  process.exit(1);
+}
+
+if (!adminEmail || !adminPassword) {
+  console.error("Missing ADMIN_SEED_EMAIL or ADMIN_SEED_PASSWORD env vars.");
   process.exit(1);
 }
 
@@ -20,12 +27,12 @@ async function createAdminProfile() {
     process.exit(1);
   }
 
-  const adminUser = users.users.find((u) => u.email === "admin@gmail.com");
+  const adminUser = users.users.find((u) => u.email === adminEmail);
   if (!adminUser) {
     console.log("Auth user not found. Creating new user...");
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email: "admin@gmail.com",
-      password: "admin123",
+      email: adminEmail,
+      password: adminPassword,
       email_confirm: true,
     });
     if (authError) {
@@ -47,7 +54,7 @@ async function createAdminProfile() {
       full_name: "Admin",
       first_name: "Admin",
       last_name: "User",
-      email: "admin@gmail.com",
+      email: adminEmail,
       phone: "N/A",
       address: "N/A",
       street_address: "N/A",
@@ -67,8 +74,7 @@ async function createAdminProfile() {
 
   console.log("✅ Profile created/updated with admin role");
   console.log("\n🎉 Admin account ready!");
-  console.log("   Email:    admin@gmail.com");
-  console.log("   Password: admin123");
+  console.log(`   Email:    ${adminEmail}`);
 }
 
 createAdminProfile().catch(console.error);

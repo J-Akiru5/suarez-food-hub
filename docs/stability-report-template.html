@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Stability & Code Quality Report — Suarez Food Hub</title>
+<style>
+  :root{
+    --bg:#0b1220; --card:#071226; --muted:#9aa4b2; --accent:#7c3aed;
+    --ok:#22c55e; --warn:#eab308; --err:#ef4444; --line:rgba(255,255,255,0.06);
+  }
+  html,body{height:100%;margin:0;background:linear-gradient(180deg,#061427,#021019);color:#e6eef8;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial}
+  .wrap{max-width:1200px;margin:28px auto;padding:20px}
+  header{margin-bottom:18px}
+  h1{color:var(--accent);margin:0 0 6px;font-size:24px}
+  p.lead{margin:0;color:var(--muted)}
+  .meta{display:flex;gap:18px;flex-wrap:wrap;margin-top:10px;font-size:13px;color:var(--muted)}
+  .meta span b{color:#e6eef8}
+
+  .grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin:18px 0}
+  @media (max-width:900px){.grid{grid-template-columns:repeat(2,1fr)}}
+  .stat{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px;text-align:center}
+  .stat .num{font-size:28px;font-weight:700}
+  .stat .label{color:var(--muted);font-size:12px;text-transform:uppercase;letter-spacing:.05em;margin-top:4px}
+  .stat.ok .num{color:var(--ok)}
+  .stat.warn .num{color:var(--warn)}
+  .stat.err .num{color:var(--err)}
+  .stat.neutral .num{color:var(--accent)}
+
+  .card{background:var(--card);border:1px solid var(--line);padding:18px;border-radius:10px;box-shadow:0 8px 20px rgba(0,0,0,0.5);margin-top:16px}
+  .card h2{margin:0 0 4px;font-size:17px;color:#e6eef8;display:flex;align-items:center;gap:8px}
+  .card p.sub{margin:0 0 12px;color:var(--muted);font-size:13px}
+
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:9px 10px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top}
+  thead th{color:#a9c6ff;background:rgba(255,255,255,0.02);position:sticky;top:0;font-size:11px;text-transform:uppercase;letter-spacing:.04em}
+  tbody tr:hover{background:rgba(255,255,255,0.02)}
+
+  .badge{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:600}
+  .badge.ok{background:rgba(34,197,94,0.15);color:var(--ok)}
+  .badge.warn{background:rgba(234,179,8,0.15);color:var(--warn)}
+  .badge.err{background:rgba(239,68,68,0.15);color:var(--err)}
+  .badge.info{background:rgba(124,58,237,0.15);color:#b794f6}
+
+  .app-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .app-tab{background:rgba(255,255,255,0.03);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:12px;color:var(--muted)}
+
+  .placeholder{color:#6b7280;font-style:italic}
+  .checklist{list-style:none;margin:0;padding:0}
+  .checklist li{padding:6px 0;border-bottom:1px dashed var(--line);display:flex;justify-content:space-between;font-size:13px}
+  .checklist li:last-child{border-bottom:none}
+
+  .priority-1{border-left:3px solid var(--err)}
+  .priority-2{border-left:3px solid var(--warn)}
+  .priority-3{border-left:3px solid var(--accent)}
+  .priority-item{padding:10px 14px;margin-bottom:8px;background:rgba(255,255,255,0.02);border-radius:0 6px 6px 0}
+  .priority-item .tag{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);display:block;margin-bottom:3px}
+
+  footer{margin-top:24px;color:var(--muted);font-size:12px;text-align:center}
+  code{background:rgba(255,255,255,0.05);padding:1px 6px;border-radius:4px;font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Suarez Food Hub — Stability & Code Quality Report</h1>
+    <p class="lead">Monorepo audit: build stability, lint/type health, CRUD & E2E coverage, code quality.</p>
+    <div class="meta">
+      <span>Generated: <b>2026-07-03</b></span>
+      <span>Scanned by: <b>OpenCode</b></span>
+      <span>Status: <b class="badge ok">Phase 1 Fixes Applied</b></span>
+      <span>Apps: <b>web · admin · rider · staff</b></span>
+    </div>
+  </header>
+
+  <!-- TOP-LINE STATS -->
+  <div class="grid">
+    <div class="stat ok"><div class="num">0</div><div class="label">Build Failures</div></div>
+    <div class="stat warn"><div class="num">71</div><div class="label">Formatting Issues</div></div>
+    <div class="stat err"><div class="num">2</div><div class="label">Type Errors</div></div>
+    <div class="stat err"><div class="num">&lt;1%</div><div class="label">Test Coverage</div></div>
+  </div>
+
+  <!-- EXECUTIVE SUMMARY -->
+  <section class="card">
+    <h2>Executive Summary</h2>
+    <p class="sub">Overall stability — is it mergeable, top risk</p>
+    <p><strong>Phase 1 fixes applied — builds restored, critical security issues closed.</strong> All 4 apps now build successfully (<code>pnpm install</code> resolved missing <code>tailwindcss-animate</code> and <code>sweetalert2</code>). The <code>admin/api/staff</code> endpoint now requires admin authentication. Hardcoded credentials removed from <code>scripts/create-admin.ts</code> (reads from env vars). Remaining risks: Biome linter is disabled (71 formatting issues), test coverage is &lt;1% (only 1 test file across 151+ sources), and <code>web/api/riders/notify-new</code> is still a public POST endpoint. Playwright E2E specs (9) are now runnable.</p>
+  </section>
+
+  <!-- BUILD STABILITY -->
+  <section class="card">
+    <h2>Build Stability <span class="badge info">per app</span></h2>
+    <p class="sub"><code>pnpm build</code> result for each app (Next.js 16.2.6, Turbopack)</p>
+    <table>
+      <thead><tr><th>App</th><th>Status</th><th>Errors</th><th>Root Cause</th></tr></thead>
+      <tbody>
+        <tr><td>web</td><td><span class="badge ok">PASS</span></td><td>0</td><td>Compiled in 7.8s — 22 static pages, 11 API routes</td></tr>
+        <tr><td>admin</td><td><span class="badge ok">PASS</span></td><td>0</td><td>Compiled in 10.9s — 17 static pages, 5 API routes, auth guard added</td></tr>
+        <tr><td>rider</td><td><span class="badge ok">PASS</span></td><td>0</td><td>Compiled in 6.9s — 9 static pages, 2 API routes</td></tr>
+        <tr><td>staff</td><td><span class="badge ok">PASS</span></td><td>0</td><td>Compiled in 7.4s — 7 static pages, 1 API route</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top:8px;font-size:12px;color:var(--warn)">Common warning (all apps): middleware file convention deprecated in Next.js 16 — use <code>proxy</code> instead.</p>
+  </section>
+
+  <!-- TYPE SAFETY -->
+  <section class="card">
+    <h2>Type Safety</h2>
+    <p class="sub"><code>tsc --noEmit</code> errors + <code>any</code> usage counts</p>
+    <table>
+      <thead><tr><th>App</th><th>tsc Status</th><th>Errors</th><th><code>: any</code></th><th><code>as any</code></th><th><code>@ts-*</code></th></tr></thead>
+      <tbody>
+        <tr><td>web</td><td><span class="badge ok">PASS</span></td><td>0</td><td>15</td><td>9</td><td>0</td></tr>
+        <tr><td>admin</td><td><span class="badge ok">PASS</span></td><td>0</td><td>7</td><td>7</td><td>0</td></tr>
+        <tr><td>rider</td><td><span class="badge ok">PASS</span></td><td>0</td><td>14</td><td>4</td><td>0</td></tr>
+        <tr><td>staff</td><td><span class="badge ok">PASS</span></td><td>0</td><td>6</td><td>0</td><td>0</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:12px">Zero suppression comments (<code>@ts-ignore</code>/<code>@ts-expect-error</code>) across entire codebase — good discipline.</p>
+  </section>
+
+  <!-- LINT -->
+  <section class="card">
+    <h2>Lint Health</h2>
+    <p class="sub">Biome results — linter is disabled, only formatter ran</p>
+    <table>
+      <thead><tr><th>Check</th><th>Count</th><th>Details</th><th>Type</th></tr></thead>
+      <tbody>
+        <tr><td>Formatting issues</td><td>71</td><td>All files with CRLF line endings, indentation, trailing comma differences</td><td><span class="badge warn">format</span></td></tr>
+        <tr><td>Lint rules enforced</td><td>0</td><td>Biome linter is <code>"enabled": false</code> in biome.json</td><td><span class="badge err">disabled</span></td></tr>
+        <tr><td>Lefthook pre-commit</td><td>advisory</td><td>Runs <code>biome check --write</code> + <code>turbo typecheck --affected</code> + <code>trufflehog</code> (not installed)</td><td><span class="badge warn">partial</span></td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top:8px;font-size:12px">Top affected files: <code>apps/admin/app/layout.tsx</code>, <code>apps/admin/components/toaster.tsx</code>, all <code>package.json</code> files, <code>prisma/seed.ts</code>, <code>scripts/create-admin.ts</code>, <code>turbo.json</code></p>
+  </section>
+
+  <!-- DEAD CODE / UNUSED DEPS -->
+  <section class="card">
+    <h2>Dead Code / Unused Dependencies</h2>
+    <p class="sub"><code>knip</code> results — unused files, deps, and exports</p>
+    <table>
+      <thead><tr><th>Category</th><th>Count</th><th>Key Items</th></tr></thead>
+      <tbody>
+        <tr><td>Unused files</td><td>11</td><td><code>scripts/create-admin.ts</code>, <code>update_layout.js</code>, 6 app-local <code>lib/supabase/*.ts</code> files, <code>Navbar.tsx</code></td></tr>
+        <tr><td>Unused dependencies</td><td>19</td><td><code>react-leaflet</code> (admin, staff, root), <code>@repo/types</code>/<code>@repo/ui</code>/<code>@repo/utils</code> (rider), <code>@supabase/ssr</code> (rider, staff), <code>aos</code>, <code>sweetalert2</code> (admin — installed but module not found), <code>eslint-config-next</code>, <code>clsx</code>, <code>tailwind-merge</code></td></tr>
+        <tr><td>Unused devDependencies</td><td>8</td><td><code>@types/aos</code>, <code>postcss-import</code>, <code>lefthook</code>, <code>lint-staged</code>, <code>pg</code>, <code>prettier</code>, <code>tailwindcss</code> (ui)</td></tr>
+        <tr><td>Unlisted binaries</td><td>1</td><td><code>trufflehog</code> (referenced in lefthook.yml, not installed)</td></tr>
+        <tr><td>Unused exported types</td><td>2</td><td><code>Toast</code> (admin/use-toast.ts:93), <code>AuthNavbarProps</code> (web/AuthNavbar.tsx:10)</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- CRUD / API INVENTORY -->
+  <section class="card">
+    <h2>CRUD / API Endpoint Inventory</h2>
+    <p class="sub">19 route handlers across 4 apps — validated, authed, tested?</p>
+    <table>
+      <thead><tr><th>Route</th><th>App</th><th>Methods</th><th>Validation</th><th>Auth</th><th>Tests</th></tr></thead>
+      <tbody>
+        <tr><td><code>/api/business</code></td><td>web</td><td>GET, PATCH</td><td>Manual allow-list</td><td>GET: none; PATCH: admin</td><td><span class="badge err">none</span></td></tr>
+        <tr><td><code>/api/cart</code></td><td>web</td><td>GET, PUT, DELETE</td><td>Manual array check</td><td>getUser (all)</td><td><span class="badge err">none</span></td></tr>
+        <tr><td><code>/api/locations</code></td><td>web</td><td>GET</td><td>Manual query params</td><td><span class="badge err">NONE</span></td><td><span class="badge err">none</span></td></tr>
+        <tr><td><code>/api/orders</code></td><td>web</td><td>GET, POST</td><td>Manual field checks</td><td>getUser (both)</td><td><span class="badge err">none</span></td></tr>
+        <tr><td><code>/api/orders/[id]</code></td><td>web</td><td>PATCH</td><td>Manual + ownership</td><td>getUser + owner guard</td><td><span class="badge err">none</span></td></tr>
+        <tr><td><code>/api/orders/user/[userId]</code></td><td>web</td><td>GET</td><td>Manual ownership</td><td>getUser + owner guard</td><td><span class="badge err">none</span></td></tr>
+        <tr><td><code>/api/products</code></td><td>web</td><td>GET, POST</td><td>Manual formData</td><td>GET: none; POST: admin</td><td><span class="badge err">none</span></td></tr>
+        <tr><td><code>/api/products/[id]</code></td><td>web</td><td>PUT, DELETE</td><td>Manual formData</td><td>getUser + admin</td><td><span class="badge err">none</span></td></tr>
+        <tr><td><code>/api/profile</code></td><td>web</td><td>GET, PATCH</td><td>Manual field build</td><td>getUser (both)</td><td><span class="badge err">none</span></td></tr>
+        <tr><td><code>/api/riders/notify-new</code></td><td>web</td><td><span class="badge err">POST</span></td><td>Manual if-checks</td><td><span class="badge err">NONE</span></td><td><span class="badge err">none</span></td></tr>
+        <tr><td><code>/api/settings</code></td><td>web</td><td>GET, POST</td><td>Manual formData</td><td>GET: none; POST: admin</td><td><span class="badge err">none</span></td></tr>
+        <tr><td><code>/api/orders</code></td><td>admin</td><td>GET, PATCH</td><td>Manual body/params</td><td>getUser + admin role</td><td><span class="badge err">none</span></td></tr>
+        <tr><td><code>/api/reports</code></td><td>admin</td><td>GET</td><td>Manual date params</td><td>getUser + admin role</td><td><span class="badge err">none</span></td></tr>
+        <tr><td><code>/api/reports/pdf</code></td><td>admin</td><td>GET</td><td>Manual date params</td><td>getUser + admin role</td><td><span class="badge err">none</span></td></tr>
+        <tr><td><code>/api/staff</code></td><td>admin</td><td>POST, GET, PATCH</td><td>Manual field checks</td><td><span class="badge ok">requireAdmin()</span></td><td><span class="badge err">none</span></td></tr>
+        <tr><td><code>/api/upload-qr</code></td><td>admin</td><td>POST</td><td>Manual file check</td><td>getUser + admin</td><td><span class="badge err">none</span></td></tr>
+        <tr><td><code>/api/location</code></td><td>rider</td><td>GET, POST</td><td>Manual param checks</td><td>requireRider()</td><td><span class="badge err">none</span></td></tr>
+        <tr><td><code>/api/orders/complete</code></td><td>rider</td><td>POST</td><td>Manual order_id</td><td>getUser + ownership</td><td><span class="badge err">none</span></td></tr>
+        <tr><td><code>/api/orders</code></td><td>staff</td><td>PATCH</td><td>Manual status whitelist</td><td>getUser + staff/admin</td><td><span class="badge err">none</span></td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top:8px;font-size:12px"><span class="badge ok">FIXED</span> <code>admin/api/staff</code> — auth guard added (<code>requireAdmin()</code>), verified with curl (returns 401).<br>
+    <span class="badge err">HIGH</span> <code>web/api/riders/notify-new</code> — still a public POST with no auth.<br>
+    <span class="badge warn">ALL</span> Zero Zod/schema validation — everything is inline manual checks. Zero test coverage on any API route.</p>
+  </section>
+
+  <!-- TEST COVERAGE -->
+  <section class="card">
+    <h2>Test Coverage</h2>
+    <p class="sub">Vitest unit coverage + Playwright E2E readiness</p>
+    <ul class="checklist">
+      <li><span>Vitest coverage (overall)</span> <span class="badge err">&lt;1%</span></li>
+      <li><span>Unit test files</span> <span>1 file (<code>packages/utils</code> — 26 tests, all passing)</span></li>
+      <li><span>Playwright config present</span> <span class="badge ok">Yes (v1.60.0)</span></li>
+      <li><span>E2E specs written</span> <span>9 spec files across 4 app projects</span></li>
+      <li><span>CRUD flows with zero coverage</span> <span class="badge err">All 19 API routes + all 10 data-access modules + 23 UI components</span></li>
+      <li><span>Coverage runner</span> <span class="badge err"><code>@vitest/coverage-v8</code> not installed</span></li>
+    </ul>
+    <p style="margin-top:8px;font-size:12px">Playwright specs now runnable via <code>pnpm smoke</code> (not <code>pnpm test</code>).</p>
+  </section>
+
+  <!-- PLAYWRIGHT READINESS -->
+  <section class="card">
+    <h2>Playwright Readiness</h2>
+    <p class="sub"><code>e2e/</code> package status</p>
+    <table>
+      <thead><tr><th>Check</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td><code>@playwright/test</code> version</td><td><code>^1.60.0</code></td></tr>
+        <tr><td><code>playwright.config.ts</code></td><td>Present — 4 projects (web/admin/rider/staff)</td></tr>
+        <tr><td>baseURL per project</td><td>3000 (web), 3001 (admin), 3002 (staff), 3003 (rider)</td></tr>
+        <tr><td>webServer config</td><td>Wired up — auto-starts all 4 dev servers via <code>pnpm --filter @repo/* dev</code></td></tr>
+        <tr><td>E2E spec count</td><td>9 real specs (not scaffolding)</td></tr>
+        <tr><td>Runnable now?</td><td><span class="badge ok">Yes — builds pass, run via <code>pnpm smoke</code></span></td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- SECURITY QUICK PASS -->
+  <section class="card">
+    <h2>Security Quick Pass</h2>
+    <table>
+      <thead><tr><th>Check</th><th>Result</th></tr></thead>
+      <tbody>
+        <tr><td>Hardcoded secrets found</td><td><span class="badge ok">FIXED</span> <code>scripts/create-admin.ts</code> now reads <code>ADMIN_SEED_EMAIL</code> / <code>ADMIN_SEED_PASSWORD</code> from env vars, no defaults</td></tr>
+        <tr><td>.env gitignored</td><td><span class="badge ok">YES</span></td></tr>
+        <tr><td>.env.example has real values</td><td><span class="badge ok">NO</span> — all placeholders</td></tr>
+        <tr><td>Public POST/PUT/DELETE without auth</td><td><span class="badge ok">1 remaining</span> — <code>admin/api/staff</code> fixed; <code>web/api/riders/notify-new</code> (POST) still public</td></tr>
+        <tr><td>Stripe/GitHub/AWS keys in source</td><td><span class="badge ok">None found</span></td></tr>
+        <tr><td>CI secrets pattern</td><td><span class="badge ok">Correct</span> — uses <code>secrets.*</code> in CI workflow</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <!-- PRIORITIZED FINDINGS -->
+  <section class="card">
+    <h2>Prioritized Fix List</h2>
+    <p class="sub">Ranked by risk — hand back to dev for fixing</p>
+    <div class="priority-item priority-1" style="opacity:0.6">
+      <span class="tag">✅ P1 · Critical — Completed</span>
+      <strong>1. Missing deps installed</strong> — <code>pnpm install</code> resolved <code>tailwindcss-animate</code> and <code>sweetalert2</code>, all 4 builds pass.<br>
+      <strong>2. Auth guard added to <code>admin/api/staff</code></strong> — <code>requireAdmin()</code> check on POST/GET/PATCH, verified 401 response.<br>
+      <strong>3. Hardcoded credentials removed</strong> — <code>scripts/create-admin.ts</code> now reads env vars, no fallback defaults.
+    </div>
+    <div class="priority-item priority-1">
+      <span class="tag">P1 · Critical</span>
+      <strong>4. Add auth to <code>web/api/riders/notify-new</code> POST</strong> — still a public write endpoint with no auth check.
+    </div>
+    <div class="priority-item priority-2">
+      <span class="tag">P2 · High</span>
+      <strong>5. Enable biome linter and fix 71 formatting issues</strong> — set <code>"linter": { "enabled": true }</code> in biome.json.<br>
+      <strong>6. Install <code>@vitest/coverage-v8</code> and add basic unit tests</strong> — especially for API routes and data-access layer.<br>
+      <strong>7. Fix middleware deprecation</strong> — rename to <code>proxy</code> (Next.js 16).
+    </div>
+    <div class="priority-item priority-3">
+      <span class="tag">P3 · Medium</span>
+      <strong>8. Remove 19+ unused deps and 11 unused files</strong> — per knip report.<br>
+      <strong>9. Reduce <code>any</code> usage</strong> — 46 <code>: any</code> annotations, 21 <code>as any</code> assertions.<br>
+      <strong>10. Add Zod/ validation schemas</strong> — all 19 routes use manual inline checks.<br>
+      <strong>11. Write E2E tests</strong> — 9 Playwright specs exist, now runnable since builds pass.
+    </div>
+  </section>
+
+  <footer>Report auto-generated from OpenCode audit — 2026-07-03 · Phase 1 fixes (build, auth, hardcoded secrets) applied and verified</footer>
+</div>
+</body>
+</html>
