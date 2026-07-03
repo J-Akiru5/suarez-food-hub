@@ -24,15 +24,19 @@ function LoginForm() {
     setError("");
     setLoading(true);
 
-    const { data: email, error: lookupError } = await supabase.rpc("get_email_by_username", {
-      p_username: username.trim(),
+    const lookup = await fetch("/api/auth/lookup-username", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ username: username.trim() }),
     });
 
-    if (lookupError || !email) {
+    if (!lookup.ok) {
       setError("Invalid username or password");
       setLoading(false);
       return;
     }
+
+    const { email } = await lookup.json();
 
     const { error: authError } = await supabase.auth.signInWithPassword({
       email,

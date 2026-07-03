@@ -18,3 +18,5 @@ BEGIN
   );
 END;
 $$;
+
+GRANT EXECUTE ON FUNCTION public.get_email_by_username TO anon, authenticated;
