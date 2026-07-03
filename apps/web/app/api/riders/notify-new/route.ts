@@ -1,10 +1,18 @@
-import { createServiceClient } from "@repo/data-access/client";
+import { createAuthClient, createServiceClient } from "@repo/data-access/client";
 import { createNotifications } from "@repo/data-access/data/notifications";
 import { getAdminIds } from "@repo/data-access/data/profiles";
+import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
   try {
+    const cookieStore = await cookies();
+    const supabase = createAuthClient(cookieStore);
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+
     const serviceSupabase = createServiceClient();
     const { rider_id, rider_name } = await req.json();
 
