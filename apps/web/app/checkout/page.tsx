@@ -64,7 +64,7 @@ export default function CheckoutPage() {
       addressRef.current.style.height = "auto";
       addressRef.current.style.height = `${addressRef.current.scrollHeight}px`;
     }
-  }, [address]);
+  }, []);
 
   useEffect(() => {
     try {
@@ -87,7 +87,7 @@ export default function CheckoutPage() {
       }
       if (!phone) setPhone(profile.phone || "");
     }
-  }, [profile]);
+  }, [profile, phone, address]);
 
   useEffect(() => {
     fetch("/api/business")

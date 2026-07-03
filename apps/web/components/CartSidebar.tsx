@@ -3,7 +3,6 @@
 import { cn } from "@repo/utils";
 import { ArrowRight, Minus, Plus, ShoppingBag, ShoppingCart, Trash2, X } from "lucide-react";
 import Link from "next/link";
-import React from "react";
 
 interface CartItem {
   id: string;
@@ -211,35 +210,33 @@ export default function CartSidebar({
 
   // Mobile slide-over
   return (
-    <>
-      <div className={cn("fixed inset-0 z-[9999] flex", showCart ? "pointer-events-auto" : "pointer-events-none")}>
-        <div
-          className={cn(
-            "flex-1 bg-black/40 backdrop-blur-sm transition-opacity duration-300",
-            showCart ? "opacity-100" : "opacity-0",
-          )}
-          onClick={() => setShowCart(false)}
-        />
-        <div
-          className={cn(
-            "w-[400px] max-w-full bg-[#f1f5f9] h-full shadow-2xl transition-transform duration-300 ease-in-out",
-            showCart ? "translate-x-0" : "translate-x-full",
-          )}
-        >
-          <div className="flex items-center justify-between px-5 py-4">
-            <h2 className="text-lg font-bold text-near-black m-0" style={{ fontFamily: "var(--playfair-display)" }}>
-              Your Basket
-            </h2>
-            <button
-              onClick={() => setShowCart(false)}
-              className="w-9 h-9 rounded-full bg-white flex items-center justify-center border-none cursor-pointer shadow-sm hover:bg-gray-50 transition-colors"
-            >
-              <X className="w-4 h-4 text-near-black" />
-            </button>
-          </div>
-          {content}
+    <div className={cn("fixed inset-0 z-[9999] flex", showCart ? "pointer-events-auto" : "pointer-events-none")}>
+      <div
+        className={cn(
+          "flex-1 bg-black/40 backdrop-blur-sm transition-opacity duration-300",
+          showCart ? "opacity-100" : "opacity-0",
+        )}
+        onClick={() => setShowCart(false)}
+      />
+      <div
+        className={cn(
+          "w-[400px] max-w-full bg-[#f1f5f9] h-full shadow-2xl transition-transform duration-300 ease-in-out",
+          showCart ? "translate-x-0" : "translate-x-full",
+        )}
+      >
+        <div className="flex items-center justify-between px-5 py-4">
+          <h2 className="text-lg font-bold text-near-black m-0" style={{ fontFamily: "var(--playfair-display)" }}>
+            Your Basket
+          </h2>
+          <button
+            onClick={() => setShowCart(false)}
+            className="w-9 h-9 rounded-full bg-white flex items-center justify-center border-none cursor-pointer shadow-sm hover:bg-gray-50 transition-colors"
+          >
+            <X className="w-4 h-4 text-near-black" />
+          </button>
         </div>
+        {content}
       </div>
-    </>
+    </div>
   );
 }

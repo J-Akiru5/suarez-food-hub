@@ -32,8 +32,8 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const categoryId = (formData.get("category_id") as string) || (formData.get("category") as string);
     const price = parseFloat(formData.get("price") as string) || 0;
     const description = formData.get("description") as string;
-    const quantity = parseInt(formData.get("quantity") as string) || 0;
-    const bufferQuantity = parseInt(formData.get("buffer_quantity") as string) || 5;
+    const quantity = parseInt(formData.get("quantity") as string, 10) || 0;
+    const bufferQuantity = parseInt(formData.get("buffer_quantity") as string, 10) || 5;
     const imageFile = formData.get("image") as File | null;
     let imageUrl = (formData.get("existing_image") as string) || "";
 

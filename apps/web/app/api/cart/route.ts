@@ -4,7 +4,7 @@ import { deleteCart, getCart, upsertCart } from "@repo/data-access/data/cart";
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     const cookieStore = await cookies();
     const authClient = createAuthClient(cookieStore);
@@ -41,7 +41,7 @@ export async function PUT(req: NextRequest) {
   }
 }
 
-export async function DELETE(req: NextRequest) {
+export async function DELETE(_req: NextRequest) {
   try {
     const cookieStore = await cookies();
     const authClient = createAuthClient(cookieStore);

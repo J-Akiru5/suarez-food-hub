@@ -1,4 +1,4 @@
-const fs = require("fs");
+const fs = require("node:fs");
 let c = fs.readFileSync("apps/admin/app/(dashboard)/orders/[id]/page.tsx", "utf8");
 c = c.replace("max-w-3xl", "max-w-7xl");
 

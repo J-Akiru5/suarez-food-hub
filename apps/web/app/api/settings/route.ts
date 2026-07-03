@@ -47,7 +47,7 @@ export async function POST(req: NextRequest) {
       .from("business_qr")
       .upload(filename, qrcodeFile, { contentType: qrcodeFile.type, upsert: true });
     if (uploadError)
-      return NextResponse.json({ error: "Image upload failed: " + uploadError.message }, { status: 500 });
+      return NextResponse.json({ error: `Image upload failed: ${uploadError.message}` }, { status: 500 });
 
     const { data: urlData } = supabase.storage.from("business_qr").getPublicUrl(filename);
 

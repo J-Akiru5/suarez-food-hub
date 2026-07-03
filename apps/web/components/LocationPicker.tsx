@@ -43,7 +43,7 @@ export default function LocationPicker({
                 `https://nominatim.openstreetmap.org/reverse?format=json&lat=${pos.coords.latitude}&lon=${pos.coords.longitude}`,
               );
               const data = await res.json();
-              if (data && data.display_name) {
+              if (data?.display_name) {
                 onAddressDetect(data.display_name);
               }
             } catch (err) {

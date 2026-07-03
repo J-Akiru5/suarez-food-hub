@@ -16,10 +16,10 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const status = searchParams.get("status");
-    const dateFrom = searchParams.get("from");
-    const dateTo = searchParams.get("to");
-    const limit = parseInt(searchParams.get("limit") || "50");
-    const offset = parseInt(searchParams.get("offset") || "0");
+    const _dateFrom = searchParams.get("from");
+    const _dateTo = searchParams.get("to");
+    const limit = parseInt(searchParams.get("limit") || "50", 10);
+    const offset = parseInt(searchParams.get("offset") || "0", 10);
 
     const data = await getOrdersWithProfiles(supabase, {
       status: status !== "all" ? (status ?? undefined) : undefined,

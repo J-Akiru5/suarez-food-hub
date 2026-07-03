@@ -83,7 +83,7 @@ function hasVariants(product: Product): boolean {
 }
 
 export default function MenuPage() {
-  const router = useRouter();
+  const _router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>(["All"]);
   const [loading, setLoading] = useState(true);
@@ -186,7 +186,7 @@ export default function MenuPage() {
         }
       })
       .catch(() => {});
-  }, [user?.id]);
+  }, [user?.id, user]);
 
   const showToast = (msg: string) => {
     setToast(msg);

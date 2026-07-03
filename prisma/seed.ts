@@ -57,7 +57,7 @@ async function main() {
     }),
   ]);
 
-  const [dumplings, springRolls, mainDish, dessert, drinks, snacks] = categories;
+  const [dumplings, springRolls, mainDish, dessert, drinks, _snacks] = categories;
 
   // Create products with variants
   const products = await Promise.all([

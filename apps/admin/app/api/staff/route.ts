@@ -1,15 +1,18 @@
-import { createClient } from "@supabase/supabase-js";
 import { createAuthClient } from "@repo/data-access/client";
+import { createClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 
 async function requireAdmin() {
   const cookieStore = await cookies();
   const supabase = createAuthClient(cookieStore);
-  const { data: { user } } = await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   if (!user) return { error: NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 }) };
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-  if (profile?.role !== "admin") return { error: NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 }) };
+  if (profile?.role !== "admin")
+    return { error: NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 }) };
   return { user, profile };
 }
 
@@ -49,7 +52,7 @@ export async function POST(request: NextRequest) {
   });
 
   if (profileError) {
-    return NextResponse.json({ error: "Account created but profile failed: " + profileError.message }, { status: 500 });
+    return NextResponse.json({ error: `Account created but profile failed: ${profileError.message}` }, { status: 500 });
   }
 
   return NextResponse.json({ success: true, name: `${firstName} ${lastName}` });

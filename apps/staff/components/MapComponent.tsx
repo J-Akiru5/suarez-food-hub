@@ -67,7 +67,7 @@ export default function MapComponent({ position, setPosition, className, readOnl
       map.remove();
       mapRef.current = null;
     };
-  }, []);
+  }, [position, setPosition]);
 
   useEffect(() => {
     const map = mapRef.current;
@@ -82,7 +82,7 @@ export default function MapComponent({ position, setPosition, className, readOnl
       markerRef.current = L.marker(position, { icon }).addTo(map);
       map.setView(position, Math.max(map.getZoom(), 16));
     }
-  }, [position?.lat, position?.lng]);
+  }, [position?.lat, position?.lng, position]);
 
   return (
     <div ref={containerRef} className={className || "h-64 w-full z-0"} style={{ minHeight: "100%" }}>

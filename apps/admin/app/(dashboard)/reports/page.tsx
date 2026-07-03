@@ -4,17 +4,8 @@ import { PDFDownloadLink } from "@react-pdf/renderer";
 import { createBrowserTypedClient } from "@repo/data-access/client";
 import { Button, Card, CardContent } from "@repo/ui";
 import { formatCurrency } from "@repo/utils";
-import { endOfMonth, endOfWeek, format, startOfMonth, startOfWeek, subDays } from "date-fns";
-import {
-  BarChart3,
-  Calendar,
-  DollarSign,
-  Download,
-  FileBarChart,
-  Loader2,
-  ShoppingBag,
-  TrendingUp,
-} from "lucide-react";
+import { endOfMonth, format, startOfMonth, startOfWeek, subDays } from "date-fns";
+import { BarChart3, Calendar, DollarSign, Download, Loader2, ShoppingBag, TrendingUp } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import PdfReport from "./pdf-report";
@@ -154,7 +145,7 @@ export default function ReportsPage() {
       topProducts,
     });
     setLoading(false);
-  }, [preset, dateFrom, dateTo, supabase]);
+  }, [preset, supabase, getDateRange]);
 
   useEffect(() => {
     fetchReport();
@@ -166,7 +157,7 @@ export default function ReportsPage() {
       setDateFrom(range.from);
       setDateTo(range.to);
     }
-  }, [preset]);
+  }, [preset, getDateRange]);
 
   const summaryCards = [
     {

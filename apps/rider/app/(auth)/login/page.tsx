@@ -34,7 +34,7 @@ export default function LoginPage() {
     if (data.user) {
       const profile = await getProfileRole(supabase, data.user.id);
 
-      if (!profile || profile.role !== "rider") {
+      if (profile?.role !== "rider") {
         setError("Access denied. Rider account required.");
         await supabase.auth.signOut();
         setLoading(false);

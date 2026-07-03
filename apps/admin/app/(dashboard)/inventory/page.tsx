@@ -14,7 +14,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
   Input,
   Select,
   SelectContent,
@@ -23,8 +22,7 @@ import {
   SelectValue,
 } from "@repo/ui";
 import { formatCurrency } from "@repo/utils";
-import { Image as ImageIcon, Loader2, Minus, Package, Pencil, Plus, Search, Trash2, Upload, X } from "lucide-react";
-import Image from "next/image";
+import { Image as ImageIcon, Loader2, Package, Pencil, Plus, Search, Trash2, Upload } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Swal from "sweetalert2";
 
@@ -151,8 +149,8 @@ export default function InventoryPage() {
       availability: formAvailability as "available" | "sold_out",
       image_url: formImageUrl || null,
       is_featured: formIsFeatured,
-      quantity: parseInt(formQuantity) || 0,
-      buffer_quantity: parseInt(formBuffer) || 5,
+      quantity: parseInt(formQuantity, 10) || 0,
+      buffer_quantity: parseInt(formBuffer, 10) || 5,
     };
 
     let result;

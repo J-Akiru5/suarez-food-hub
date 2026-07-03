@@ -1,7 +1,6 @@
 "use client";
 
 import { createBrowserTypedClient } from "@repo/data-access/client";
-import { updateProfile } from "@repo/data-access/data/profiles";
 import { Button, Card, CardContent, Input } from "@repo/ui";
 import { CheckCircle, Loader2, Shield, UserPlus, Users } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
@@ -18,7 +17,7 @@ interface StaffProfile {
 }
 
 export default function StaffAccountsPage() {
-  const supabase = createBrowserTypedClient();
+  const _supabase = createBrowserTypedClient();
   const [staffList, setStaffList] = useState<StaffProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [creating, setCreating] = useState(false);

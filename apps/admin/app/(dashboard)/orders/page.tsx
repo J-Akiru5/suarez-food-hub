@@ -5,7 +5,6 @@ import { getOrdersWithProfiles } from "@repo/data-access/data/orders";
 import { getRiders } from "@repo/data-access/data/profiles";
 import type { Order, Profile } from "@repo/types";
 import {
-  Badge,
   Button,
   Card,
   CardContent,
@@ -20,7 +19,7 @@ import {
   TabsTrigger,
 } from "@repo/ui";
 import { formatCurrency } from "@repo/utils";
-import { ChevronDown, ChevronUp, Eye, Loader2, RefreshCw } from "lucide-react";
+import { ChevronDown, ChevronUp, Eye, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 

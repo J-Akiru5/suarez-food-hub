@@ -38,7 +38,7 @@ function LoginForm() {
     if (data.user) {
       const profile = await getProfileRole(supabase, data.user.id);
 
-      if (!profile || profile.role !== "admin") {
+      if (profile?.role !== "admin") {
         setError("You do not have admin access. Please contact the administrator.");
         await supabase.auth.signOut();
         setLoading(false);

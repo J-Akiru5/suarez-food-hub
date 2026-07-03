@@ -3,18 +3,7 @@
 import { createBrowserTypedClient } from "@repo/data-access/client";
 import { getBusinessConfig, updateBusinessConfig } from "@repo/data-access/data/business";
 import { Button, Card, CardContent, Input } from "@repo/ui";
-import {
-  CreditCard,
-  Image as ImageIcon,
-  Loader2,
-  MapPin,
-  QrCode,
-  Save,
-  Settings,
-  Store,
-  Trash2,
-  Upload,
-} from "lucide-react";
+import { Loader2, MapPin, QrCode, Save, Store, Trash2, Upload } from "lucide-react";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import Swal from "sweetalert2";
@@ -57,7 +46,7 @@ export default function SettingsPage() {
 
   useEffect(() => {
     fetchConfig();
-  }, []);
+  }, [fetchConfig]);
 
   async function fetchConfig() {
     const data = await getBusinessConfig(supabase);

@@ -1,6 +1,6 @@
 "use client";
 
-import { Menu, ShoppingCart, Utensils, X } from "lucide-react";
+import { Menu, ShoppingCart, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -26,7 +26,7 @@ export default function Navbar({ onCartClick, cartItemCount = 0, showCartIcon = 
           const cart = JSON.parse(saved);
           const total = cart.reduce((sum: number, item: any) => sum + item.quantity, 0);
           setLocalCount(total);
-        } catch (e) {}
+        } catch (_e) {}
       }
     }
   }, [cartItemCount]);

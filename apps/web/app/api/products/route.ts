@@ -87,8 +87,8 @@ export async function POST(req: NextRequest) {
     const categoryStr = formData.get("category") as string;
     const price = parseFloat(formData.get("price") as string) || 0;
     const description = formData.get("description") as string;
-    const quantity = parseInt(formData.get("quantity") as string) || 0;
-    const bufferQuantity = parseInt(formData.get("buffer_quantity") as string) || 5;
+    const quantity = parseInt(formData.get("quantity") as string, 10) || 0;
+    const bufferQuantity = parseInt(formData.get("buffer_quantity") as string, 10) || 5;
     const imageFile = formData.get("image") as File | null;
     let imageUrl = (formData.get("existing_image") as string) || "";
 
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
         .from("images")
         .upload(filename, imageFile, { contentType: imageFile.type, upsert: true });
       if (uploadError)
-        return NextResponse.json({ error: "Image upload failed: " + uploadError.message }, { status: 500 });
+        return NextResponse.json({ error: `Image upload failed: ${uploadError.message}` }, { status: 500 });
       const { data: urlData } = supabase.storage.from("images").getPublicUrl(filename);
       imageUrl = urlData.publicUrl;
     }

@@ -105,14 +105,14 @@ export async function POST(req: NextRequest) {
 
       if (itemError) {
         await deleteOrder(serviceSupabase, order.id);
-        return NextResponse.json({ error: "Item error: " + itemError.message }, { status: 500 });
+        return NextResponse.json({ error: `Item error: ${itemError.message}` }, { status: 500 });
       }
 
       const result = await deductStock(serviceSupabase, item.id, item.quantity);
       if (result.error || result.newQuantity == null) {
         await deleteOrder(serviceSupabase, order.id);
         return NextResponse.json(
-          { error: "Stock error: " + (result.error?.message || "Unknown error") },
+          { error: `Stock error: ${result.error?.message || "Unknown error"}` },
           { status: 500 },
         );
       }

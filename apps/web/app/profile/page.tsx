@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowLeft, CheckCircle, Loader2, MapPin, Phone, Save, User } from "lucide-react";
+import { ArrowLeft, CheckCircle, Loader2, Phone, Save, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import AuthNavbar from "../../components/AuthNavbar";

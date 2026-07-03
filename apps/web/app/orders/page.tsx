@@ -1,17 +1,6 @@
 "use client";
 
-import {
-  ArrowRight,
-  Bike,
-  CheckCircle,
-  ChefHat,
-  Clock,
-  Loader2,
-  Navigation,
-  Package,
-  ShoppingBag,
-  XCircle,
-} from "lucide-react";
+import { ArrowRight, Bike, CheckCircle, ChefHat, Clock, Loader2, Navigation, ShoppingBag, XCircle } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";

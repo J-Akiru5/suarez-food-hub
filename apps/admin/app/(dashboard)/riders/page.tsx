@@ -7,7 +7,7 @@ import { getCompletedOrdersCount, getOrdersCountForRider } from "@repo/data-acce
 import { getRiders, updateRiderStatus } from "@repo/data-access/data/profiles";
 import type { Profile } from "@repo/types";
 import { Button, Card, CardContent } from "@repo/ui";
-import { Bike, CheckCircle, Clock, Loader2, MapPin, Package, XCircle } from "lucide-react";
+import { Bike, CheckCircle, MapPin, Package, XCircle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 interface RiderWithStats extends Profile {

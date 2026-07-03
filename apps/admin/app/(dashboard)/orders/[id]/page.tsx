@@ -5,19 +5,9 @@ import { createBrowserTypedClient } from "@repo/data-access/client";
 import { getOrderById, updateOrderStatus } from "@repo/data-access/data/orders";
 import { getRiders } from "@repo/data-access/data/profiles";
 import type { Order, Profile } from "@repo/types";
-import {
-  Badge,
-  Button,
-  Card,
-  CardContent,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@repo/ui";
+import { Button, Card, CardContent, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@repo/ui";
 import { formatCurrency } from "@repo/utils";
-import { ArrowLeft, CheckCircle2, Clock, Loader2, MapPin, Phone, Printer, User, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Loader2, MapPin, Phone, Printer, User, XCircle } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import LocationPicker from "../../../../components/LocationPicker";
@@ -59,7 +49,7 @@ export default function OrderDetailPage() {
   useEffect(() => {
     fetchOrder();
     fetchRiders();
-  }, [orderId]);
+  }, [fetchRiders, fetchOrder]);
 
   async function fetchOrder() {
     const data = await getOrderById(supabase, orderId);

@@ -35,8 +35,8 @@ export default function StaffInventoryPage() {
   }, [fetchData]);
 
   async function saveQuantity(productId: string) {
-    const newQty = parseInt(qtyEdits[productId] ?? "");
-    if (isNaN(newQty) || newQty < 0) return;
+    const newQty = parseInt(qtyEdits[productId] ?? "", 10);
+    if (Number.isNaN(newQty) || newQty < 0) return;
     setSavingId(productId);
     try {
       const availability = newQty > 0 ? "available" : "sold_out";

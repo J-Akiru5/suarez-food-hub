@@ -40,7 +40,7 @@ async function createAdminProfile() {
       process.exit(1);
     }
     console.log("✅ Auth user created:", authData.user.id);
-    var userId = authData.user.id;
+    var _userId = authData.user.id;
   } else {
     console.log("✅ Found existing auth user:", adminUser.id);
     var userId = adminUser.id;

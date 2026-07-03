@@ -2,7 +2,7 @@
 
 import { createBrowserTypedClient } from "@repo/data-access/client";
 import { getRiderEarnings } from "@repo/data-access/data/earnings";
-import { eachDayOfInterval, endOfMonth, endOfWeek, format, startOfMonth, startOfWeek } from "date-fns";
+import { eachDayOfInterval, endOfWeek, format, startOfMonth, startOfWeek } from "date-fns";
 import { BarChart3, Calendar, DollarSign, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
 
