@@ -151,7 +151,7 @@ export default function OrdersPage() {
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-2 mb-1 flex-wrap">
                           <p className="font-bold text-sm">{order.order_number}</p>
                           <span
                             className={`text-[10px] font-medium px-2 py-0.5 rounded-full ${

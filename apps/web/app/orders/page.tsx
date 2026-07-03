@@ -128,6 +128,17 @@ function OrdersPageInner() {
   return (
     <div style={{ minHeight: "100vh", background: "var(--color-cream)", fontFamily: "var(--plus-jakarta-sans)" }}>
       <AuthNavbar />
+
+      <style>{`
+        @media (max-width: 640px) {
+          .order-timeline .timeline-step { gap: 4px !important; }
+          .order-timeline .timeline-step-circle { width: 28px !important; height: 28px !important; }
+          .order-timeline .timeline-step svg { width: 12px !important; height: 12px !important; }
+          .order-timeline .timeline-step span { font-size: 8px !important; margin-top: 4px !important; }
+          .order-timeline-timeline { padding: 16px 16px 8px !important; }
+        }
+      `}</style>
+
       <div style={{ maxWidth: 800, margin: "0 auto", padding: "120px 24px 60px" }}>
         <h1
           style={{
@@ -361,7 +372,7 @@ function OrdersPageInner() {
 
                   {/* Status Timeline */}
                   {order.status !== "cancelled" && (
-                    <div style={{ padding: "24px 28px 8px", borderBottom: "1px solid #f1f5f9" }}>
+                    <div className="order-timeline" style={{ padding: "24px 28px 8px", borderBottom: "1px solid #f1f5f9" }}>
                       <div
                         style={{
                           display: "flex",
@@ -378,6 +389,7 @@ function OrdersPageInner() {
                           return (
                             <div
                               key={step.key}
+                              className="timeline-step"
                               style={{
                                 display: "flex",
                                 flexDirection: "column",
@@ -388,6 +400,7 @@ function OrdersPageInner() {
                               }}
                             >
                               <div
+                                className="timeline-step-circle"
                                 style={{
                                   width: 36,
                                   height: 36,

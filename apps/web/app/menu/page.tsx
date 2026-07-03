@@ -294,7 +294,7 @@ export default function MenuPage() {
 
   // ─── Render ──────────────────────────────────────────
   return (
-    <div className="h-screen flex flex-col bg-cream">
+    <div className="min-h-screen flex flex-col bg-cream">
       {/* ── Toast ── */}
       <div
         className={cn(

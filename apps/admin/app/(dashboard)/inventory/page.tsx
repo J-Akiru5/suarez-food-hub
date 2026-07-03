@@ -309,7 +309,7 @@ export default function InventoryPage() {
                   <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">
                     Price
                   </th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 hidden sm:table-cell">
                     Stock
                   </th>
                   <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">
@@ -348,7 +348,7 @@ export default function InventoryPage() {
                     <td className="px-4 py-3">
                       <span className="text-sm font-bold">{formatCurrency(product.base_price)}</span>
                     </td>
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 hidden sm:table-cell">
                       <div className="flex items-center gap-1">
                         <span
                           className={`text-sm font-bold ${
@@ -378,7 +378,7 @@ export default function InventoryPage() {
                       <div className="flex items-center justify-end gap-2">
                         <Button variant="outline" size="sm" onClick={() => openEditDialog(product)} className="gap-1">
                           <Pencil className="h-3 w-3" />
-                          Edit
+                          <span className="hidden sm:inline">Edit</span>
                         </Button>
                         <Button
                           variant="outline"
@@ -387,7 +387,7 @@ export default function InventoryPage() {
                           className="gap-1 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
                         >
                           <Trash2 className="h-3 w-3" />
-                          Delete
+                          <span className="hidden sm:inline">Delete</span>
                         </Button>
                       </div>
                     </td>

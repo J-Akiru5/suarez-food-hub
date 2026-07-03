@@ -130,19 +130,19 @@ export default function CartSidebar({
                       <div className="flex items-center gap-1.5">
                         <button
                           onClick={() => updateCartQty(item.id, item.variant, -1)}
-                          className="w-6 h-6 rounded-full border border-gray-200 flex items-center justify-center hover:border-brand-500 transition-colors bg-white"
+                          className="w-7 h-7 sm:w-6 sm:h-6 rounded-full border border-gray-200 flex items-center justify-center hover:border-brand-500 transition-colors bg-white"
                         >
                           <Minus className="w-3 h-3 text-gray-500" />
                         </button>
                         <span
-                          className="text-xs font-bold text-gray-800 w-5 text-center"
+                          className="text-xs font-bold text-gray-800 w-6 sm:w-5 text-center"
                           style={{ fontFamily: "monospace" }}
                         >
                           {item.quantity}
                         </span>
                         <button
                           onClick={() => updateCartQty(item.id, item.variant, 1)}
-                          className="w-6 h-6 rounded-full border border-gray-200 flex items-center justify-center hover:border-brand-500 transition-colors bg-white"
+                          className="w-7 h-7 sm:w-6 sm:h-6 rounded-full border border-gray-200 flex items-center justify-center hover:border-brand-500 transition-colors bg-white"
                         >
                           <Plus className="w-3 h-3 text-gray-500" />
                         </button>

@@ -1,4 +1,4 @@
-import { Globe, Mail, MapPin, Phone } from "lucide-react";
+import { Mail, MapPin, Phone } from "lucide-react";
 import * as React from "react";
 
 export interface FooterProps {
@@ -8,8 +8,8 @@ export interface FooterProps {
 const Footer = React.forwardRef<HTMLElement, FooterProps>(({ className }, ref) => {
   return (
     <footer ref={ref} className="bg-near-black text-white/70">
-      <div className="max-w-[1280px] mx-auto px-6 py-16">
-        <div className="grid gap-10 md:grid-cols-4">
+      <div className="max-w-[1280px] mx-auto px-4 sm:px-6 py-16">
+        <div className="grid gap-8 md:gap-10 md:grid-cols-4">
           <div className="md:col-span-1">
             <h3 className="text-lg font-bold text-white font-heading mb-3">Suarez Food Hub</h3>
             <p className="text-sm text-white/50 leading-relaxed max-w-xs">
@@ -74,22 +74,6 @@ const Footer = React.forwardRef<HTMLElement, FooterProps>(({ className }, ref) =
               </li>
             </ul>
 
-            <div className="mt-6 flex gap-3">
-              <a
-                href="#"
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 text-white/40 hover:bg-[var(--primary-color)] hover:text-white hover:border-[var(--primary-color)] transition-all duration-200"
-                aria-label="Facebook"
-              >
-                <Globe size={14} />
-              </a>
-              <a
-                href="#"
-                className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 text-white/40 hover:bg-[var(--primary-color)] hover:text-white hover:border-[var(--primary-color)] transition-all duration-200"
-                aria-label="Instagram"
-              >
-                <Globe size={14} />
-              </a>
-            </div>
           </div>
         </div>
 

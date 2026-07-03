@@ -32,7 +32,7 @@ const AboutSection = React.forwardRef<HTMLDivElement, AboutSectionProps>(
     return (
       <section ref={ref} className="bg-cream">
         <div className="max-w-[1280px] mx-auto">
-          <div className="flex flex-col lg:flex-row min-h-[600px]">
+          <div className="flex flex-col lg:flex-row min-h-[400px] lg:min-h-[600px]">
             <div className="flex-1 py-16 px-6 md:px-12 lg:px-16 flex flex-col justify-center">
               <span className="text-xs font-semibold uppercase tracking-[0.15em] text-[var(--primary-color)] mb-3">
                 {subtitle}
@@ -43,7 +43,7 @@ const AboutSection = React.forwardRef<HTMLDivElement, AboutSectionProps>(
               <p className="text-base leading-relaxed mb-10 max-w-md text-[var(--secondary-color)]/60">{description}</p>
 
               <div className="flex gap-4 items-end">
-                <div className="relative w-40 h-32 rounded-xl overflow-hidden shadow-lg -rotate-3">
+                <div className="relative w-28 sm:w-40 h-24 sm:h-32 rounded-xl overflow-hidden shadow-lg -rotate-3">
                   <img
                     src={storeImage}
                     alt=""
@@ -53,7 +53,7 @@ const AboutSection = React.forwardRef<HTMLDivElement, AboutSectionProps>(
                     }}
                   />
                 </div>
-                <div className="relative w-48 h-36 rounded-xl overflow-hidden shadow-lg rotate-2 -mb-2">
+                <div className="relative w-32 sm:w-48 h-28 sm:h-36 rounded-xl overflow-hidden shadow-lg rotate-2 -mb-2">
                   <img
                     src={foodImage}
                     alt=""
@@ -74,7 +74,7 @@ const AboutSection = React.forwardRef<HTMLDivElement, AboutSectionProps>(
                 Visit Us in Person
               </h2>
 
-              <div className="rounded-2xl overflow-hidden h-[320px]">
+              <div className="rounded-2xl overflow-hidden h-[250px] sm:h-[320px]">
                 <iframe
                   src={mapSrc}
                   width="100%"

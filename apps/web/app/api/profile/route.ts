@@ -40,6 +40,7 @@ export async function PATCH(req: NextRequest) {
       town_id,
       barangay_id,
       zip_code,
+      address,
     } = body;
 
     const updateData: Record<string, unknown> = {};
@@ -53,6 +54,7 @@ export async function PATCH(req: NextRequest) {
     if (town_id !== undefined) updateData.town_id = town_id;
     if (barangay_id !== undefined) updateData.barangay_id = barangay_id;
     if (zip_code !== undefined) updateData.zip_code = zip_code;
+    if (address !== undefined) updateData.address = address;
 
     const serviceSupabase = createServiceClient();
     const { data, error } = await updateProfile(serviceSupabase, user.id, updateData);

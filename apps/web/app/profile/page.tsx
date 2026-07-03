@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import AuthNavbar from "../../components/AuthNavbar";
 import { useAuth } from "../../components/auth-provider";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@repo/ui";
 
 interface Location {
   id: string;
@@ -102,6 +103,14 @@ export default function ProfilePage() {
 
     setSaving(true);
     try {
+      const regionName = regions.find((r) => r.id === regionId)?.name || "";
+      const provinceName = provinces.find((p) => p.id === provinceId)?.name || "";
+      const townName = towns.find((t) => t.id === townId)?.name || "";
+      const barangayName = barangays.find((b) => b.id === barangayId)?.name || "";
+      
+      const fullAddressParts = [streetAddress.trim(), barangayName, townName, provinceName, regionName].filter(Boolean);
+      const fullAddress = fullAddressParts.join(", ");
+
       const res = await fetch("/api/profile", {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -116,6 +125,7 @@ export default function ProfilePage() {
           town_id: townId || null,
           barangay_id: barangayId || null,
           zip_code: zipCode.trim() || null,
+          address: fullAddress,
         }),
       });
       if (!res.ok) {
@@ -133,7 +143,7 @@ export default function ProfilePage() {
 
   if (authLoading) {
     return (
-      <div style={{ minHeight: "100vh", background: "var(--color-cream)", fontFamily: "var(--plus-jakarta-sans)" }}>
+      <div className="min-h-screen bg-[var(--color-cream)] font-sans">
         <AuthNavbar />
         <div style={{ maxWidth: 600, margin: "0 auto", padding: "120px 24px 60px" }}>
           <div style={{ background: "#fff", borderRadius: 28, padding: 32, boxShadow: "0 8px 32px rgba(0,0,0,0.04)" }}>
@@ -147,37 +157,20 @@ export default function ProfilePage() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--color-cream)", fontFamily: "var(--plus-jakarta-sans)" }}>
+    <div className="min-h-screen bg-[var(--color-cream)] font-sans">
       <AuthNavbar />
-      <div style={{ maxWidth: 600, margin: "0 auto", padding: "120px 24px 60px" }}>
+      <div style={{ maxWidth: 1000, margin: "0 auto", padding: "120px 24px 60px" }}>
         <button
           onClick={() => router.back()}
-          style={{
-            background: "none",
-            border: "none",
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            gap: 8,
-            color: "#64748b",
-            fontSize: 14,
-            marginBottom: 24,
-          }}
+          className="group flex items-center gap-2 text-slate-500 hover:text-[var(--primary-color)] transition-colors text-sm mb-6"
         >
-          <ArrowLeft size={18} /> Back
+          <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> Back
         </button>
 
-        <h1
-          style={{
-            fontFamily: "var(--playfair-display)",
-            fontSize: 40,
-            color: "var(--secondary-color)",
-            margin: "0 0 8px",
-          }}
-        >
+        <h1 className="font-serif text-4xl text-[var(--secondary-color)] mb-2">
           My Profile
         </h1>
-        <p style={{ color: "#64748b", margin: "0 0 32px", fontSize: 15 }}>Manage your personal information</p>
+        <p className="text-slate-500 mb-8 text-[15px]">Manage your personal information</p>
 
         {error && (
           <div
@@ -215,191 +208,178 @@ export default function ProfilePage() {
 
         <form
           onSubmit={handleSave}
-          style={{ background: "#fff", borderRadius: 28, padding: 40, boxShadow: "0 8px 32px rgba(0,0,0,0.04)" }}
+          className="flex flex-col gap-6"
         >
-          <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
+            
+            {/* Card 1: Personal Info */}
+            <div className="bg-white/90 backdrop-blur-xl rounded-[28px] p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 flex flex-col gap-5">
+              <h2 className="text-xl font-bold text-[var(--secondary-color)] mb-2">Personal Information</h2>
             <div>
-              <label style={labelStyle}>Email</label>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  padding: "14px 18px",
-                  borderRadius: 16,
-                  border: "1px solid #e2e8f0",
-                  background: "#f8fafc",
-                  color: "#94a3b8",
-                  fontSize: 14,
-                }}
-              >
+              <label className={labelClass}>Email</label>
+              <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/80 text-slate-400 text-sm shadow-sm">
                 <User size={18} color="#94a3b8" />
                 {user?.email}
               </div>
-              <p style={{ fontSize: 12, color: "#94a3b8", marginTop: 4 }}>Email cannot be changed</p>
+              <p className="text-xs text-slate-400 mt-1">Email cannot be changed</p>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div>
-                <label style={labelStyle}>First Name</label>
+                <label className={labelClass}>First Name</label>
                 <input
                   type="text"
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   required
-                  style={inputStyle}
+                  className={inputClass}
                 />
               </div>
               <div>
-                <label style={labelStyle}>Last Name</label>
+                <label className={labelClass}>Last Name</label>
                 <input
                   type="text"
                   value={lastName}
                   onChange={(e) => setLastName(e.target.value)}
                   required
-                  style={inputStyle}
+                  className={inputClass}
                 />
               </div>
             </div>
 
             <div>
-              <label style={labelStyle}>Phone Number</label>
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 12,
-                  padding: "14px 18px",
-                  borderRadius: 16,
-                  border: "1px solid #e2e8f0",
-                }}
-              >
+              <label className={labelClass}>Phone Number</label>
+              <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 focus-within:ring-2 focus-within:ring-[#d85c27] focus-within:border-transparent transition-all shadow-sm">
                 <Phone size={18} color="#94a3b8" />
                 <input
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
                   placeholder="09123456789"
-                  style={{
-                    width: "100%",
-                    border: "none",
-                    outline: "none",
-                    fontFamily: "var(--plus-jakarta-sans)",
-                    fontSize: 14,
-                    background: "transparent",
-                  }}
+                  className="w-full bg-transparent outline-none text-sm"
                 />
+              </div>
               </div>
             </div>
 
-            <div>
-              <label style={labelStyle}>Street Address (House #, Street)</label>
+            {/* Card 2: Delivery Address */}
+            <div className="bg-white/90 backdrop-blur-xl rounded-[28px] p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 flex flex-col gap-5">
+              <h2 className="text-xl font-bold text-[var(--secondary-color)] mb-2">Delivery Address</h2>
+
+              <div>
+                <label className={labelClass}>Street Address (House #, Street)</label>
               <input
                 type="text"
                 value={streetAddress}
                 onChange={(e) => setStreetAddress(e.target.value)}
                 placeholder="123 Rizal Street"
-                style={inputStyle}
+                className={inputClass}
               />
             </div>
 
             <div>
-              <label style={labelStyle}>Region</label>
-              <select value={regionId} onChange={(e) => setRegionId(e.target.value)} style={inputStyle}>
-                <option value="">Select Region</option>
-                {regions.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.name}
-                  </option>
-                ))}
-              </select>
+              <label className={labelClass}>Region</label>
+              <Select value={regionId || "none"} onValueChange={(v) => setRegionId(v === "none" ? "" : v)}>
+                <SelectTrigger className={inputClass}>
+                  <SelectValue placeholder="Select Region" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none" className="text-slate-400 italic">Select Region</SelectItem>
+                  {regions.map((r) => (
+                    <SelectItem key={r.id} value={r.id}>
+                      {r.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div>
-                <label style={labelStyle}>Province</label>
-                <select
-                  value={provinceId}
-                  onChange={(e) => setProvinceId(e.target.value)}
-                  style={inputStyle}
+                <label className={labelClass}>Province</label>
+                <Select
+                  value={provinceId || "none"}
+                  onValueChange={(v) => setProvinceId(v === "none" ? "" : v)}
                   disabled={!regionId}
                 >
-                  <option value="">Select Province</option>
-                  {provinces.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className={inputClass}>
+                    <SelectValue placeholder="Select Province" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none" className="text-slate-400 italic">Select Province</SelectItem>
+                    {provinces.map((p) => (
+                      <SelectItem key={p.id} value={p.id}>
+                        {p.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
-                <label style={labelStyle}>Town / City</label>
-                <select
-                  value={townId}
-                  onChange={(e) => setTownId(e.target.value)}
-                  style={inputStyle}
+                <label className={labelClass}>Town / City</label>
+                <Select
+                  value={townId || "none"}
+                  onValueChange={(v) => setTownId(v === "none" ? "" : v)}
                   disabled={!provinceId}
                 >
-                  <option value="">Select Town</option>
-                  {towns.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {t.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className={inputClass}>
+                    <SelectValue placeholder="Select Town" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none" className="text-slate-400 italic">Select Town / City</SelectItem>
+                    {towns.map((t) => (
+                      <SelectItem key={t.id} value={t.id}>
+                        {t.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
             <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div>
-                <label style={labelStyle}>Barangay</label>
-                <select
-                  value={barangayId}
-                  onChange={(e) => setBarangayId(e.target.value)}
-                  style={inputStyle}
+                <label className={labelClass}>Barangay</label>
+                <Select
+                  value={barangayId || "none"}
+                  onValueChange={(v) => setBarangayId(v === "none" ? "" : v)}
                   disabled={!townId}
                 >
-                  <option value="">Select Barangay</option>
-                  {barangays.map((b) => (
-                    <option key={b.id} value={b.id}>
-                      {b.name}
-                    </option>
-                  ))}
-                </select>
+                  <SelectTrigger className={inputClass}>
+                    <SelectValue placeholder="Select Barangay" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none" className="text-slate-400 italic">Select Barangay</SelectItem>
+                    {barangays.map((b) => (
+                      <SelectItem key={b.id} value={b.id}>
+                        {b.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
-                <label style={labelStyle}>Zip Code</label>
+                <label className={labelClass}>Zip Code</label>
                 <input
                   type="text"
                   value={zipCode}
                   onChange={(e) => setZipCode(e.target.value)}
                   placeholder="5000"
-                  style={inputStyle}
+                  className={inputClass}
                 />
               </div>
             </div>
           </div>
+        </div>
 
           <button
             type="submit"
             disabled={saving}
-            style={{
-              marginTop: 32,
-              padding: "16px 36px",
-              borderRadius: 30,
-              border: "none",
-              background: "var(--primary-color)",
-              color: "#fff",
-              fontWeight: 700,
-              fontSize: 16,
-              cursor: saving ? "not-allowed" : "pointer",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 10,
-              width: "100%",
-              opacity: saving ? 0.6 : 1,
-            }}
+            className={`mt-6 w-full max-w-[320px] mx-auto py-4 px-8 rounded-full font-bold text-white transition-all flex items-center justify-center gap-2 ${
+              saving
+                ? "opacity-60 cursor-not-allowed bg-slate-400"
+                : "bg-gradient-to-r from-[var(--primary-color)] to-[#ff7a3d] hover:shadow-xl hover:-translate-y-1"
+            }`}
           >
             {saving && <Loader2 size={20} />}
             <Save size={18} />
@@ -411,23 +391,5 @@ export default function ProfilePage() {
   );
 }
 
-const labelStyle: React.CSSProperties = {
-  fontSize: 13,
-  fontWeight: 600,
-  color: "#64748b",
-  marginBottom: 6,
-  display: "block",
-  textAlign: "left",
-};
-
-const inputStyle: React.CSSProperties = {
-  width: "100%",
-  padding: "14px 18px",
-  borderRadius: 16,
-  border: "1px solid #e2e8f0",
-  fontFamily: "var(--plus-jakarta-sans)",
-  fontSize: 14,
-  outline: "none",
-  boxSizing: "border-box",
-  background: "#fff",
-};
+const labelClass = "text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block";
+const inputClass = "w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 text-sm focus:outline-none focus:ring-2 focus:ring-[#d85c27] focus:border-transparent transition-all shadow-sm";

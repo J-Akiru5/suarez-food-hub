@@ -140,7 +140,7 @@ export default function StaffAccountsPage() {
             )}
 
             <form onSubmit={createStaff} className="space-y-4">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <Input
                   label="First Name"
                   value={formFirstName}

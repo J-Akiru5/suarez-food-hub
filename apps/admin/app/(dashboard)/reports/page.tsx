@@ -236,14 +236,14 @@ export default function ReportsPage() {
               ))}
             </div>
             {preset === "custom" && (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
                 <input
                   type="date"
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
                   className="h-8 px-2 rounded-lg border border-gray-200 text-sm"
                 />
-                <span className="text-sm text-muted-foreground">to</span>
+                <span className="text-sm text-muted-foreground text-center">to</span>
                 <input
                   type="date"
                   value={dateTo}

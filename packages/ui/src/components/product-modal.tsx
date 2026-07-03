@@ -46,7 +46,7 @@ const ProductModal = React.forwardRef<HTMLDivElement, ProductModalProps>(({ prod
       <div
         ref={ref}
         onClick={(e) => e.stopPropagation()}
-        className="relative w-full max-w-[480px] md:max-w-[860px] bg-white rounded-32 shadow-4xl overflow-hidden animate-slideUp flex flex-col md:flex-row"
+        className="relative w-full max-w-[480px] md:max-w-[860px] bg-white rounded-32 shadow-4xl overflow-y-auto max-h-[90dvh] md:max-h-none md:overflow-hidden animate-slideUp flex flex-col md:flex-row"
       >
         {/* Close Button */}
         <button

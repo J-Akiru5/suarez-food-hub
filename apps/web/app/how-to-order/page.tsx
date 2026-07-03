@@ -50,9 +50,21 @@ export default function HowToOrderPage() {
       {/* Header */}
       <AuthNavbar />
 
+      <style>{`
+        @media (max-width: 640px) {
+          .how-to-order-header { padding: 60px 24px !important; }
+          .how-to-order-header h1 { font-size: 36px !important; }
+          .how-to-order-header p { font-size: 16px !important; }
+          .how-to-order-content { padding: 40px 16px !important; }
+          .how-to-order-content .steps-grid { gap: 24px !important; }
+          .how-to-order-cta { margin-top: 48px !important; }
+          .how-to-order-cta-heading { font-size: 32px !important; }
+        }
+      `}</style>
+
       {/* ── Header ── */}
       <div
-        className="mobile-padding"
+        className="how-to-order-header mobile-padding"
         style={{
           marginTop: "72px",
           background: "var(--primary-color)",
@@ -80,8 +92,8 @@ export default function HowToOrderPage() {
       </div>
 
       {/* ── Content ── */}
-      <div className="mobile-padding" style={{ padding: "80px 64px", maxWidth: 960, margin: "0 auto" }}>
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 40 }}>
+      <div className="how-to-order-content mobile-padding" style={{ padding: "80px 64px", maxWidth: 960, margin: "0 auto" }}>
+        <div className="steps-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 40 }}>
           {STEPS.map((s) => (
             <div
               key={s.step}
@@ -139,8 +151,9 @@ export default function HowToOrderPage() {
         </div>
 
         {/* CTA */}
-        <div style={{ textAlign: "center", marginTop: 80 }}>
+        <div className="how-to-order-cta" style={{ textAlign: "center", marginTop: 80 }}>
           <h2
+            className="how-to-order-cta-heading"
             style={{
               fontFamily: "var(--playfair-display)",
               fontSize: 44,

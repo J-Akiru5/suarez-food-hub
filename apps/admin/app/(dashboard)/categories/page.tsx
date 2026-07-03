@@ -179,7 +179,7 @@ export default function CategoriesPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-gray-200 bg-gray-50">
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 hidden sm:table-cell">
                     Order
                   </th>
                   <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">
@@ -202,7 +202,7 @@ export default function CategoriesPage() {
               <tbody className="divide-y divide-gray-200">
                 {categories.map((category, idx) => (
                   <tr key={category.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 hidden sm:table-cell">
                       <div className="flex items-center gap-1">
                         <button
                           onClick={() => moveCategory(category, "up")}

@@ -14,8 +14,31 @@ export async function GET(request: NextRequest) {
     const rider_id = searchParams.get("rider_id");
 
     if (type) {
-      const data = await getLocations(serviceSupabase, type as LocationType, parent || undefined);
-      return NextResponse.json(data);
+      const baseUrl = "https://psgc.gitlab.io/api";
+      let url = "";
+
+      if (type === "region") {
+        url = `${baseUrl}/regions`;
+      } else if (type === "province" && parent) {
+        url = `${baseUrl}/regions/${parent}/provinces`;
+      } else if (type === "city" && parent) {
+        url = `${baseUrl}/provinces/${parent}/cities-municipalities`;
+      } else if (type === "barangay" && parent) {
+        url = `${baseUrl}/cities-municipalities/${parent}/barangays`;
+      }
+
+      if (url) {
+        const response = await fetch(url);
+        if (response.ok) {
+          const rawData = await response.json();
+          const mappedData = rawData.map((item: any) => ({
+            id: item.code,
+            name: item.name,
+          }));
+          return NextResponse.json(mappedData);
+        }
+      }
+      return NextResponse.json([]);
     }
 
     if (rider_id) {

@@ -186,10 +186,6 @@ export default function AboutPage() {
             </p>
           </div>
           <div className="relative mt-12">
-            <div
-              className="absolute left-4 top-0 h-full w-0.5 sm:left-1/2 sm:-translate-x-px"
-              style={{ background: "color-mix(in srgb, var(--primary-color) 30%, transparent)" }}
-            />
             <div className="space-y-8">
               {timeline.map((item, index) => (
                 <div
@@ -198,12 +194,9 @@ export default function AboutPage() {
                     index % 2 === 0 ? "sm:flex-row" : "sm:flex-row-reverse"
                   } items-start gap-6`}
                 >
+                  <div className="hidden sm:block flex-1" />
                   <div
-                    className="absolute left-4 top-1 h-4 w-4 -translate-x-1/2 rounded-full border-2 bg-white sm:left-1/2"
-                    style={{ borderColor: "var(--primary-color)" }}
-                  />
-                  <div
-                    className={`ml-10 flex-1 sm:ml-0 ${
+                    className={`flex-1 ${
                       index % 2 === 0 ? "sm:text-right sm:pr-12" : "sm:text-left sm:pl-12"
                     }`}
                   >

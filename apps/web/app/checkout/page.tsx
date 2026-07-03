@@ -15,8 +15,8 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import AuthNavbar from "../../components/AuthNavbar";
+import Navbar from "../../components/Navbar";
 import { useAuth } from "../../components/auth-provider";
-import LocationPicker from "../../components/LocationPicker";
 
 interface CartItem {
   id: string;
@@ -64,7 +64,7 @@ export default function CheckoutPage() {
       addressRef.current.style.height = "auto";
       addressRef.current.style.height = `${addressRef.current.scrollHeight}px`;
     }
-  }, []);
+  }, [address]);
 
   useEffect(() => {
     try {
@@ -82,8 +82,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     if (profile) {
       if (!address) {
-        const parts = [(profile as any).street_address].filter(Boolean);
-        setAddress(parts.join(", ") || (profile as any).address || "");
+        setAddress((profile as any).address || (profile as any).street_address || "");
       }
       if (!phone) setPhone(profile.phone || "");
     }
@@ -339,6 +338,19 @@ export default function CheckoutPage() {
         @media (max-width: 1024px) {
           .bento-grid { grid-template-columns: 1fr !important; }
         }
+        @media (max-width: 640px) {
+          .bento-grid { padding: 100px 16px 40px !important; }
+          .checkout-step-indicator { width: 200px !important; }
+          .checkout-step-indicator span { font-size: 11px !important; }
+          .checkout-step-indicator > div { width: 32px !important; height: 32px !important; }
+          .checkout-heading { font-size: 28px !important; }
+          .delivery-address-phone-grid { grid-template-columns: 1fr !important; }
+          .delivery-address-phone-grid button { width: 100% !important; }
+          .payment-grid { grid-template-columns: 1fr !important; }
+          .checkout-buttons { flex-direction: column !important; gap: 12px !important; }
+          .checkout-buttons button { width: 100% !important; justify-content: center !important; }
+          .order-summary { max-height: 250px !important; }
+        }
       `}</style>
 
       <div
@@ -383,6 +395,7 @@ export default function CheckoutPage() {
                   color: "var(--secondary-color)",
                   margin: 0,
                 }}
+                className="checkout-heading"
               >
                 Checkout
               </h1>
@@ -390,6 +403,7 @@ export default function CheckoutPage() {
 
             {/* Step Indicator */}
             <div
+              className="checkout-step-indicator"
               style={{
                 display: "flex",
                 justifyContent: "space-between",
@@ -551,25 +565,43 @@ export default function CheckoutPage() {
               </h3>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-                {/* Top: Big Map */}
-                <div style={{ width: "100%" }}>
-                  <LocationPicker position={position} setPosition={setPosition} onAddressDetect={setAddress} />
-                </div>
 
                 {/* Bottom: Address & Phone Row */}
-                <div style={{ display: "grid", gridTemplateColumns: "2fr 1.5fr auto", gap: 20, alignItems: "end" }}>
+                <div className="delivery-address-phone-grid" style={{ display: "grid", gridTemplateColumns: "2fr 1.5fr auto", gap: 20, alignItems: "end" }}>
                   <div>
-                    <label
-                      style={{
-                        fontSize: 14,
-                        fontWeight: 700,
-                        color: "var(--secondary-color)",
-                        marginBottom: 8,
-                        display: "block",
-                      }}
-                    >
-                      Delivery Address
-                    </label>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+                      <label
+                        style={{
+                          fontSize: 14,
+                          fontWeight: 700,
+                          color: "var(--secondary-color)",
+                          display: "block",
+                        }}
+                      >
+                        Delivery Address
+                      </label>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (profile) {
+                            setAddress((profile as any).address || (profile as any).street_address || "");
+                            if (profile.phone) setPhone(profile.phone);
+                          }
+                        }}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          color: "var(--primary-color)",
+                          fontSize: 12,
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          padding: 0,
+                        }}
+                        className="hover:underline"
+                      >
+                        Use Saved Profile Address
+                      </button>
+                    </div>
                     <textarea
                       ref={addressRef}
                       value={address}
@@ -687,7 +719,7 @@ export default function CheckoutPage() {
                 <CreditCard size={24} color="var(--primary-color)" /> Payment Method
               </h3>
 
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
+              <div className="payment-grid" style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 32 }}>
                 {/* Left: Options */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
                   <PaymentOption
@@ -896,7 +928,7 @@ export default function CheckoutPage() {
                     </div>
                   )}
 
-                  <div style={{ display: "flex", justifyContent: "space-between", marginTop: "auto", paddingTop: 24 }}>
+                  <div className="checkout-buttons" style={{ display: "flex", justifyContent: "space-between", marginTop: "auto", paddingTop: 24 }}>
                     <button
                       onClick={() => setStep(1)}
                       style={{
@@ -1089,6 +1121,7 @@ export default function CheckoutPage() {
                 </div>
 
                 <div
+                  className="checkout-buttons"
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
@@ -1165,6 +1198,7 @@ export default function CheckoutPage() {
             </h3>
 
             <div
+              className="order-summary"
               style={{
                 display: "flex",
                 flexDirection: "column",

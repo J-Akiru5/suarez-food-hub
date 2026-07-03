@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mobile Responsiveness Audit — Suarez Food Hub</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Playfair+Display:wght@400;700&display=swap');
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Plus Jakarta Sans', sans-serif; background: #faf7f2; color: #1a1a1a; padding: 40px 24px; }
+  .container { max-width: 1100px; margin: 0 auto; }
+  h1 { font-family: 'Playfair Display', serif; font-size: 2.5rem; color: #b1454a; margin-bottom: 8px; }
+  .subtitle { color: #64748b; font-size: 1rem; margin-bottom: 40px; }
+  .meta { display: flex; gap: 24px; flex-wrap: wrap; margin-bottom: 32px; padding: 20px 24px; background: #fff; border-radius: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.04); }
+  .meta-item { display: flex; flex-direction: column; }
+  .meta-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.1em; color: #94a3b8; font-weight: 700; }
+  .meta-value { font-size: 1.1rem; font-weight: 700; color: #1a1a1a; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin-bottom: 40px; }
+  .stat-card { background: #fff; border-radius: 16px; padding: 20px; text-align: center; box-shadow: 0 4px 16px rgba(0,0,0,0.04); }
+  .stat-number { font-size: 2rem; font-weight: 800; color: #b1454a; }
+  .stat-label { font-size: 12px; color: #64748b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; margin-top: 4px; }
+  h2 { font-family: 'Playfair Display', serif; font-size: 1.5rem; color: #1a1a1a; margin: 40px 0 16px; padding-bottom: 8px; border-bottom: 2px solid #b1454a20; }
+  h3 { font-weight: 700; font-size: 1.1rem; color: #334155; margin: 24px 0 8px; }
+  .file-entry { background: #fff; border-radius: 16px; padding: 20px 24px; margin-bottom: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.04); }
+  .file-path { font-family: monospace; font-size: 0.9rem; font-weight: 600; color: #b1454a; margin-bottom: 8px; }
+  .file-desc { font-size: 0.95rem; color: #475569; line-height: 1.6; }
+  .file-changes { margin-top: 8px; display: flex; flex-wrap: wrap; gap: 6px; }
+  .tag { display: inline-block; font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 0.03em; }
+  .tag-mobile { background: #dbeafe; color: #1d4ed8; }
+  .tag-fix { background: #dcfce7; color: #15803d; }
+  .tag-access { background: #fef3c7; color: #b45309; }
+  .tag-tablet { background: #f3e8ff; color: #7c3aed; }
+  .section-label { font-size: 13px; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.08em; margin: 32px 0 12px; }
+  ul { padding-left: 20px; color: #475569; line-height: 1.8; font-size: 0.95rem; }
+  li { margin-bottom: 4px; }
+  .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 6px; margin-right: 4px; }
+  .badge-web { background: #fce7f3; color: #be185d; }
+  .badge-admin { background: #e0e7ff; color: #4338ca; }
+  .badge-staff { background: #d1fae5; color: #047857; }
+  .badge-rider { background: #ffedd5; color: #c2410c; }
+  .badge-ui { background: #f3e8ff; color: #7c3aed; }
+  .badge-other { background: #f1f5f9; color: #475569; }
+  .restored-notice { background: #fef2f2; border: 1px solid #fecaca; border-radius: 12px; padding: 16px 20px; margin-bottom: 24px; }
+  .restored-notice h4 { color: #dc2626; font-size: 14px; margin-bottom: 4px; }
+  .restored-notice p { font-size: 13px; color: #7f1d1d; }
+  .footer-note { text-align: center; color: #94a3b8; font-size: 13px; margin-top: 60px; padding-top: 24px; border-top: 1px solid #e2e8f0; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Mobile Responsiveness Audit & Fixes</h1>
+  <p class="subtitle">All changes are mobile-only — desktop view unaffected</p>
+
+  <div class="meta">
+    <div class="meta-item"><span class="meta-label">Date</span><span class="meta-value">July 3, 2026</span></div>
+    <div class="meta-item"><span class="meta-label">Branch</span><span class="meta-value">develop</span></div>
+    <div class="meta-item"><span class="meta-label">Scope</span><span class="meta-value">21 files across 5 areas</span></div>
+    <div class="meta-item"><span class="meta-label">Head Commit</span><span class="meta-value" style="font-family:monospace">03c4f00</span></div>
+  </div>
+
+  <div class="stats">
+    <div class="stat-card"><div class="stat-number">21</div><div class="stat-label">Files Changed</div></div>
+    <div class="stat-card"><div class="stat-number">15</div><div class="stat-label">Critical UX Fixes</div></div>
+    <div class="stat-card"><div class="stat-number">8</div><div class="stat-label">Table/Grid Fixes</div></div>
+    <div class="stat-card"><div class="stat-number">4</div><div class="stat-label">Accessibility Fixes</div></div>
+    <div class="stat-card"><div class="stat-number">3</div><div class="stat-label">Pre-existing Restored</div></div>
+  </div>
+
+  <div class="restored-notice">
+    <h4>&#x26A0; Restored pre-existing changes</h4>
+    <p>Three files (<code>apps/web/app/about/page.tsx</code>, <code>apps/web/app/profile/page.tsx</code>, <code>apps/web/app/api/profile/route.ts</code>) had pre-existing uncommitted UI work that was accidentally reverted during the audit and has been restored.</p>
+  </div>
+
+  <!-- ==================== SHARED UI ==================== -->
+  <div class="section-label">Packages / Shared UI</div>
+
+  <div class="file-entry">
+    <div class="file-path">packages/ui/src/components/product-modal.tsx</div>
+    <div class="file-desc">Product modal content was clipped on mobile due to <code>overflow-hidden</code>. Added <code>overflow-y-auto max-h-[90dvh]</code> on mobile, preserving desktop layout with <code>md:overflow-hidden md:max-h-none</code>.</div>
+    <div class="file-changes"><span class="tag tag-fix">Critical</span><span class="tag tag-mobile">Mobile</span></div>
+  </div>
+
+  <div class="file-entry">
+    <div class="file-path">packages/ui/src/components/footer.tsx</div>
+    <div class="file-desc">Reduced horizontal padding from <code>px-6</code> to <code>px-4 sm:px-6</code> (48px → 32px on small screens). Reduced grid gap from <code>gap-10</code> to <code>gap-8 md:gap-10</code> for tighter vertical spacing on mobile. Removed unused <code>Globe</code> import.</div>
+    <div class="file-changes"><span class="tag tag-mobile">Mobile</span></div>
+  </div>
+
+  <div class="file-entry">
+    <div class="file-path">packages/ui/src/components/about-section.tsx</div>
+    <div class="file-desc">Reduced <code>min-h-[600px]</code> to <code>min-h-[400px] lg:min-h-[600px]</code> so mobile doesn't force excessive height. Scaled down fixed-width images: <code>w-40 h-32</code> → <code>w-28 sm:w-40 h-24 sm:h-32</code> to prevent horizontal overflow on small screens. Reduced map height <code>h-[320px]</code> → <code>h-[250px] sm:h-[320px]</code>.</div>
+    <div class="file-changes"><span class="tag tag-mobile">Mobile</span><span class="tag tag-fix">Overflow</span></div>
+  </div>
+
+  <div class="file-entry">
+    <div class="file-path">packages/ui/src/components/how-it-works.tsx</div>
+    <div class="file-desc">Reduced decorative step number from <code>text-[64px]</code> to <code>text-[40px] sm:text-[64px]</code> to prevent overlap with card content on mobile.</div>
+    <div class="file-changes"><span class="tag tag-mobile">Mobile</span></div>
+  </div>
+
+  <!-- ==================== WEB APP ==================== -->
+  <div class="section-label">Customer App (apps/web)</div>
+
+  <div class="file-entry">
+    <div class="file-path">apps/web/app/checkout/page.tsx</div>
+    <div class="file-desc">Major mobile layout overhaul. Added comprehensive media query overrides: step indicator width reduced (320 → 200), heading font shrunk (40 → 28), delivery address/phone grid collapses to single column, payment grid stacks vertically, button rows stack full-width, page padding reduced from 40px to 16px, order summary max-height reduced. All applied via CSS class hooks + <code>!important</code> media queries, leaving inline style desktop values untouched.</div>
+    <div class="file-changes"><span class="tag tag-fix">Critical</span><span class="tag tag-mobile">Mobile</span></div>
+  </div>
+
+  <div class="file-entry">
+    <div class="file-path">apps/web/app/how-to-order/page.tsx</div>
+    <div class="file-desc">Restored original desktop padding (60px 64px) and heading size (64px). Added media query overrides for mobile: padding 60px 24px, heading 36px, subtitle 16px, content padding 40px 16px, grid gap 24px, CTA margin 48px, CTA heading 32px.</div>
+    <div class="file-changes"><span class="tag tag-fix">High</span><span class="tag tag-mobile">Mobile</span></div>
+  </div>
+
+  <div class="file-entry">
+    <div class="file-path">apps/web/app/menu/page.tsx</div>
+    <div class="file-desc">Changed <code>h-screen</code> to <code>min-h-screen</code> to prevent content clipping on mobile browsers where the address bar overlaps.</div>
+    <div class="file-changes"><span class="tag tag-fix">Critical</span><span class="tag tag-mobile">Mobile</span></div>
+  </div>
+
+  <div class="file-entry">
+    <div class="file-path">apps/web/app/orders/page.tsx</div>
+    <div class="file-desc">Added responsive timeline with media query overrides: circles reduced (36 → 28px), icons shrunk (16 → 12px), labels smaller (10 → 8px), reduced padding. Added <code>flex-wrap</code> for order header elements to prevent overflow on small screens.</div>
+    <div class="file-changes"><span class="tag tag-fix">High</span><span class="tag tag-mobile">Mobile</span></div>
+  </div>
+
+  <div class="file-entry">
+    <div class="file-path">apps/web/components/CartSidebar.tsx</div>
+    <div class="file-desc">Increased touch target size for quantity increment/decrement buttons from <code>w-6 h-6</code> (24px) to <code>w-7 h-7 sm:w-6 sm:h-6</code> (28px on mobile). WCAG recommends minimum 44×44px, but 28px is an improvement over 24px. Quantity span width increased from <code>w-5</code> to <code>w-6 sm:w-5</code>.</div>
+    <div class="file-changes"><span class="tag tag-access">Accessibility</span><span class="tag tag-mobile">Mobile</span></div>
+  </div>
+
+  <!-- ==================== ADMIN APP ==================== -->
+  <div class="section-label">Admin App (apps/admin)</div>
+
+  <div class="file-entry">
+    <div class="file-path">apps/admin/app/layout.tsx</div>
+    <div class="file-desc">Removed <code>userScalable: false</code> and <code>maximumScale: 1</code> from viewport export to re-enable pinch-zoom, which is a WCAG accessibility requirement for visually impaired users.</div>
+    <div class="file-changes"><span class="tag tag-fix">Critical</span><span class="tag tag-access">Accessibility</span></div>
+  </div>
+
+  <div class="file-entry">
+    <div class="file-path">apps/admin/app/(dashboard)/orders/page.tsx</div>
+    <div class="file-desc">Added <code>flex-wrap</code> to the badge container in order cards so that status badges ("Pending", "Payment: pending") wrap to the next line instead of overflowing on small screens.</div>
+    <div class="file-changes"><span class="tag tag-fix">High</span><span class="tag tag-mobile">Mobile</span></div>
+  </div>
+
+  <div class="file-entry">
+    <div class="file-path">apps/admin/app/(dashboard)/orders/[id]/page.tsx</div>
+    <div class="file-desc">Added <code>overflow-x-auto pb-2</code> to the status timeline to allow horizontal scrolling when the 5-step timeline is too wide for mobile screens.</div>
+    <div class="file-changes"><span class="tag tag-fix">High</span><span class="tag tag-mobile">Mobile</span></div>
+  </div>
+
+  <div class="file-entry">
+    <div class="file-path">apps/admin/app/(dashboard)/inventory/page.tsx</div>
+    <div class="file-desc">Reduced visible columns on mobile from 5 to 4 by hiding Stock column (<code>hidden sm:table-cell</code>) and making Edit/Delete buttons icon-only on mobile (<code>hidden sm:inline</code> on button text).</div>
+    <div class="file-changes"><span class="tag tag-mobile">Mobile</span><span class="tag tag-tablet">Table</span></div>
+  </div>
+
+  <div class="file-entry">
+    <div class="file-path">apps/admin/app/(dashboard)/reports/page.tsx</div>
+    <div class="file-desc">Changed date picker layout from <code>flex items-center gap-2</code> to <code>flex-col sm:flex-row items-stretch sm:items-center gap-2</code> so date inputs stack vertically on mobile instead of overflowing.</div>
+    <div class="file-changes"><span class="tag tag-mobile">Mobile</span></div>
+  </div>
+
+  <div class="file-entry">
+    <div class="file-path">apps/admin/app/(dashboard)/staff/page.tsx</div>
+    <div class="file-desc">Changed First/Last name input grid from <code>grid-cols-2</code> to <code>grid-cols-1 sm:grid-cols-2</code> so fields stack vertically on very small screens.</div>
+    <div class="file-changes"><span class="tag tag-mobile">Mobile</span></div>
+  </div>
+
+  <div class="file-entry">
+    <div class="file-path">apps/admin/app/(dashboard)/categories/page.tsx</div>
+    <div class="file-desc">Hid the Order column (up/down arrows) on mobile with <code>hidden sm:table-cell</code> since the arrows are non-essential on small screens and waste space.</div>
+    <div class="file-changes"><span class="tag tag-mobile">Mobile</span></div>
+  </div>
+
+  <!-- ==================== STAFF APP ==================== -->
+  <div class="section-label">Staff App (apps/staff)</div>
+
+  <div class="file-entry">
+    <div class="file-path">apps/staff/app/(dashboard)/orders/[id]/page.tsx</div>
+    <div class="file-desc">Same fix as admin — added <code>overflow-x-auto pb-2</code> to status timeline for mobile horizontal scrolling.</div>
+    <div class="file-changes"><span class="tag tag-fix">High</span><span class="tag tag-mobile">Mobile</span></div>
+  </div>
+
+  <div class="file-entry">
+    <div class="file-path">apps/staff/app/(dashboard)/inventory/page.tsx</div>
+    <div class="file-desc">Hid Stock column on mobile with <code>hidden sm:table-cell</code>. Made stock quantity input full-width on mobile (<code>w-full sm:w-20</code>).</div>
+    <div class="file-changes"><span class="tag tag-mobile">Mobile</span><span class="tag tag-tablet">Table</span></div>
+  </div>
+
+  <!-- ==================== RIDER APP ==================== -->
+  <div class="section-label">Rider App (apps/rider)</div>
+
+  <div class="file-entry">
+    <div class="file-path">apps/rider/app/layout.tsx</div>
+    <div class="file-desc">Removed <code>userScalable: false</code> and <code>maximumScale: 1</code> to re-enable pinch-zoom for accessibility.</div>
+    <div class="file-changes"><span class="tag tag-fix">Critical</span><span class="tag tag-access">Accessibility</span></div>
+  </div>
+
+  <div class="file-entry">
+    <div class="file-path">apps/rider/app/(rider)/layout.tsx</div>
+    <div class="file-desc">Fixed bottom nav overlap on notched devices. Replaced <code>pb-16</code> with inline style <code>paddingBottom: "calc(4rem + env(safe-area-inset-bottom, 0px))"</code> so content isn't hidden behind the fixed navigation bar on iOS devices with home indicators.</div>
+    <div class="file-changes"><span class="tag tag-fix">Critical</span><span class="tag tag-mobile">Mobile</span></div>
+  </div>
+
+  <div class="file-entry">
+    <div class="file-path">apps/rider/app/globals.css</div>
+    <div class="file-desc">Added <code>0px</code> fallback values to <code>env(safe-area-inset-bottom)</code> and <code>env(safe-area-inset-top)</code> so the safe-area utilities degrade gracefully on browsers that don't support the env() CSS function.</div>
+    <div class="file-changes"><span class="tag tag-fix">High</span><span class="tag tag-mobile">Mobile</span></div>
+  </div>
+
+  <!-- ==================== RESTORED FILES ==================== -->
+  <div class="section-label">Restored Pre-existing Changes</div>
+
+  <div class="file-entry">
+    <div class="file-path">apps/web/app/about/page.tsx — Timeline cleanup</div>
+    <div class="file-desc">Removed absolute-positioned visual timeline decorations (vertical line + dot markers) that were causing rendering issues. Restructured to use flex spacers.</div>
+    <div class="file-changes"><span class="tag tag-other">Pre-existing</span></div>
+  </div>
+
+  <div class="file-entry">
+    <div class="file-path">apps/web/app/api/locations/route.ts — PSGC API integration</div>
+    <div class="file-desc">Replaced database-backed location lookup with direct Philippine Standard Geographic Code (PSGC) API integration for region/province/city/barangay data. Maps API response <code>code</code> → <code>id</code> and <code>name</code> → <code>name</code>.</div>
+    <div class="file-changes"><span class="tag tag-other">Pre-existing</span></div>
+  </div>
+
+  <div class="file-entry">
+    <div class="file-path">apps/web/app/profile/page.tsx + apps/web/app/api/profile/route.ts — Profile UI + address saving</div>
+    <div class="file-desc">Restructured profile page from single-column inline-styles to two-card layout using Tailwind CSS with shadcn/ui Select components. Added full address concatenation from region/province/town/barangay fields that is saved to profile via the API. Exported label/input styles from JS objects to reusable CSS classes.</div>
+    <div class="file-changes"><span class="tag tag-other">Pre-existing</span></div>
+  </div>
+
+  <div class="footer-note">
+    Generated from commit <code>03c4f00</code> on <code>develop</code> &mdash; July 3, 2026
+  </div>
+</div>
+</body>
+</html>

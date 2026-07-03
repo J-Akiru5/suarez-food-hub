@@ -138,7 +138,7 @@ export default function OrderDetailPage() {
           <Card>
             <CardContent className="p-4">
               <h2 className="font-bold mb-4 font-display">Order Status</h2>
-              <div className="relative flex items-center justify-between pt-2">
+              <div className="relative flex items-center justify-between pt-2 overflow-x-auto pb-2">
                 {/* Background line */}
                 <div className="absolute top-6 left-[10%] right-[10%] h-0.5 bg-gray-200 z-0" />
                 {/* Active line */}

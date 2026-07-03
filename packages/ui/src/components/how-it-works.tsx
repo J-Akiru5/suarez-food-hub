@@ -52,7 +52,7 @@ const HowItWorks = React.forwardRef<HTMLDivElement, HowItWorksProps>(({ steps = 
               key={index}
               className="relative bg-white rounded-2xl p-8 md:p-10 border border-[var(--primary-color)]/10 shadow-sm hover:shadow-md transition-shadow duration-300"
             >
-              <span className="absolute top-4 right-6 text-[64px] font-bold leading-none text-[var(--primary-color)]/5 select-none font-heading">
+              <span className="absolute top-4 right-6 text-[40px] sm:text-[64px] font-bold leading-none text-[var(--primary-color)]/5 select-none font-heading">
                 {String(index + 1).padStart(2, "0")}
               </span>
 

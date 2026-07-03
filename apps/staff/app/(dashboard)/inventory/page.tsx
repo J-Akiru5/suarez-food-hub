@@ -120,7 +120,7 @@ export default function StaffInventoryPage() {
                   <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 hidden sm:table-cell">
                     Category
                   </th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 hidden sm:table-cell">
                     Stock
                   </th>
                   <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">
@@ -154,7 +154,7 @@ export default function StaffInventoryPage() {
                       <td className="px-4 py-3 hidden sm:table-cell">
                         <span className="text-sm text-gray-600">{product.category?.name || "—"}</span>
                       </td>
-                      <td className="px-4 py-3">
+                      <td className="px-4 py-3 hidden sm:table-cell">
                         <div className="flex items-center gap-2">
                           <span className={`text-sm font-bold ${isLow ? "text-red-600" : "text-gray-900"}`}>
                             {product.quantity ?? 0}
@@ -179,7 +179,7 @@ export default function StaffInventoryPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-2">
-                          <Input
+                           <Input
                             type="number"
                             min="0"
                             placeholder={String(product.quantity ?? 0)}
@@ -190,7 +190,7 @@ export default function StaffInventoryPage() {
                                 [product.id]: e.target.value,
                               }))
                             }
-                            className="w-20 h-8 text-sm"
+                            className="w-full sm:w-20 h-8 text-sm"
                           />
                           <Button
                             size="sm"
