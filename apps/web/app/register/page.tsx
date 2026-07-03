@@ -129,7 +129,8 @@ export default function Register() {
       const { error: profileError } = await upsertProfile(supabase, profileData);
 
       if (profileError) {
-        console.error("Profile upsert failed:", profileError);
+        console.error("Profile upsert failed:", JSON.stringify(profileError));
+        console.error("Profile error message:", profileError?.message);
       }
 
       if (role === "rider" && !profileError) {
