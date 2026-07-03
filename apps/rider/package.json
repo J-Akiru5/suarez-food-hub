@@ -11,11 +11,6 @@
   "dependencies": {
     "@repo/data-access": "workspace:*",
     "@repo/supabase": "workspace:*",
-    "@repo/types": "workspace:*",
-    "@repo/ui": "workspace:*",
-    "@repo/utils": "workspace:*",
-    "@supabase/ssr": "^0.5.0",
-    "@supabase/supabase-js": "^2.45.0",
     "date-fns": "^3.6.0",
     "leaflet": "^1.9.4",
     "lucide-react": "^1.17.0",
