@@ -372,7 +372,10 @@ function OrdersPageInner() {
 
                   {/* Status Timeline */}
                   {order.status !== "cancelled" && (
-                    <div className="order-timeline" style={{ padding: "24px 28px 8px", borderBottom: "1px solid #f1f5f9" }}>
+                    <div
+                      className="order-timeline"
+                      style={{ padding: "24px 28px 8px", borderBottom: "1px solid #f1f5f9" }}
+                    >
                       <div
                         style={{
                           display: "flex",

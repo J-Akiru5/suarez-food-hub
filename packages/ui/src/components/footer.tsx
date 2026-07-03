@@ -73,7 +73,6 @@ const Footer = React.forwardRef<HTMLElement, FooterProps>(({ className }, ref) =
                 info@suarezfoodhub.com
               </li>
             </ul>
-
           </div>
         </div>
 

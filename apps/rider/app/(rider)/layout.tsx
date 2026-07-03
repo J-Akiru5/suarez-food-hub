@@ -67,7 +67,10 @@ export default function RiderLayout({ children }: { children: React.ReactNode })
   };
 
   return (
-    <div className="min-h-screen flex flex-col" style={{ paddingBottom: "calc(4rem + env(safe-area-inset-bottom, 0px))" }}>
+    <div
+      className="min-h-screen flex flex-col"
+      style={{ paddingBottom: "calc(4rem + env(safe-area-inset-bottom, 0px))" }}
+    >
       <header className="bg-white border-b border-gray-200 px-4 py-3 safe-top sticky top-0 z-30">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">

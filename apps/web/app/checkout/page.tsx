@@ -15,8 +15,8 @@ import {
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import AuthNavbar from "../../components/AuthNavbar";
-import Navbar from "../../components/Navbar";
 import { useAuth } from "../../components/auth-provider";
+import Navbar from "../../components/Navbar";
 
 interface CartItem {
   id: string;
@@ -565,11 +565,20 @@ export default function CheckoutPage() {
               </h3>
 
               <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-
                 {/* Bottom: Address & Phone Row */}
-                <div className="delivery-address-phone-grid" style={{ display: "grid", gridTemplateColumns: "2fr 1.5fr auto", gap: 20, alignItems: "end" }}>
+                <div
+                  className="delivery-address-phone-grid"
+                  style={{ display: "grid", gridTemplateColumns: "2fr 1.5fr auto", gap: 20, alignItems: "end" }}
+                >
                   <div>
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 8 }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "baseline",
+                        marginBottom: 8,
+                      }}
+                    >
                       <label
                         style={{
                           fontSize: 14,
@@ -928,7 +937,10 @@ export default function CheckoutPage() {
                     </div>
                   )}
 
-                  <div className="checkout-buttons" style={{ display: "flex", justifyContent: "space-between", marginTop: "auto", paddingTop: 24 }}>
+                  <div
+                    className="checkout-buttons"
+                    style={{ display: "flex", justifyContent: "space-between", marginTop: "auto", paddingTop: 24 }}
+                  >
                     <button
                       onClick={() => setStep(1)}
                       style={{

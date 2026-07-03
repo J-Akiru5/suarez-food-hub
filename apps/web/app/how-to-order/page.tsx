@@ -92,8 +92,14 @@ export default function HowToOrderPage() {
       </div>
 
       {/* ── Content ── */}
-      <div className="how-to-order-content mobile-padding" style={{ padding: "80px 64px", maxWidth: 960, margin: "0 auto" }}>
-        <div className="steps-grid" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 40 }}>
+      <div
+        className="how-to-order-content mobile-padding"
+        style={{ padding: "80px 64px", maxWidth: 960, margin: "0 auto" }}
+      >
+        <div
+          className="steps-grid"
+          style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(280px, 1fr))", gap: 40 }}
+        >
           {STEPS.map((s) => (
             <div
               key={s.step}

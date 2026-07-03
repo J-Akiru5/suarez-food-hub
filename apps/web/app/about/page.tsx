@@ -195,11 +195,7 @@ export default function AboutPage() {
                   } items-start gap-6`}
                 >
                   <div className="hidden sm:block flex-1" />
-                  <div
-                    className={`flex-1 ${
-                      index % 2 === 0 ? "sm:text-right sm:pr-12" : "sm:text-left sm:pl-12"
-                    }`}
-                  >
+                  <div className={`flex-1 ${index % 2 === 0 ? "sm:text-right sm:pr-12" : "sm:text-left sm:pl-12"}`}>
                     <span
                       className="inline-block rounded-full px-3 py-1 text-sm font-semibold"
                       style={{

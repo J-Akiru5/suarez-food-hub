@@ -179,7 +179,7 @@ export default function StaffInventoryPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-2">
-                           <Input
+                          <Input
                             type="number"
                             min="0"
                             placeholder={String(product.quantity ?? 0)}

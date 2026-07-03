@@ -1,11 +1,11 @@
 "use client";
 
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@repo/ui";
 import { ArrowLeft, CheckCircle, Loader2, Phone, Save, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import AuthNavbar from "../../components/AuthNavbar";
 import { useAuth } from "../../components/auth-provider";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@repo/ui";
 
 interface Location {
   id: string;
@@ -107,7 +107,7 @@ export default function ProfilePage() {
       const provinceName = provinces.find((p) => p.id === provinceId)?.name || "";
       const townName = towns.find((t) => t.id === townId)?.name || "";
       const barangayName = barangays.find((b) => b.id === barangayId)?.name || "";
-      
+
       const fullAddressParts = [streetAddress.trim(), barangayName, townName, provinceName, regionName].filter(Boolean);
       const fullAddress = fullAddressParts.join(", ");
 
@@ -167,9 +167,7 @@ export default function ProfilePage() {
           <ArrowLeft size={18} className="group-hover:-translate-x-1 transition-transform" /> Back
         </button>
 
-        <h1 className="font-serif text-4xl text-[var(--secondary-color)] mb-2">
-          My Profile
-        </h1>
+        <h1 className="font-serif text-4xl text-[var(--secondary-color)] mb-2">My Profile</h1>
         <p className="text-slate-500 mb-8 text-[15px]">Manage your personal information</p>
 
         {error && (
@@ -206,59 +204,55 @@ export default function ProfilePage() {
           </div>
         )}
 
-        <form
-          onSubmit={handleSave}
-          className="flex flex-col gap-6"
-        >
+        <form onSubmit={handleSave} className="flex flex-col gap-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
-            
             {/* Card 1: Personal Info */}
             <div className="bg-white/90 backdrop-blur-xl rounded-[28px] p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60 flex flex-col gap-5">
               <h2 className="text-xl font-bold text-[var(--secondary-color)] mb-2">Personal Information</h2>
-            <div>
-              <label className={labelClass}>Email</label>
-              <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/80 text-slate-400 text-sm shadow-sm">
-                <User size={18} color="#94a3b8" />
-                {user?.email}
-              </div>
-              <p className="text-xs text-slate-400 mt-1">Email cannot be changed</p>
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
               <div>
-                <label className={labelClass}>First Name</label>
-                <input
-                  type="text"
-                  value={firstName}
-                  onChange={(e) => setFirstName(e.target.value)}
-                  required
-                  className={inputClass}
-                />
+                <label className={labelClass}>Email</label>
+                <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/80 text-slate-400 text-sm shadow-sm">
+                  <User size={18} color="#94a3b8" />
+                  {user?.email}
+                </div>
+                <p className="text-xs text-slate-400 mt-1">Email cannot be changed</p>
               </div>
-              <div>
-                <label className={labelClass}>Last Name</label>
-                <input
-                  type="text"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  required
-                  className={inputClass}
-                />
-              </div>
-            </div>
 
-            <div>
-              <label className={labelClass}>Phone Number</label>
-              <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 focus-within:ring-2 focus-within:ring-[#d85c27] focus-within:border-transparent transition-all shadow-sm">
-                <Phone size={18} color="#94a3b8" />
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="09123456789"
-                  className="w-full bg-transparent outline-none text-sm"
-                />
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div>
+                  <label className={labelClass}>First Name</label>
+                  <input
+                    type="text"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                    required
+                    className={inputClass}
+                  />
+                </div>
+                <div>
+                  <label className={labelClass}>Last Name</label>
+                  <input
+                    type="text"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                    required
+                    className={inputClass}
+                  />
+                </div>
               </div>
+
+              <div>
+                <label className={labelClass}>Phone Number</label>
+                <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 focus-within:ring-2 focus-within:ring-[#d85c27] focus-within:border-transparent transition-all shadow-sm">
+                  <Phone size={18} color="#94a3b8" />
+                  <input
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="09123456789"
+                    className="w-full bg-transparent outline-none text-sm"
+                  />
+                </div>
               </div>
             </div>
 
@@ -268,109 +262,117 @@ export default function ProfilePage() {
 
               <div>
                 <label className={labelClass}>Street Address (House #, Street)</label>
-              <input
-                type="text"
-                value={streetAddress}
-                onChange={(e) => setStreetAddress(e.target.value)}
-                placeholder="123 Rizal Street"
-                className={inputClass}
-              />
-            </div>
-
-            <div>
-              <label className={labelClass}>Region</label>
-              <Select value={regionId || "none"} onValueChange={(v) => setRegionId(v === "none" ? "" : v)}>
-                <SelectTrigger className={inputClass}>
-                  <SelectValue placeholder="Select Region" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="none" className="text-slate-400 italic">Select Region</SelectItem>
-                  {regions.map((r) => (
-                    <SelectItem key={r.id} value={r.id}>
-                      {r.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <div>
-                <label className={labelClass}>Province</label>
-                <Select
-                  value={provinceId || "none"}
-                  onValueChange={(v) => setProvinceId(v === "none" ? "" : v)}
-                  disabled={!regionId}
-                >
-                  <SelectTrigger className={inputClass}>
-                    <SelectValue placeholder="Select Province" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none" className="text-slate-400 italic">Select Province</SelectItem>
-                    {provinces.map((p) => (
-                      <SelectItem key={p.id} value={p.id}>
-                        {p.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className={labelClass}>Town / City</label>
-                <Select
-                  value={townId || "none"}
-                  onValueChange={(v) => setTownId(v === "none" ? "" : v)}
-                  disabled={!provinceId}
-                >
-                  <SelectTrigger className={inputClass}>
-                    <SelectValue placeholder="Select Town" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none" className="text-slate-400 italic">Select Town / City</SelectItem>
-                    {towns.map((t) => (
-                      <SelectItem key={t.id} value={t.id}>
-                        {t.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            </div>
-
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
-              <div>
-                <label className={labelClass}>Barangay</label>
-                <Select
-                  value={barangayId || "none"}
-                  onValueChange={(v) => setBarangayId(v === "none" ? "" : v)}
-                  disabled={!townId}
-                >
-                  <SelectTrigger className={inputClass}>
-                    <SelectValue placeholder="Select Barangay" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none" className="text-slate-400 italic">Select Barangay</SelectItem>
-                    {barangays.map((b) => (
-                      <SelectItem key={b.id} value={b.id}>
-                        {b.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div>
-                <label className={labelClass}>Zip Code</label>
                 <input
                   type="text"
-                  value={zipCode}
-                  onChange={(e) => setZipCode(e.target.value)}
-                  placeholder="5000"
+                  value={streetAddress}
+                  onChange={(e) => setStreetAddress(e.target.value)}
+                  placeholder="123 Rizal Street"
                   className={inputClass}
                 />
               </div>
+
+              <div>
+                <label className={labelClass}>Region</label>
+                <Select value={regionId || "none"} onValueChange={(v) => setRegionId(v === "none" ? "" : v)}>
+                  <SelectTrigger className={inputClass}>
+                    <SelectValue placeholder="Select Region" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none" className="text-slate-400 italic">
+                      Select Region
+                    </SelectItem>
+                    {regions.map((r) => (
+                      <SelectItem key={r.id} value={r.id}>
+                        {r.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div>
+                  <label className={labelClass}>Province</label>
+                  <Select
+                    value={provinceId || "none"}
+                    onValueChange={(v) => setProvinceId(v === "none" ? "" : v)}
+                    disabled={!regionId}
+                  >
+                    <SelectTrigger className={inputClass}>
+                      <SelectValue placeholder="Select Province" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none" className="text-slate-400 italic">
+                        Select Province
+                      </SelectItem>
+                      {provinces.map((p) => (
+                        <SelectItem key={p.id} value={p.id}>
+                          {p.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className={labelClass}>Town / City</label>
+                  <Select
+                    value={townId || "none"}
+                    onValueChange={(v) => setTownId(v === "none" ? "" : v)}
+                    disabled={!provinceId}
+                  >
+                    <SelectTrigger className={inputClass}>
+                      <SelectValue placeholder="Select Town" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none" className="text-slate-400 italic">
+                        Select Town / City
+                      </SelectItem>
+                      {towns.map((t) => (
+                        <SelectItem key={t.id} value={t.id}>
+                          {t.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div>
+                  <label className={labelClass}>Barangay</label>
+                  <Select
+                    value={barangayId || "none"}
+                    onValueChange={(v) => setBarangayId(v === "none" ? "" : v)}
+                    disabled={!townId}
+                  >
+                    <SelectTrigger className={inputClass}>
+                      <SelectValue placeholder="Select Barangay" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none" className="text-slate-400 italic">
+                        Select Barangay
+                      </SelectItem>
+                      {barangays.map((b) => (
+                        <SelectItem key={b.id} value={b.id}>
+                          {b.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className={labelClass}>Zip Code</label>
+                  <input
+                    type="text"
+                    value={zipCode}
+                    onChange={(e) => setZipCode(e.target.value)}
+                    placeholder="5000"
+                    className={inputClass}
+                  />
+                </div>
+              </div>
             </div>
           </div>
-        </div>
 
           <button
             type="submit"
@@ -392,4 +394,5 @@ export default function ProfilePage() {
 }
 
 const labelClass = "text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 block";
-const inputClass = "w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 text-sm focus:outline-none focus:ring-2 focus:ring-[#d85c27] focus:border-transparent transition-all shadow-sm";
+const inputClass =
+  "w-full px-4 py-3 rounded-xl border border-slate-200 bg-slate-50/50 text-sm focus:outline-none focus:ring-2 focus:ring-[#d85c27] focus:border-transparent transition-all shadow-sm";
