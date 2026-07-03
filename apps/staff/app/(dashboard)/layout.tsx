@@ -86,9 +86,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 key={item.href}
                 href={item.href}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                  isActive
-                    ? "bg-brand-50 text-brand-600 border-l-4 border-brand-500"
-                    : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                  isActive ? "bg-brand-500 text-white shadow-md" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                 } ${!sidebarOpen ? "justify-center" : ""}`}
                 title={!sidebarOpen ? item.label : undefined}
               >
@@ -152,7 +150,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                     onClick={() => setMobileOpen(false)}
                     className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
                       isActive
-                        ? "bg-brand-50 text-brand-600 border-l-4 border-brand-500"
+                        ? "bg-brand-500 text-white shadow-md"
                         : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                     }`}
                   >
