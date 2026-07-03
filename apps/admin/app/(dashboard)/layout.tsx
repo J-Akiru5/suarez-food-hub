@@ -57,6 +57,25 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [badgeCounts, setBadgeCounts] = useState<Record<string, number>>({});
+  
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
+        setNotifOpen(false);
+      }
+    };
+    if (notifOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [notifOpen]);
+
+  const totalNotifs = (badgeCounts["/orders"] || 0) + (badgeCounts["/cashouts"] || 0) + (badgeCounts["/riders"] || 0);
 
   useEffect(() => {
     const supabase = supabaseRef.current;
@@ -281,10 +300,68 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             <div className="flex-1" />
 
-            <button className="relative h-9 w-9 flex items-center justify-center rounded-lg hover:bg-gray-100">
-              <Bell className="h-5 w-5 text-gray-600" />
-              <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-brand-500 rounded-full" />
-            </button>
+            <div className="relative" ref={notifRef}>
+              <button
+                onClick={() => setNotifOpen(!notifOpen)}
+                className="relative h-9 w-9 flex items-center justify-center rounded-lg hover:bg-gray-100"
+              >
+                <Bell className="h-5 w-5 text-gray-600" />
+                {totalNotifs > 0 && (
+                  <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-brand-500 rounded-full" />
+                )}
+              </button>
+
+              {notifOpen && (
+                <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
+                  <div className="px-4 py-2 border-b border-gray-100">
+                    <h3 className="font-bold text-sm">Notifications</h3>
+                  </div>
+                  <div className="max-h-64 overflow-y-auto">
+                    {totalNotifs > 0 ? (
+                      <>
+                        {(badgeCounts["/orders"] || 0) > 0 && (
+                          <Link href="/orders" onClick={() => setNotifOpen(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors">
+                            <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
+                              <ClipboardList className="h-4 w-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">New Orders</p>
+                              <p className="text-xs text-muted-foreground truncate">{badgeCounts["/orders"]} pending order{(badgeCounts["/orders"] || 0) !== 1 ? 's' : ''}</p>
+                            </div>
+                          </Link>
+                        )}
+                        {(badgeCounts["/riders"] || 0) > 0 && (
+                          <Link href="/riders" onClick={() => setNotifOpen(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors">
+                            <div className="h-8 w-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 shrink-0">
+                              <Bike className="h-4 w-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">Rider Applications</p>
+                              <p className="text-xs text-muted-foreground truncate">{badgeCounts["/riders"]} pending approval</p>
+                            </div>
+                          </Link>
+                        )}
+                        {(badgeCounts["/cashouts"] || 0) > 0 && (
+                          <Link href="/cashouts" onClick={() => setNotifOpen(false)} className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors">
+                            <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 shrink-0">
+                              <DollarSign className="h-4 w-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">Cashout Requests</p>
+                              <p className="text-xs text-muted-foreground truncate">{badgeCounts["/cashouts"]} pending request{(badgeCounts["/cashouts"] || 0) !== 1 ? 's' : ''}</p>
+                            </div>
+                          </Link>
+                        )}
+                      </>
+                    ) : (
+                      <div className="px-4 py-6 text-center text-sm text-muted-foreground">
+                        No new notifications
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
 
             <div className="flex items-center gap-3">
               <div className="h-8 w-8 rounded-full bg-brand-500 flex items-center justify-center text-white text-xs font-bold">
