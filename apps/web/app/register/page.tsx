@@ -129,12 +129,10 @@ export default function Register() {
       const { error: profileError } = await upsertProfile(supabase, profileData);
 
       if (profileError) {
-        setError("Account created but profile setup failed. Please contact support.");
-        setLoading(false);
-        return;
+        console.error("Profile upsert failed:", profileError);
       }
 
-      if (role === "rider") {
+      if (role === "rider" && !profileError) {
         try {
           await fetch("/api/riders/notify-new", {
             method: "POST",
