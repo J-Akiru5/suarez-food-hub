@@ -21,6 +21,35 @@ interface ReportData {
 
 type Preset = "today" | "week" | "month" | "last_month" | "custom";
 
+function getDateRange(p: Preset, dateFrom: string, dateTo: string): { from: string; to: string } {
+  const now = new Date();
+  const today = format(now, "yyyy-MM-dd");
+
+  switch (p) {
+    case "today":
+      return { from: today, to: today };
+    case "week": {
+      const start = startOfWeek(now, { weekStartsOn: 1 });
+      return { from: format(start, "yyyy-MM-dd"), to: today };
+    }
+    case "month": {
+      const start = startOfMonth(now);
+      return { from: format(start, "yyyy-MM-dd"), to: today };
+    }
+    case "last_month": {
+      const lastMonth = subDays(startOfMonth(now), 1);
+      return {
+        from: format(startOfMonth(lastMonth), "yyyy-MM-dd"),
+        to: format(endOfMonth(lastMonth), "yyyy-MM-dd"),
+      };
+    }
+    case "custom":
+      return { from: dateFrom || today, to: dateTo || today };
+    default:
+      return { from: today, to: today };
+  }
+}
+
 export default function ReportsPage() {
   const supabase = createBrowserTypedClient();
   const [loading, setLoading] = useState(true);
@@ -36,38 +65,9 @@ export default function ReportsPage() {
     topProducts: [],
   });
 
-  function getDateRange(p: Preset): { from: string; to: string } {
-    const now = new Date();
-    const today = format(now, "yyyy-MM-dd");
-
-    switch (p) {
-      case "today":
-        return { from: today, to: today };
-      case "week": {
-        const start = startOfWeek(now, { weekStartsOn: 1 });
-        return { from: format(start, "yyyy-MM-dd"), to: today };
-      }
-      case "month": {
-        const start = startOfMonth(now);
-        return { from: format(start, "yyyy-MM-dd"), to: today };
-      }
-      case "last_month": {
-        const lastMonth = subDays(startOfMonth(now), 1);
-        return {
-          from: format(startOfMonth(lastMonth), "yyyy-MM-dd"),
-          to: format(endOfMonth(lastMonth), "yyyy-MM-dd"),
-        };
-      }
-      case "custom":
-        return { from: dateFrom || today, to: dateTo || today };
-      default:
-        return { from: today, to: today };
-    }
-  }
-
   const fetchReport = useCallback(async () => {
     setLoading(true);
-    const range = getDateRange(preset);
+    const range = getDateRange(preset, dateFrom, dateTo);
     const from = `${range.from}T00:00:00`;
     const to = `${range.to}T23:59:59`;
 
@@ -93,7 +93,6 @@ export default function ReportsPage() {
     const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
     const itemsSold = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
 
-    // Daily breakdown
     const dailyMap = new Map<string, { revenue: number; orders: number }>();
     const fromDate = new Date(range.from);
     const toDate = new Date(range.to);
@@ -121,7 +120,6 @@ export default function ReportsPage() {
       orders: val.orders,
     }));
 
-    // Top products
     const productMap = new Map<string, { quantity: number; revenue: number }>();
     items.forEach((item) => {
       const name = item.product?.name || "Unknown";
@@ -145,7 +143,7 @@ export default function ReportsPage() {
       topProducts,
     });
     setLoading(false);
-  }, [preset, supabase, getDateRange]);
+  }, [preset, supabase, dateFrom, dateTo]);
 
   useEffect(() => {
     fetchReport();
@@ -153,11 +151,11 @@ export default function ReportsPage() {
 
   useEffect(() => {
     if (preset !== "custom") {
-      const range = getDateRange(preset);
+      const range = getDateRange(preset, dateFrom, dateTo);
       setDateFrom(range.from);
       setDateTo(range.to);
     }
-  }, [preset, getDateRange]);
+  }, [preset, dateFrom, dateTo]);
 
   const summaryCards = [
     {
