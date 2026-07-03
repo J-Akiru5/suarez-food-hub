@@ -1,4 +1,5 @@
 {
   "installCommand": "cd ../.. && pnpm install",
-  "buildCommand": "pnpm turbo run build --filter=@repo/rider"
+  "buildCommand": "pnpm turbo run build --filter=@repo/rider",
+  "ignoreCommand": "npx turbo-ignore @repo/rider"
 }

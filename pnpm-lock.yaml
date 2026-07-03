@@ -45,6 +45,9 @@ importers:
       turbo:
         specifier: ^2.10.2
         version: 2.10.2
+      turbo-ignore:
+        specifier: ^2.10.2
+        version: 2.10.2
       typescript:
         specifier: ^5.5.0
         version: 5.9.3
@@ -2278,6 +2281,11 @@ packages:
   js-tokens@4.0.0:
     resolution: {integrity: sha512-RdJUflcE3cUzKiMqQgsCu06FPu9UdIJO0beYbPhHN4k6apgJtifcoCtT9bcxOpYBtpD2kCM6Sbzg4CausW/PKQ==}
 
+  json5@2.2.3:
+    resolution: {integrity: sha512-XmOWe7eyHYH14cLdVPoyg+GOH3rYX++KpzrylJwSW98t3Nk+U8XOl8FWKOgwtzdb8lXGf6zYwDUzeHMWfxasyg==}
+    engines: {node: '>=6'}
+    hasBin: true
+
   knip@6.15.0:
     resolution: {integrity: sha512-uBaKFEGcu/HG4EY2gWFBMr+fBF43Jftoc2riJX51TKME1Z46C8UQIbNEusenYbEWihphxe2PY0Kns0yPvPYz4A==}
     engines: {node: ^20.19.0 || >=22.12.0}
@@ -2873,6 +2881,10 @@ packages:
   tsx@4.22.3:
     resolution: {integrity: sha512-mdoNxBC/cSQObGGVQ5Bpn5i+yv7j68gk3Nfm3wFjcJg3Z0Mix9jzAFfP12prmm5eVGmDKtp0yyArrs0Q+8gZHg==}
     engines: {node: '>=18.0.0'}
+    hasBin: true
+
+  turbo-ignore@2.10.2:
+    resolution: {integrity: sha512-R8+VQKY02I4br92mShw7ilSAMFgVdr0EEabj1zVy/FYI99UOxttmjQTpm7ubLWLeaWHNrQIhLxJlrwUp0ZH/Zw==}
     hasBin: true
 
   turbo@2.10.2:
@@ -4582,6 +4594,8 @@ snapshots:
 
   js-tokens@4.0.0: {}
 
+  json5@2.2.3: {}
+
   knip@6.15.0:
     dependencies:
       fdir: 6.5.0(picomatch@4.0.4)
@@ -5211,6 +5225,10 @@ snapshots:
       esbuild: 0.28.0
     optionalDependencies:
       fsevents: 2.3.3
+
+  turbo-ignore@2.10.2:
+    dependencies:
+      json5: 2.2.3
 
   turbo@2.10.2:
     optionalDependencies:
