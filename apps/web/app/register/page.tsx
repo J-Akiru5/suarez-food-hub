@@ -107,6 +107,7 @@ export default function Register() {
     }
 
     if (data.user) {
+      const now = new Date().toISOString();
       const profileData: any = {
         id: data.user.id,
         first_name: firstName,
@@ -116,6 +117,8 @@ export default function Register() {
         phone: phone || "N/A",
         role,
         is_active: role === "customer",
+        created_at: now,
+        updated_at: now,
       };
 
       if (role === "rider") {
