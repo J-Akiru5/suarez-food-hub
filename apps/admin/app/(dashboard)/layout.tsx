@@ -159,7 +159,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   key={item.href}
                   href={item.href}
                   className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors relative ${
-                    isActive ? "bg-brand-50 text-brand-600" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                    isActive
+                      ? "bg-brand-500 text-white shadow-md"
+                      : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                   } ${!sidebarOpen ? "justify-center" : ""}`}
                   title={!sidebarOpen ? item.label : undefined}
                 >
@@ -167,9 +169,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   {sidebarOpen && <span>{item.label}</span>}
                   {badgeCount > 0 && (
                     <span
-                      className={`inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full text-[10px] font-bold text-white bg-brand-500 ${
-                        !sidebarOpen ? "absolute -top-1 -right-1" : "ml-auto"
-                      }`}
+                      className={`inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full text-[10px] font-bold ${
+                        isActive ? "text-brand-600 bg-white shadow-sm" : "text-white bg-brand-500"
+                      } ${!sidebarOpen ? "absolute -top-1 -right-1" : "ml-auto"}`}
                     >
                       {badgeCount > 99 ? "99+" : badgeCount}
                     </span>
@@ -234,13 +236,19 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       href={item.href}
                       onClick={() => setMobileOpen(false)}
                       className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                        isActive ? "bg-brand-50 text-brand-600" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
+                        isActive
+                          ? "bg-brand-500 text-white shadow-md"
+                          : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                       }`}
                     >
                       <Icon className="h-5 w-5 shrink-0" />
                       <span>{item.label}</span>
                       {badgeCount > 0 && (
-                        <span className="ml-auto inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full text-[10px] font-bold text-white bg-brand-500">
+                        <span
+                          className={`ml-auto inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full text-[10px] font-bold ${
+                            isActive ? "text-brand-600 bg-white shadow-sm" : "text-white bg-brand-500"
+                          }`}
+                        >
                           {badgeCount > 99 ? "99+" : badgeCount}
                         </span>
                       )}

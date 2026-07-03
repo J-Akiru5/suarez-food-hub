@@ -57,9 +57,9 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
         )}
       >
         <nav className="w-full max-w-[1280px] mx-auto flex items-center justify-between px-6 py-3 relative">
-          <a href="/" className="flex items-center gap-3 flex-shrink-0 no-underline">
-            <div className="w-12 h-12 relative flex items-center justify-center">
-              <img src="/logo.svg" alt="Suarez Food Hub Logo" className="w-full h-full" />
+          <a href="/" className="flex items-center gap-3 flex-shrink-0 no-underline group">
+            <div className="w-12 h-12 relative flex items-center justify-center transition-transform group-hover:scale-105">
+              <img src="/logo.png" alt="Suarez Food Hub Logo" className="w-full h-full object-contain drop-shadow-sm" />
             </div>
             <span
               className="hidden sm:inline text-lg font-bold text-near-black"

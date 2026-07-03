@@ -30,6 +30,7 @@ export type CashoutStatus = "requested" | "approved" | "paid" | "rejected";
 export interface Profile {
   id: string;
   email?: string;
+  username?: string;
   full_name: string;
   first_name: string;
   last_name: string;

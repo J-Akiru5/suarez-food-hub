@@ -47,10 +47,10 @@ export default function Navbar({ onCartClick, cartItemCount = 0, showCartIcon = 
             <Link href="/" style={{ textDecoration: "none" }}>
               <h4 style={{ display: "flex", alignItems: "center", gap: 12, margin: 0 }}>
                 <img
-                  src="/logo.svg"
+                  src="/logo.png"
                   alt="Suarez Food Hub"
-                  className="header__logo-img"
-                  style={{ height: 32, width: 32 }}
+                  className="header__logo-img object-contain drop-shadow-sm"
+                  style={{ height: 40, width: 40 }}
                 />
                 Suarez Food Hub
               </h4>
