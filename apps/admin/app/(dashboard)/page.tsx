@@ -147,22 +147,29 @@ export default function DashboardPage() {
   const fetchChartData = useCallback(async () => {
     const now = new Date();
     const days = chartMode === "weekly" ? 7 : 30;
+    
+    const dailyMap = new Map<string, { revenue: number; orders: number }>();
+    const getLocalDateString = (d: Date) => {
+      const pad = (n: number) => n.toString().padStart(2, "0");
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+    };
+
+    for (let i = days - 1; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      dailyMap.set(getLocalDateString(d), { revenue: 0, orders: 0 });
+    }
+
     const startDate = new Date(now);
-    startDate.setDate(startDate.getDate() - days);
+    startDate.setDate(startDate.getDate() - (days - 1));
     startDate.setHours(0, 0, 0, 0);
 
     const { data: orders } = await supabase
       .from("orders")
-      .select("total, created_at")
+      .select("total, created_at, status")
       .gte("created_at", startDate.toISOString())
+      .neq("status", "cancelled")
       .order("created_at");
-
-    const dailyMap = new Map<string, { revenue: number; orders: number }>();
-    for (let i = 0; i < days; i++) {
-      const d = new Date(startDate);
-      d.setDate(d.getDate() + i);
-      dailyMap.set(d.toISOString().split("T")[0], { revenue: 0, orders: 0 });
-    }
 
     (orders || []).forEach((o) => {
       const key = o.created_at.split("T")[0];

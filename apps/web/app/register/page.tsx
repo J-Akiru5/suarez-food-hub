@@ -6,6 +6,7 @@ import { ArrowLeft, Bike, Eye, EyeOff, Loader2, User } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Swal from "sweetalert2";
 
 const PH_REGEX = /^(?:\+63|0)9\d{9}$/;
 
@@ -152,10 +153,17 @@ export default function Register() {
     }
 
     if (role === "rider") {
-      alert("Your rider application has been submitted! Please wait for admin approval before logging in.");
+      await Swal.fire({
+        title: "Application Submitted!",
+        text: "Your rider application has been submitted! Please wait for admin approval before logging in.",
+        icon: "success",
+        confirmButtonColor: "#F08013",
+      });
+      router.push("/");
+    } else {
+      router.push("/login");
     }
-
-    router.push(role === "rider" ? "/login" : "/");
+    
     router.refresh();
   };
 
@@ -170,7 +178,7 @@ export default function Register() {
       </div>
 
       {/* Register Card */}
-      <div className="relative z-10 w-full max-w-[440px] bg-[#fdfdfd] rounded-[24px] shadow-2xl p-8 text-center my-8">
+      <div className={`relative z-10 w-full bg-[#fdfdfd] rounded-[24px] shadow-2xl p-8 text-center my-8 transition-all duration-500 ${step === 'form' ? 'max-w-[440px] md:max-w-4xl' : 'max-w-[440px]'}`}>
         {step === "form" && (
           <button
             onClick={() => setStep("role")}
@@ -257,151 +265,169 @@ export default function Register() {
               </div>
             )}
 
-            <form onSubmit={handleRegister} className="flex flex-col gap-4 text-left">
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-bold text-gray-700 ml-1">First Name</label>
-                  <input
-                    type="text"
-                    value={firstName}
-                    onChange={(e) => setFirstName(e.target.value)}
-                    required
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white"
-                  />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-xs font-bold text-gray-700 ml-1">Last Name</label>
-                  <input
-                    type="text"
-                    value={lastName}
-                    onChange={(e) => setLastName(e.target.value)}
-                    required
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white"
-                  />
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-gray-700 ml-1">Username</label>
-                <input
-                  type="text"
-                  placeholder="Choose a username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  required
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-gray-700 ml-1">Email</label>
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-gray-700 ml-1">Phone Number</label>
-                <input
-                  type="tel"
-                  placeholder="e.g. 09123456789"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  required
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white"
-                />
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-gray-700 ml-1">Password</label>
-                <div className="relative">
-                  <input
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    minLength={6}
-                    required
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none bg-transparent border-none"
-                  >
-                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-bold text-gray-700 ml-1">Confirm Password</label>
-                <div className="relative">
-                  <input
-                    type={showConfirmPassword ? "text" : "password"}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    required
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white pr-10"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none bg-transparent border-none"
-                  >
-                    {showConfirmPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                  </button>
-                </div>
-              </div>
-
-              {role === "rider" && (
-                <div className="mt-2 pt-4 border-t border-gray-100 flex flex-col gap-4">
+            <form onSubmit={handleRegister} className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
+              {/* Personal Info Box */}
+              <div className="bg-gray-50/50 p-5 rounded-2xl border border-gray-100 flex flex-col gap-4 shadow-sm">
+                <h3 className="text-xs font-extrabold text-gray-500 uppercase tracking-widest mb-1">Personal Info</h3>
+                
+                <div className="grid grid-cols-2 gap-3">
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-gray-700 ml-1">Vehicle Type</label>
-                    <select
-                      value={vehicleType}
-                      onChange={(e) => setVehicleType(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white"
+                    <label className="text-[11px] font-bold text-gray-700 ml-1">First Name</label>
+                    <input
+                      type="text"
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
+                      required
+                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white shadow-sm"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-[11px] font-bold text-gray-700 ml-1">Last Name</label>
+                    <input
+                      type="text"
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
+                      required
+                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white shadow-sm"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] font-bold text-gray-700 ml-1">Phone Number</label>
+                  <input
+                    type="tel"
+                    placeholder="e.g. 09123456789"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    required
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white shadow-sm"
+                  />
+                </div>
+                
+                <div className="flex flex-col gap-1.5 mt-auto">
+                  <label className="text-[11px] font-bold text-gray-700 ml-1">Username</label>
+                  <input
+                    type="text"
+                    placeholder="Choose a username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    required
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white shadow-sm"
+                  />
+                </div>
+              </div>
+
+              {/* Account Details Box */}
+              <div className="bg-gray-50/50 p-5 rounded-2xl border border-gray-100 flex flex-col gap-4 shadow-sm">
+                <h3 className="text-xs font-extrabold text-gray-500 uppercase tracking-widest mb-1">Account Security</h3>
+                
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] font-bold text-gray-700 ml-1">Email</label>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white shadow-sm"
+                  />
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] font-bold text-gray-700 ml-1">Password</label>
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      minLength={6}
+                      required
+                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white pr-10 shadow-sm"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none bg-transparent border-none"
                     >
-                      <option value="motorcycle">Motorcycle</option>
-                      <option value="bicycle">Bicycle</option>
-                      <option value="car">Car</option>
-                    </select>
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
                   </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-gray-700 ml-1">Plate Number</label>
+                </div>
+
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-[11px] font-bold text-gray-700 ml-1">Confirm Password</label>
+                  <div className="relative">
                     <input
-                      type="text"
-                      value={plateNumber}
-                      onChange={(e) => setPlateNumber(e.target.value)}
+                      type={showConfirmPassword ? "text" : "password"}
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
                       required
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white"
+                      className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white pr-10 shadow-sm"
                     />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none bg-transparent border-none"
+                    >
+                      {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
                   </div>
-                  <div className="flex flex-col gap-1.5">
-                    <label className="text-xs font-bold text-gray-700 ml-1">License Number</label>
-                    <input
-                      type="text"
-                      value={licenseNumber}
-                      onChange={(e) => setLicenseNumber(e.target.value)}
-                      required
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white"
-                    />
+                </div>
+              </div>
+
+              {/* Rider Vehicle Box */}
+              {role === "rider" && (
+                <div className="md:col-span-2 bg-orange-50/50 p-5 rounded-2xl border border-orange-100/60 flex flex-col gap-4 shadow-sm">
+                  <h3 className="text-xs font-extrabold text-[#F08013] uppercase tracking-widest mb-1">Vehicle Details</h3>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[11px] font-bold text-gray-700 ml-1">Vehicle Type</label>
+                      <select
+                        value={vehicleType}
+                        onChange={(e) => setVehicleType(e.target.value)}
+                        className="w-full px-3 py-2.5 rounded-xl border border-orange-200/60 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white shadow-sm"
+                      >
+                        <option value="motorcycle">Motorcycle</option>
+                        <option value="bicycle">Bicycle</option>
+                        <option value="car">Car</option>
+                      </select>
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[11px] font-bold text-gray-700 ml-1">Plate Number</label>
+                      <input
+                        type="text"
+                        value={plateNumber}
+                        onChange={(e) => setPlateNumber(e.target.value)}
+                        required
+                        className="w-full px-3 py-2.5 rounded-xl border border-orange-200/60 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white shadow-sm"
+                      />
+                    </div>
+                    <div className="flex flex-col gap-1.5">
+                      <label className="text-[11px] font-bold text-gray-700 ml-1">License Number</label>
+                      <input
+                        type="text"
+                        value={licenseNumber}
+                        onChange={(e) => setLicenseNumber(e.target.value)}
+                        required
+                        className="w-full px-3 py-2.5 rounded-xl border border-orange-200/60 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white shadow-sm"
+                      />
+                    </div>
                   </div>
                 </div>
               )}
 
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full mt-4 py-3.5 rounded-xl bg-[#F08013] text-white font-bold text-sm hover:bg-[#d6700c] transition-colors flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed shadow-md shadow-orange-500/20 border-none cursor-pointer"
-              >
-                {loading && <Loader2 size={18} className="animate-spin" />}
-                {role === "rider" ? "Submit Application" : "Create Account"}
-              </button>
+              {/* Submit Button */}
+              <div className="md:col-span-2 mt-2">
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-4 rounded-xl bg-gradient-to-r from-[#F08013] to-[#e6740b] text-white font-bold text-sm hover:from-[#e6740b] hover:to-[#d66a0a] transition-all flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-not-allowed shadow-lg shadow-orange-500/25 border-none cursor-pointer transform hover:scale-[1.01]"
+                >
+                  {loading && <Loader2 size={18} className="animate-spin" />}
+                  {role === "rider" ? "Submit Rider Application" : "Create Customer Account"}
+                </button>
+              </div>
             </form>
 
             <p className="mt-6 text-xs text-gray-500 text-center">

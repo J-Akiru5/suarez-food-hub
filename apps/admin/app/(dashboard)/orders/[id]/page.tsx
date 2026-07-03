@@ -323,11 +323,17 @@ export default function OrderDetailPage() {
                           <SelectValue placeholder="Assign a rider" />
                         </SelectTrigger>
                         <SelectContent>
-                          {riders.map((rider) => (
-                            <SelectItem key={rider.id} value={rider.id}>
-                              {rider.first_name || rider.full_name} {rider.last_name || ""}
-                            </SelectItem>
-                          ))}
+                          {riders.length > 0 ? (
+                            riders.map((rider) => (
+                              <SelectItem key={rider.id} value={rider.id}>
+                                {rider.first_name || rider.full_name} {rider.last_name || ""}
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <div className="py-4 text-sm text-gray-500 text-center select-none">
+                              No active riders available
+                            </div>
+                          )}
                         </SelectContent>
                       </Select>
                     )}

@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { lookupUsername } from "../actions/auth";
+import { getProfileRole } from "@repo/data-access/data/profiles";
 
 function LoginForm() {
   const router = useRouter();
@@ -37,7 +38,7 @@ function LoginForm() {
       loginEmail = email;
     }
 
-    const { error: authError } = await supabase.auth.signInWithPassword({
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email: loginEmail,
       password,
     });
@@ -46,6 +47,16 @@ function LoginForm() {
       setError(authError.message);
       setLoading(false);
       return;
+    }
+
+    if (authData.user) {
+      const profile = await getProfileRole(supabase, authData.user.id);
+      if (profile?.role && profile.role !== "customer") {
+        setError(`Access denied. You are registered as a ${profile.role}. Please use the correct app to log in.`);
+        await supabase.auth.signOut();
+        setLoading(false);
+        return;
+      }
     }
 
     router.push(redirectTo);

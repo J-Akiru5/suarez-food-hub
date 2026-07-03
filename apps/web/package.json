@@ -19,13 +19,13 @@
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.106.2",
     "@types/leaflet": "^1.9.21",
-
     "leaflet": "^1.9.4",
     "lucide-react": "^1.17.0",
     "next": "^16.2.6",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "react-leaflet": "^4.2.1"
+    "react-leaflet": "^4.2.1",
+    "sweetalert2": "^11.26.25"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",
