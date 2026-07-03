@@ -5,6 +5,7 @@ import { getProfileRole } from "@repo/data-access/data/profiles";
 import { Eye, EyeOff, Truck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { lookupUsername } from "../../actions/auth";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -20,19 +21,13 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    const lookup = await fetch("/api/auth/lookup-username", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: username.trim() }),
-    });
+    const email = await lookupUsername(username.trim());
 
-    if (!lookup.ok) {
+    if (!email) {
       setError("Invalid username or password");
       setLoading(false);
       return;
     }
-
-    const { email } = await lookup.json();
 
     const { data, error: authError } = await supabase.auth.signInWithPassword({
       email,
@@ -89,7 +84,9 @@ export default function LoginPage() {
           {error && <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg">{error}</div>}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+            <label suppressHydrationWarning className="block text-sm font-medium text-gray-700 mb-1">
+              Username
+            </label>
             <input
               type="text"
               value={username}
@@ -101,7 +98,9 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <label suppressHydrationWarning className="block text-sm font-medium text-gray-700 mb-1">
+              Password
+            </label>
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}

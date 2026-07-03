@@ -5,6 +5,7 @@ import { Eye, EyeOff, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
+import { lookupUsername } from "../actions/auth";
 
 function LoginForm() {
   const router = useRouter();
@@ -24,22 +25,20 @@ function LoginForm() {
     setError("");
     setLoading(true);
 
-    const lookup = await fetch("/api/auth/lookup-username", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: username.trim() }),
-    });
+    let loginEmail = username.trim();
 
-    if (!lookup.ok) {
-      setError("Invalid username or password");
-      setLoading(false);
-      return;
+    if (!loginEmail.includes("@")) {
+      const email = await lookupUsername(loginEmail);
+      if (!email) {
+        setError("Invalid username or password");
+        setLoading(false);
+        return;
+      }
+      loginEmail = email;
     }
 
-    const { email } = await lookup.json();
-
     const { error: authError } = await supabase.auth.signInWithPassword({
-      email,
+      email: loginEmail,
       password,
     });
 
@@ -63,10 +62,10 @@ function LoginForm() {
 
       <form onSubmit={handleLogin} className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5 text-left">
-          <label className="text-xs font-bold text-gray-700 ml-1">Username</label>
+          <label className="text-xs font-bold text-gray-700 ml-1">Username or Email</label>
           <input
             type="text"
-            placeholder="Enter your username"
+            placeholder="Enter username or email"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             required

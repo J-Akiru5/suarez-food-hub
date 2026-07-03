@@ -110,6 +110,7 @@ export default function Register() {
       const now = new Date().toISOString();
       const profileData: any = {
         id: data.user.id,
+        email,
         first_name: firstName,
         last_name: lastName,
         username: username.trim(),
@@ -200,6 +201,7 @@ export default function Register() {
 
             <div className="flex flex-col gap-3">
               <button
+                type="button"
                 onClick={() => {
                   setRole("customer");
                   setStep("form");
@@ -216,6 +218,7 @@ export default function Register() {
               </button>
 
               <button
+                type="button"
                 onClick={() => {
                   setRole("rider");
                   setStep("form");
