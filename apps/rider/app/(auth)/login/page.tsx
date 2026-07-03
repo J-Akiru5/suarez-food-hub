@@ -20,20 +20,18 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("email")
-      .eq("username", username.trim())
-      .maybeSingle();
+    const { data: email, error: lookupError } = await supabase.rpc("get_email_by_username", {
+      p_username: username.trim(),
+    });
 
-    if (!profile?.email) {
+    if (lookupError || !email) {
       setError("Invalid username or password");
       setLoading(false);
       return;
     }
 
     const { data, error: authError } = await supabase.auth.signInWithPassword({
-      email: profile.email,
+      email,
       password,
     });
 
