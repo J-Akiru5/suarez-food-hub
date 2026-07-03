@@ -20,7 +20,7 @@ if (!password) {
     );
     process.exit(1);
   }
-  console.log("SEED_USER_PASSWORD not set — using default \"password123\" (NODE_ENV is not production)");
+  console.log('SEED_USER_PASSWORD not set — using default "password123" (NODE_ENV is not production)');
 }
 
 const seedPassword = password || "password123";
@@ -112,9 +112,7 @@ async function seedUser(user: SeedUser) {
     ...user.extra,
   };
 
-  const { error: profileError } = await supabaseAdmin
-    .from("profiles")
-    .upsert(profilePayload, { onConflict: "id" });
+  const { error: profileError } = await supabaseAdmin.from("profiles").upsert(profilePayload, { onConflict: "id" });
 
   if (profileError) {
     console.error(`  Failed to upsert profile: ${JSON.stringify(profileError, null, 2)}`);
