@@ -1,6 +1,5 @@
 import type { Database } from "@repo/data-access";
 import { createServiceClient } from "@repo/data-access/client";
-import { getLocations } from "@repo/data-access/data/locations";
 import { type NextRequest, NextResponse } from "next/server";
 
 type LocationType = Database["public"]["Enums"]["location_type"];

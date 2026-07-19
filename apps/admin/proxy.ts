@@ -43,7 +43,7 @@ export async function proxy(request: NextRequest) {
   // Verify admin role
   const { data: profile } = await supabase.from("profiles").select("role, is_active").eq("id", user.id).single();
 
-  if (!profile || profile.role !== "admin") {
+  if (profile?.role !== "admin") {
     await supabase.auth.signOut();
     const url = request.nextUrl.clone();
     url.pathname = "/login";

@@ -38,7 +38,11 @@ const HeroSection = React.forwardRef<HTMLDivElement, HeroSectionProps>(
         <div className="relative z-10 w-full lg:w-1/2 flex flex-col justify-center px-6 sm:px-12 lg:px-16 xl:px-24 py-12 lg:py-16">
           <div className="max-w-[520px]">
             <div className="flex items-center gap-4 mb-6">
-              <img src="/logo.png" alt="Suarez Food Hub Logo" className="h-[72px] w-[72px] object-contain drop-shadow-sm transition-transform hover:scale-105" />
+              <img
+                src="/logo.png"
+                alt="Suarez Food Hub Logo"
+                className="h-[72px] w-[72px] object-contain drop-shadow-sm transition-transform hover:scale-105"
+              />
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <span className="h-px w-8 bg-[var(--primary-color)]" />

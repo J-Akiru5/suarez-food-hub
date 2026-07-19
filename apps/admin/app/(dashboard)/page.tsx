@@ -147,7 +147,7 @@ export default function DashboardPage() {
   const fetchChartData = useCallback(async () => {
     const now = new Date();
     const days = chartMode === "weekly" ? 7 : 30;
-    
+
     const dailyMap = new Map<string, { revenue: number; orders: number }>();
     const getLocalDateString = (d: Date) => {
       const pad = (n: number) => n.toString().padStart(2, "0");

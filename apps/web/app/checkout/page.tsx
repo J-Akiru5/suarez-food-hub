@@ -16,7 +16,6 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import AuthNavbar from "../../components/AuthNavbar";
 import { useAuth } from "../../components/auth-provider";
-import Navbar from "../../components/Navbar";
 
 interface CartItem {
   id: string;
@@ -56,7 +55,7 @@ export default function CheckoutPage() {
   const [placedOrderId, setPlacedOrderId] = useState("");
   const [error, setError] = useState("");
   const [qrModalUrl, setQrModalUrl] = useState<string | null>(null);
-  const [position, setPosition] = useState<{ lat: number; lng: number } | null>(null);
+  const [position, _setPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [step, setStep] = useState(1);
   const addressRef = useRef<HTMLTextAreaElement>(null);
 
@@ -65,7 +64,7 @@ export default function CheckoutPage() {
       addressRef.current.style.height = "auto";
       addressRef.current.style.height = `${addressRef.current.scrollHeight}px`;
     }
-  }, [address]);
+  }, []);
 
   useEffect(() => {
     try {

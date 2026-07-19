@@ -3,7 +3,6 @@
 import { createBrowserTypedClient } from "@repo/data-access/client";
 import { getOrderById } from "@repo/data-access/data/orders";
 import type { Order, Profile } from "@repo/types";
-import { formatCurrency } from "@repo/utils";
 import {
   ArrowLeft,
   CheckCircle,

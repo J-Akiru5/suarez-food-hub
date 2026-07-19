@@ -3,19 +3,7 @@
 import { createBrowserTypedClient } from "@repo/data-access/client";
 import { getOrdersForRider } from "@repo/data-access/data/orders";
 import { format } from "date-fns";
-import {
-  Bike,
-  CheckCircle,
-  ChevronRight,
-  Clock,
-  List,
-  Map as MapIcon,
-  MapPin,
-  Package,
-  Search,
-  TrendingUp,
-  X,
-} from "lucide-react";
+import { ChevronRight, List, Map as MapIcon, MapPin, Package, Search, X } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
@@ -65,7 +53,7 @@ export default function DeliveriesPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<SortOption>("newest");
   const [viewMode, setViewMode] = useState<"list" | "map">("list");
-  const [showFilters, setShowFilters] = useState(false);
+  const [_showFilters, _setShowFilters] = useState(false);
   const [restaurantOrigin, setRestaurantOrigin] = useState("10.9501875,122.5065625");
 
   const fetchOrders = useCallback(async () => {

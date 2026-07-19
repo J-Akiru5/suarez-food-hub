@@ -9,16 +9,11 @@ import {
   ChevronRight,
   DollarSign,
   Edit2,
-  Headphones,
   HelpCircle,
   Info,
   LogOut,
-  Moon,
   Package,
-  Phone,
   Save,
-  Shield,
-  Sun,
   User,
   Volume2,
   X,
@@ -240,7 +235,7 @@ export default function ProfilePage() {
     localStorage.setItem("rider_vibration_enabled", String(next));
   };
 
-  const toggleDarkMode = () => {
+  const _toggleDarkMode = () => {
     const next = !darkMode;
     setDarkMode(next);
     localStorage.setItem("rider_dark_mode", String(next));

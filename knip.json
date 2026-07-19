@@ -1,14 +1,29 @@
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
   "workspaces": {
-    "apps/web": { "entry": ["app/**/*.{ts,tsx}", "proxy.ts"] },
-    "apps/admin": { "entry": ["app/**/*.{ts,tsx}", "proxy.ts"] },
-    "apps/staff": { "entry": ["app/**/*.{ts,tsx}", "proxy.ts"] },
-    "apps/rider": { "entry": ["app/**/*.{ts,tsx}", "proxy.ts"] },
+    "apps/web": { "entry": ["app/**/*.{ts,tsx}"] },
+    "apps/admin": {
+      "entry": ["app/**/*.{ts,tsx}"],
+      "ignoreDependencies": ["leaflet"]
+    },
+    "apps/staff": {
+      "entry": ["app/**/*.{ts,tsx}"],
+      "ignoreDependencies": ["leaflet"]
+    },
+    "apps/rider": { "entry": ["app/**/*.{ts,tsx}"] },
     "packages/ui": { "entry": ["src/**/*.{ts,tsx}"] },
-    "packages/types": { "entry": ["src/index.ts"] },
-    "packages/utils": { "entry": ["src/index.ts"] },
     "packages/supabase": { "entry": ["src/**/*.ts"] }
   },
-  "ignore": [".next/**", "dist/**", "node_modules/**", ".turbo/**"]
+  "ignore": [
+    "scripts/**",
+    "apps/*/lib/**",
+    "apps/*/components/LocationPicker.tsx",
+    "apps/*/components/MapComponent.tsx",
+    "apps/web/components/Navbar.tsx",
+    "apps/web/components/AuthNavbar.tsx",
+    "apps/rider/public/sw.js",
+    "apps/rider/temp.css"
+  ],
+  "ignoreDependencies": ["@repo/supabase", "@types/leaflet", "pg", "turbo-ignore"],
+  "ignoreBinaries": ["trufflehog"]
 }

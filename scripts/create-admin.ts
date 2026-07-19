@@ -20,6 +20,8 @@ const supabaseAdmin = createClient(supabaseUrl, serviceRoleKey, {
 });
 
 async function createAdminProfile() {
+  let userId: string;
+
   // Find the user by email
   const { data: users, error: listError } = await supabaseAdmin.auth.admin.listUsers();
   if (listError) {
@@ -40,10 +42,10 @@ async function createAdminProfile() {
       process.exit(1);
     }
     console.log("✅ Auth user created:", authData.user.id);
-    var _userId = authData.user.id;
+    userId = authData.user.id;
   } else {
     console.log("✅ Found existing auth user:", adminUser.id);
-    var userId = adminUser.id;
+    userId = adminUser.id;
   }
 
   // Create/update the admin profile
