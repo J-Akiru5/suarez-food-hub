@@ -1,7 +1,6 @@
 "use client";
 
 import { createBrowserTypedClient } from "@repo/data-access/client";
-import { upsertProfile } from "@repo/data-access/data/profiles";
 import { ArrowLeft, Bike, Eye, EyeOff, Loader2, User } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -131,14 +130,22 @@ export default function Register() {
         profileData.is_active = false;
       }
 
-      const { error: profileError } = await upsertProfile(supabase, profileData);
+      // Use server API route with service role key to bypass RLS
+      // (after signUp the auth session may not be fully established yet)
+      const profileRes = await fetch("/api/profile", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: data.user.id, profile_data: profileData }),
+      });
+      const profileResult = await profileRes.json();
 
-      if (profileError) {
-        console.error("Profile upsert failed:", JSON.stringify(profileError));
-        console.error("Profile error message:", profileError?.message);
+      if (!profileResult.success) {
+        setError("Failed to create your profile. Please try again.");
+        setLoading(false);
+        return;
       }
 
-      if (role === "rider" && !profileError) {
+      if (role === "rider") {
         try {
           await fetch("/api/riders/notify-new", {
             method: "POST",

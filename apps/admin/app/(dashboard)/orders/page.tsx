@@ -22,6 +22,7 @@ import { formatCurrency } from "@repo/utils";
 import { ChevronDown, ChevronUp, Eye, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "@/lib/use-toast";
 
 const statusTabs = [
   { value: "all", label: "All" },
@@ -62,6 +63,8 @@ export default function OrdersPage() {
   const [activeTab, setActiveTab] = useState("all");
   const [riders, setRiders] = useState<Profile[]>([]);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+  const [pendingStatus, setPendingStatus] = useState<Record<string, string>>({});
+  const [pendingPayment, setPendingPayment] = useState<Record<string, string>>({});
 
   const fetchOrders = useCallback(async () => {
     const data = await getOrdersWithProfiles(supabase, {
@@ -95,17 +98,44 @@ export default function OrdersPage() {
   }, [supabase, fetchOrders]);
 
   async function assignRider(orderId: string, riderId: string) {
-    await supabase.from("orders").update({ rider_id: riderId, status: "confirmed" }).eq("id", orderId);
+    const { error } = await supabase.from("orders").update({ rider_id: riderId, status: "confirmed" }).eq("id", orderId);
+    if (error) {
+      toast({ title: "Error", description: "Failed to assign rider.", variant: "destructive" });
+    } else {
+      toast({ title: "Rider assigned", description: "Order has been assigned to rider." });
+    }
     fetchOrders();
   }
 
   async function updateStatus(orderId: string, status: string) {
-    await supabase.from("orders").update({ status }).eq("id", orderId);
+    setPendingStatus((p) => ({ ...p, [orderId]: status }));
+    const { error } = await supabase.from("orders").update({ status }).eq("id", orderId);
+    if (error) {
+      toast({ title: "Error", description: "Failed to update status.", variant: "destructive" });
+      setPendingStatus((p) => {
+        const copy = { ...p };
+        delete copy[orderId];
+        return copy;
+      });
+    } else {
+      toast({ title: "Status updated", description: `Order status changed to ${status.replace(/_/g, " ")}.` });
+    }
     fetchOrders();
   }
 
   async function updatePaymentStatus(orderId: string, payment_status: string) {
-    await supabase.from("orders").update({ payment_status }).eq("id", orderId);
+    setPendingPayment((p) => ({ ...p, [orderId]: payment_status }));
+    const { error } = await supabase.from("orders").update({ payment_status }).eq("id", orderId);
+    if (error) {
+      toast({ title: "Error", description: "Failed to update payment status.", variant: "destructive" });
+      setPendingPayment((p) => {
+        const copy = { ...p };
+        delete copy[orderId];
+        return copy;
+      });
+    } else {
+      toast({ title: "Payment updated", description: `Payment status changed to ${payment_status}.` });
+    }
     fetchOrders();
   }
 
@@ -260,7 +290,7 @@ export default function OrdersPage() {
                             <div>
                               <p className="text-xs font-medium text-gray-500 mb-1">Payment Status</p>
                               <Select
-                                value={order.payment_status}
+                                value={pendingPayment[order.id] || order.payment_status}
                                 onValueChange={(value) => updatePaymentStatus(order.id, value)}
                               >
                                 <SelectTrigger className="w-full h-8 text-xs">
@@ -277,7 +307,7 @@ export default function OrdersPage() {
 
                             <div>
                               <p className="text-xs font-medium text-gray-500 mb-1">Order Status</p>
-                              <Select value={order.status} onValueChange={(value) => updateStatus(order.id, value)}>
+                              <Select value={pendingStatus[order.id] || order.status} onValueChange={(value) => updateStatus(order.id, value)}>
                                 <SelectTrigger className="w-full h-8 text-xs">
                                   <SelectValue placeholder="Select order status" />
                                 </SelectTrigger>

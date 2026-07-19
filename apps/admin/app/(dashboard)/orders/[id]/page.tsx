@@ -17,9 +17,10 @@ import {
   SelectValue,
 } from "@repo/ui";
 import { formatCurrency } from "@repo/utils";
-import { ArrowLeft, CheckCircle2, Loader2, MapPin, Phone, Printer, User, XCircle } from "lucide-react";
+import { ArrowLeft, CheckCircle2, Loader2, MapPin, Phone, Printer, Search, User, XCircle } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "@/lib/use-toast";
 
 const statusSteps = [
   { key: "pending", label: "Pending" },
@@ -52,6 +53,7 @@ export default function OrderDetailPage() {
   const [riders, setRiders] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [realtimeStatus, setRealtimeStatus] = useState<string>("connecting");
 
   const orderId = params.id as string;
 
@@ -71,23 +73,79 @@ export default function OrderDetailPage() {
     fetchRiders();
   }, [fetchOrder, fetchRiders]);
 
+  // Realtime auto-refresh when order status or rider changes
+  useEffect(() => {
+    const channel = supabase
+      .channel(`admin-order-${orderId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "orders",
+          filter: `id=eq.${orderId}`,
+        },
+        () => {
+          fetchOrder();
+          fetchRiders();
+        },
+      )
+      .subscribe((status) => {
+        setRealtimeStatus(status === "SUBSCRIBED" ? "connected" : "disconnected");
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchOrder, fetchRiders, orderId, supabase]);
+
+  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
+  const [selectedPaymentStatus, setSelectedPaymentStatus] = useState<string | null>(null);
+  const [riderSearch, setRiderSearch] = useState("");
+
+  const filteredRiders = riders.filter((r) => {
+    if (!riderSearch) return true;
+    const name = `${r.first_name || ""} ${r.last_name || ""}`.toLowerCase();
+    const phone = (r.phone || "").toLowerCase();
+    const s = riderSearch.toLowerCase();
+    return name.includes(s) || phone.includes(s);
+  });
+
   async function assignRider(riderId: string) {
+    if (!order) return;
     setUpdating(true);
-    await updateOrderStatus(supabase, orderId, "confirmed", { rider_id: riderId });
+    // Only advance status to "confirmed" if it's still "pending"
+    const newStatus = order.status === "pending" ? "confirmed" : order.status;
+    await updateOrderStatus(supabase, orderId, newStatus, { rider_id: riderId });
     await fetchOrder();
+    toast({ title: "Rider assigned", description: "Rider has been assigned to this order." });
     setUpdating(false);
   }
 
   async function updateStatus(status: string) {
     setUpdating(true);
-    await updateOrderStatus(supabase, orderId, status as Database["public"]["Enums"]["order_status"]);
+    setSelectedStatus(status);
+    const { error } = await updateOrderStatus(supabase, orderId, status as Database["public"]["Enums"]["order_status"]);
+    if (error) {
+      toast({ title: "Error", description: "Failed to update status.", variant: "destructive" });
+      setSelectedStatus(null);
+    } else {
+      toast({ title: "Status updated", description: `Order status changed to ${status.replace(/_/g, " ")}.` });
+    }
     await fetchOrder();
     setUpdating(false);
   }
 
   async function updatePaymentStatus(payment_status: string) {
     setUpdating(true);
-    await supabase.from("orders").update({ payment_status }).eq("id", orderId);
+    setSelectedPaymentStatus(payment_status);
+    const { error } = await supabase.from("orders").update({ payment_status }).eq("id", orderId);
+    if (error) {
+      toast({ title: "Error", description: "Failed to update payment status.", variant: "destructive" });
+      setSelectedPaymentStatus(null);
+    } else {
+      toast({ title: "Payment updated", description: `Payment status changed to ${payment_status}.` });
+    }
     await fetchOrder();
     setUpdating(false);
   }
@@ -132,6 +190,20 @@ export default function OrderDetailPage() {
               <Printer className="h-4 w-4" />
               Print
             </Button>
+            <span
+              className={`flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full transition-all ${
+                realtimeStatus === "connected"
+                  ? "bg-green-50 text-green-600"
+                  : "bg-gray-100 text-gray-400"
+              }`}
+            >
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${
+                  realtimeStatus === "connected" ? "bg-green-500 animate-pulse" : "bg-gray-400"
+                }`}
+              />
+              {realtimeStatus === "connected" ? "Live" : "..."}
+            </span>
             <span
               className={`text-xs font-medium px-3 py-1 rounded-full ${
                 statusColors[order.status] || "bg-gray-100 text-gray-800"
@@ -299,43 +371,64 @@ export default function OrderDetailPage() {
             <Card>
               <CardContent className="p-4 space-y-3">
                 <h2 className="font-bold font-display">Assigned Rider</h2>
-                {order.rider ? (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm">
-                      <User className="h-4 w-4 text-gray-400" />
-                      <span>
-                        {order.rider.first_name} {order.rider.last_name}
-                      </span>
-                    </div>
+
+                {order.rider && (
+                  <div className="flex items-center gap-2 text-sm mb-2 p-2 bg-gray-50 rounded-lg">
+                    <User className="h-4 w-4 text-gray-400 shrink-0" />
+                    <span className="font-medium">
+                      {order.rider.first_name} {order.rider.last_name}
+                    </span>
                     {order.rider.phone && (
-                      <div className="flex items-center gap-2 text-sm">
-                        <Phone className="h-4 w-4 text-gray-400" />
-                        <span>{order.rider.phone}</span>
-                      </div>
+                      <span className="text-xs text-muted-foreground ml-auto">{order.rider.phone}</span>
                     )}
                   </div>
-                ) : (
-                  <div>
-                    <p className="text-sm text-muted-foreground mb-2">No rider assigned</p>
-                    {order.status !== "cancelled" && order.status !== "delivered" && (
-                      <Select onValueChange={assignRider}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Assign a rider" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {riders.length > 0 ? (
-                            riders.map((rider) => (
-                              <SelectItem key={rider.id} value={rider.id}>
-                                {rider.first_name || rider.full_name} {rider.last_name || ""}
-                              </SelectItem>
-                            ))
-                          ) : (
-                            <div className="py-4 text-sm text-gray-500 text-center select-none">
-                              No active riders available
-                            </div>
-                          )}
-                        </SelectContent>
-                      </Select>
+                )}
+
+                {order.status !== "cancelled" && order.status !== "delivered" && (
+                  <div className="space-y-2">
+                    {!order.rider && (
+                      <p className="text-sm text-muted-foreground">No rider assigned</p>
+                    )}
+
+                    {/* Search input for riders */}
+                    {riders.length > 5 && (
+                      <div className="relative">
+                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+                        <input
+                          type="text"
+                          placeholder="Search riders..."
+                          value={riderSearch}
+                          onChange={(e) => setRiderSearch(e.target.value)}
+                          className="w-full h-8 pl-8 pr-3 rounded-md border border-gray-200 text-xs focus:outline-none focus:ring-1 focus:ring-crimson-500"
+                        />
+                      </div>
+                    )}
+
+                    <Select onValueChange={assignRider}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue
+                          placeholder={order.rider ? "Change rider..." : "Assign a rider"}
+                        />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-60">
+                        {filteredRiders.length > 0 ? (
+                          filteredRiders.map((rider) => (
+                            <SelectItem key={rider.id} value={rider.id}>
+                              {rider.first_name || rider.full_name} {rider.last_name || ""}
+                              {rider.phone ? ` — ${rider.phone}` : ""}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <div className="py-4 text-sm text-gray-500 text-center select-none">
+                            {riderSearch ? "No riders match your search" : "No active riders available"}
+                          </div>
+                        )}
+                      </SelectContent>
+                    </Select>
+                    {order.rider && (
+                      <p className="text-[10px] text-muted-foreground">
+                        Select a different rider from the dropdown to re-assign
+                      </p>
                     )}
                   </div>
                 )}
@@ -362,11 +455,10 @@ export default function OrderDetailPage() {
                   </div>
                 )}
                 <div className="flex items-center justify-between mt-3 pt-3 border-t">
-                  <span className="text-sm text-muted-foreground">Status</span>
-                  <Select value={order.payment_status} onValueChange={updatePaymentStatus} disabled={updating}>
-                    <SelectTrigger className="w-[140px] h-8 text-xs font-medium">
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
+                  <span className="text-sm text-muted-foreground">Status</span>                              <Select value={selectedPaymentStatus || order.payment_status} onValueChange={updatePaymentStatus} disabled={updating}>
+                                <SelectTrigger className="w-[140px] h-8 text-xs font-medium">
+                                  <SelectValue placeholder="Status" />
+                                </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="pending">Pending</SelectItem>
                       <SelectItem value="verified">Verified</SelectItem>
@@ -382,7 +474,7 @@ export default function OrderDetailPage() {
               <CardContent className="p-4">
                 <h2 className="font-bold mb-3 font-display">Update Order Status</h2>
                 <div className="flex items-center gap-2">
-                  <Select value={order.status} onValueChange={updateStatus} disabled={updating}>
+                  <Select value={selectedStatus || order.status} onValueChange={updateStatus} disabled={updating}>
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Select order status" />
                     </SelectTrigger>

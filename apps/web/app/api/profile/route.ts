@@ -9,15 +9,45 @@ export async function GET() {
     const cookieStore = await cookies();
     const authClient = createAuthClient(cookieStore);
     const user = await getUser(authClient);
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!user) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
     const serviceSupabase = createServiceClient();
     const profile = await getProfileById(serviceSupabase, user.id);
-    if (!profile) return NextResponse.json({ error: "Profile not found" }, { status: 500 });
-    return NextResponse.json(profile);
+    if (!profile) return NextResponse.json({ success: false, error: "Profile not found" }, { status: 500 });
+    return NextResponse.json({ success: true, data: profile });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal server error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
+  }
+}
+
+export async function POST(req: NextRequest) {
+  try {
+    const body = await req.json();
+    const { user_id, profile_data } = body;
+
+    if (!user_id || !profile_data) {
+      return NextResponse.json({ success: false, error: "Missing user_id or profile_data" }, { status: 400 });
+    }
+
+    // Use service role client to bypass RLS — needed because after signUp the
+    // auth session may not be fully established (e.g. email confirmation enabled),
+    // which would cause RLS policy (auth.uid() = id) to reject the insert.
+    const serviceSupabase = createServiceClient();
+    const { data, error } = await serviceSupabase
+      .from("profiles")
+      .upsert({ id: user_id, ...profile_data })
+      .select()
+      .single();
+
+    if (error) {
+      return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, data });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Internal server error";
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }
 
@@ -26,7 +56,7 @@ export async function PATCH(req: NextRequest) {
     const cookieStore = await cookies();
     const authClient = createAuthClient(cookieStore);
     const user = await getUser(authClient);
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!user) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
     const body = await req.json();
     const {
@@ -58,10 +88,10 @@ export async function PATCH(req: NextRequest) {
 
     const serviceSupabase = createServiceClient();
     const { data, error } = await updateProfile(serviceSupabase, user.id, updateData);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json(data);
+    if (error) return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: true, data });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal server error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }

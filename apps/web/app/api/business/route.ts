@@ -8,11 +8,11 @@ export async function GET() {
   try {
     const serviceSupabase = createServiceClient();
     const data = await getBusinessConfig(serviceSupabase);
-    if (!data) return NextResponse.json({ error: "Business config not found" }, { status: 500 });
-    return NextResponse.json(data);
+    if (!data) return NextResponse.json({ success: false, error: "Business config not found" }, { status: 500 });
+    return NextResponse.json({ success: true, data });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal server error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }
 
@@ -21,14 +21,14 @@ export async function PATCH(req: NextRequest) {
     const cookieStore = await cookies();
     const authClient = createAuthClient(cookieStore);
     const user = await getUser(authClient);
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!user) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
     const serviceSupabase = createServiceClient();
     const isAdmin = await requireAdmin(serviceSupabase, user.id);
-    if (!isAdmin) return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (!isAdmin) return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
 
     const config = await getBusinessConfig(serviceSupabase);
-    if (!config) return NextResponse.json({ error: "Business config not found" }, { status: 500 });
+    if (!config) return NextResponse.json({ success: false, error: "Business config not found" }, { status: 500 });
 
     const body = await req.json();
     const allowedFields = [
@@ -42,6 +42,8 @@ export async function PATCH(req: NextRequest) {
       "maya_qr_url",
       "delivery_fee",
       "free_delivery_min",
+      "base_lat",
+      "base_lng",
     ];
     const updateData: Record<string, unknown> = {};
     for (const key of allowedFields) {
@@ -49,10 +51,10 @@ export async function PATCH(req: NextRequest) {
     }
 
     const { data, error } = await updateBusinessConfig(serviceSupabase, config.id, updateData);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json(data);
+    if (error) return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: true, data });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal server error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }

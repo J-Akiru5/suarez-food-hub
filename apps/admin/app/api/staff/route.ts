@@ -23,7 +23,7 @@ export async function POST(request: NextRequest) {
   const { email, password, firstName, lastName, phone, username } = await request.json();
 
   if (!email || !password || !firstName || !lastName || !username) {
-    return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
   }
 
   const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
   });
 
   if (authError || !authData.user) {
-    return NextResponse.json({ error: authError?.message || "Failed to create account" }, { status: 500 });
+    return NextResponse.json({ success: false, error: authError?.message || "Failed to create account" }, { status: 500 });
   }
 
   const { error: profileError } = await supabaseAdmin.from("profiles").upsert({
@@ -54,10 +54,10 @@ export async function POST(request: NextRequest) {
   });
 
   if (profileError) {
-    return NextResponse.json({ error: `Account created but profile failed: ${profileError.message}` }, { status: 500 });
+    return NextResponse.json({ success: false, error: `Account created but profile failed: ${profileError.message}` }, { status: 500 });
   }
 
-  return NextResponse.json({ success: true, name: `${firstName} ${lastName}` });
+  return NextResponse.json({ success: true, data: { name: `${firstName} ${lastName}` } });
 }
 
 export async function GET() {
@@ -73,10 +73,10 @@ export async function GET() {
     .order("created_at", { ascending: false });
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json({ data: data || [] });
+  return NextResponse.json({ success: true, data: data || [] });
 }
 
 export async function PATCH(request: NextRequest) {
@@ -86,7 +86,7 @@ export async function PATCH(request: NextRequest) {
   const { id, is_active } = await request.json();
 
   if (!id) {
-    return NextResponse.json({ error: "Missing user ID" }, { status: 400 });
+    return NextResponse.json({ success: false, error: "Missing user ID" }, { status: 400 });
   }
 
   const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
@@ -101,7 +101,7 @@ export async function PATCH(request: NextRequest) {
     .eq("role", "staff");
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });

@@ -21,7 +21,8 @@
     "next": "^16.2.6",
     "react": "^19.2.6",
     "react-dom": "^19.2.6",
-    "leaflet": "^1.9.4"
+    "leaflet": "^1.9.4",
+    "sweetalert2": "^11.26.25"
   },
   "devDependencies": {
     "@types/node": "^20.14.0",

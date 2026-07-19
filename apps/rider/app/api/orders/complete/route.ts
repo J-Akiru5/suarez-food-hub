@@ -1,38 +1,42 @@
-import { createServiceClient } from "@repo/data-access/client";
+import { createAuthClient, createServiceClient } from "@repo/data-access/client";
 import { createRiderEarning } from "@repo/data-access/data/earnings";
 import { createNotification } from "@repo/data-access/data/notifications";
 import { getOrderById, updateOrderStatus } from "@repo/data-access/data/orders";
+import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function POST(request: NextRequest) {
   try {
-    const supabase = createServiceClient();
     const body = await request.json();
     const { order_id } = body;
 
     if (!order_id) {
-      return NextResponse.json({ error: "order_id required" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "order_id required" }, { status: 400 });
     }
 
+    const cookieStore = await cookies();
+    const authClient = createAuthClient(cookieStore);
     const {
       data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    } = await authClient.auth.getUser();
+    if (!user) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+
+    const supabase = createServiceClient();
 
     const order = await getOrderById(supabase, order_id);
 
-    if (!order) return NextResponse.json({ error: "Order not found" }, { status: 404 });
-    if (order.rider_id !== user.id) return NextResponse.json({ error: "Not your order" }, { status: 403 });
-    if (order.status === "delivered") return NextResponse.json({ error: "Already delivered" }, { status: 400 });
+    if (!order) return NextResponse.json({ success: false, error: "Order not found" }, { status: 404 });
+    if (order.rider_id !== user.id) return NextResponse.json({ success: false, error: "Not your order" }, { status: 403 });
+    if (order.status === "delivered") return NextResponse.json({ success: false, error: "Already delivered" }, { status: 400 });
 
     const { error: updateError } = await updateOrderStatus(supabase, order_id, "delivered", {
       delivered_at: new Date().toISOString(),
     });
 
-    if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
+    if (updateError) return NextResponse.json({ success: false, error: updateError.message }, { status: 500 });
 
-    if (order.rider_id && order.delivery_fee) {
-      const earningAmount = Math.round(order.delivery_fee * 0.8 * 100) / 100;
+    if (order.rider_id) {
+      const earningAmount = Number(order.rider_earnings) || 40;
       await createRiderEarning(supabase, order.rider_id, order.id, earningAmount);
     }
 
@@ -48,6 +52,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal server error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }

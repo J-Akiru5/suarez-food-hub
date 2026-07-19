@@ -182,7 +182,7 @@ export default function StaffInventoryPage() {
                           <Input
                             type="number"
                             min="0"
-                            placeholder={String(product.quantity ?? 0)}
+                            placeholder="New quantity"
                             value={currentEdit ?? ""}
                             onChange={(e) =>
                               setQtyEdits((prev) => ({

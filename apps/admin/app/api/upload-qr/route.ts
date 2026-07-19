@@ -22,12 +22,12 @@ export async function POST(req: NextRequest) {
     const user = await getUser(authSupabase);
 
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
     const isAdmin = await requireAdmin(supabase, user.id);
     if (!isAdmin) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
     const formData = await req.formData();
@@ -35,7 +35,7 @@ export async function POST(req: NextRequest) {
     const prefix = (formData.get("prefix") as string) || "qr";
 
     if (!file || file.size === 0) {
-      return NextResponse.json({ error: "No image provided" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "No image provided" }, { status: 400 });
     }
 
     const ext = file.name.split(".").pop();
@@ -46,14 +46,14 @@ export async function POST(req: NextRequest) {
       .upload(filename, file, { contentType: file.type, upsert: true });
 
     if (uploadError) {
-      return NextResponse.json({ error: `Image upload failed: ${uploadError.message}` }, { status: 500 });
+      return NextResponse.json({ success: false, error: `Image upload failed: ${uploadError.message}` }, { status: 500 });
     }
 
     const { data: urlData } = supabase.storage.from("business_qr").getPublicUrl(filename);
 
-    return NextResponse.json({ success: true, url: urlData.publicUrl });
+    return NextResponse.json({ success: true, data: { url: urlData.publicUrl } });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal server error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }

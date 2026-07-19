@@ -35,10 +35,10 @@ export async function GET(request: NextRequest) {
             id: item.code,
             name: item.name,
           }));
-          return NextResponse.json(mappedData);
+          return NextResponse.json({ success: true, data: mappedData });
         }
       }
-      return NextResponse.json([]);
+      return NextResponse.json({ success: true, data: [] });
     }
 
     if (rider_id) {
@@ -49,13 +49,13 @@ export async function GET(request: NextRequest) {
         .order("updated_at", { ascending: false })
         .limit(1)
         .maybeSingle();
-      if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-      return NextResponse.json(data || {});
+      if (error) return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+      return NextResponse.json({ success: true, data: data || {} });
     }
 
-    return NextResponse.json({ error: "Provide type or rider_id" }, { status: 400 });
+    return NextResponse.json({ success: false, error: "Provide type or rider_id" }, { status: 400 });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal server error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }

@@ -12,7 +12,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
 
     const user = await getUser(authClient);
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
     const body = await req.json();
@@ -24,15 +24,15 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       .single();
 
     if (fetchError || !order) {
-      return NextResponse.json({ error: "Order not found" }, { status: 404 });
+      return NextResponse.json({ success: false, error: "Order not found" }, { status: 404 });
     }
 
     if (order.user_id !== user.id) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
     }
 
     if (body.status === "cancelled" && order.status !== "pending") {
-      return NextResponse.json({ error: "Only pending orders can be cancelled" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Only pending orders can be cancelled" }, { status: 400 });
     }
 
     const { data: updated, error: updateError } = await serviceSupabase
@@ -43,7 +43,7 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       .single();
 
     if (updateError) {
-      return NextResponse.json({ error: updateError.message }, { status: 500 });
+      return NextResponse.json({ success: false, error: updateError.message }, { status: 500 });
     }
 
     if (body.status === "cancelled" && order.order_items) {
@@ -63,9 +63,9 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       }
     }
 
-    return NextResponse.json(updated);
+    return NextResponse.json({ success: true, data: updated });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal server error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }

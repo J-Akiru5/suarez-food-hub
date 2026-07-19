@@ -80,7 +80,8 @@ export default function StaffAccountsPage() {
       if (!res.ok) {
         setFormError(data.error || "Failed to create account");
       } else {
-        setFormSuccess(`Staff account created for ${data.name}`);
+        const result = data.data || data;
+        setFormSuccess(`Staff account created for ${result.name}`);
         setFormEmail("");
         setFormUsername("");
         setFormPassword("");
@@ -88,7 +89,7 @@ export default function StaffAccountsPage() {
         setFormLastName("");
         setFormPhone("");
         fetchStaff();
-        toast({ title: "Staff created", description: data.name });
+        toast({ title: "Staff created", description: result.name });
       }
     } catch {
       setFormError("Network error. Please try again.");

@@ -25,6 +25,7 @@ interface CartItem {
   price: number;
   quantity: number;
   variant: string;
+  variantId?: string;
 }
 
 interface Business {
@@ -91,7 +92,7 @@ export default function CheckoutPage() {
   useEffect(() => {
     fetch("/api/business")
       .then((r) => r.json())
-      .then(setBusiness)
+      .then((response) => setBusiness(response.data || response))
       .catch(() => {});
   }, []);
 
@@ -168,10 +169,11 @@ export default function CheckoutPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        if (data.details && Array.isArray(data.details)) {
-          throw new Error(data.details.join(". "));
+        const errBody = data.data || data;
+        if (errBody.details && Array.isArray(errBody.details)) {
+          throw new Error(errBody.details.join(". "));
         }
-        throw new Error(data.error || "Failed to place order");
+        throw new Error(errBody.error || "Failed to place order");
       }
 
       localStorage.removeItem("sfh_cart");
@@ -185,7 +187,8 @@ export default function CheckoutPage() {
         /* ignore */
       }
 
-      setPlacedOrderId(data.orderId);
+      const result = data.data || data;
+      setPlacedOrderId(result.orderId);
       setSuccess(true);
     } catch (err: any) {
       setError(err.message || "Something went wrong");

@@ -54,10 +54,10 @@ export async function GET() {
           p.availability === "available" &&
           (p.quantity > 0 || (p.variant_type !== "none" && p.variants.some((v: any) => v.quantity > 0))),
       );
-    return NextResponse.json(transformed);
+    return NextResponse.json({ success: true, data: transformed });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal server error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }
 
@@ -77,10 +77,10 @@ export async function POST(req: NextRequest) {
       },
     );
     const user = await getUser(authSupabase);
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!user) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
     const isAdmin = await requireAdmin(supabase, user.id);
-    if (!isAdmin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!isAdmin) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
     const formData = await req.formData();
     const name = formData.get("name") as string;
@@ -99,7 +99,7 @@ export async function POST(req: NextRequest) {
         .from("images")
         .upload(filename, imageFile, { contentType: imageFile.type, upsert: true });
       if (uploadError)
-        return NextResponse.json({ error: `Image upload failed: ${uploadError.message}` }, { status: 500 });
+        return NextResponse.json({ success: false, error: `Image upload failed: ${uploadError.message}` }, { status: 500 });
       const { data: urlData } = supabase.storage.from("images").getPublicUrl(filename);
       imageUrl = urlData.publicUrl;
     }
@@ -125,10 +125,10 @@ export async function POST(req: NextRequest) {
       availability,
       rating: 5.0,
     });
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json(data);
+    if (error) return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: true, data });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal server error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }

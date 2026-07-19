@@ -57,6 +57,12 @@ function LoginForm() {
         setLoading(false);
         return;
       }
+      if (profile?.is_active === false) {
+        setError("Your account has been deactivated. Please contact support.");
+        await supabase.auth.signOut();
+        setLoading(false);
+        return;
+      }
     }
 
     router.push(redirectTo);

@@ -13,17 +13,17 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ use
 
     const user = await getUser(authClient);
     if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 
     if (user.id !== userId) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
     }
 
     const orders = await getOrdersByUser(serviceSupabase, userId);
-    return NextResponse.json(orders);
+    return NextResponse.json({ success: true, data: orders });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal server error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }

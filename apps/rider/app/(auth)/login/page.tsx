@@ -49,20 +49,22 @@ export default function LoginPage() {
         setLoading(false);
         return;
       }
-      if (profile.is_active === false || profile.rider_status === "pending_approval") {
-        setError("Your account is pending admin approval. Please wait for confirmation.");
-        await supabase.auth.signOut();
-        setLoading(false);
-        return;
-      }
       if (profile.rider_status === "rejected") {
         setError("Your rider application was rejected. Please contact support.");
         await supabase.auth.signOut();
         setLoading(false);
         return;
       }
+      if (profile.is_active === false || profile.rider_status === "pending_approval") {
+        setError("Your account is pending admin approval. Please wait for confirmation.");
+        await supabase.auth.signOut();
+        setLoading(false);
+        return;
+      }
+      // offline status is allowed — rider won't appear in assignment dropdown but can still log in
     }
 
+    // Login succeeded — redirect to dashboard
     router.push("/");
     router.refresh();
   };
@@ -129,7 +131,12 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="text-center text-brand-100 text-sm mt-6">Delivery Rider Portal v1.0</p>
+        <div className="text-center mt-6 space-y-2">
+          <p className="text-brand-100 text-sm">Delivery Rider Portal</p>
+          <a href={process.env.NEXT_PUBLIC_WEB_URL || "http://localhost:3000"} className="inline-block text-brand-200 text-xs underline hover:text-white transition-colors">
+            &larr; Back to website
+          </a>
+        </div>
       </div>
     </div>
   );

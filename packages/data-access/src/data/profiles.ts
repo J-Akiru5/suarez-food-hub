@@ -34,8 +34,50 @@ export async function updateProfile(supabase: TypedSupabaseClient, userId: strin
 
 export async function getRiders(supabase: TypedSupabaseClient) {
   const { data, error } = await supabase.from("profiles").select("*").eq("role", "rider").order("created_at");
-  if (error) return [];
+  if (error) {
+    console.error("Error fetching riders:", error);
+    return [];
+  }
   return (data as Profile[]) || [];
+}
+
+export async function getAvailableRiders(
+  supabase: TypedSupabaseClient,
+  includeRiderIds?: string | string[],
+) {
+  const { data, error } = await supabase
+    .from("profiles")
+    .select("*")
+    .eq("role", "rider")
+    .eq("is_active", true)
+    .in("rider_status", ["available", "vacant"])
+    .order("created_at");
+  if (error) {
+    console.error("Error fetching available riders:", error);
+    return [];
+  }
+
+  const riders = (data as Profile[]) || [];
+
+  // Collect IDs to always include (e.g., currently assigned but now occupied)
+  const idsToInclude = Array.isArray(includeRiderIds) ? includeRiderIds : includeRiderIds ? [includeRiderIds] : [];
+  const missingIds = idsToInclude.filter((id) => id && !riders.find((r) => r.id === id));
+
+  if (missingIds.length > 0) {
+    const { data: currentRiders } = await supabase
+      .from("profiles")
+      .select("*")
+      .in("id", missingIds);
+    if (currentRiders) {
+      for (const rider of currentRiders) {
+        if (!riders.find((r) => r.id === rider.id)) {
+          riders.push(rider as Profile);
+        }
+      }
+    }
+  }
+
+  return riders;
 }
 
 export async function updateRiderStatus(
@@ -57,7 +99,10 @@ export async function getProfilesByRole(supabase: TypedSupabaseClient, role: Use
     .select("*")
     .eq("role", role)
     .order("created_at", { ascending: false });
-  if (error) return [];
+  if (error) {
+    console.error("Error fetching profiles by role:", error);
+    return [];
+  }
   return (data as Profile[]) || [];
 }
 

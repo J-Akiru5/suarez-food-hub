@@ -89,11 +89,23 @@ export async function getActiveOrderForRider(supabase: TypedSupabaseClient, ride
     .from("orders")
     .select("*, customer:profiles!orders_user_id_fkey(first_name, last_name, phone)")
     .eq("rider_id", riderId)
-    .in("status", ["claimed_by_rider", "out_for_delivery", "near_customer"] as OrderStatus[])
+    // Orders the rider can act on — includes ready_for_pickup so dashboard shows accept button
+    .in("status", ["ready_for_pickup", "claimed_by_rider", "out_for_delivery", "near_customer"] as OrderStatus[])
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
   return data;
+}
+
+export async function getPendingOrdersForRider(supabase: TypedSupabaseClient, riderId: string) {
+  const { data } = await supabase
+    .from("orders")
+    .select("*, customer:profiles!orders_user_id_fkey(first_name, last_name, phone)")
+    .eq("rider_id", riderId)
+    // Orders being prepared — not yet ready for rider to pick up
+    .in("status", ["confirmed", "preparing"] as OrderStatus[])
+    .order("created_at", { ascending: false });
+  return data || [];
 }
 
 export async function getOrdersForRider(supabase: TypedSupabaseClient, riderId: string) {

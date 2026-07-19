@@ -4,6 +4,7 @@ import { Button } from "@repo/ui";
 import { Crosshair, MapPin } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useState } from "react";
+import Swal from "sweetalert2";
 
 // Dynamically import MapComponent to prevent SSR issues with Leaflet
 const MapComponent = dynamic(() => import("./MapComponent"), {
@@ -34,12 +35,12 @@ export default function LocationPicker({ position, setPosition, readOnly = false
           setDetecting(false);
         },
         () => {
-          alert("Could not detect location automatically. Please select it manually on the map.");
+          Swal.fire({ icon: "warning", title: "Location Detection", text: "Could not detect location automatically. Please select it manually on the map." });
           setDetecting(false);
         },
       );
     } else {
-      alert("Geolocation is not supported by your browser.");
+      Swal.fire({ icon: "error", title: "Not Supported", text: "Geolocation is not supported by your browser." });
       setDetecting(false);
     }
   };

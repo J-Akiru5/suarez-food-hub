@@ -17,6 +17,7 @@ import {
 import { ArrowDown, ArrowUp, Loader2, Pencil, Plus, Tag, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { useToast } from "@/lib/use-toast";
+import Swal from "sweetalert2";
 
 export default function CategoriesPage() {
   const { toast } = useToast();
@@ -118,8 +119,18 @@ export default function CategoriesPage() {
     fetchCategories();
   }
 
-  async function handleDeleteCategory(id: string) {
-    if (!confirm("Are you sure you want to delete this category?")) return;
+  async function handleDeleteCategory(id: string, categoryName: string) {
+    const result = await Swal.fire({
+      title: "Delete Category?",
+      text: `Are you sure you want to delete "${categoryName}"? This cannot be undone.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, delete it",
+    });
+    if (!result.isConfirmed) return;
+
     const { error } = await deleteCategory(supabase, id);
     if (error) {
       toast({
@@ -129,7 +140,7 @@ export default function CategoriesPage() {
       });
       return;
     }
-    toast({ title: "Success", description: "Category deleted." });
+    toast({ title: "Success", description: `"${categoryName}" deleted.` });
     fetchCategories();
   }
 
@@ -246,7 +257,7 @@ export default function CategoriesPage() {
                         <Button
                           variant="outline"
                           size="sm"
-                          onClick={() => handleDeleteCategory(category.id)}
+                          onClick={() => handleDeleteCategory(category.id, category.name)}
                           className="gap-1 text-red-600 hover:text-red-700 hover:bg-red-50"
                         >
                           <Trash2 className="h-3 w-3" />
