@@ -192,9 +192,7 @@ export default function OrderDetailPage() {
             </Button>
             <span
               className={`flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full transition-all ${
-                realtimeStatus === "connected"
-                  ? "bg-green-50 text-green-600"
-                  : "bg-gray-100 text-gray-400"
+                realtimeStatus === "connected" ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-400"
               }`}
             >
               <span
@@ -386,9 +384,7 @@ export default function OrderDetailPage() {
 
                 {order.status !== "cancelled" && order.status !== "delivered" && (
                   <div className="space-y-2">
-                    {!order.rider && (
-                      <p className="text-sm text-muted-foreground">No rider assigned</p>
-                    )}
+                    {!order.rider && <p className="text-sm text-muted-foreground">No rider assigned</p>}
 
                     {/* Search input for riders */}
                     {riders.length > 5 && (
@@ -406,9 +402,7 @@ export default function OrderDetailPage() {
 
                     <Select onValueChange={assignRider}>
                       <SelectTrigger className="w-full">
-                        <SelectValue
-                          placeholder={order.rider ? "Change rider..." : "Assign a rider"}
-                        />
+                        <SelectValue placeholder={order.rider ? "Change rider..." : "Assign a rider"} />
                       </SelectTrigger>
                       <SelectContent className="max-h-60">
                         {filteredRiders.length > 0 ? (
@@ -455,10 +449,15 @@ export default function OrderDetailPage() {
                   </div>
                 )}
                 <div className="flex items-center justify-between mt-3 pt-3 border-t">
-                  <span className="text-sm text-muted-foreground">Status</span>                              <Select value={selectedPaymentStatus || order.payment_status} onValueChange={updatePaymentStatus} disabled={updating}>
-                                <SelectTrigger className="w-[140px] h-8 text-xs font-medium">
-                                  <SelectValue placeholder="Status" />
-                                </SelectTrigger>
+                  <span className="text-sm text-muted-foreground">Status</span>{" "}
+                  <Select
+                    value={selectedPaymentStatus || order.payment_status}
+                    onValueChange={updatePaymentStatus}
+                    disabled={updating}
+                  >
+                    <SelectTrigger className="w-[140px] h-8 text-xs font-medium">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="pending">Pending</SelectItem>
                       <SelectItem value="verified">Verified</SelectItem>

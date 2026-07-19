@@ -174,9 +174,7 @@ export default function OrderDetailPage() {
             </Button>
             <span
               className={`flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full transition-all ${
-                realtimeStatus === "connected"
-                  ? "bg-green-50 text-green-600"
-                  : "bg-gray-100 text-gray-400"
+                realtimeStatus === "connected" ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-400"
               }`}
             >
               <span
@@ -374,14 +372,9 @@ export default function OrderDetailPage() {
                     <p className="text-xs text-muted-foreground mb-1">
                       {order.rider ? "Reassign rider" : "No rider assigned"}
                     </p>
-                    <Select
-                      value={order.rider_id || undefined}
-                      onValueChange={assignRider}
-                    >
+                    <Select value={order.rider_id || undefined} onValueChange={assignRider}>
                       <SelectTrigger className="w-full">
-                        <SelectValue
-                          placeholder={riders.length === 0 ? "No riders available" : "Select rider"}
-                        />
+                        <SelectValue placeholder={riders.length === 0 ? "No riders available" : "Select rider"} />
                       </SelectTrigger>
                       <SelectContent>
                         {riders.length === 0 ? (

@@ -46,7 +46,10 @@ export async function POST(req: NextRequest) {
       .upload(filename, file, { contentType: file.type, upsert: true });
 
     if (uploadError) {
-      return NextResponse.json({ success: false, error: `Image upload failed: ${uploadError.message}` }, { status: 500 });
+      return NextResponse.json(
+        { success: false, error: `Image upload failed: ${uploadError.message}` },
+        { status: 500 },
+      );
     }
 
     const { data: urlData } = supabase.storage.from("business_qr").getPublicUrl(filename);

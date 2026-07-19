@@ -1,6 +1,17 @@
 "use client";
 
-import { ArrowRight, Bike, CheckCircle, ChefHat, Clock, Loader2, Navigation, ShoppingBag, Star, XCircle } from "lucide-react";
+import {
+  ArrowRight,
+  Bike,
+  CheckCircle,
+  ChefHat,
+  Clock,
+  Loader2,
+  Navigation,
+  ShoppingBag,
+  Star,
+  XCircle,
+} from "lucide-react";
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
@@ -108,7 +119,13 @@ function OrdersPageInner() {
         throw new Error(data.error || "Failed to cancel");
       }
       setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: "cancelled" } : o)));
-      Swal.fire({ icon: "success", title: "Cancelled", text: "Your order has been cancelled.", timer: 2000, showConfirmButton: false });
+      Swal.fire({
+        icon: "success",
+        title: "Cancelled",
+        text: "Your order has been cancelled.",
+        timer: 2000,
+        showConfirmButton: false,
+      });
     } catch (err: any) {
       Swal.fire({ icon: "error", title: "Error", text: err.message });
     } finally {
@@ -667,9 +684,7 @@ function OrdersPageInner() {
               >
                 Rate Your Delivery
               </h3>
-              <p style={{ color: "#94a3b8", fontSize: 14, margin: "0 0 20px" }}>
-                How was your delivery experience?
-              </p>
+              <p style={{ color: "#94a3b8", fontSize: 14, margin: "0 0 20px" }}>How was your delivery experience?</p>
 
               {/* Stars */}
               <div style={{ display: "flex", justifyContent: "center", gap: 8, marginBottom: 20 }}>

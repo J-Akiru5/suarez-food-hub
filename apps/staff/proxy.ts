@@ -15,9 +15,7 @@ export async function proxy(request: NextRequest) {
         setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
           cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
           supabaseResponse = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options),
-          );
+          cookiesToSet.forEach(({ name, value, options }) => supabaseResponse.cookies.set(name, value, options));
         },
       },
     },
@@ -43,11 +41,7 @@ export async function proxy(request: NextRequest) {
   }
 
   // Verify staff or admin role
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, is_active")
-    .eq("id", user.id)
-    .single();
+  const { data: profile } = await supabase.from("profiles").select("role, is_active").eq("id", user.id).single();
 
   if (!profile || (profile.role !== "staff" && profile.role !== "admin")) {
     await supabase.auth.signOut();
@@ -68,7 +62,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/((?!_next/static|_next/image|favicon\\.svg|manifest\\.json|.*\\.png$|.*\\.jpg$).*)",
-  ],
+  matcher: ["/((?!_next/static|_next/image|favicon\\.svg|manifest\\.json|.*\\.png$|.*\\.jpg$).*)"],
 };

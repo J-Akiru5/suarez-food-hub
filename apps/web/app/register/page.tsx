@@ -170,7 +170,7 @@ export default function Register() {
     } else {
       router.push("/login");
     }
-    
+
     router.refresh();
   };
 
@@ -185,7 +185,9 @@ export default function Register() {
       </div>
 
       {/* Register Card */}
-      <div className={`relative z-10 w-full bg-[#fdfdfd] rounded-[24px] shadow-2xl p-8 text-center my-8 transition-all duration-500 ${step === 'form' ? 'max-w-[440px] md:max-w-4xl' : 'max-w-[440px]'}`}>
+      <div
+        className={`relative z-10 w-full bg-[#fdfdfd] rounded-[24px] shadow-2xl p-8 text-center my-8 transition-all duration-500 ${step === "form" ? "max-w-[440px] md:max-w-4xl" : "max-w-[440px]"}`}
+      >
         {step === "form" && (
           <button
             onClick={() => setStep("role")}
@@ -276,7 +278,7 @@ export default function Register() {
               {/* Personal Info Box */}
               <div className="bg-gray-50/50 p-5 rounded-2xl border border-gray-100 flex flex-col gap-4 shadow-sm">
                 <h3 className="text-xs font-extrabold text-gray-500 uppercase tracking-widest mb-1">Personal Info</h3>
-                
+
                 <div className="grid grid-cols-2 gap-3">
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[11px] font-bold text-gray-700 ml-1">First Name</label>
@@ -311,7 +313,7 @@ export default function Register() {
                     className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white shadow-sm"
                   />
                 </div>
-                
+
                 <div className="flex flex-col gap-1.5 mt-auto">
                   <label className="text-[11px] font-bold text-gray-700 ml-1">Username</label>
                   <input
@@ -327,8 +329,10 @@ export default function Register() {
 
               {/* Account Details Box */}
               <div className="bg-gray-50/50 p-5 rounded-2xl border border-gray-100 flex flex-col gap-4 shadow-sm">
-                <h3 className="text-xs font-extrabold text-gray-500 uppercase tracking-widest mb-1">Account Security</h3>
-                
+                <h3 className="text-xs font-extrabold text-gray-500 uppercase tracking-widest mb-1">
+                  Account Security
+                </h3>
+
                 <div className="flex flex-col gap-1.5">
                   <label className="text-[11px] font-bold text-gray-700 ml-1">Email</label>
                   <input
@@ -385,8 +389,10 @@ export default function Register() {
               {/* Rider Vehicle Box */}
               {role === "rider" && (
                 <div className="md:col-span-2 bg-orange-50/50 p-5 rounded-2xl border border-orange-100/60 flex flex-col gap-4 shadow-sm">
-                  <h3 className="text-xs font-extrabold text-[#F08013] uppercase tracking-widest mb-1">Vehicle Details</h3>
-                  
+                  <h3 className="text-xs font-extrabold text-[#F08013] uppercase tracking-widest mb-1">
+                    Vehicle Details
+                  </h3>
+
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[11px] font-bold text-gray-700 ml-1">Vehicle Type</label>

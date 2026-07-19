@@ -54,7 +54,9 @@ export async function POST(req: NextRequest) {
         if (!variant) {
           stockErrors.push(`"${item.name}" variant not found`);
         } else if (variant.quantity < item.quantity) {
-          stockErrors.push(`"${item.name} (${variant.name})" only has ${variant.quantity} left, you ordered ${item.quantity}`);
+          stockErrors.push(
+            `"${item.name} (${variant.name})" only has ${variant.quantity} left, you ordered ${item.quantity}`,
+          );
         }
       } else {
         // Check product stock (no variant)
@@ -136,7 +138,7 @@ export async function POST(req: NextRequest) {
       }
 
       // Only check low stock alerts for non-variant products
-      if (!item.variantId && 'bufferQuantity' in result) {
+      if (!item.variantId && "bufferQuantity" in result) {
         const stockResult = result as { newQuantity: number; bufferQuantity: number; name: string };
         if (stockResult.newQuantity <= (stockResult.bufferQuantity ?? 5) && stockResult.newQuantity >= 0) {
           const admins = await getAdminIds(serviceSupabase);

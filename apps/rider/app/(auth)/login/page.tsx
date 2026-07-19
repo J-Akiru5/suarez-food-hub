@@ -133,7 +133,10 @@ export default function LoginPage() {
 
         <div className="text-center mt-6 space-y-2">
           <p className="text-brand-100 text-sm">Delivery Rider Portal</p>
-          <a href={process.env.NEXT_PUBLIC_WEB_URL || "http://localhost:3000"} className="inline-block text-brand-200 text-xs underline hover:text-white transition-colors">
+          <a
+            href={process.env.NEXT_PUBLIC_WEB_URL || "http://localhost:3000"}
+            className="inline-block text-brand-200 text-xs underline hover:text-white transition-colors"
+          >
             &larr; Back to website
           </a>
         </div>

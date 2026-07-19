@@ -39,7 +39,8 @@ export async function POST(req: NextRequest) {
 
     const formData = await req.formData();
     const qrcodeFile = formData.get("gcash_qr") as File | null;
-    if (!qrcodeFile || qrcodeFile.size === 0) return NextResponse.json({ success: false, error: "No image provided" }, { status: 400 });
+    if (!qrcodeFile || qrcodeFile.size === 0)
+      return NextResponse.json({ success: false, error: "No image provided" }, { status: 400 });
 
     const ext = qrcodeFile.name.split(".").pop();
     const filename = `gcash_qr_${Date.now()}.${ext}`;
@@ -47,7 +48,10 @@ export async function POST(req: NextRequest) {
       .from("business_qr")
       .upload(filename, qrcodeFile, { contentType: qrcodeFile.type, upsert: true });
     if (uploadError)
-      return NextResponse.json({ success: false, error: `Image upload failed: ${uploadError.message}` }, { status: 500 });
+      return NextResponse.json(
+        { success: false, error: `Image upload failed: ${uploadError.message}` },
+        { status: 500 },
+      );
 
     const { data: urlData } = supabase.storage.from("business_qr").getPublicUrl(filename);
 

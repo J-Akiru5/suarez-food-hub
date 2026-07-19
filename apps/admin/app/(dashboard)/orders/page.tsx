@@ -98,7 +98,10 @@ export default function OrdersPage() {
   }, [supabase, fetchOrders]);
 
   async function assignRider(orderId: string, riderId: string) {
-    const { error } = await supabase.from("orders").update({ rider_id: riderId, status: "confirmed" }).eq("id", orderId);
+    const { error } = await supabase
+      .from("orders")
+      .update({ rider_id: riderId, status: "confirmed" })
+      .eq("id", orderId);
     if (error) {
       toast({ title: "Error", description: "Failed to assign rider.", variant: "destructive" });
     } else {
@@ -307,7 +310,10 @@ export default function OrdersPage() {
 
                             <div>
                               <p className="text-xs font-medium text-gray-500 mb-1">Order Status</p>
-                              <Select value={pendingStatus[order.id] || order.status} onValueChange={(value) => updateStatus(order.id, value)}>
+                              <Select
+                                value={pendingStatus[order.id] || order.status}
+                                onValueChange={(value) => updateStatus(order.id, value)}
+                              >
                                 <SelectTrigger className="w-full h-8 text-xs">
                                   <SelectValue placeholder="Select order status" />
                                 </SelectTrigger>

@@ -21,12 +21,12 @@ export default function RidersPage() {
   const supabase = createBrowserTypedClient();
   const [riders, setRiders] = useState<RiderWithStats[]>([]);
   const [loading, setLoading] = useState(true);
-  const [errorMsg, setErrorMsg] = useState('');
+  const [errorMsg, setErrorMsg] = useState("");
   const [selectedRider, setSelectedRider] = useState<RiderWithStats | null>(null);
 
   const fetchRiders = useCallback(async () => {
     try {
-      setErrorMsg('');
+      setErrorMsg("");
       const riderProfiles = await getRiders(supabase);
       const ridersList = (riderProfiles as Profile[]) || [];
 
@@ -103,7 +103,13 @@ export default function RidersPage() {
       title: "Welcome to the team!",
       message: "Your rider application has been approved. You can now accept deliveries.",
     });
-    Swal.fire({ icon: "success", title: "Approved!", text: `${riderName} has been approved.`, timer: 2000, showConfirmButton: false });
+    Swal.fire({
+      icon: "success",
+      title: "Approved!",
+      text: `${riderName} has been approved.`,
+      timer: 2000,
+      showConfirmButton: false,
+    });
     fetchRiders();
   }
 
@@ -130,7 +136,13 @@ export default function RidersPage() {
       title: "Application Update",
       message: "Unfortunately, your rider application was not approved. Please contact support.",
     });
-    Swal.fire({ icon: "success", title: "Rejected", text: `${riderName} has been rejected.`, timer: 2000, showConfirmButton: false });
+    Swal.fire({
+      icon: "success",
+      title: "Rejected",
+      text: `${riderName} has been rejected.`,
+      timer: 2000,
+      showConfirmButton: false,
+    });
     fetchRiders();
   }
 

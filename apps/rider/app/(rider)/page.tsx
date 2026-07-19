@@ -18,8 +18,8 @@ import {
   RefreshCw,
   TrendingUp,
 } from "lucide-react";
-import Link from "next/link";
 import dynamic from "next/dynamic";
+import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Swal from "sweetalert2";
 import { getCurrentPosition, watchPosition } from "@/lib/geolocation";
@@ -56,7 +56,6 @@ interface TodayStats {
   deliveries: number;
   earnings: number;
 }
-
 
 export default function RiderDashboard() {
   const supabase = createBrowserTypedClient();
@@ -139,11 +138,8 @@ export default function RiderDashboard() {
     if (completedOrders && completedOrders.length > 0) {
       const times = completedOrders
         .filter((o: any) => o.delivered_at && o.confirmed_at)
-        .map((o: any) =>
-          (new Date(o.delivered_at).getTime() - new Date(o.confirmed_at).getTime()) / 60000,
-        );
-      const avgTime =
-        times.length > 0 ? times.reduce((a, b) => a + b, 0) / times.length : 0;
+        .map((o: any) => (new Date(o.delivered_at).getTime() - new Date(o.confirmed_at).getTime()) / 60000);
+      const avgTime = times.length > 0 ? times.reduce((a, b) => a + b, 0) / times.length : 0;
       setAvgDeliveryTime(Math.round(avgTime));
 
       // On-time rate: delivered within 45 min of confirmation
@@ -157,11 +153,7 @@ export default function RiderDashboard() {
   // Fetch restaurant location from DB
   useEffect(() => {
     (async () => {
-      const { data } = await supabase
-        .from("business_config")
-        .select("base_lat, base_lng")
-        .limit(1)
-        .maybeSingle();
+      const { data } = await supabase.from("business_config").select("base_lat, base_lng").limit(1).maybeSingle();
       if (data?.base_lat && data?.base_lng) {
         setRestaurantOrigin(`${data.base_lat},${data.base_lng}`);
       }
@@ -228,7 +220,11 @@ export default function RiderDashboard() {
           ) {
             fetchRiderData();
             // Play sound on new assignment
-            if (payload.old && (payload.old as any).rider_id !== currentRiderId && newOrder.rider_id === currentRiderId) {
+            if (
+              payload.old &&
+              (payload.old as any).rider_id !== currentRiderId &&
+              newOrder.rider_id === currentRiderId
+            ) {
               playNotification();
             }
           } else if (newOrder.status === "delivered") {
@@ -411,7 +407,8 @@ export default function RiderDashboard() {
       )}
 
       {hasNewOrder && !activeOrder && (
-        <div className="bg-brand-600 text-white p-4 rounded-xl pulse-notification flex items-center gap-3"
+        <div
+          className="bg-brand-600 text-white p-4 rounded-xl pulse-notification flex items-center gap-3"
           onClick={() => fetchRiderData()}
         >
           <Package size={24} />
@@ -441,8 +438,6 @@ export default function RiderDashboard() {
         </div>
       </div>
 
-
-
       {/* Weekly Earnings Trend — real data */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
         <h3 className="text-xs font-bold text-gray-700 mb-3 flex items-center gap-1.5">
@@ -453,8 +448,11 @@ export default function RiderDashboard() {
           {weeklyEarnings.length === 0 || weeklyEarnings.every((d) => d.amount === 0) ? (
             <div className="w-full flex flex-col items-center justify-center h-full gap-2">
               <svg width="36" height="36" viewBox="0 0 24 24" fill="none" className="opacity-30">
-                <path d="M3.5 18.5L9.5 12.5L13.5 16.5L22 6.5L20.59 5.09L13.5 13.5L9.5 9.5L2 17L3.5 18.5Z" fill="#94a3b8"/>
-                <path d="M21 19H3V21H21V19Z" fill="#94a3b8"/>
+                <path
+                  d="M3.5 18.5L9.5 12.5L13.5 16.5L22 6.5L20.59 5.09L13.5 13.5L9.5 9.5L2 17L3.5 18.5Z"
+                  fill="#94a3b8"
+                />
+                <path d="M21 19H3V21H21V19Z" fill="#94a3b8" />
               </svg>
               <p className="text-sm font-semibold text-gray-400">No Earnings Yet</p>
               <p className="text-[11px] text-gray-300">Complete deliveries to see your weekly trend</p>
@@ -470,9 +468,7 @@ export default function RiderDashboard() {
                   </span>
                   <div
                     className={`w-full max-w-[32px] rounded-t-md transition-all duration-300 ${
-                      day.amount > 0
-                        ? "bg-gradient-to-t from-brand-500 to-brand-400"
-                        : "bg-gray-100"
+                      day.amount > 0 ? "bg-gradient-to-t from-brand-500 to-brand-400" : "bg-gray-100"
                     }`}
                     style={{
                       height: `${barHeight}%`,

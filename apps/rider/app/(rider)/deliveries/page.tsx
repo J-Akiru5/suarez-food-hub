@@ -19,8 +19,6 @@ import {
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
-
-
 interface Delivery {
   id: string;
   customer?: { full_name: string; first_name?: string; last_name?: string } | null;
@@ -85,11 +83,7 @@ export default function DeliveriesPage() {
     fetchOrders();
     // Fetch restaurant location from DB
     (async () => {
-      const { data } = await supabase
-        .from("business_config")
-        .select("base_lat, base_lng")
-        .limit(1)
-        .maybeSingle();
+      const { data } = await supabase.from("business_config").select("base_lat, base_lng").limit(1).maybeSingle();
       if (data?.base_lat && data?.base_lng) {
         setRestaurantOrigin(`${data.base_lat},${data.base_lng}`);
       }
@@ -152,17 +146,13 @@ export default function DeliveriesPage() {
       active: allOrders.filter((o) => ACTIVE_STATUSES.includes(o.status)).length,
       pending: allOrders.filter((o) => PENDING_STATUSES.includes(o.status)).length,
       completed: allOrders.filter((o) => o.status === "delivered").length,
-      earnings: allOrders
-        .filter((o) => o.status === "delivered")
-        .reduce((sum, d) => sum + (d.delivery_fee || 0), 0),
+      earnings: allOrders.filter((o) => o.status === "delivered").reduce((sum, d) => sum + (d.delivery_fee || 0), 0),
     }),
     [allOrders],
   );
 
   // Orders with coordinates for map view
-  const ordersWithCoords = filteredOrders.filter(
-    (o) => o.delivery_lat && o.delivery_lng && o.status !== "cancelled",
-  );
+  const ordersWithCoords = filteredOrders.filter((o) => o.delivery_lat && o.delivery_lng && o.status !== "cancelled");
 
   if (loading) {
     return (
@@ -206,7 +196,10 @@ export default function DeliveriesPage() {
             className="w-full pl-9 pr-8 py-2.5 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white"
           />
           {searchQuery && (
-            <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600">
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
               <X size={16} />
             </button>
           )}
@@ -241,9 +234,7 @@ export default function DeliveriesPage() {
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
             className={`flex-1 px-3 py-2 text-xs font-semibold rounded-lg transition ${
-              activeTab === tab.key
-                ? "bg-white text-brand-600 shadow-sm"
-                : "text-gray-500 hover:text-gray-700"
+              activeTab === tab.key ? "bg-white text-brand-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
             }`}
           >
             {tab.label}
@@ -257,12 +248,8 @@ export default function DeliveriesPage() {
           <div className="h-64 bg-gray-50 flex items-center justify-center">
             <div className="text-center p-4">
               <MapIcon size={32} className="text-gray-300 mx-auto mb-2" />
-              <p className="text-sm text-gray-500 font-medium">
-                {ordersWithCoords.length} delivery locations
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                Open each delivery for navigation directions
-              </p>
+              <p className="text-sm text-gray-500 font-medium">{ordersWithCoords.length} delivery locations</p>
+              <p className="text-xs text-gray-400 mt-1">Open each delivery for navigation directions</p>
               <div className="mt-3 space-y-1.5 max-h-32 overflow-y-auto">
                 {ordersWithCoords.slice(0, 5).map((o) => (
                   <a
@@ -355,9 +342,7 @@ export default function DeliveriesPage() {
                       : format(new Date(order.created_at), "MMM d, h:mm a")}
                   </span>
                   {order.status !== "cancelled" && order.delivery_fee > 0 && (
-                    <span className="font-medium text-green-600">
-                      +₱{Number(order.delivery_fee).toFixed(2)}
-                    </span>
+                    <span className="font-medium text-green-600">+₱{Number(order.delivery_fee).toFixed(2)}</span>
                   )}
                 </div>
               </Link>

@@ -16,8 +16,8 @@ import {
 } from "@repo/ui";
 import { ArrowDown, ArrowUp, Loader2, Pencil, Plus, Tag, Trash2 } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { useToast } from "@/lib/use-toast";
 import Swal from "sweetalert2";
+import { useToast } from "@/lib/use-toast";
 
 export default function CategoriesPage() {
   const { toast } = useToast();

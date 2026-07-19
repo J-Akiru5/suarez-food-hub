@@ -138,9 +138,9 @@ export default function RiderLayout({ children }: { children: React.ReactNode })
         </div>
       )}
 
-      <header 
+      <header
         className="bg-white border-b border-gray-100 px-4 pb-3 sticky top-0 z-30 shadow-sm"
-        style={{ paddingTop: 'max(env(safe-area-inset-top, 0px), 1rem)' }}
+        style={{ paddingTop: "max(env(safe-area-inset-top, 0px), 1rem)" }}
       >
         <div className="flex items-center justify-between max-w-screen-xl mx-auto">
           {/* Logo / Title */}
@@ -163,9 +163,7 @@ export default function RiderLayout({ children }: { children: React.ReactNode })
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
                 )}
                 <span
-                  className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
-                    online ? "bg-green-500" : "bg-gray-400"
-                  }`}
+                  className={`relative inline-flex rounded-full h-2.5 w-2.5 ${online ? "bg-green-500" : "bg-gray-400"}`}
                 ></span>
               </span>
               {online ? "Online" : "Offline"}

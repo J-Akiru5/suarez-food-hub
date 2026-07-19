@@ -54,7 +54,11 @@ export default function LocationPicker({
           setDetecting(false);
         },
         () => {
-          Swal.fire({ icon: "warning", title: "Location Detection", text: "Could not detect location automatically. Please select it manually on the map." });
+          Swal.fire({
+            icon: "warning",
+            title: "Location Detection",
+            text: "Could not detect location automatically. Please select it manually on the map.",
+          });
           setDetecting(false);
         },
       );

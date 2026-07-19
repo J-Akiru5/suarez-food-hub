@@ -3,14 +3,7 @@
 const CACHE_NAME = "sfh-rider-cache-v1";
 
 // Assets to pre-cache on install
-const PRECACHE_URLS = [
-  "/",
-  "/login",
-  "/manifest.json",
-  "/logo.png",
-  "/favicon.svg",
-  "/globals.css",
-];
+const PRECACHE_URLS = ["/", "/login", "/manifest.json", "/logo.png", "/favicon.svg", "/globals.css"];
 
 // Install: pre-cache key assets
 self.addEventListener("install", (event) => {
@@ -26,11 +19,7 @@ self.addEventListener("install", (event) => {
 self.addEventListener("activate", (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
-      return Promise.all(
-        cacheNames
-          .filter((name) => name !== CACHE_NAME)
-          .map((name) => caches.delete(name)),
-      );
+      return Promise.all(cacheNames.filter((name) => name !== CACHE_NAME).map((name) => caches.delete(name)));
     }),
   );
   self.clients.claim();

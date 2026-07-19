@@ -4,12 +4,12 @@ import { createBrowserTypedClient } from "@repo/data-access/client";
 import { getOrderById } from "@repo/data-access/data/orders";
 import type { Order, Profile } from "@repo/types";
 import { formatCurrency } from "@repo/utils";
-import { Loader2 } from "lucide-react";
 import {
   ArrowLeft,
   CheckCircle,
   ChefHat,
   Clock,
+  Loader2,
   MapPin,
   Navigation,
   Package,
@@ -42,18 +42,10 @@ const STATUS_FLOW = [
 const JANIUAY_ORIGIN = "10.9501875,122.5065625";
 
 const RIDER_ACTIONS: Record<string, { label: string; nextStatus: string; icon: any; color: string }[]> = {
-  ready_for_pickup: [
-    { label: "Accept & Pick Up", nextStatus: "claimed_by_rider", icon: Package, color: "#06b6d4" },
-  ],
-  claimed_by_rider: [
-    { label: "Start Delivery", nextStatus: "out_for_delivery", icon: Navigation, color: "#f97316" },
-  ],
-  out_for_delivery: [
-    { label: "I'm Near Customer", nextStatus: "near_customer", icon: MapPin, color: "#10b981" },
-  ],
-  near_customer: [
-    { label: "Mark Delivered", nextStatus: "delivered", icon: CheckCircle, color: "#22c55e" },
-  ],
+  ready_for_pickup: [{ label: "Accept & Pick Up", nextStatus: "claimed_by_rider", icon: Package, color: "#06b6d4" }],
+  claimed_by_rider: [{ label: "Start Delivery", nextStatus: "out_for_delivery", icon: Navigation, color: "#f97316" }],
+  out_for_delivery: [{ label: "I'm Near Customer", nextStatus: "near_customer", icon: MapPin, color: "#10b981" }],
+  near_customer: [{ label: "Mark Delivered", nextStatus: "delivered", icon: CheckCircle, color: "#22c55e" }],
 };
 
 export default function RiderOrderDetailPage() {
@@ -128,9 +120,10 @@ export default function RiderOrderDetailPage() {
         Swal.fire({
           icon: "success",
           title: nextStatus === "delivered" ? "Delivered!" : "Status Updated",
-          text: nextStatus === "delivered"
-            ? "Order has been marked as delivered."
-            : `Order status changed to ${nextStatus.replace(/_/g, " ")}.`,
+          text:
+            nextStatus === "delivered"
+              ? "Order has been marked as delivered."
+              : `Order status changed to ${nextStatus.replace(/_/g, " ")}.`,
           timer: 2000,
           showConfirmButton: false,
           toast: true,
@@ -202,9 +195,7 @@ export default function RiderOrderDetailPage() {
         <div className="flex items-center gap-2">
           <span
             className={`flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full transition-all ${
-              realtimeStatus === "connected"
-                ? "bg-green-50 text-green-600"
-                : "bg-gray-100 text-gray-400"
+              realtimeStatus === "connected" ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-400"
             }`}
           >
             <span
@@ -281,7 +272,8 @@ export default function RiderOrderDetailPage() {
           <div>
             <p className="font-semibold text-sm text-blue-800">Waiting for Restaurant</p>
             <p className="text-xs text-blue-600 mt-1">
-              The order has been confirmed. The restaurant will start preparing shortly. You&apos;ll be notified when it&apos;s ready for pickup.
+              The order has been confirmed. The restaurant will start preparing shortly. You&apos;ll be notified when
+              it&apos;s ready for pickup.
             </p>
           </div>
         </div>
@@ -295,7 +287,8 @@ export default function RiderOrderDetailPage() {
           <div>
             <p className="font-semibold text-sm text-purple-800">Being Prepared</p>
             <p className="text-xs text-purple-600 mt-1">
-              The restaurant is cooking your customer&apos;s order. Head to Suarez Siomai Food Hub so you&apos;re ready when it&apos;s done.
+              The restaurant is cooking your customer&apos;s order. Head to Suarez Siomai Food Hub so you&apos;re ready
+              when it&apos;s done.
             </p>
           </div>
         </div>
@@ -326,7 +319,8 @@ export default function RiderOrderDetailPage() {
           <div>
             <p className="font-semibold text-sm text-green-800">Order Delivered</p>
             <p className="text-xs text-green-600 mt-1">
-              This order has been successfully delivered. ₱{Number(order.rider_earnings || 40).toFixed(2)} has been added to your earnings.
+              This order has been successfully delivered. ₱{Number(order.rider_earnings || 40).toFixed(2)} has been
+              added to your earnings.
             </p>
           </div>
         </div>
@@ -351,9 +345,7 @@ export default function RiderOrderDetailPage() {
           <p className="text-sm text-gray-600">{order.delivery_address}</p>
         </div>
         {order.delivery_notes && (
-          <div className="bg-yellow-50 rounded-lg p-2 text-xs text-yellow-800">
-            Note: {order.delivery_notes}
-          </div>
+          <div className="bg-yellow-50 rounded-lg p-2 text-xs text-yellow-800">Note: {order.delivery_notes}</div>
         )}
 
         {/* Quick actions */}
@@ -394,7 +386,9 @@ export default function RiderOrderDetailPage() {
         {order.payment_method !== "cod" && (
           <div className="flex justify-between text-sm">
             <span className="text-gray-500">Payment Status</span>
-            <span className={`font-medium capitalize ${order.payment_status === "verified" ? "text-green-600" : "text-amber-600"}`}>
+            <span
+              className={`font-medium capitalize ${order.payment_status === "verified" ? "text-green-600" : "text-amber-600"}`}
+            >
               {order.payment_status}
             </span>
           </div>
@@ -421,9 +415,7 @@ export default function RiderOrderDetailPage() {
             <div key={idx} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
               <div>
                 <p className="text-sm font-medium text-gray-800">{item.product?.name || item.product_name || "Item"}</p>
-                {(item as any).variant_name && (
-                  <p className="text-xs text-gray-400">{(item as any).variant_name}</p>
-                )}
+                {(item as any).variant_name && <p className="text-xs text-gray-400">{(item as any).variant_name}</p>}
                 <p className="text-xs text-gray-400">x{item.quantity}</p>
               </div>
               <p className="text-sm font-semibold text-brand-600">

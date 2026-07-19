@@ -49,80 +49,128 @@ const apiFixes: FileFix[] = [
   {
     file: "apps/web/app/api/locations/route.ts",
     replacements: [
-      { from: "return NextResponse.json(mappedData);", to: "return NextResponse.json({ success: true, data: mappedData });" },
+      {
+        from: "return NextResponse.json(mappedData);",
+        to: "return NextResponse.json({ success: true, data: mappedData });",
+      },
       { from: "return NextResponse.json([]);", to: "return NextResponse.json({ success: true, data: [] });" },
-      { from: "return NextResponse.json(data || {});", to: "return NextResponse.json({ success: true, data: data || {} });" },
+      {
+        from: "return NextResponse.json(data || {});",
+        to: "return NextResponse.json({ success: true, data: data || {} });",
+      },
     ],
   },
   // ORDERS (WEB) - GET
   {
     file: "apps/web/app/api/orders/route.ts",
     replacements: [
-      { from: "return NextResponse.json(orders);\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : \"Internal server error\";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}", to: "return NextResponse.json({ success: true, data: orders });\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : \"Internal server error\";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}" },
+      {
+        from: 'return NextResponse.json(orders);\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : "Internal server error";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}',
+        to: 'return NextResponse.json({ success: true, data: orders });\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : "Internal server error";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}',
+      },
       // Fix stock error response that was missing success: false
-      { from: "return NextResponse.json(\n          { error: `Stock error: ${result.error?.message || \"Unknown error\"}` },\n          { status: 500 },\n        );", to: "return NextResponse.json({ success: false, error: `Stock error: ${result.error?.message || \"Unknown error\"}` }, { status: 500 });" },
+      {
+        from: 'return NextResponse.json(\n          { error: `Stock error: ${result.error?.message || "Unknown error"}` },\n          { status: 500 },\n        );',
+        to: 'return NextResponse.json({ success: false, error: `Stock error: ${result.error?.message || "Unknown error"}` }, { status: 500 });',
+      },
       // Wrap POST success in data
-      { from: "return NextResponse.json({ success: true, orderId: order.id });", to: "return NextResponse.json({ success: true, data: { orderId: order.id } });" },
+      {
+        from: "return NextResponse.json({ success: true, orderId: order.id });",
+        to: "return NextResponse.json({ success: true, data: { orderId: order.id } });",
+      },
     ],
   },
   // ORDERS BY ID
   {
     file: "apps/web/app/api/orders/[id]/route.ts",
     replacements: [
-      { from: "return NextResponse.json(updated);\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : \"Internal server error\";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}", to: "return NextResponse.json({ success: true, data: updated });\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : \"Internal server error\";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}" },
+      {
+        from: 'return NextResponse.json(updated);\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : "Internal server error";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}',
+        to: 'return NextResponse.json({ success: true, data: updated });\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : "Internal server error";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}',
+      },
     ],
   },
   // ORDERS USER
   {
     file: "apps/web/app/api/orders/user/[userId]/route.ts",
     replacements: [
-      { from: "return NextResponse.json(orders);\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : \"Internal server error\";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}", to: "return NextResponse.json({ success: true, data: orders });\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : \"Internal server error\";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}" },
+      {
+        from: 'return NextResponse.json(orders);\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : "Internal server error";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}',
+        to: 'return NextResponse.json({ success: true, data: orders });\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : "Internal server error";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}',
+      },
     ],
   },
   // PRODUCTS
   {
     file: "apps/web/app/api/products/route.ts",
     replacements: [
-      { from: "return NextResponse.json(transformed);\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : \"Internal server error\";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}", to: "return NextResponse.json({ success: true, data: transformed });\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : \"Internal server error\";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}" },
-      { from: "return NextResponse.json(data);\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : \"Internal server error\";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}", to: "return NextResponse.json({ success: true, data });\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : \"Internal server error\";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}" },
+      {
+        from: 'return NextResponse.json(transformed);\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : "Internal server error";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}',
+        to: 'return NextResponse.json({ success: true, data: transformed });\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : "Internal server error";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}',
+      },
+      {
+        from: 'return NextResponse.json(data);\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : "Internal server error";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}',
+        to: 'return NextResponse.json({ success: true, data });\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : "Internal server error";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}',
+      },
     ],
   },
   // PRODUCTS BY ID
   {
     file: "apps/web/app/api/products/[id]/route.ts",
     replacements: [
-      { from: "return NextResponse.json(data);\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : \"Internal server error\";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}\n\nexport async function DELETE(", to: "return NextResponse.json({ success: true, data });\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : \"Internal server error\";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}\n\nexport async function DELETE(" },
+      {
+        from: 'return NextResponse.json(data);\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : "Internal server error";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}\n\nexport async function DELETE(',
+        to: 'return NextResponse.json({ success: true, data });\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : "Internal server error";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}\n\nexport async function DELETE(',
+      },
     ],
   },
   // PROFILE
   {
     file: "apps/web/app/api/profile/route.ts",
     replacements: [
-      { from: "return NextResponse.json(profile);\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : \"Internal server error\";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}", to: "return NextResponse.json({ success: true, data: profile });\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : \"Internal server error\";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}" },
-      { from: "return NextResponse.json(data);\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : \"Internal server error\";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}", to: "return NextResponse.json({ success: true, data });\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : \"Internal server error\";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}" },
+      {
+        from: 'return NextResponse.json(profile);\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : "Internal server error";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}',
+        to: 'return NextResponse.json({ success: true, data: profile });\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : "Internal server error";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}',
+      },
+      {
+        from: 'return NextResponse.json(data);\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : "Internal server error";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}',
+        to: 'return NextResponse.json({ success: true, data });\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : "Internal server error";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}',
+      },
     ],
   },
   // SETTINGS
   {
     file: "apps/web/app/api/settings/route.ts",
     replacements: [
-      { from: "return NextResponse.json(config);\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : \"Internal server error\";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}", to: "return NextResponse.json({ success: true, data: config });\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : \"Internal server error\";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}" },
+      {
+        from: 'return NextResponse.json(config);\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : "Internal server error";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}',
+        to: 'return NextResponse.json({ success: true, data: config });\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : "Internal server error";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}',
+      },
       // POST returns { success: true, url } - wrap in data
-      { from: "return NextResponse.json({ success: true, url: urlData.publicUrl });", to: "return NextResponse.json({ success: true, data: { url: urlData.publicUrl } });" },
+      {
+        from: "return NextResponse.json({ success: true, url: urlData.publicUrl });",
+        to: "return NextResponse.json({ success: true, data: { url: urlData.publicUrl } });",
+      },
     ],
   },
   // RIDER LOCATION (GET)
   {
     file: "apps/rider/app/api/location/route.ts",
     replacements: [
-      { from: "return NextResponse.json(data);\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : \"Internal server error\";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}", to: "return NextResponse.json({ success: true, data });\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : \"Internal server error\";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}" },
+      {
+        from: 'return NextResponse.json(data);\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : "Internal server error";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}',
+        to: 'return NextResponse.json({ success: true, data });\n  } catch (err: unknown) {\n    const message = err instanceof Error ? err.message : "Internal server error";\n    return NextResponse.json({ success: false, error: message }, { status: 500 });\n  }\n}',
+      },
     ],
   },
   // ADMIN UPLOAD QR
   {
     file: "apps/admin/app/api/upload-qr/route.ts",
     replacements: [
-      { from: "return NextResponse.json({ success: true, url: urlData.publicUrl });", to: "return NextResponse.json({ success: true, data: { url: urlData.publicUrl } });" },
+      {
+        from: "return NextResponse.json({ success: true, url: urlData.publicUrl });",
+        to: "return NextResponse.json({ success: true, data: { url: urlData.publicUrl } });",
+      },
     ],
   },
   // RIDER ORDERS COMPLETE
@@ -148,8 +196,10 @@ applyFixes(apiFixes);
 // web/app/page.tsx
 const webPage = resolve(ROOT, "apps/web/app/page.tsx");
 let wp = readFileSync(webPage, "utf-8");
-if (wp.includes('.then((data) => {\n    if (Array.isArray(data))')) {
-  wp = wp.split('.then((data) => {\n    if (Array.isArray(data))').join('.then((response) => {\n    const data = response.data || response;\n    if (Array.isArray(data))');
+if (wp.includes(".then((data) => {\n    if (Array.isArray(data))")) {
+  wp = wp
+    .split(".then((data) => {\n    if (Array.isArray(data))")
+    .join(".then((response) => {\n    const data = response.data || response;\n    if (Array.isArray(data))");
   writeFileSync(webPage, wp);
   console.log("✓ FIXED: apps/web/app/page.tsx");
 } else {
@@ -160,12 +210,16 @@ if (wp.includes('.then((data) => {\n    if (Array.isArray(data))')) {
 const menuPage = resolve(ROOT, "apps/web/app/menu/page.tsx");
 let mp = readFileSync(menuPage, "utf-8");
 let menuChanged = false;
-if (mp.includes('.then((data) => {\n        if (Array.isArray(data))')) {
-  mp = mp.split('.then((data) => {\n        if (Array.isArray(data))').join('.then((response) => {\n        const data = response.data || response;\n        if (Array.isArray(data))');
+if (mp.includes(".then((data) => {\n        if (Array.isArray(data))")) {
+  mp = mp
+    .split(".then((data) => {\n        if (Array.isArray(data))")
+    .join(".then((response) => {\n        const data = response.data || response;\n        if (Array.isArray(data))");
   menuChanged = true;
 }
-if (mp.includes('.then((data) => {\n          setCategories')) {
-  mp = mp.split('.then((data) => {\n          setCategories').join('.then((response) => {\n          const data = response.data || response;\n          setCategories');
+if (mp.includes(".then((data) => {\n          setCategories")) {
+  mp = mp
+    .split(".then((data) => {\n          setCategories")
+    .join(".then((response) => {\n          const data = response.data || response;\n          setCategories");
   menuChanged = true;
 }
 if (menuChanged) {
@@ -177,14 +231,20 @@ if (menuChanged) {
 const checkoutPage = resolve(ROOT, "apps/web/app/checkout/page.tsx");
 let cp = readFileSync(checkoutPage, "utf-8");
 let checkoutChanged = false;
-if (cp.includes('.then((r) => r.json())\n      .then(setBusiness)')) {
-  cp = cp.split('.then((r) => r.json())\n      .then(setBusiness)').join('.then((r) => r.json())\n      .then((response) => setBusiness(response.data || response))');
+if (cp.includes(".then((r) => r.json())\n      .then(setBusiness)")) {
+  cp = cp
+    .split(".then((r) => r.json())\n      .then(setBusiness)")
+    .join(".then((r) => r.json())\n      .then((response) => setBusiness(response.data || response))");
   checkoutChanged = true;
 }
 // Also fix the fetch order creation response
-if (cp.includes("const orderRes = await fetch(\"/api/orders\"")) {
+if (cp.includes('const orderRes = await fetch("/api/orders"')) {
   // Find the response handling
-  if (cp.includes("const orderData = await orderRes.json();\n        if (!orderRes.ok) {\n          setError(orderData.error || \"Order failed\");\n          return;\n        }")) {
+  if (
+    cp.includes(
+      'const orderData = await orderRes.json();\n        if (!orderRes.ok) {\n          setError(orderData.error || "Order failed");\n          return;\n        }',
+    )
+  ) {
     // This already checks orderRes.ok and orderData.error - it should work fine
     console.log("  ✓ checkout/page.tsx: order creation handles responses correctly");
   }
@@ -198,8 +258,12 @@ if (checkoutChanged) {
 const ordersPage = resolve(ROOT, "apps/web/app/orders/page.tsx");
 let op = readFileSync(ordersPage, "utf-8");
 let ordersChanged = false;
-if (op.includes('.then((data) => {\n        if (Array.isArray(data)) setOrders(data);')) {
-  op = op.split('.then((data) => {\n        if (Array.isArray(data)) setOrders(data);').join('.then((response) => {\n        const data = response.data || response;\n        if (Array.isArray(data)) setOrders(data);');
+if (op.includes(".then((data) => {\n        if (Array.isArray(data)) setOrders(data);")) {
+  op = op
+    .split(".then((data) => {\n        if (Array.isArray(data)) setOrders(data);")
+    .join(
+      ".then((response) => {\n        const data = response.data || response;\n        if (Array.isArray(data)) setOrders(data);",
+    );
   ordersChanged = true;
 }
 if (ordersChanged) {
@@ -214,11 +278,15 @@ let profileChanged = false;
 // Check for fetch("/api/locations?type=region") pattern
 // Usually it's: fetch("/api/locations?type=region").then(r => r.json()).then((data) => { ... })
 if (pp.includes(".then(r => r.json())\n            .then((data) => {")) {
-  pp = pp.split(".then(r => r.json())\n            .then((data) => {").join(".then(r => r.json())\n            .then((response) => { const data = response.data || response;");
+  pp = pp
+    .split(".then(r => r.json())\n            .then((data) => {")
+    .join(".then(r => r.json())\n            .then((response) => { const data = response.data || response;");
   profileChanged = true;
 }
-if (pp.includes('.then((data) => {\n      if (Array.isArray(data))')) {
-  pp = pp.split('.then((data) => {\n      if (Array.isArray(data))').join('.then((response) => {\n      const data = response.data || response;\n      if (Array.isArray(data))');
+if (pp.includes(".then((data) => {\n      if (Array.isArray(data))")) {
+  pp = pp
+    .split(".then((data) => {\n      if (Array.isArray(data))")
+    .join(".then((response) => {\n      const data = response.data || response;\n      if (Array.isArray(data))");
   profileChanged = true;
 }
 if (profileChanged) {

@@ -1,7 +1,7 @@
 /**
  * Diagnostic script to check rider profiles using BOTH the service role key
  * and the anon key (to simulate what the admin page does).
- * 
+ *
  * Run: npx tsx scripts/check-riders.ts
  */
 import { createClient } from "@supabase/supabase-js";

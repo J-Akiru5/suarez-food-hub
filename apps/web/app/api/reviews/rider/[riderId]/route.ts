@@ -1,27 +1,19 @@
 import { createServiceClient } from "@repo/data-access/client";
 import { type NextRequest, NextResponse } from "next/server";
 
-export async function GET(
-  _request: NextRequest,
-  { params }: { params: Promise<{ riderId: string }> },
-) {
+export async function GET(_request: NextRequest, { params }: { params: Promise<{ riderId: string }> }) {
   try {
     const { riderId } = await params;
     const supabase = createServiceClient();
 
-    const { data, error } = await supabase
-      .from("rider_reviews")
-      .select("rating")
-      .eq("rider_id", riderId);
+    const { data, error } = await supabase.from("rider_reviews").select("rating").eq("rider_id", riderId);
 
     if (error) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
     const reviews = data || [];
-    const averageRating = reviews.length > 0
-      ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
-      : 0;
+    const averageRating = reviews.length > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : 0;
 
     return NextResponse.json({
       success: true,

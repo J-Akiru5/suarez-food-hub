@@ -37,7 +37,10 @@ export async function POST(request: NextRequest) {
   });
 
   if (authError || !authData.user) {
-    return NextResponse.json({ success: false, error: authError?.message || "Failed to create account" }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: authError?.message || "Failed to create account" },
+      { status: 500 },
+    );
   }
 
   const { error: profileError } = await supabaseAdmin.from("profiles").upsert({
@@ -54,7 +57,10 @@ export async function POST(request: NextRequest) {
   });
 
   if (profileError) {
-    return NextResponse.json({ success: false, error: `Account created but profile failed: ${profileError.message}` }, { status: 500 });
+    return NextResponse.json(
+      { success: false, error: `Account created but profile failed: ${profileError.message}` },
+      { status: 500 },
+    );
   }
 
   return NextResponse.json({ success: true, data: { name: `${firstName} ${lastName}` } });

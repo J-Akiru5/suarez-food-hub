@@ -4,11 +4,7 @@ import { type NextRequest, NextResponse } from "next/server";
 export async function GET(_request: NextRequest) {
   try {
     const supabase = createServiceClient();
-    const { data } = await supabase
-      .from("business_config")
-      .select("base_lat, base_lng")
-      .limit(1)
-      .maybeSingle();
+    const { data } = await supabase.from("business_config").select("base_lat, base_lng").limit(1).maybeSingle();
 
     return NextResponse.json({
       success: true,

@@ -1,7 +1,7 @@
 /**
  * Apply RLS policies to the Supabase database using direct PostgreSQL connection.
  * Prisma's DATABASE_URL gives us direct DB access to run DDL commands.
- * 
+ *
  * Run: npx tsx scripts/apply-rls.ts
  */
 import { Client } from "pg";
@@ -56,9 +56,7 @@ async function main() {
   }
 
   // Apply the missing "profiles public read" policy
-  const hasPublicReadPolicy = existingPolicies.rows.some(
-    (p: any) => p.policyname === "profiles public read"
-  );
+  const hasPublicReadPolicy = existingPolicies.rows.some((p: any) => p.policyname === "profiles public read");
 
   if (!hasPublicReadPolicy) {
     console.log("\n🛠️  Creating 'profiles public read' policy (FOR SELECT USING true)...");

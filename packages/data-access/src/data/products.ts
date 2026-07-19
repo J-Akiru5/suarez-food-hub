@@ -105,10 +105,7 @@ export async function deductVariantStock(supabase: TypedSupabaseClient, variantI
   if (!variant) return { error: new Error("Variant not found") };
 
   const newQuantity = variant.quantity - quantity;
-  const { error } = await supabase
-    .from("product_variants")
-    .update({ quantity: newQuantity })
-    .eq("id", variantId);
+  const { error } = await supabase.from("product_variants").update({ quantity: newQuantity }).eq("id", variantId);
 
   return { error, newQuantity, name: variant.name, productId: variant.product_id };
 }

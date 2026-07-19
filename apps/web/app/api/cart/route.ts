@@ -29,7 +29,8 @@ export async function PUT(req: NextRequest) {
     if (!user) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
     const { items } = await req.json();
-    if (!Array.isArray(items)) return NextResponse.json({ success: false, error: "Items must be an array" }, { status: 400 });
+    if (!Array.isArray(items))
+      return NextResponse.json({ success: false, error: "Items must be an array" }, { status: 400 });
 
     const serviceSupabase = createServiceClient();
     const { error } = await upsertCart(serviceSupabase, user.id, items);

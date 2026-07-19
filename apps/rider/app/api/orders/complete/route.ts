@@ -26,8 +26,10 @@ export async function POST(request: NextRequest) {
     const order = await getOrderById(supabase, order_id);
 
     if (!order) return NextResponse.json({ success: false, error: "Order not found" }, { status: 404 });
-    if (order.rider_id !== user.id) return NextResponse.json({ success: false, error: "Not your order" }, { status: 403 });
-    if (order.status === "delivered") return NextResponse.json({ success: false, error: "Already delivered" }, { status: 400 });
+    if (order.rider_id !== user.id)
+      return NextResponse.json({ success: false, error: "Not your order" }, { status: 403 });
+    if (order.status === "delivered")
+      return NextResponse.json({ success: false, error: "Already delivered" }, { status: 400 });
 
     const { error: updateError } = await updateOrderStatus(supabase, order_id, "delivered", {
       delivered_at: new Date().toISOString(),

@@ -91,9 +91,7 @@ export default function ProfilePage() {
       .select("amount, status")
       .eq("rider_id", user.id);
 
-    const totalEarnings = earningsData
-      ? earningsData.reduce((sum, e) => sum + (e.amount || 0), 0)
-      : 0;
+    const totalEarnings = earningsData ? earningsData.reduce((sum, e) => sum + (e.amount || 0), 0) : 0;
 
     const { data: cashoutData } = await supabase
       .from("rider_cashouts")
@@ -279,11 +277,7 @@ export default function ProfilePage() {
         {/* Avatar with upload */}
         <div className="relative w-20 h-20 mx-auto mb-3 group">
           {profile.avatar_url ? (
-            <img
-              src={profile.avatar_url}
-              alt="Avatar"
-              className="w-20 h-20 rounded-full object-cover shadow-md"
-            />
+            <img src={profile.avatar_url} alt="Avatar" className="w-20 h-20 rounded-full object-cover shadow-md" />
           ) : (
             <div className="w-20 h-20 bg-gradient-to-br from-brand-400 to-brand-600 rounded-full flex items-center justify-center shadow-md">
               <User size={36} className="text-white" />
@@ -333,9 +327,7 @@ export default function ProfilePage() {
           </h3>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-[11px] font-semibold text-gray-500 block mb-1">
-                First Name
-              </label>
+              <label className="text-[11px] font-semibold text-gray-500 block mb-1">First Name</label>
               <input
                 type="text"
                 value={formFirstName}
@@ -344,9 +336,7 @@ export default function ProfilePage() {
               />
             </div>
             <div>
-              <label className="text-[11px] font-semibold text-gray-500 block mb-1">
-                Last Name
-              </label>
+              <label className="text-[11px] font-semibold text-gray-500 block mb-1">Last Name</label>
               <input
                 type="text"
                 value={formLastName}
@@ -365,9 +355,7 @@ export default function ProfilePage() {
             />
           </div>
 
-          <h4 className="text-xs font-bold text-gray-600 uppercase tracking-wider mt-2">
-            Vehicle Details
-          </h4>
+          <h4 className="text-xs font-bold text-gray-600 uppercase tracking-wider mt-2">Vehicle Details</h4>
           <div className="grid grid-cols-3 gap-3">
             <div>
               <label className="text-[11px] font-semibold text-gray-500 block mb-1">Type</label>
@@ -421,9 +409,7 @@ export default function ProfilePage() {
         </div>
         <div className="bg-white rounded-xl p-4 shadow-sm border border-brand-100 text-center">
           <DollarSign size={24} className="text-brand-600 mx-auto mb-1" />
-          <p className="text-2xl font-bold text-brand-600">
-            ₱{Number(profile.total_earnings).toFixed(2)}
-          </p>
+          <p className="text-2xl font-bold text-brand-600">₱{Number(profile.total_earnings).toFixed(2)}</p>
           <p className="text-xs text-gray-500">Earnings</p>
         </div>
       </div>
@@ -437,28 +423,21 @@ export default function ProfilePage() {
         <div className="grid grid-cols-3 gap-3 text-center">
           <div className="bg-gray-50 rounded-lg p-2">
             <p className="text-[10px] text-gray-500">Type</p>
-            <p className="text-sm font-semibold text-gray-700 capitalize">
-              {profile.vehicle_type || "—"}
-            </p>
+            <p className="text-sm font-semibold text-gray-700 capitalize">{profile.vehicle_type || "—"}</p>
           </div>
           <div className="bg-gray-50 rounded-lg p-2">
             <p className="text-[10px] text-gray-500">Plate</p>
-            <p className="text-sm font-semibold text-gray-700">
-              {profile.plate_number || "—"}
-            </p>
+            <p className="text-sm font-semibold text-gray-700">{profile.plate_number || "—"}</p>
           </div>
           <div className="bg-gray-50 rounded-lg p-2">
             <p className="text-[10px] text-gray-500">License</p>
-            <p className="text-sm font-semibold text-gray-700">
-              {profile.license_number || "—"}
-            </p>
+            <p className="text-sm font-semibold text-gray-700">{profile.license_number || "—"}</p>
           </div>
         </div>
       </div>
 
       {/* Settings Menu */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 divide-y divide-gray-100 overflow-hidden">
-
         {/* Sound Notification Toggle */}
         <button
           onClick={toggleSound}

@@ -1,18 +1,9 @@
 "use client";
 
 import { createBrowserTypedClient } from "@repo/data-access/client";
-import { getRiderEarnings, getCashouts } from "@repo/data-access/data/earnings";
+import { getCashouts, getRiderEarnings } from "@repo/data-access/data/earnings";
 import { eachDayOfInterval, endOfWeek, format, startOfMonth, startOfWeek, subMonths } from "date-fns";
-import {
-  Banknote,
-  BarChart3,
-  Calendar,
-  DollarSign,
-  Download,
-  Loader2,
-  Plus,
-  TrendingUp,
-} from "lucide-react";
+import { Banknote, BarChart3, Calendar, DollarSign, Download, Loader2, Plus, TrendingUp } from "lucide-react";
 import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 
@@ -75,7 +66,7 @@ export default function EarningsPage() {
         getCashouts(supabase),
       ]);
 
-      const riderCashouts = (cashoutData as any[] || []).filter((c: any) => c.rider_id === user.id);
+      const riderCashouts = ((cashoutData as any[]) || []).filter((c: any) => c.rider_id === user.id);
       const allEarnings = allRiderEarnings;
 
       const recentOrders = allRiderEarnings
@@ -103,28 +94,13 @@ export default function EarningsPage() {
       const available = Math.max(0, pendingAmt - cashoutedAmt);
 
       // Filter earnings by different periods
-      const todayEarningsFiltered = allEarnings.filter(
-        (e: any) => new Date(e.earned_at || e.created_at) >= todayStart,
-      );
-      const weekEarningsFiltered = allEarnings.filter(
-        (e: any) => new Date(e.earned_at || e.created_at) >= weekStart,
-      );
-      const monthEarningsFiltered = allEarnings.filter(
-        (e: any) => new Date(e.earned_at || e.created_at) >= monthStart,
-      );
+      const todayEarningsFiltered = allEarnings.filter((e: any) => new Date(e.earned_at || e.created_at) >= todayStart);
+      const weekEarningsFiltered = allEarnings.filter((e: any) => new Date(e.earned_at || e.created_at) >= weekStart);
+      const monthEarningsFiltered = allEarnings.filter((e: any) => new Date(e.earned_at || e.created_at) >= monthStart);
 
-      const todayAmt = todayEarningsFiltered.reduce(
-        (sum: number, e: any) => sum + (e.amount || 0),
-        0,
-      );
-      const weekAmt = weekEarningsFiltered.reduce(
-        (sum: number, e: any) => sum + (e.amount || 0),
-        0,
-      );
-      const monthAmt = monthEarningsFiltered.reduce(
-        (sum: number, e: any) => sum + (e.amount || 0),
-        0,
-      );
+      const todayAmt = todayEarningsFiltered.reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
+      const weekAmt = weekEarningsFiltered.reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
+      const monthAmt = monthEarningsFiltered.reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
 
       const weekDays = eachDayOfInterval({
         start: weekStart,
@@ -134,41 +110,38 @@ export default function EarningsPage() {
       const dailyEarnings = weekDays.map((day) => {
         const dayStr = format(day, "yyyy-MM-dd");
         const dayAmt = allEarnings
-          .filter(
-            (e: any) =>
-              format(new Date(e.earned_at || e.created_at), "yyyy-MM-dd") === dayStr,
-          )
+          .filter((e: any) => format(new Date(e.earned_at || e.created_at), "yyyy-MM-dd") === dayStr)
           .reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
         return { date: format(day, "EEE"), amount: dayAmt };
       });
 
       const recentDeliveries = (recentOrders || []).map((o: any) => ({
-          id: o.id,
-          date: o.delivered_at ? format(new Date(o.delivered_at), "MMM d") : "—",
-          amount: o.delivery_fee || 0,
-          address: o.delivery_address,
-        }));
+        id: o.id,
+        date: o.delivered_at ? format(new Date(o.delivered_at), "MMM d") : "—",
+        amount: o.delivery_fee || 0,
+        address: o.delivery_address,
+      }));
 
-        const cashouts = (riderCashouts || []).map((c: any) => ({
-          id: c.id,
-          amount: c.amount || 0,
-          status: c.status || "requested",
-          date: c.requested_at ? format(new Date(c.requested_at), "MMM d, yyyy") : "—",
-          notes: c.notes || null,
-        }));
+      const cashouts = (riderCashouts || []).map((c: any) => ({
+        id: c.id,
+        amount: c.amount || 0,
+        status: c.status || "requested",
+        date: c.requested_at ? format(new Date(c.requested_at), "MMM d, yyyy") : "—",
+        notes: c.notes || null,
+      }));
 
-        setEarnings({
-          today: todayAmt,
-          week: weekAmt,
-          month: monthAmt,
-          total: totalAmt,
-          available,
-          pending_amount: pendingAmt,
-          paid_amount: paidAmt,
-          dailyEarnings,
-          recentDeliveries,
-          cashouts,
-        });
+      setEarnings({
+        today: todayAmt,
+        week: weekAmt,
+        month: monthAmt,
+        total: totalAmt,
+        available,
+        pending_amount: pendingAmt,
+        paid_amount: paidAmt,
+        dailyEarnings,
+        recentDeliveries,
+        cashouts,
+      });
       setLoading(false);
     };
 
@@ -265,12 +238,18 @@ export default function EarningsPage() {
   // Get period-filtered total
   const getPeriodTotal = () => {
     switch (periodFilter) {
-      case "today": return earnings.today;
-      case "week": return earnings.week;
-      case "month": return earnings.month;
-      case "quarter": return earnings.month * 3;
-      case "all": return earnings.total;
-      default: return earnings.today;
+      case "today":
+        return earnings.today;
+      case "week":
+        return earnings.week;
+      case "month":
+        return earnings.month;
+      case "quarter":
+        return earnings.month * 3;
+      case "all":
+        return earnings.total;
+      default:
+        return earnings.today;
     }
   };
 
@@ -290,14 +269,10 @@ export default function EarningsPage() {
       `This Month: ₱${earnings.month.toFixed(2)}`,
       "",
       "RECENT DELIVERIES:",
-      ...earnings.recentDeliveries.map(
-        (d, i) => `${i + 1}. ${d.address} - ₱${d.amount.toFixed(2)} (${d.date})`,
-      ),
+      ...earnings.recentDeliveries.map((d, i) => `${i + 1}. ${d.address} - ₱${d.amount.toFixed(2)} (${d.date})`),
       "",
       "CASHOUT HISTORY:",
-      ...earnings.cashouts.map(
-        (c) => `₱${c.amount.toFixed(2)} - ${c.status} (${c.date})`,
-      ),
+      ...earnings.cashouts.map((c) => `₱${c.amount.toFixed(2)} - ${c.status} (${c.date})`),
     ].join("\n");
 
     const blob = new Blob([lines], { type: "text/plain" });
@@ -328,9 +303,7 @@ export default function EarningsPage() {
             key={period.key}
             onClick={() => setPeriodFilter(period.key)}
             className={`flex-1 px-3 py-2 text-xs font-semibold rounded-lg transition whitespace-nowrap ${
-              periodFilter === period.key
-                ? "bg-white text-brand-600 shadow-sm"
-                : "text-gray-500 hover:text-gray-700"
+              periodFilter === period.key ? "bg-white text-brand-600 shadow-sm" : "text-gray-500 hover:text-gray-700"
             }`}
           >
             {period.label}

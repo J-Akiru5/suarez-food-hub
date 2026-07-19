@@ -6,7 +6,9 @@ export async function POST(request: NextRequest) {
   try {
     const cookieStore = await cookies();
     const authSupabase = createAuthClient(cookieStore);
-    const { data: { user } } = await authSupabase.auth.getUser();
+    const {
+      data: { user },
+    } = await authSupabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
@@ -15,7 +17,10 @@ export async function POST(request: NextRequest) {
     const { order_id, rider_id, rating, comment } = body;
 
     if (!order_id || !rider_id || !rating) {
-      return NextResponse.json({ success: false, error: "order_id, rider_id, and rating are required" }, { status: 400 });
+      return NextResponse.json(
+        { success: false, error: "order_id, rider_id, and rating are required" },
+        { status: 400 },
+      );
     }
 
     if (rating < 1 || rating > 5) {
@@ -41,11 +46,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if already reviewed
-    const { data: existing } = await supabase
-      .from("rider_reviews")
-      .select("id")
-      .eq("order_id", order_id)
-      .maybeSingle();
+    const { data: existing } = await supabase.from("rider_reviews").select("id").eq("order_id", order_id).maybeSingle();
 
     if (existing) {
       return NextResponse.json({ success: false, error: "Already reviewed this order" }, { status: 400 });

@@ -99,7 +99,10 @@ export async function POST(req: NextRequest) {
         .from("images")
         .upload(filename, imageFile, { contentType: imageFile.type, upsert: true });
       if (uploadError)
-        return NextResponse.json({ success: false, error: `Image upload failed: ${uploadError.message}` }, { status: 500 });
+        return NextResponse.json(
+          { success: false, error: `Image upload failed: ${uploadError.message}` },
+          { status: 500 },
+        );
       const { data: urlData } = supabase.storage.from("images").getPublicUrl(filename);
       imageUrl = urlData.publicUrl;
     }

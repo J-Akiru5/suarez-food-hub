@@ -1,7 +1,7 @@
 import { createAuthClient, createServiceClient } from "@repo/data-access/client";
-import { getOrderById, updateOrderStatus } from "@repo/data-access/data/orders";
 import { createRiderEarning } from "@repo/data-access/data/earnings";
 import { createNotification } from "@repo/data-access/data/notifications";
+import { getOrderById, updateOrderStatus } from "@repo/data-access/data/orders";
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -33,15 +33,19 @@ export async function POST(request: NextRequest) {
 
     const order = await getOrderById(supabase, order_id);
     if (!order) return NextResponse.json({ success: false, error: "Order not found" }, { status: 404 });
-    if (order.rider_id !== user.id) return NextResponse.json({ success: false, error: "Not your order" }, { status: 403 });
+    if (order.rider_id !== user.id)
+      return NextResponse.json({ success: false, error: "Not your order" }, { status: 403 });
 
     // Validate status transition
     const allowedNext = RIDER_STATUS_FLOW[order.status];
     if (!allowedNext || !allowedNext.includes(status)) {
-      return NextResponse.json({
-        success: false,
-        error: `Cannot transition from "${order.status}" to "${status}".`,
-      }, { status: 400 });
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Cannot transition from "${order.status}" to "${status}".`,
+        },
+        { status: 400 },
+      );
     }
 
     // Build update payload with timestamp fields

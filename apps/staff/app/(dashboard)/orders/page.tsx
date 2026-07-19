@@ -308,7 +308,10 @@ export default function OrdersPage() {
 
                             <div>
                               <p className="text-xs font-medium text-gray-500 mb-1">Order Status</p>
-                              <Select value={kitchenOptions.includes(order.status) ? order.status : undefined} onValueChange={(value) => updateStatus(order.id, value)}>
+                              <Select
+                                value={kitchenOptions.includes(order.status) ? order.status : undefined}
+                                onValueChange={(value) => updateStatus(order.id, value)}
+                              >
                                 <SelectTrigger className="w-full h-8 text-xs">
                                   <SelectValue placeholder="Update kitchen status" />
                                 </SelectTrigger>
@@ -316,7 +319,9 @@ export default function OrdersPage() {
                                   <SelectItem value="confirmed">Confirm</SelectItem>
                                   <SelectItem value="preparing">Start Preparing</SelectItem>
                                   <SelectItem value="ready_for_pickup">Ready for Pickup</SelectItem>
-                                  <SelectItem value="cancelled" className="text-red-600">Cancel Order</SelectItem>
+                                  <SelectItem value="cancelled" className="text-red-600">
+                                    Cancel Order
+                                  </SelectItem>
                                 </SelectContent>
                               </Select>
                             </div>

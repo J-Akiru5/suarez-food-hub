@@ -41,10 +41,7 @@ export async function getRiders(supabase: TypedSupabaseClient) {
   return (data as Profile[]) || [];
 }
 
-export async function getAvailableRiders(
-  supabase: TypedSupabaseClient,
-  includeRiderIds?: string | string[],
-) {
+export async function getAvailableRiders(supabase: TypedSupabaseClient, includeRiderIds?: string | string[]) {
   const { data, error } = await supabase
     .from("profiles")
     .select("*")
@@ -64,10 +61,7 @@ export async function getAvailableRiders(
   const missingIds = idsToInclude.filter((id) => id && !riders.find((r) => r.id === id));
 
   if (missingIds.length > 0) {
-    const { data: currentRiders } = await supabase
-      .from("profiles")
-      .select("*")
-      .in("id", missingIds);
+    const { data: currentRiders } = await supabase.from("profiles").select("*").in("id", missingIds);
     if (currentRiders) {
       for (const rider of currentRiders) {
         if (!riders.find((r) => r.id === rider.id)) {

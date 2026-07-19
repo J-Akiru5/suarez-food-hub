@@ -2,7 +2,7 @@
 const nextConfig = {
   reactStrictMode: false,
   transpilePackages: ["@repo/ui", "@repo/utils", "@repo/types", "@repo.supabase"],
-  allowedDevOrigins: ['192.168.0.136'],
+  allowedDevOrigins: ["192.168.0.136"],
   images: {
     remotePatterns: [
       {
