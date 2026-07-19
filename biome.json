@@ -2,7 +2,45 @@
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   "files": { "ignoreUnknown": false },
   "formatter": { "indentStyle": "space", "indentWidth": 2, "lineWidth": 120 },
-  "linter": { "enabled": true },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "suspicious": {
+        "noExplicitAny": "warn",
+        "noArrayIndexKey": "warn",
+        "noUnknownAtRules": "warn",
+        "useIterableCallbackReturn": "warn",
+        "noTemplateCurlyInString": "warn",
+        "noThenProperty": "warn",
+        "noDuplicateProperties": "warn",
+        "noImplicitAnyLet": "warn"
+      },
+      "a11y": {
+        "useButtonType": "warn",
+        "noLabelWithoutControl": "warn",
+        "noStaticElementInteractions": "warn",
+        "useKeyWithClickEvents": "warn",
+        "noSvgWithoutTitle": "warn",
+        "useKeyWithMouseEvents": "warn"
+      },
+      "style": {
+        "noNonNullAssertion": "warn",
+        "noDescendingSpecificity": "warn"
+      },
+      "performance": {
+        "noImgElement": "warn"
+      },
+      "security": {
+        "noDangerouslySetInnerHtml": "warn"
+      },
+      "correctness": {
+        "noUnusedFunctionParameters": "warn",
+        "noUnusedVariables": "warn",
+        "useExhaustiveDependencies": "warn",
+        "noInvalidUseBeforeDeclaration": "warn"
+      }
+    }
+  },
   "javascript": { "formatter": { "quoteStyle": "double", "trailingCommas": "all", "semicolons": "always" } },
   "css": { "parser": { "tailwindDirectives": true } }
 }

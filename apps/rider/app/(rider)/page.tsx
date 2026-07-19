@@ -9,8 +9,6 @@ import {
   CheckCircle,
   ChevronRight,
   Clock,
-  Gauge,
-  Loader2,
   MapPin,
   Navigation,
   Package,
@@ -67,8 +65,8 @@ export default function RiderDashboard() {
   const [refreshing, setRefreshing] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [riderId, setRiderId] = useState<string | null>(null);
-  const [avgDeliveryTime, setAvgDeliveryTime] = useState(0);
-  const [onTimeRate, setOnTimeRate] = useState(0);
+  const [_avgDeliveryTime, setAvgDeliveryTime] = useState(0);
+  const [_onTimeRate, setOnTimeRate] = useState(0);
   const [weeklyEarnings, setWeeklyEarnings] = useState<{ day: string; amount: number }[]>([]);
   const [restaurantOrigin, setRestaurantOrigin] = useState("10.9501875,122.5065625");
   const riderIdRef = useRef<string | null>(null);
@@ -149,6 +147,32 @@ export default function RiderDashboard() {
 
     setLoading(false);
   }, [supabase]);
+
+  const playNotification = () => {
+    try {
+      // Respect user preferences from localStorage (set in Profile page)
+      const soundEnabled = localStorage.getItem("rider_sound_enabled") !== "false";
+      const vibrationEnabled = localStorage.getItem("rider_vibration_enabled") !== "false";
+
+      if (soundEnabled) {
+        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.frequency.setValueAtTime(880, ctx.currentTime);
+        osc.frequency.setValueAtTime(660, ctx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.3, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.4);
+      }
+
+      if (vibrationEnabled && navigator.vibrate) {
+        navigator.vibrate([200, 100, 200]);
+      }
+    } catch {}
+  };
 
   // Fetch restaurant location from DB
   useEffect(() => {
@@ -265,7 +289,7 @@ export default function RiderDashboard() {
         navigator.geolocation.clearWatch(watchIdRef.current);
       }
     };
-  }, [fetchRiderData, supabase]);
+  }, [fetchRiderData, supabase, playNotification]);
   // Note: riderId intentionally NOT in deps — we use riderIdRef to avoid re-creating the channel
 
   useEffect(() => {
@@ -345,32 +369,6 @@ export default function RiderDashboard() {
       Swal.fire({ icon: "error", title: "Error", text: err.message });
     }
     setUpdating(false);
-  };
-
-  const playNotification = () => {
-    try {
-      // Respect user preferences from localStorage (set in Profile page)
-      const soundEnabled = localStorage.getItem("rider_sound_enabled") !== "false";
-      const vibrationEnabled = localStorage.getItem("rider_vibration_enabled") !== "false";
-
-      if (soundEnabled) {
-        const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.frequency.setValueAtTime(880, ctx.currentTime);
-        osc.frequency.setValueAtTime(660, ctx.currentTime + 0.15);
-        gain.gain.setValueAtTime(0.3, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
-        osc.start(ctx.currentTime);
-        osc.stop(ctx.currentTime + 0.4);
-      }
-
-      if (vibrationEnabled && navigator.vibrate) {
-        navigator.vibrate([200, 100, 200]);
-      }
-    } catch {}
   };
 
   const maxWeeklyAmt = Math.max(...weeklyEarnings.map((d) => d.amount), 1);

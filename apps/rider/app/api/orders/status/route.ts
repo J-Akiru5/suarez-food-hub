@@ -38,7 +38,7 @@ export async function POST(request: NextRequest) {
 
     // Validate status transition
     const allowedNext = RIDER_STATUS_FLOW[order.status];
-    if (!allowedNext || !allowedNext.includes(status)) {
+    if (!allowedNext?.includes(status)) {
       return NextResponse.json(
         {
           success: false,

@@ -3,7 +3,7 @@
 import { createBrowserTypedClient } from "@repo/data-access/client";
 import { getCashouts, getRiderEarnings } from "@repo/data-access/data/earnings";
 import { eachDayOfInterval, endOfWeek, format, startOfMonth, startOfWeek, subMonths } from "date-fns";
-import { Banknote, BarChart3, Calendar, DollarSign, Download, Loader2, Plus, TrendingUp } from "lucide-react";
+import { Banknote, Download, Loader2, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import Swal from "sweetalert2";
 
@@ -45,7 +45,7 @@ export default function EarningsPage() {
   const [loading, setLoading] = useState(true);
   const [cashouting, setCashouting] = useState(false);
   const [periodFilter, setPeriodFilter] = useState<string>("today");
-  const [showStats, setShowStats] = useState(false);
+  const [_showStats, _setShowStats] = useState(false);
 
   useEffect(() => {
     const fetchEarnings = async () => {
@@ -59,7 +59,7 @@ export default function EarningsPage() {
       todayStart.setHours(0, 0, 0, 0);
       const weekStart = startOfWeek(now, { weekStartsOn: 1 });
       const monthStart = startOfMonth(now);
-      const quarterStart = subMonths(now, 3);
+      const _quarterStart = subMonths(now, 3);
 
       const [allRiderEarnings, cashoutData] = await Promise.all([
         getRiderEarnings(supabase, user.id),

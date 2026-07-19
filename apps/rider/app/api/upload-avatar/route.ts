@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
     // Verify rider role
     const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
 
-    if (!profile || profile.role !== "rider") {
+    if (profile?.role !== "rider") {
       return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
     }
 

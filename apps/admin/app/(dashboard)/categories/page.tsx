@@ -216,6 +216,7 @@ export default function CategoriesPage() {
                     <td className="px-4 py-3 hidden sm:table-cell">
                       <div className="flex items-center gap-1">
                         <button
+                          type="button"
                           onClick={() => moveCategory(category, "up")}
                           disabled={idx === 0}
                           className="p-1 hover:bg-gray-100 rounded disabled:opacity-30"
@@ -223,6 +224,7 @@ export default function CategoriesPage() {
                           <ArrowUp className="h-3 w-3" />
                         </button>
                         <button
+                          type="button"
                           onClick={() => moveCategory(category, "down")}
                           disabled={idx === categories.length - 1}
                           className="p-1 hover:bg-gray-100 rounded disabled:opacity-30"
@@ -281,13 +283,23 @@ export default function CategoriesPage() {
 
           <div className="space-y-4 py-4">
             <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1">Name</label>
-              <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Category name" />
+              <label htmlFor="category-name" className="text-sm font-medium text-gray-700 block mb-1">
+                Name
+              </label>
+              <Input
+                id="category-name"
+                value={formName}
+                onChange={(e) => setFormName(e.target.value)}
+                placeholder="Category name"
+              />
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1">Slug</label>
+              <label htmlFor="category-slug" className="text-sm font-medium text-gray-700 block mb-1">
+                Slug
+              </label>
               <Input
+                id="category-slug"
                 value={formSlug}
                 onChange={(e) => setFormSlug(e.target.value)}
                 placeholder="category-slug (auto-generated if empty)"
@@ -295,8 +307,11 @@ export default function CategoriesPage() {
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-700 block mb-1">Description</label>
+              <label htmlFor="category-description" className="text-sm font-medium text-gray-700 block mb-1">
+                Description
+              </label>
               <textarea
+                id="category-description"
                 value={formDescription}
                 onChange={(e) => setFormDescription(e.target.value)}
                 placeholder="Category description (optional)"

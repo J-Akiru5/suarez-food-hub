@@ -95,6 +95,7 @@ export default function CashoutsPage() {
       <div className="flex gap-2 border-b border-gray-200 overflow-x-auto">
         {tabs.map((t) => (
           <button
+            type="button"
             key={t.value}
             onClick={() => setFilter(t.value)}
             className={`px-4 py-2 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${

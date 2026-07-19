@@ -46,7 +46,7 @@ export async function proxy(request: NextRequest) {
     .eq("id", user.id)
     .single();
 
-  if (!profile || profile.role !== "rider") {
+  if (profile?.role !== "rider") {
     await supabase.auth.signOut();
     const url = request.nextUrl.clone();
     url.pathname = "/login";
