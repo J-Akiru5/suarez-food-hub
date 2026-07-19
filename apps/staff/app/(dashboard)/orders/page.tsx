@@ -2,7 +2,7 @@
 
 import { createBrowserTypedClient } from "@repo/data-access/client";
 import { getOrdersWithProfiles } from "@repo/data-access/data/orders";
-import { getRiders } from "@repo/data-access/data/profiles";
+import { getAvailableRiders } from "@repo/data-access/data/profiles";
 import type { Order, Profile } from "@repo/types";
 import {
   Button,
@@ -22,12 +22,14 @@ import { formatCurrency } from "@repo/utils";
 import { ChevronDown, ChevronUp, Eye, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import Swal from "sweetalert2";
 
 const statusTabs = [
   { value: "all", label: "All" },
   { value: "pending", label: "Pending" },
   { value: "confirmed", label: "Confirmed" },
   { value: "preparing", label: "Preparing" },
+  { value: "ready_for_pickup", label: "Ready" },
   { value: "out_for_delivery", label: "Out for Delivery" },
   { value: "delivered", label: "Delivered" },
   { value: "cancelled", label: "Cancelled" },
@@ -49,6 +51,8 @@ const paymentColors: Record<string, string> = {
   rejected: "bg-red-100 text-red-800",
   refunded: "bg-gray-100 text-gray-800",
 };
+
+const kitchenOptions = ["confirmed", "preparing", "ready_for_pickup", "cancelled"];
 
 interface OrderWithProfile extends Order {
   profile?: Profile | null;
@@ -72,9 +76,11 @@ export default function OrdersPage() {
   }, [activeTab, supabase]);
 
   const fetchRiders = useCallback(async () => {
-    const data = await getRiders(supabase);
+    // Include all currently assigned rider IDs so dropdown doesn't break
+    const assignedIds = orders.map((o) => o.rider_id).filter(Boolean) as string[];
+    const data = await getAvailableRiders(supabase, assignedIds);
     setRiders((data as Profile[]) || []);
-  }, [supabase]);
+  }, [supabase, orders]);
 
   useEffect(() => {
     fetchOrders();
@@ -94,13 +100,33 @@ export default function OrdersPage() {
     };
   }, [supabase, fetchOrders]);
 
-  async function assignRider(orderId: string, riderId: string) {
-    await supabase.from("orders").update({ rider_id: riderId, status: "confirmed" }).eq("id", orderId);
+  async function assignRider(orderId: string, riderId: string, currentStatus?: string) {
+    const updates: Record<string, any> = { rider_id: riderId };
+    // Don't regress kitchen status - only set to confirmed if still pending/confirmed
+    if (!currentStatus || currentStatus === "pending" || currentStatus === "confirmed") {
+      updates.status = "confirmed";
+    }
+    await supabase.from("orders").update(updates).eq("id", orderId);
     fetchOrders();
   }
 
   async function updateStatus(orderId: string, status: string) {
-    await supabase.from("orders").update({ status }).eq("id", orderId);
+    try {
+      const res = await fetch("/api/orders", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ order_id: orderId, status }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        console.error("Status update failed:", data.error);
+        Swal.fire({ icon: "error", title: "Error", text: data.error || "Unknown error" });
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Network error";
+      console.error("Status update error:", message);
+      Swal.fire({ icon: "error", title: "Error", text: "Network error while updating order. Please try again." });
+    }
     fetchOrders();
   }
 
@@ -229,10 +255,15 @@ export default function OrdersPage() {
                           </div>
 
                           {/* Assign Rider */}
-                          {!order.rider_id && order.status !== "cancelled" && order.status !== "delivered" && (
+                          {order.status !== "cancelled" && order.status !== "delivered" && (
                             <div>
-                              <p className="text-xs font-medium text-gray-500 mb-1">Assign Rider</p>
-                              <Select onValueChange={(value) => assignRider(order.id, value)}>
+                              <p className="text-xs font-medium text-gray-500 mb-1">
+                                {order.rider_id ? "Reassign Rider" : "Assign Rider"}
+                              </p>
+                              <Select
+                                value={order.rider_id || undefined}
+                                onValueChange={(value) => assignRider(order.id, value, order.status)}
+                              >
                                 <SelectTrigger className="w-full">
                                   <SelectValue
                                     placeholder={riders.length === 0 ? "No riders available" : "Select rider"}
@@ -277,18 +308,19 @@ export default function OrdersPage() {
 
                             <div>
                               <p className="text-xs font-medium text-gray-500 mb-1">Order Status</p>
-                              <Select value={order.status} onValueChange={(value) => updateStatus(order.id, value)}>
+                              <Select
+                                value={kitchenOptions.includes(order.status) ? order.status : undefined}
+                                onValueChange={(value) => updateStatus(order.id, value)}
+                              >
                                 <SelectTrigger className="w-full h-8 text-xs">
-                                  <SelectValue placeholder="Select order status" />
+                                  <SelectValue placeholder="Update kitchen status" />
                                 </SelectTrigger>
                                 <SelectContent>
-                                  <SelectItem value="pending">Pending</SelectItem>
-                                  <SelectItem value="confirmed">Confirmed</SelectItem>
-                                  <SelectItem value="preparing">Preparing</SelectItem>
-                                  <SelectItem value="out_for_delivery">Out for Delivery</SelectItem>
-                                  <SelectItem value="delivered">Delivered</SelectItem>
+                                  <SelectItem value="confirmed">Confirm</SelectItem>
+                                  <SelectItem value="preparing">Start Preparing</SelectItem>
+                                  <SelectItem value="ready_for_pickup">Ready for Pickup</SelectItem>
                                   <SelectItem value="cancelled" className="text-red-600">
-                                    Cancelled
+                                    Cancel Order
                                   </SelectItem>
                                 </SelectContent>
                               </Select>

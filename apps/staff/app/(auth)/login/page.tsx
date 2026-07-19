@@ -6,6 +6,7 @@ import { Button, Input } from "@repo/ui";
 import { ChefHat, Loader2 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
+import { lookupUsername } from "../../actions/auth";
 
 function LoginForm() {
   const router = useRouter();
@@ -24,19 +25,13 @@ function LoginForm() {
     setError("");
     setLoading(true);
 
-    const lookup = await fetch("/api/auth/lookup-username", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: username.trim() }),
-    });
+    const email = await lookupUsername(username.trim());
 
-    if (!lookup.ok) {
+    if (!email) {
       setError("Invalid username or password");
       setLoading(false);
       return;
     }
-
-    const { email } = await lookup.json();
 
     const { data, error: authError } = await supabase.auth.signInWithPassword({
       email,

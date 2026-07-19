@@ -7,14 +7,36 @@
 :root {
   --foreground: #171717;
   --background: #fafafa;
+  --card-bg: #ffffff;
+  --card-border: #e5e7eb;
+  --brand-bg: #fef3e7;
+  --text-primary: #171717;
+  --text-secondary: #6b7280;
+  --text-muted: #9ca3af;
+  --bg-gray: #f3f4f6;
+  --bg-gray-hover: #e5e7eb;
+}
+
+.dark {
+  --foreground: #f3f4f6;
+  --background: #0f172a;
+  --card-bg: #1e293b;
+  --card-border: #334155;
+  --brand-bg: #2d1f0e;
+  --text-primary: #f3f4f6;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  --bg-gray: #1e293b;
+  --bg-gray-hover: #334155;
 }
 
 body {
   color: var(--foreground);
   background: var(--background);
-  font-family: var(--font-plus-jakarta-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  font-family: var(--plus-jakarta-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 @layer utilities {

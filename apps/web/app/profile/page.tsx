@@ -52,7 +52,10 @@ export default function ProfilePage() {
   useEffect(() => {
     fetch("/api/locations?type=region")
       .then((r) => r.json())
-      .then(setRegions)
+      .then((response) => {
+        const data = response.data || response;
+        if (Array.isArray(data)) setRegions(data);
+      })
       .catch(() => {});
   }, []);
 
@@ -63,7 +66,10 @@ export default function ProfilePage() {
     }
     fetch(`/api/locations?type=province&parent=${regionId}`)
       .then((r) => r.json())
-      .then(setProvinces)
+      .then((response) => {
+        const data = response.data || response;
+        if (Array.isArray(data)) setProvinces(data);
+      })
       .catch(() => {});
   }, [regionId]);
 
@@ -74,7 +80,10 @@ export default function ProfilePage() {
     }
     fetch(`/api/locations?type=city&parent=${provinceId}`)
       .then((r) => r.json())
-      .then(setTowns)
+      .then((response) => {
+        const data = response.data || response;
+        if (Array.isArray(data)) setTowns(data);
+      })
       .catch(() => {});
   }, [provinceId]);
 
@@ -85,7 +94,10 @@ export default function ProfilePage() {
     }
     fetch(`/api/locations?type=barangay&parent=${townId}`)
       .then((r) => r.json())
-      .then(setBarangays)
+      .then((response) => {
+        const data = response.data || response;
+        if (Array.isArray(data)) setBarangays(data);
+      })
       .catch(() => {});
   }, [townId]);
 

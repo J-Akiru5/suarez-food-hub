@@ -11,8 +11,8 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        display: ["var(--font-playfair-display)", "serif"],
-        sans: ["var(--font-plus-jakarta-sans)", "sans-serif"],
+        display: ["var(--playfair-display)", "serif"],
+        sans: ["var(--plus-jakarta-sans)", "sans-serif"],
       },
     },
   },

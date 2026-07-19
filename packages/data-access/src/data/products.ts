@@ -95,6 +95,21 @@ export async function deductStock(supabase: TypedSupabaseClient, productId: stri
   return { error, newQuantity, bufferQuantity: product.buffer_quantity, name: product.name };
 }
 
+export async function deductVariantStock(supabase: TypedSupabaseClient, variantId: string, quantity: number) {
+  const { data: variant } = await supabase
+    .from("product_variants")
+    .select("product_id, quantity, name")
+    .eq("id", variantId)
+    .single();
+
+  if (!variant) return { error: new Error("Variant not found") };
+
+  const newQuantity = variant.quantity - quantity;
+  const { error } = await supabase.from("product_variants").update({ quantity: newQuantity }).eq("id", variantId);
+
+  return { error, newQuantity, name: variant.name, productId: variant.product_id };
+}
+
 export async function markLowStockAlerted(supabase: TypedSupabaseClient, productId: string) {
   await supabase.from("products").update({ low_stock_alerted_at: new Date().toISOString() }).eq("id", productId);
 }

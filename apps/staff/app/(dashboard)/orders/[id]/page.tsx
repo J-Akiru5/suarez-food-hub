@@ -1,22 +1,21 @@
 "use client";
 
-import type { Database } from "@repo/data-access";
 import { createBrowserTypedClient } from "@repo/data-access/client";
-import { getOrderById, updateOrderStatus } from "@repo/data-access/data/orders";
-import { getRiders } from "@repo/data-access/data/profiles";
+import { getOrderById } from "@repo/data-access/data/orders";
+import { getAvailableRiders } from "@repo/data-access/data/profiles";
 import type { Order, Profile } from "@repo/types";
 import { Button, Card, CardContent, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@repo/ui";
 import { formatCurrency } from "@repo/utils";
 import { ArrowLeft, CheckCircle2, Loader2, MapPin, Phone, Printer, User, XCircle } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import Swal from "sweetalert2";
 
 const statusSteps = [
   { key: "pending", label: "Pending" },
   { key: "confirmed", label: "Confirmed" },
   { key: "preparing", label: "Preparing" },
-  { key: "out_for_delivery", label: "Out for Delivery" },
-  { key: "delivered", label: "Delivered" },
+  { key: "ready_for_pickup", label: "Ready for Pickup" },
 ];
 
 const statusColors: Record<string, string> = {
@@ -42,6 +41,7 @@ export default function OrderDetailPage() {
   const [riders, setRiders] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
+  const [realtimeStatus, setRealtimeStatus] = useState<string>("connecting");
 
   const orderId = params.id as string;
 
@@ -52,25 +52,73 @@ export default function OrderDetailPage() {
   }, [supabase, orderId]);
 
   const fetchRiders = useCallback(async () => {
-    const data = await getRiders(supabase);
+    // Pass current rider ID so they appear in dropdown even if occupied
+    const currentRiderId = order?.rider_id || undefined;
+    const data = await getAvailableRiders(supabase, currentRiderId);
     setRiders((data as Profile[]) || []);
-  }, [supabase]);
+  }, [supabase, order?.rider_id]);
 
   useEffect(() => {
     fetchOrder();
     fetchRiders();
   }, [fetchOrder, fetchRiders]);
 
+  // Realtime auto-refresh when order status or rider changes
+  useEffect(() => {
+    const channel = supabase
+      .channel(`staff-order-${orderId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "orders",
+          filter: `id=eq.${orderId}`,
+        },
+        () => {
+          fetchOrder();
+          fetchRiders();
+        },
+      )
+      .subscribe((status) => {
+        setRealtimeStatus(status === "SUBSCRIBED" ? "connected" : "disconnected");
+      });
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchOrder, fetchRiders, orderId, supabase]);
+
   async function assignRider(riderId: string) {
     setUpdating(true);
-    await updateOrderStatus(supabase, orderId, "confirmed", { rider_id: riderId });
+    const updates: Record<string, any> = { rider_id: riderId };
+    // Don't regress kitchen status - only set to confirmed if still pending/confirmed
+    if (order?.status === "pending" || order?.status === "confirmed") {
+      updates.status = "confirmed";
+    }
+    await supabase.from("orders").update(updates).eq("id", orderId);
     await fetchOrder();
     setUpdating(false);
   }
 
   async function updateStatus(status: string) {
     setUpdating(true);
-    await updateOrderStatus(supabase, orderId, status as Database["public"]["Enums"]["order_status"]);
+    try {
+      const res = await fetch("/api/orders", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ order_id: orderId, status }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        console.error("Status update failed:", data.error);
+        Swal.fire({ icon: "error", title: "Error", text: data.error || "Unknown error" });
+      }
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : "Network error";
+      console.error("Status update error:", message);
+      Swal.fire({ icon: "error", title: "Error", text: "Network error while updating status. Please try again." });
+    }
     await fetchOrder();
     setUpdating(false);
   }
@@ -103,6 +151,8 @@ export default function OrderDetailPage() {
 
   const currentStepIndex = statusSteps.findIndex((s) => s.key === order.status);
   const isCancelled = order.status === "cancelled";
+  const kitchenOptions = ["confirmed", "preparing", "ready_for_pickup", "cancelled"];
+  const kitchenValue = kitchenOptions.includes(order.status) ? order.status : undefined;
 
   return (
     <>
@@ -122,6 +172,18 @@ export default function OrderDetailPage() {
               <Printer className="h-4 w-4" />
               Print
             </Button>
+            <span
+              className={`flex items-center gap-1 text-[10px] font-medium px-2 py-0.5 rounded-full transition-all ${
+                realtimeStatus === "connected" ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-400"
+              }`}
+            >
+              <span
+                className={`w-1.5 h-1.5 rounded-full ${
+                  realtimeStatus === "connected" ? "bg-green-500 animate-pulse" : "bg-gray-400"
+                }`}
+              />
+              {realtimeStatus === "connected" ? "Live" : "..."}
+            </span>
             <span
               className={`text-xs font-medium px-3 py-1 rounded-full ${
                 statusColors[order.status] || "bg-gray-100 text-gray-800"
@@ -289,8 +351,8 @@ export default function OrderDetailPage() {
             <Card>
               <CardContent className="p-4 space-y-3">
                 <h2 className="font-bold font-display">Assigned Rider</h2>
-                {order.rider ? (
-                  <div className="space-y-2">
+                {order.rider && (
+                  <div className="space-y-2 mb-2">
                     <div className="flex items-center gap-2 text-sm">
                       <User className="h-4 w-4 text-gray-400" />
                       <span>
@@ -304,23 +366,30 @@ export default function OrderDetailPage() {
                       </div>
                     )}
                   </div>
-                ) : (
+                )}
+                {order.status !== "cancelled" && order.status !== "delivered" && (
                   <div>
-                    <p className="text-sm text-muted-foreground mb-2">No rider assigned</p>
-                    {order.status !== "cancelled" && order.status !== "delivered" && (
-                      <Select onValueChange={assignRider}>
-                        <SelectTrigger className="w-full">
-                          <SelectValue placeholder="Assign a rider" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {riders.map((rider) => (
+                    <p className="text-xs text-muted-foreground mb-1">
+                      {order.rider ? "Reassign rider" : "No rider assigned"}
+                    </p>
+                    <Select value={order.rider_id || undefined} onValueChange={assignRider}>
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder={riders.length === 0 ? "No riders available" : "Select rider"} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {riders.length === 0 ? (
+                          <SelectItem value="none" disabled>
+                            No riders available
+                          </SelectItem>
+                        ) : (
+                          riders.map((rider) => (
                             <SelectItem key={rider.id} value={rider.id}>
                               {rider.first_name || rider.full_name} {rider.last_name || ""}
                             </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    )}
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
                   </div>
                 )}
               </CardContent>
@@ -364,20 +433,18 @@ export default function OrderDetailPage() {
             {/* Actions */}
             <Card>
               <CardContent className="p-4">
-                <h2 className="font-bold mb-3 font-display">Update Order Status</h2>
+                <h2 className="font-bold mb-3 font-display">Kitchen Actions</h2>
                 <div className="flex items-center gap-2">
-                  <Select value={order.status} onValueChange={updateStatus} disabled={updating}>
+                  <Select value={kitchenValue} onValueChange={updateStatus} disabled={updating}>
                     <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select order status" />
+                      <SelectValue placeholder="Update kitchen status" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="confirmed">Confirmed</SelectItem>
-                      <SelectItem value="preparing">Preparing</SelectItem>
-                      <SelectItem value="out_for_delivery">Out for Delivery</SelectItem>
-                      <SelectItem value="delivered">Delivered</SelectItem>
+                      <SelectItem value="confirmed">Confirm Order</SelectItem>
+                      <SelectItem value="preparing">Start Preparing</SelectItem>
+                      <SelectItem value="ready_for_pickup">Ready for Pickup</SelectItem>
                       <SelectItem value="cancelled" className="text-red-600">
-                        Cancelled
+                        Cancel Order
                       </SelectItem>
                     </SelectContent>
                   </Select>

@@ -9,6 +9,7 @@ import type { Profile } from "@repo/types";
 import { Button, Card, CardContent } from "@repo/ui";
 import { Bike, CheckCircle, MapPin, Package, XCircle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import Swal from "sweetalert2";
 
 interface RiderWithStats extends Profile {
   activeDeliveries: number;
@@ -20,38 +21,46 @@ export default function RidersPage() {
   const supabase = createBrowserTypedClient();
   const [riders, setRiders] = useState<RiderWithStats[]>([]);
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState("");
   const [selectedRider, setSelectedRider] = useState<RiderWithStats | null>(null);
 
   const fetchRiders = useCallback(async () => {
-    const riderProfiles = await getRiders(supabase);
-    const ridersList = (riderProfiles as Profile[]) || [];
+    try {
+      setErrorMsg("");
+      const riderProfiles = await getRiders(supabase);
+      const ridersList = (riderProfiles as Profile[]) || [];
 
-    const ridersWithStats = await Promise.all(
-      ridersList.map(async (rider) => {
-        const [activeDeliveries, totalDeliveries, location] = await Promise.all([
-          getOrdersCountForRider(supabase, rider.id, [
-            "confirmed",
-            "preparing",
-            "ready_for_pickup",
-            "claimed_by_rider",
-            "out_for_delivery",
-            "near_customer",
-          ]),
-          getCompletedOrdersCount(supabase, rider.id),
-          getRiderLocations(supabase, rider.id),
-        ]);
+      const ridersWithStats = await Promise.all(
+        ridersList.map(async (rider) => {
+          const [activeDeliveries, totalDeliveries, location] = await Promise.all([
+            getOrdersCountForRider(supabase, rider.id, [
+              "confirmed",
+              "preparing",
+              "ready_for_pickup",
+              "claimed_by_rider",
+              "out_for_delivery",
+              "near_customer",
+            ]),
+            getCompletedOrdersCount(supabase, rider.id),
+            getRiderLocations(supabase, rider.id),
+          ]);
 
-        return {
-          ...rider,
-          activeDeliveries,
-          totalDeliveries,
-          location: location || null,
-        };
-      }),
-    );
+          return {
+            ...rider,
+            activeDeliveries,
+            totalDeliveries,
+            location: location || null,
+          };
+        }),
+      );
 
-    setRiders(ridersWithStats as RiderWithStats[]);
-    setLoading(false);
+      setRiders(ridersWithStats as RiderWithStats[]);
+      setLoading(false);
+    } catch (err: any) {
+      console.error("fetchRiders error:", err);
+      setErrorMsg(err.message || String(err));
+      setLoading(false);
+    }
   }, [supabase]);
 
   useEffect(() => {
@@ -71,25 +80,68 @@ export default function RidersPage() {
     };
   }, [supabase, fetchRiders]);
 
-  async function approveRider(riderId: string) {
-    await updateRiderStatus(supabase, riderId, "available", true);
+  async function approveRider(riderId: string, riderName: string) {
+    const result = await Swal.fire({
+      title: "Approve Rider?",
+      text: `${riderName} will be able to accept deliveries.`,
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonColor: "#16a34a",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, approve",
+    });
+    if (!result.isConfirmed) return;
+
+    const { error } = await updateRiderStatus(supabase, riderId, "available", true);
+    if (error) {
+      Swal.fire({ icon: "error", title: "Error", text: "Failed to approve rider. Please try again." });
+      return;
+    }
     await createNotification(supabase, {
       user_id: riderId,
       type: "rider_approved",
       title: "Welcome to the team!",
       message: "Your rider application has been approved. You can now accept deliveries.",
     });
+    Swal.fire({
+      icon: "success",
+      title: "Approved!",
+      text: `${riderName} has been approved.`,
+      timer: 2000,
+      showConfirmButton: false,
+    });
     fetchRiders();
   }
 
-  async function rejectRider(riderId: string) {
-    if (!confirm("Reject this rider application? They will not be able to log in.")) return;
-    await updateRiderStatus(supabase, riderId, "rejected", false);
+  async function rejectRider(riderId: string, riderName: string) {
+    const result = await Swal.fire({
+      title: "Reject Rider?",
+      text: `${riderName} will not be able to log in.`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, reject",
+    });
+    if (!result.isConfirmed) return;
+
+    const { error } = await updateRiderStatus(supabase, riderId, "rejected", false);
+    if (error) {
+      Swal.fire({ icon: "error", title: "Error", text: "Failed to reject rider. Please try again." });
+      return;
+    }
     await createNotification(supabase, {
       user_id: riderId,
       type: "rider_rejected",
       title: "Application Update",
       message: "Unfortunately, your rider application was not approved. Please contact support.",
+    });
+    Swal.fire({
+      icon: "success",
+      title: "Rejected",
+      text: `${riderName} has been rejected.`,
+      timer: 2000,
+      showConfirmButton: false,
     });
     fetchRiders();
   }
@@ -100,6 +152,12 @@ export default function RidersPage() {
         <h1 className="text-2xl font-bold text-gray-900 font-display">Riders</h1>
         <p className="text-sm text-muted-foreground">Manage and track delivery riders</p>
       </div>
+
+      {errorMsg && (
+        <div className="p-4 bg-red-50 text-red-600 rounded-lg border border-red-100">
+          <strong>Error: </strong> {errorMsg}
+        </div>
+      )}
 
       {loading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -178,7 +236,7 @@ export default function RidersPage() {
                       className="flex-1 bg-green-600 hover:bg-green-700 text-white"
                       onClick={(e) => {
                         e.stopPropagation();
-                        approveRider(rider.id);
+                        approveRider(rider.id, `${rider.first_name} ${rider.last_name}`);
                       }}
                     >
                       <CheckCircle className="h-3 w-3 mr-1" /> Approve
@@ -189,7 +247,7 @@ export default function RidersPage() {
                       className="flex-1 text-red-600 border-red-200"
                       onClick={(e) => {
                         e.stopPropagation();
-                        rejectRider(rider.id);
+                        rejectRider(rider.id, `${rider.first_name} ${rider.last_name}`);
                       }}
                     >
                       <XCircle className="h-3 w-3 mr-1" /> Reject

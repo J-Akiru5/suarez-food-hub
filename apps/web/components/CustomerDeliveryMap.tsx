@@ -84,15 +84,15 @@ export default function CustomerDeliveryMap({
 
   return (
     <div className="h-64 rounded-xl overflow-hidden border border-gray-200">
-      <MapContainer center={center} zoom={14} className="h-full w-full" zoomControl={false}>
+      <MapContainer {...({ center, zoom: 14, zoomControl: false } as any)} className="h-full w-full">
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         <MapUpdater center={center} />
         {riderPos && (
-          <Marker position={riderPos} icon={riderIcon}>
+          <Marker {...({ position: riderPos, icon: riderIcon } as any)}>
             <Popup>Rider is here</Popup>
           </Marker>
         )}
-        <Marker position={[destinationLat, destinationLng]} icon={destinationIcon}>
+        <Marker {...({ position: [destinationLat, destinationLng], icon: destinationIcon } as any)}>
           <Popup>{destinationLabel}</Popup>
         </Marker>
       </MapContainer>

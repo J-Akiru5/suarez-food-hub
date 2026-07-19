@@ -11,6 +11,7 @@ interface CartItem {
   price: number;
   quantity: number;
   variant: string;
+  variantId?: string;
 }
 
 interface CartSidebarProps {

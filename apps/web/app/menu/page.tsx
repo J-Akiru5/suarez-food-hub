@@ -37,6 +37,7 @@ interface CartItem {
   price: number;
   quantity: number;
   variant: string;
+  variantId?: string;
 }
 
 // ─── Emoji map for categories ─────────────────────────
@@ -90,6 +91,7 @@ export default function MenuPage() {
   const [fetchError, setFetchError] = useState("");
 
   const [activeCategory, setActiveCategory] = useState("All");
+  const [searchQuery, setSearchQuery] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [showCart, setShowCart] = useState(false);
 
@@ -113,7 +115,8 @@ export default function MenuPage() {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
       })
-      .then((data) => {
+      .then((response) => {
+        const data = response.data || response;
         if (Array.isArray(data)) {
           setProducts(data);
           const uniqueCats = Array.from(new Set(data.map((p: Product) => p.category)));
@@ -205,7 +208,9 @@ export default function MenuPage() {
     }
     setModalProduct(product);
     const opts = getVariantOptions(product);
-    setSelectedVariant(opts[0] || "");
+    // Auto-select first variant that has stock
+    const firstInStock = product.variants.find((v) => v.quantity > 0);
+    setSelectedVariant(firstInStock?.name || opts[0] || "");
     setQuantity(1);
   };
 
@@ -223,6 +228,7 @@ export default function MenuPage() {
       price,
       quantity: 1,
       variant: "",
+      variantId: undefined,
     };
     const existing = cart.findIndex((c) => c.id === product.id && c.variant === "");
     let updated: CartItem[];
@@ -242,7 +248,17 @@ export default function MenuPage() {
       requireAuth();
       return;
     }
+
+    // Prevent adding out-of-stock variants (defensive check)
+    const variantData = modalProduct.variants.find((v) => v.name === selectedVariant);
+    if (variantData && variantData.quantity <= 0) {
+      showToast(`${modalProduct.name} (${selectedVariant}) is sold out`);
+      setModalProduct(null);
+      return;
+    }
+
     const price = getVariantPrice(modalProduct, selectedVariant);
+    const foundVariant = modalProduct.variants.find((v) => v.name === selectedVariant);
     const cartItem: CartItem = {
       id: modalProduct.id,
       name: modalProduct.name,
@@ -250,6 +266,7 @@ export default function MenuPage() {
       price,
       quantity,
       variant: selectedVariant,
+      variantId: foundVariant?.id,
     };
     const existing = cart.findIndex((c) => c.id === modalProduct.id && c.variant === selectedVariant);
     let updated: CartItem[];
@@ -283,7 +300,11 @@ export default function MenuPage() {
   const totalItems = cart.reduce((s, c) => s + c.quantity, 0);
   const totalPrice = cart.reduce((s, c) => s + c.price * c.quantity, 0);
 
-  const filtered = activeCategory === "All" ? products : products.filter((p) => p.category === activeCategory);
+  const searchFiltered = searchQuery.trim()
+    ? products.filter((p) => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    : products;
+  const filtered =
+    activeCategory === "All" ? searchFiltered : searchFiltered.filter((p) => p.category === activeCategory);
 
   const getImageSrc = (img: string) => {
     if (!img) return "/assets/food-hub.jpg";
@@ -294,7 +315,7 @@ export default function MenuPage() {
 
   // ─── Render ──────────────────────────────────────────
   return (
-    <div className="min-h-screen flex flex-col bg-cream">
+    <div className="h-[100dvh] flex flex-col bg-cream">
       {/* ── Toast ── */}
       <div
         className={cn(
@@ -356,20 +377,30 @@ export default function MenuPage() {
                     {getVariantLabel(modalProduct.variant_type)}
                   </p>
                   <div className="flex flex-wrap gap-2">
-                    {getVariantOptions(modalProduct).map((opt) => (
-                      <button
-                        key={opt}
-                        onClick={() => setSelectedVariant(opt)}
-                        className={cn(
-                          "px-5 py-2 rounded-full text-sm font-semibold border-2 transition-all duration-200 cursor-pointer",
-                          selectedVariant === opt
-                            ? "bg-brand-500 text-white border-brand-500"
-                            : "bg-white text-gray-600 border-gray-200 hover:border-brand-500/50",
-                        )}
-                      >
-                        {opt}
-                      </button>
-                    ))}
+                    {getVariantOptions(modalProduct).map((opt) => {
+                      const optData = modalProduct.variants.find((v) => v.name === opt);
+                      const optSoldOut = optData ? optData.quantity <= 0 : false;
+                      return (
+                        <button
+                          key={opt}
+                          onClick={() => !optSoldOut && setSelectedVariant(opt)}
+                          disabled={optSoldOut}
+                          className={cn(
+                            "px-5 py-2 rounded-full text-sm font-semibold border-2 transition-all duration-200",
+                            selectedVariant === opt
+                              ? "bg-brand-500 text-white border-brand-500"
+                              : optSoldOut
+                                ? "bg-gray-100 text-gray-300 border-gray-100 cursor-not-allowed line-through"
+                                : "bg-white text-gray-600 border-gray-200 hover:border-brand-500/50 cursor-pointer",
+                          )}
+                        >
+                          {opt}
+                          {optSoldOut && (
+                            <span className="text-[10px] ml-1 text-red-400 font-normal not-italic">Sold Out</span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -391,7 +422,11 @@ export default function MenuPage() {
                     {quantity}
                   </span>
                   <button
-                    onClick={() => setQuantity((q) => Math.min(modalProduct.quantity, q + 1))}
+                    onClick={() => {
+                      const variantData = modalProduct.variants.find((v) => v.name === selectedVariant);
+                      const max = variantData?.quantity || modalProduct.quantity;
+                      setQuantity((q) => Math.min(max, q + 1));
+                    }}
                     className="w-9 h-9 rounded-full bg-white border-none flex items-center justify-center cursor-pointer shadow-sm hover:shadow transition-shadow"
                   >
                     <Plus className="w-4 h-4 text-gray-600" />
@@ -410,19 +445,27 @@ export default function MenuPage() {
                     ₱{getVariantPrice(modalProduct, selectedVariant) * quantity}.00
                   </p>
                 </div>
-                <button
-                  onClick={addToCart}
-                  disabled={modalProduct.availability === "sold_out"}
-                  className={cn(
-                    "px-6 py-3.5 rounded-full font-bold text-sm flex items-center gap-2 border-none transition-all duration-200",
-                    modalProduct.availability === "sold_out"
-                      ? "bg-gray-200 text-gray-400 cursor-not-allowed"
-                      : "bg-brand-500 text-white hover:bg-brand-600 cursor-pointer shadow-lg shadow-brand-500/25 active:scale-95",
-                  )}
-                >
-                  <ShoppingCart className="w-4 h-4" />
-                  {modalProduct.availability === "sold_out" ? "Sold Out" : "Add to Basket"}
-                </button>
+                {(() => {
+                  const variantData = modalProduct.variants.find((v) => v.name === selectedVariant);
+                  const selectedSoldOut = hasVariants(modalProduct)
+                    ? !variantData || variantData.quantity <= 0
+                    : modalProduct.availability === "sold_out";
+                  return (
+                    <button
+                      onClick={addToCart}
+                      disabled={selectedSoldOut}
+                      className={cn(
+                        "px-6 py-3.5 rounded-full font-bold text-sm flex items-center gap-2 border-none transition-all duration-200",
+                        selectedSoldOut
+                          ? "bg-gray-200 text-gray-400 cursor-not-allowed"
+                          : "bg-brand-500 text-white hover:bg-brand-600 cursor-pointer shadow-lg shadow-brand-500/25 active:scale-95",
+                      )}
+                    >
+                      <ShoppingCart className="w-4 h-4" />
+                      {selectedSoldOut ? "Sold Out" : "Add to Basket"}
+                    </button>
+                  );
+                })()}
               </div>
             </div>
           </div>
@@ -443,7 +486,7 @@ export default function MenuPage() {
       <div className="flex-1 flex overflow-hidden pt-[72px]">
         {/* ── Left: Products ── */}
         <div className="flex-1 flex flex-col min-w-0">
-          {/* Category Pills */}
+          {/* Category Pills + Search */}
           <div className="sticky top-0 z-10 bg-cream/95 backdrop-blur-xl border-b border-black/5">
             <div className="flex items-center gap-2 px-4 md:px-6 py-3 overflow-x-auto hide-scrollbar">
               {loading
@@ -455,7 +498,10 @@ export default function MenuPage() {
                 : categories.map((cat) => (
                     <button
                       key={cat}
-                      onClick={() => setActiveCategory(cat)}
+                      onClick={() => {
+                        setActiveCategory(cat);
+                        setSearchQuery("");
+                      }}
                       className={cn(
                         "flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-semibold whitespace-nowrap border-none cursor-pointer transition-all duration-200 flex-shrink-0",
                         activeCategory === cat
@@ -467,6 +513,25 @@ export default function MenuPage() {
                       {cat}
                     </button>
                   ))}
+              {/* Search input */}
+              <div className="relative flex-1 min-w-[160px] max-w-[280px] ml-auto">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search menu..."
+                  className="w-full h-9 pl-9 pr-3 rounded-full bg-white/80 border border-gray-200 text-xs focus:outline-none focus:border-brand-400 focus:bg-white transition-all"
+                />
+                <svg
+                  className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
             </div>
           </div>
 
@@ -524,8 +589,11 @@ export default function MenuPage() {
               ) : (
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
                   {filtered.map((item) => {
-                    const isSoldOut = item.availability === "sold_out";
                     const hasVar = hasVariants(item);
+                    const isSoldOut =
+                      item.availability === "sold_out" ||
+                      (!hasVar && item.quantity <= 0) ||
+                      (hasVar && item.variants.every((v) => v.quantity <= 0));
 
                     return (
                       <div

@@ -27,6 +27,7 @@ enum RiderStatus {
   vacant
   occupied
   rejected
+  offline
 
   @@map("rider_status")
 }
@@ -139,6 +140,7 @@ model Profile {
   statusLogs        OrderStatusLog[] @relation("LogChanger")
   notifications     Notification[]
   cart              UserCart?
+  riderReviews      RiderReview[]  @relation("RiderReviews")
 
   @@index([role])
   @@index([riderStatus])
@@ -389,6 +391,25 @@ model Notification {
 
   @@index([userId, read, createdAt(sort: Desc)])
   @@map("notifications")
+}
+
+model RiderReview {
+  id        String   @id @default(uuid()) @db.Uuid
+  orderId   String   @unique @map("order_id") @db.Uuid
+  riderId   String   @map("rider_id") @db.Uuid
+  userId    String   @map("user_id") @db.Uuid
+  rating    Int      @default(5)
+  comment   String?
+  createdAt DateTime @default(now()) @map("created_at")
+
+  // Relations
+  order Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  rider Profile @relation("RiderReviews", fields: [riderId], references: [id], onDelete: Cascade)
+  user  Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([riderId])
+  @@index([userId])
+  @@map("rider_reviews")
 }
 
 model UserCart {

@@ -11,13 +11,13 @@ export async function POST(req: NextRequest) {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!user) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
     const serviceSupabase = createServiceClient();
     const { rider_id, rider_name } = await req.json();
 
     if (!rider_id || !rider_name) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+      return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
     }
 
     const admins = await getAdminIds(serviceSupabase);
@@ -34,10 +34,10 @@ export async function POST(req: NextRequest) {
       })),
     );
 
-    if (notifError) return NextResponse.json({ error: notifError.message }, { status: 500 });
+    if (notifError) return NextResponse.json({ success: false, error: notifError.message }, { status: 500 });
     return NextResponse.json({ success: true, notified: admins.length });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal server error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }

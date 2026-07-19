@@ -40,8 +40,8 @@ export default function SettingsPage() {
     maya_qr_url: "",
     delivery_fee: 40,
     free_delivery_min: 200,
-    base_lat: 0,
-    base_lng: 0,
+    base_lat: 10.9501875,
+    base_lng: 122.5065625,
   });
 
   const fetchConfig = useCallback(async () => {
@@ -57,8 +57,8 @@ export default function SettingsPage() {
         maya_qr_url: data.maya_qr_url || "",
         delivery_fee: Number(data.delivery_fee) || 40,
         free_delivery_min: Number(data.free_delivery_min) || 200,
-        base_lat: Number(data.base_lat) || 0,
-        base_lng: Number(data.base_lng) || 0,
+        base_lat: Number(data.base_lat) || 10.9501875,
+        base_lng: Number(data.base_lng) || 122.5065625,
       });
     }
     setLoading(false);
@@ -92,7 +92,7 @@ export default function SettingsPage() {
         throw new Error(data.error || "Failed to upload");
       }
 
-      setter(data.url);
+      setter(data.data?.url || data.url);
     } catch (err: any) {
       Swal.fire({
         icon: "error",
@@ -115,6 +115,8 @@ export default function SettingsPage() {
       maya_qr_url: config.maya_qr_url,
       delivery_fee: config.delivery_fee,
       free_delivery_min: config.free_delivery_min,
+      base_lat: config.base_lat,
+      base_lng: config.base_lng,
       updated_at: new Date().toISOString(),
     };
 

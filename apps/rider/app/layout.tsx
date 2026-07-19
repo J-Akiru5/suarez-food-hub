@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import Script from "next/script";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -22,7 +23,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" data-scroll-behavior="smooth">
       <head>
         <link
           rel="stylesheet"
@@ -31,7 +32,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           crossOrigin=""
         />
       </head>
-      <body className="bg-gray-50 min-h-screen">{children}</body>
+      <body className="bg-gray-50 min-h-screen">
+        <Script
+          id="register-sw"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              if ("serviceWorker" in navigator) {
+                window.addEventListener("load", () => {
+                  navigator.serviceWorker.register("/sw.js").catch(() => {});
+                });
+              }
+            `,
+          }}
+        />
+        {children}
+      </body>
     </html>
   );
 }

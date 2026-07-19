@@ -29,7 +29,9 @@ export async function createRiderEarning(
   orderId: string,
   amount: number,
 ) {
+  // Explicitly provide id since Prisma's @default(uuid()) doesn't set DB-level DEFAULT
   const { error } = await supabase.from("rider_earnings").insert({
+    id: crypto.randomUUID(),
     rider_id: riderId,
     order_id: orderId,
     amount,

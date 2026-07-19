@@ -1,6 +1,6 @@
 export type UserRole = "customer" | "admin" | "staff" | "rider";
 
-export type RiderStatus = "pending_approval" | "available" | "vacant" | "occupied" | "rejected";
+export type RiderStatus = "pending_approval" | "available" | "vacant" | "occupied" | "rejected" | "offline";
 
 export type OrderStatus =
   | "pending"

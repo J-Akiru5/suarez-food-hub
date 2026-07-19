@@ -1,32 +1,60 @@
-import { updateSession } from "@repo/supabase/middleware";
+import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
-const protectedRoutes = ["/", "/orders", "/inventory", "/categories", "/riders", "/reports"];
-const authRoutes = ["/login"];
-
 export async function proxy(request: NextRequest) {
-  const { supabaseResponse, user } = await updateSession(request);
+  let supabaseResponse = NextResponse.next({ request });
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll();
+        },
+        setAll(cookiesToSet: { name: string; value: string; options?: Record<string, unknown> }[]) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+          supabaseResponse = NextResponse.next({ request });
+          cookiesToSet.forEach(({ name, value, options }) => supabaseResponse.cookies.set(name, value, options));
+        },
+      },
+    },
+  );
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const { pathname } = request.nextUrl;
 
-  const hasSession =
-    user !== null ||
-    request.cookies.get("sb-access-token") !== undefined ||
-    request.cookies.get("sb-refresh-token") !== undefined;
+  // Allow login page and API routes
+  if (pathname.startsWith("/login") || pathname.startsWith("/api/")) {
+    return supabaseResponse;
+  }
 
-  const isProtectedRoute = protectedRoutes.some((route) => pathname === route || pathname.startsWith(route + "/"));
-  const isAuthRoute = authRoutes.some((route) => pathname === route || pathname.startsWith(route + "/"));
-
-  if (isProtectedRoute && !hasSession) {
+  // Protect all dashboard routes
+  if (!user) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("redirect", pathname);
     return NextResponse.redirect(url);
   }
 
-  if (isAuthRoute && hasSession) {
+  // Verify admin role
+  const { data: profile } = await supabase.from("profiles").select("role, is_active").eq("id", user.id).single();
+
+  if (!profile || profile.role !== "admin") {
+    await supabase.auth.signOut();
     const url = request.nextUrl.clone();
-    url.pathname = "/";
+    url.pathname = "/login";
+    url.searchParams.set("redirect", pathname);
+    return NextResponse.redirect(url);
+  }
+
+  if (profile.is_active === false) {
+    await supabase.auth.signOut();
+    const url = request.nextUrl.clone();
+    url.pathname = "/login";
     return NextResponse.redirect(url);
   }
 
@@ -34,5 +62,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|api/.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+  matcher: ["/((?!_next/static|_next/image|favicon\\.svg|manifest\\.json|.*\\.png$|.*\\.jpg$).*)"],
 };

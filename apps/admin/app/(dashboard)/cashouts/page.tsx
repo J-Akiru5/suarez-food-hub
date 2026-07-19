@@ -6,6 +6,7 @@ import { Badge, Button, Card, CardContent, Input } from "@repo/ui";
 import { formatCurrency } from "@repo/utils";
 import { Banknote, CheckCircle, Loader2, XCircle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import { toast } from "@/lib/use-toast";
 
 type CashoutStatus = "requested" | "approved" | "paid" | "rejected";
 
@@ -63,8 +64,16 @@ export default function CashoutsPage() {
     } else if (notesInput[id]) {
       update.notes = notesInput[id];
     }
-    await updateCashout(supabase, id, update);
+    const { error } = await updateCashout(supabase, id, update);
     setProcessingId(null);
+    if (error) {
+      toast({ title: "Error", description: "Failed to process cashout.", variant: "destructive" });
+    } else {
+      toast({
+        title: status === "paid" ? "Marked as Paid" : status === "rejected" ? "Rejected" : "Approved",
+        description: `Cashout has been ${status}.`,
+      });
+    }
     fetchCashouts();
   }
 

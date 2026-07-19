@@ -31,13 +31,19 @@ export async function GET(request: NextRequest) {
       .lte("created_at", to)
       .neq("status", "cancelled");
 
-    const { data: items } = await supabase
-      .from("order_items")
-      .select("quantity, unit_price, product:products!order_items_product_id_fkey(name)")
-      .gte("created_at", from)
-      .lte("created_at", to);
-
     const ordersList = orders || [];
+    const orderIds = ordersList.map((o) => o.id);
+
+    let itemsQuery = supabase
+      .from("order_items")
+      .select("quantity, unit_price, product:products!order_items_product_id_fkey(name)");
+
+    if (orderIds.length > 0) {
+      itemsQuery = itemsQuery.in("order_id", orderIds);
+    }
+
+    const { data: items } = await itemsQuery;
+
     const itemsList = (items || []) as any[];
     const totalOrders = ordersList.length;
     const totalRevenue = ordersList.reduce((sum, o) => sum + (o.total || 0), 0);

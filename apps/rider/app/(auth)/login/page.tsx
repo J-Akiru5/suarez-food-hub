@@ -5,6 +5,7 @@ import { getProfileRole } from "@repo/data-access/data/profiles";
 import { Eye, EyeOff, Truck } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { lookupUsername } from "../../actions/auth";
 
 export default function LoginPage() {
   const [username, setUsername] = useState("");
@@ -20,19 +21,13 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    const lookup = await fetch("/api/auth/lookup-username", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: username.trim() }),
-    });
+    const email = await lookupUsername(username.trim());
 
-    if (!lookup.ok) {
+    if (!email) {
       setError("Invalid username or password");
       setLoading(false);
       return;
     }
-
-    const { email } = await lookup.json();
 
     const { data, error: authError } = await supabase.auth.signInWithPassword({
       email,
@@ -54,20 +49,22 @@ export default function LoginPage() {
         setLoading(false);
         return;
       }
-      if (profile.is_active === false || profile.rider_status === "pending_approval") {
-        setError("Your account is pending admin approval. Please wait for confirmation.");
-        await supabase.auth.signOut();
-        setLoading(false);
-        return;
-      }
       if (profile.rider_status === "rejected") {
         setError("Your rider application was rejected. Please contact support.");
         await supabase.auth.signOut();
         setLoading(false);
         return;
       }
+      if (profile.is_active === false || profile.rider_status === "pending_approval") {
+        setError("Your account is pending admin approval. Please wait for confirmation.");
+        await supabase.auth.signOut();
+        setLoading(false);
+        return;
+      }
+      // offline status is allowed — rider won't appear in assignment dropdown but can still log in
     }
 
+    // Login succeeded — redirect to dashboard
     router.push("/");
     router.refresh();
   };
@@ -89,7 +86,9 @@ export default function LoginPage() {
           {error && <div className="bg-red-50 text-red-600 text-sm p-3 rounded-lg">{error}</div>}
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
+            <label suppressHydrationWarning className="block text-sm font-medium text-gray-700 mb-1">
+              Username
+            </label>
             <input
               type="text"
               value={username}
@@ -101,7 +100,9 @@ export default function LoginPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <label suppressHydrationWarning className="block text-sm font-medium text-gray-700 mb-1">
+              Password
+            </label>
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
@@ -130,7 +131,15 @@ export default function LoginPage() {
           </button>
         </form>
 
-        <p className="text-center text-brand-100 text-sm mt-6">Delivery Rider Portal v1.0</p>
+        <div className="text-center mt-6 space-y-2">
+          <p className="text-brand-100 text-sm">Delivery Rider Portal</p>
+          <a
+            href={process.env.NEXT_PUBLIC_WEB_URL || "http://localhost:3000"}
+            className="inline-block text-brand-200 text-xs underline hover:text-white transition-colors"
+          >
+            &larr; Back to website
+          </a>
+        </div>
       </div>
     </div>
   );

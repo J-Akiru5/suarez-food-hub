@@ -73,27 +73,26 @@ export default function DeliveryMap({
 
   return (
     <div className="h-64 rounded-xl overflow-hidden border border-gray-200 shadow-sm">
-      <MapContainer center={center} zoom={14} className="h-full w-full" zoomControl={false}>
+      <MapContainer {...({ center, zoom: 14, zoomControl: false } as any)} className="h-full w-full">
         <TileLayer
-          attribution='&copy; <a href="https://osm.org/copyright">OSM</a>'
+          {...({ attribution: '&copy; <a href="https://osm.org/copyright">OSM</a>' } as any)}
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <MapBounds positions={positions} />
         {riderPos && (
           <>
-            <Marker position={riderPos} icon={riderIcon}>
+            <Marker {...({ position: riderPos, icon: riderIcon } as any)}>
               <Popup>You are here</Popup>
             </Marker>
             <Polyline
-              positions={[riderPos, [destinationLat, destinationLng]]}
-              color="#b85c38"
+              {...({ positions: [riderPos, [destinationLat, destinationLng]], color: "#b85c38" } as any)}
               weight={3}
               opacity={0.5}
               dashArray="8 8"
             />
           </>
         )}
-        <Marker position={[destinationLat, destinationLng]} icon={destinationIcon}>
+        <Marker {...({ position: [destinationLat, destinationLng], icon: destinationIcon } as any)}>
           <Popup>{destinationLabel}</Popup>
         </Marker>
       </MapContainer>

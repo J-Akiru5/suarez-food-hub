@@ -1,10 +1,12 @@
 "use client";
 
 import { createBrowserTypedClient } from "@repo/data-access/client";
+import { getProfileRole } from "@repo/data-access/data/profiles";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
+import { lookupUsername } from "../actions/auth";
 
 function LoginForm() {
   const router = useRouter();
@@ -24,22 +26,20 @@ function LoginForm() {
     setError("");
     setLoading(true);
 
-    const lookup = await fetch("/api/auth/lookup-username", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ username: username.trim() }),
-    });
+    let loginEmail = username.trim();
 
-    if (!lookup.ok) {
-      setError("Invalid username or password");
-      setLoading(false);
-      return;
+    if (!loginEmail.includes("@")) {
+      const email = await lookupUsername(loginEmail);
+      if (!email) {
+        setError("Invalid username or password");
+        setLoading(false);
+        return;
+      }
+      loginEmail = email;
     }
 
-    const { email } = await lookup.json();
-
-    const { error: authError } = await supabase.auth.signInWithPassword({
-      email,
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email: loginEmail,
       password,
     });
 
@@ -47,6 +47,22 @@ function LoginForm() {
       setError(authError.message);
       setLoading(false);
       return;
+    }
+
+    if (authData.user) {
+      const profile = await getProfileRole(supabase, authData.user.id);
+      if (profile?.role && profile.role !== "customer") {
+        setError(`Access denied. You are registered as a ${profile.role}. Please use the correct app to log in.`);
+        await supabase.auth.signOut();
+        setLoading(false);
+        return;
+      }
+      if (profile?.is_active === false) {
+        setError("Your account has been deactivated. Please contact support.");
+        await supabase.auth.signOut();
+        setLoading(false);
+        return;
+      }
     }
 
     router.push(redirectTo);
@@ -63,10 +79,10 @@ function LoginForm() {
 
       <form onSubmit={handleLogin} className="flex flex-col gap-4">
         <div className="flex flex-col gap-1.5 text-left">
-          <label className="text-xs font-bold text-gray-700 ml-1">Username</label>
+          <label className="text-xs font-bold text-gray-700 ml-1">Username or Email</label>
           <input
             type="text"
-            placeholder="Enter your username"
+            placeholder="Enter username or email"
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             required

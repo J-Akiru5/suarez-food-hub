@@ -20,10 +20,10 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
     const supabase = createServiceClient();
     const authSupabase = getAuthClient(req);
     const user = await getUser(authSupabase);
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!user) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
     const isAdmin = await requireAdmin(supabase, user.id);
-    if (!isAdmin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!isAdmin) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
     const { id } = await params;
     const formData = await req.formData();
@@ -59,11 +59,11 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
       buffer_quantity: bufferQuantity,
       availability: quantity > 0 ? "available" : "sold_out",
     });
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-    return NextResponse.json(data);
+    if (error) return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ success: true, data });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal server error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }
 
@@ -72,17 +72,17 @@ export async function DELETE(_req: NextRequest, { params }: { params: Promise<{ 
     const supabase = createServiceClient();
     const authSupabase = getAuthClient(_req);
     const user = await getUser(authSupabase);
-    if (!user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!user) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
     const isAdmin = await requireAdmin(supabase, user.id);
-    if (!isAdmin) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!isAdmin) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
     const { id } = await params;
     const { error } = await deleteProduct(supabase, id);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     return NextResponse.json({ success: true });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal server error";
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
   }
 }

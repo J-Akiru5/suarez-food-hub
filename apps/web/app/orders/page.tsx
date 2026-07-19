@@ -1,9 +1,21 @@
 "use client";
 
-import { ArrowRight, Bike, CheckCircle, ChefHat, Clock, Loader2, Navigation, ShoppingBag, XCircle } from "lucide-react";
+import {
+  ArrowRight,
+  Bike,
+  CheckCircle,
+  ChefHat,
+  Clock,
+  Loader2,
+  Navigation,
+  ShoppingBag,
+  Star,
+  XCircle,
+} from "lucide-react";
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useState } from "react";
+import Swal from "sweetalert2";
 import AuthNavbar from "../../components/AuthNavbar";
 import { useAuth } from "../../components/auth-provider";
 
@@ -58,6 +70,10 @@ function OrdersPageInner() {
   const [fetchError, setFetchError] = useState("");
   const [showActiveOnly, setShowActiveOnly] = useState(searchParams.get("active") === "true");
   const [receiptOrder, setReceiptOrder] = useState<Order | null>(null);
+  const [reviewOrder, setReviewOrder] = useState<Order | null>(null);
+  const [reviewRating, setReviewRating] = useState(0);
+  const [reviewComment, setReviewComment] = useState("");
+  const [submittingReview, setSubmittingReview] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -69,7 +85,8 @@ function OrdersPageInner() {
         if (!r.ok) throw new Error(`HTTP ${r.status}`);
         return r.json();
       })
-      .then((data) => {
+      .then((response) => {
+        const data = response.data || response;
         if (Array.isArray(data)) setOrders(data);
       })
       .catch(() => setFetchError("Failed to load your orders. Please try again."))
@@ -79,7 +96,17 @@ function OrdersPageInner() {
   const [cancellingId, setCancellingId] = useState("");
 
   const handleCancel = async (orderId: string) => {
-    if (!confirm("Are you sure you want to cancel this order?")) return;
+    const result = await Swal.fire({
+      title: "Cancel Order?",
+      text: "This action cannot be undone.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, cancel order",
+    });
+    if (!result.isConfirmed) return;
+
     setCancellingId(orderId);
     try {
       const res = await fetch(`/api/orders/${orderId}`, {
@@ -92,8 +119,15 @@ function OrdersPageInner() {
         throw new Error(data.error || "Failed to cancel");
       }
       setOrders((prev) => prev.map((o) => (o.id === orderId ? { ...o, status: "cancelled" } : o)));
+      Swal.fire({
+        icon: "success",
+        title: "Cancelled",
+        text: "Your order has been cancelled.",
+        timer: 2000,
+        showConfirmButton: false,
+      });
     } catch (err: any) {
-      alert(err.message);
+      Swal.fire({ icon: "error", title: "Error", text: err.message });
     } finally {
       setCancellingId("");
     }
@@ -560,6 +594,31 @@ function OrdersPageInner() {
                       {order.payment_method === "cod" ? `₱${order.total}` : "Paid"}
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                      {order.status === "delivered" && (
+                        <button
+                          onClick={() => {
+                            setReviewOrder(order);
+                            setReviewRating(0);
+                            setReviewComment("");
+                          }}
+                          style={{
+                            background: "#f59e0b",
+                            border: "none",
+                            padding: "8px 16px",
+                            borderRadius: 12,
+                            fontSize: 13,
+                            fontWeight: 700,
+                            cursor: "pointer",
+                            color: "#fff",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 6,
+                          }}
+                        >
+                          <Star size={14} />
+                          Rate Delivery
+                        </button>
+                      )}
                       <button
                         onClick={() => setReceiptOrder(order)}
                         style={{
@@ -583,6 +642,168 @@ function OrdersPageInner() {
                 </div>
               );
             })}
+          </div>
+        )}
+
+        {/* Review Modal */}
+        {reviewOrder && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: "rgba(0,0,0,0.5)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 9999,
+              padding: 20,
+            }}
+            onClick={() => !submittingReview && setReviewOrder(null)}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                width: "100%",
+                maxWidth: 380,
+                background: "#fff",
+                borderRadius: 24,
+                padding: 32,
+                textAlign: "center",
+              }}
+            >
+              <h3
+                style={{
+                  fontFamily: "var(--playfair-display)",
+                  fontSize: 22,
+                  color: "var(--secondary-color)",
+                  margin: "0 0 4px",
+                }}
+              >
+                Rate Your Delivery
+              </h3>
+              <p style={{ color: "#94a3b8", fontSize: 14, margin: "0 0 20px" }}>How was your delivery experience?</p>
+
+              {/* Stars */}
+              <div style={{ display: "flex", justifyContent: "center", gap: 8, marginBottom: 20 }}>
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    onClick={() => setReviewRating(star)}
+                    disabled={submittingReview}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      cursor: submittingReview ? "not-allowed" : "pointer",
+                      padding: 4,
+                      transition: "transform 0.15s",
+                    }}
+                    onMouseEnter={(e) => {
+                      if (!submittingReview) {
+                        const stars = e.currentTarget.parentElement?.children;
+                        if (stars) {
+                          for (let i = 0; i < stars.length; i++) {
+                            (stars[i] as HTMLElement).style.transform = i < star ? "scale(1.15)" : "scale(1)";
+                          }
+                        }
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      const stars = e.currentTarget.parentElement?.children;
+                      if (stars) {
+                        for (let i = 0; i < stars.length; i++) {
+                          (stars[i] as HTMLElement).style.transform = "scale(1)";
+                        }
+                      }
+                    }}
+                  >
+                    <Star
+                      size={36}
+                      style={{
+                        fill: star <= reviewRating ? "#f59e0b" : "#e2e8f0",
+                        color: star <= reviewRating ? "#f59e0b" : "#e2e8f0",
+                        transition: "all 0.15s",
+                      }}
+                    />
+                  </button>
+                ))}
+              </div>
+
+              {/* Comment */}
+              <textarea
+                value={reviewComment}
+                onChange={(e) => setReviewComment(e.target.value)}
+                disabled={submittingReview}
+                placeholder="Optional: share your feedback about the delivery..."
+                style={{
+                  width: "100%",
+                  padding: 12,
+                  borderRadius: 12,
+                  border: "1px solid #e2e8f0",
+                  fontSize: 14,
+                  fontFamily: "inherit",
+                  resize: "none",
+                  minHeight: 80,
+                  marginBottom: 16,
+                  outline: "none",
+                  boxSizing: "border-box",
+                }}
+              />
+
+              <button
+                onClick={async () => {
+                  if (!reviewOrder.rider_id || reviewRating === 0) return;
+                  setSubmittingReview(true);
+                  try {
+                    const res = await fetch("/api/reviews", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        order_id: reviewOrder.id,
+                        rider_id: reviewOrder.rider_id,
+                        rating: reviewRating,
+                        comment: reviewComment,
+                      }),
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                      Swal.fire({
+                        icon: "success",
+                        title: "Thank you!",
+                        text: "Your feedback helps us improve.",
+                        timer: 2000,
+                        showConfirmButton: false,
+                      });
+                      setReviewOrder(null);
+                      setReviewRating(0);
+                      setReviewComment("");
+                    } else {
+                      Swal.fire({ icon: "error", title: "Failed", text: data.error || "Please try again." });
+                    }
+                  } catch {
+                    Swal.fire({ icon: "error", title: "Error", text: "Network error. Please try again." });
+                  }
+                  setSubmittingReview(false);
+                }}
+                disabled={reviewRating === 0 || submittingReview}
+                style={{
+                  width: "100%",
+                  padding: "14px 0",
+                  borderRadius: 14,
+                  border: "none",
+                  background: reviewRating === 0 ? "#e2e8f0" : "var(--primary-color)",
+                  color: reviewRating === 0 ? "#94a3b8" : "#fff",
+                  fontWeight: 700,
+                  fontSize: 15,
+                  cursor: reviewRating === 0 || submittingReview ? "not-allowed" : "pointer",
+                  transition: "all 0.2s",
+                }}
+              >
+                {submittingReview ? "Submitting..." : "Submit Rating"}
+              </button>
+            </div>
           </div>
         )}
 

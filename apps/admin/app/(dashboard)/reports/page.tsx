@@ -71,27 +71,22 @@ export default function ReportsPage() {
     const from = `${range.from}T00:00:00`;
     const to = `${range.to}T23:59:59`;
 
-    const [ordersRes, itemsRes] = await Promise.all([
-      supabase
-        .from("orders")
-        .select("id, total, status, created_at")
-        .gte("created_at", from)
-        .lte("created_at", to)
-        .neq("status", "cancelled"),
-      supabase
-        .from("order_items")
-        .select("quantity, unit_price, product:products!order_items_product_id_fkey(name)")
-        .gte("created_at", from)
-        .lte("created_at", to),
-    ]);
+    const { data: ordersRes } = await supabase
+      .from("orders")
+      .select(`
+        id, total, status, created_at,
+        items:order_items(quantity, unit_price, product_name, product:products!order_items_product_id_fkey(name))
+      `)
+      .gte("created_at", from)
+      .lte("created_at", to)
+      .neq("status", "cancelled");
 
-    const orders = ordersRes.data || [];
-    const items = (itemsRes.data || []) as any[];
+    const orders = ordersRes || [];
 
     const totalOrders = orders.length;
     const totalRevenue = orders.reduce((sum, o) => sum + (o.total || 0), 0);
     const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
-    const itemsSold = items.reduce((sum, item) => sum + (item.quantity || 0), 0);
+    let itemsSold = 0;
 
     const dailyMap = new Map<string, { revenue: number; orders: number }>();
     const fromDate = new Date(range.from);
@@ -105,12 +100,25 @@ export default function ReportsPage() {
       dailyMap.set(key, { revenue: 0, orders: 0 });
     }
 
+    const productMap = new Map<string, { quantity: number; revenue: number }>();
+
     orders.forEach((o) => {
       const key = o.created_at.split("T")[0];
-      const existing = dailyMap.get(key);
-      if (existing) {
-        existing.revenue += o.total || 0;
-        existing.orders += 1;
+      const existingDaily = dailyMap.get(key);
+      if (existingDaily) {
+        existingDaily.revenue += o.total || 0;
+        existingDaily.orders += 1;
+      }
+
+      if (o.items && Array.isArray(o.items)) {
+        o.items.forEach((item: any) => {
+          itemsSold += item.quantity || 0;
+          const name = item.product?.name || item.product_name || "Unknown";
+          const existingProduct = productMap.get(name) || { quantity: 0, revenue: 0 };
+          existingProduct.quantity += item.quantity || 0;
+          existingProduct.revenue += (item.unit_price || 0) * (item.quantity || 0);
+          productMap.set(name, existingProduct);
+        });
       }
     });
 
@@ -119,15 +127,6 @@ export default function ReportsPage() {
       revenue: val.revenue,
       orders: val.orders,
     }));
-
-    const productMap = new Map<string, { quantity: number; revenue: number }>();
-    items.forEach((item) => {
-      const name = item.product?.name || "Unknown";
-      const existing = productMap.get(name) || { quantity: 0, revenue: 0 };
-      existing.quantity += item.quantity || 0;
-      existing.revenue += (item.unit_price || 0) * (item.quantity || 0);
-      productMap.set(name, existing);
-    });
 
     const topProducts = Array.from(productMap.entries())
       .map(([name, data]) => ({ name, ...data }))

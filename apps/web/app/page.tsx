@@ -28,7 +28,8 @@ export default function HomePage() {
   useEffect(() => {
     fetch("/api/products")
       .then((r) => r.json())
-      .then((data) => {
+      .then((response) => {
+        const data = response.data || response;
         if (Array.isArray(data)) {
           const sorted = data.sort((a: Product, b: Product) => (b.rating || 5) - (a.rating || 5)).slice(0, 8);
           setPopularFoods(sorted);

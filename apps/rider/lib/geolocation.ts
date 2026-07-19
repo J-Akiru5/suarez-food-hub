@@ -41,8 +41,9 @@ export function watchPosition(callback: (position: Position) => void): number {
         lng: position.coords.longitude,
       });
     },
-    (error) => {
-      console.error("Geolocation error:", error);
+    (_error) => {
+      // Silently ignore geolocation errors - GPS may not be available
+      // (e.g. desktop without GPS, user denied permission, etc.)
     },
     {
       enableHighAccuracy: true,

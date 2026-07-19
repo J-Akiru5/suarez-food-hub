@@ -24,6 +24,7 @@ export default function StaffAccountsPage() {
 
   // Create form
   const [formEmail, setFormEmail] = useState("");
+  const [formUsername, setFormUsername] = useState("");
   const [formPassword, setFormPassword] = useState("");
   const [formFirstName, setFormFirstName] = useState("");
   const [formLastName, setFormLastName] = useState("");
@@ -54,7 +55,7 @@ export default function StaffAccountsPage() {
     setFormSuccess("");
     setCreating(true);
 
-    if (!formEmail || !formPassword || !formFirstName || !formLastName) {
+    if (!formEmail || !formPassword || !formFirstName || !formLastName || !formUsername) {
       setFormError("All fields are required");
       setCreating(false);
       return;
@@ -66,6 +67,7 @@ export default function StaffAccountsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: formEmail,
+          username: formUsername,
           password: formPassword,
           firstName: formFirstName,
           lastName: formLastName,
@@ -78,14 +80,16 @@ export default function StaffAccountsPage() {
       if (!res.ok) {
         setFormError(data.error || "Failed to create account");
       } else {
-        setFormSuccess(`Staff account created for ${data.name}`);
+        const result = data.data || data;
+        setFormSuccess(`Staff account created for ${result.name}`);
         setFormEmail("");
+        setFormUsername("");
         setFormPassword("");
         setFormFirstName("");
         setFormLastName("");
         setFormPhone("");
         fetchStaff();
-        toast({ title: "Staff created", description: data.name });
+        toast({ title: "Staff created", description: result.name });
       }
     } catch {
       setFormError("Network error. Please try again.");
@@ -154,13 +158,22 @@ export default function StaffAccountsPage() {
                   required
                 />
               </div>
-              <Input
-                label="Email"
-                type="email"
-                value={formEmail}
-                onChange={(e) => setFormEmail(e.target.value)}
-                required
-              />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Input
+                  label="Email"
+                  type="email"
+                  value={formEmail}
+                  onChange={(e) => setFormEmail(e.target.value)}
+                  required
+                />
+                <Input
+                  label="Username"
+                  type="text"
+                  value={formUsername}
+                  onChange={(e) => setFormUsername(e.target.value.toLowerCase().replace(/\s+/g, ""))}
+                  required
+                />
+              </div>
               <Input
                 label="Password"
                 type="password"
