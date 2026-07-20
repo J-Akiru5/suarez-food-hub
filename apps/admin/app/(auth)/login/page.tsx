@@ -3,7 +3,7 @@
 import { createBrowserTypedClient } from "@repo/data-access/client";
 import { getProfileRole } from "@repo/data-access/data/profiles";
 import { Button, Input } from "@repo/ui";
-import { Loader2, Shield } from "lucide-react";
+import { Eye, EyeOff, Loader2, Shield } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useState } from "react";
 import { lookupUsername } from "../../actions/auth";
@@ -15,6 +15,7 @@ function LoginForm() {
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -25,16 +26,21 @@ function LoginForm() {
     setError("");
     setLoading(true);
 
-    const email = await lookupUsername(username.trim());
+    let loginEmail = username.trim();
 
-    if (!email) {
-      setError("Invalid username or password");
-      setLoading(false);
-      return;
+    // If input contains @, treat it as an email directly
+    if (!loginEmail.includes("@")) {
+      const email = await lookupUsername(loginEmail);
+      if (!email) {
+        setError("Invalid username or email");
+        setLoading(false);
+        return;
+      }
+      loginEmail = email;
     }
 
     const { data, error: authError } = await supabase.auth.signInWithPassword({
-      email,
+      email: loginEmail,
       password,
     });
 
@@ -88,21 +94,39 @@ function LoginForm() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
-              label="Username"
+              label="Username or Email"
               type="text"
-              placeholder="Enter your username"
+              placeholder="Enter username or email"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
               required
             />
-            <Input
-              label="Password"
-              type="password"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-            />
+            <div>
+              <label
+                htmlFor="login-password"
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70 mb-2 block"
+              >
+                Password
+              </label>
+              <div className="relative">
+                <input
+                  id="login-password"
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+            </div>
 
             <Button type="submit" className="w-full bg-brand-500 hover:bg-brand-600 text-white" disabled={loading}>
               {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : null}

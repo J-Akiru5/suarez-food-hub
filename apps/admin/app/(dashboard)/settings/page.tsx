@@ -3,10 +3,45 @@
 import { createBrowserTypedClient } from "@repo/data-access/client";
 import { getBusinessConfig, updateBusinessConfig } from "@repo/data-access/data/business";
 import { Button, Card, CardContent, Input } from "@repo/ui";
-import { Loader2, MapPin, QrCode, Save, Store, Trash2, Upload } from "lucide-react";
+import { Check, Loader2, MapPin, QrCode, Save, Store, Trash2, Upload, X } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Swal from "sweetalert2";
+
+// Fetch all Philippine provinces from the public PSGC API (no key needed)
+async function fetchAllProvinces(): Promise<{ id: string; name: string }[]> {
+  try {
+    const regionsRes = await fetch("https://psgc.gitlab.io/api/regions");
+    const regions: { code: string; name: string }[] = await regionsRes.json();
+
+    const results = await Promise.allSettled(
+      regions.map((r) => fetch(`https://psgc.gitlab.io/api/regions/${r.code}/provinces`).then((res) => res.json())),
+    );
+
+    const allProvinces: { id: string; name: string }[] = [];
+    for (const result of results) {
+      if (result.status === "fulfilled" && Array.isArray(result.value)) {
+        for (const p of result.value) {
+          if (p.code && p.name) {
+            allProvinces.push({ id: p.code, name: p.name });
+          }
+        }
+      }
+    }
+
+    const seen = new Set<string>();
+    return allProvinces
+      .filter((p) => {
+        if (seen.has(p.id)) return false;
+        seen.add(p.id);
+        return true;
+      })
+      .sort((a, b) => a.name.localeCompare(b.name));
+  } catch (err) {
+    console.error("Failed to fetch provinces from PSGC API:", err);
+    return [];
+  }
+}
 
 interface BusinessConfig {
   id?: string;
@@ -15,11 +50,9 @@ interface BusinessConfig {
   phone: string;
   email: string;
   gcash_qr_url: string;
-  maya_qr_url: string;
   delivery_fee: number;
   free_delivery_min: number;
-  base_lat: number;
-  base_lng: number;
+  delivery_provinces: string;
 }
 
 export default function SettingsPage() {
@@ -27,9 +60,9 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingGcash, setUploadingGcash] = useState(false);
-  const [uploadingMaya, setUploadingMaya] = useState(false);
+  const [provinces, setProvinces] = useState<{ id: string; name: string }[]>([]);
   const gcashRef = useRef<HTMLInputElement>(null);
-  const mayaRef = useRef<HTMLInputElement>(null);
+  const [searchProvince, setSearchProvince] = useState("");
 
   const [config, setConfig] = useState<BusinessConfig>({
     name: "Suarez Food Hub",
@@ -37,11 +70,9 @@ export default function SettingsPage() {
     phone: "",
     email: "",
     gcash_qr_url: "",
-    maya_qr_url: "",
     delivery_fee: 40,
     free_delivery_min: 200,
-    base_lat: 10.9501875,
-    base_lng: 122.5065625,
+    delivery_provinces: "",
   });
 
   const fetchConfig = useCallback(async () => {
@@ -54,11 +85,10 @@ export default function SettingsPage() {
         phone: data.phone || "",
         email: data.email || "",
         gcash_qr_url: data.gcash_qr_url || "",
-        maya_qr_url: data.maya_qr_url || "",
+
         delivery_fee: Number(data.delivery_fee) || 40,
         free_delivery_min: Number(data.free_delivery_min) || 200,
-        base_lat: Number(data.base_lat) || 10.9501875,
-        base_lng: Number(data.base_lng) || 122.5065625,
+        delivery_provinces: data.delivery_provinces || "",
       });
     }
     setLoading(false);
@@ -67,6 +97,13 @@ export default function SettingsPage() {
   useEffect(() => {
     fetchConfig();
   }, [fetchConfig]);
+
+  // Fetch all Philippine provinces from the PSGC API
+  useEffect(() => {
+    fetchAllProvinces().then((list) => {
+      setProvinces(list);
+    });
+  }, []);
 
   async function uploadQR(
     file: File,
@@ -112,11 +149,10 @@ export default function SettingsPage() {
       phone: config.phone,
       email: config.email,
       gcash_qr_url: config.gcash_qr_url,
-      maya_qr_url: config.maya_qr_url,
+
       delivery_fee: config.delivery_fee,
       free_delivery_min: config.free_delivery_min,
-      base_lat: config.base_lat,
-      base_lng: config.base_lng,
+      delivery_provinces: config.delivery_provinces || null,
       updated_at: new Date().toISOString(),
     };
 
@@ -250,23 +286,97 @@ export default function SettingsPage() {
                     onChange={(e) => setConfig((p) => ({ ...p, free_delivery_min: parseFloat(e.target.value) || 0 }))}
                   />
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 block mb-1">Latitude</label>
-                  <Input
-                    type="number"
-                    step="0.000001"
-                    value={config.base_lat}
-                    onChange={(e) => setConfig((p) => ({ ...p, base_lat: parseFloat(e.target.value) || 0 }))}
-                  />
+              </div>
+
+              {/* Delivery Area Restriction */}
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <label className="text-sm font-medium text-gray-700 block mb-2">Allowed Delivery Provinces</label>
+                <p className="text-xs text-muted-foreground mb-3">
+                  Select provinces where delivery is available. Leave empty for nationwide delivery. This is scalable
+                  for multi-branch setups — add provinces as your business grows.
+                </p>
+
+                {/* Selected provinces as chips */}
+                <div className="flex flex-wrap gap-1.5 mb-3 min-h-[28px]">
+                  {config.delivery_provinces
+                    ? config.delivery_provinces
+                        .split(",")
+                        .filter(Boolean)
+                        .map((pid) => {
+                          const p = provinces.find((x) => x.id === pid);
+                          return (
+                            <span
+                              key={pid}
+                              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-brand-100 text-brand-800 text-xs font-medium"
+                            >
+                              {p?.name || pid}
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  const updated = config.delivery_provinces
+                                    .split(",")
+                                    .filter((x) => x !== pid)
+                                    .join(",");
+                                  setConfig((prev) => ({ ...prev, delivery_provinces: updated }));
+                                }}
+                                className="hover:text-red-600 focus:outline-none"
+                              >
+                                <X size={12} />
+                              </button>
+                            </span>
+                          );
+                        })
+                    : null}
+                  {!config.delivery_provinces && (
+                    <span className="text-xs text-gray-400 italic">All provinces — no restriction</span>
+                  )}
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 block mb-1">Longitude</label>
-                  <Input
-                    type="number"
-                    step="0.000001"
-                    value={config.base_lng}
-                    onChange={(e) => setConfig((p) => ({ ...p, base_lng: parseFloat(e.target.value) || 0 }))}
+
+                {/* Search & add provinces */}
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search provinces..."
+                    value={searchProvince}
+                    onChange={(e) => setSearchProvince(e.target.value)}
+                    className="w-full h-9 pl-3 pr-3 rounded-md border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500 mb-2"
                   />
+                  <div className="max-h-40 overflow-y-auto space-y-0.5 border border-gray-100 rounded-md p-1 bg-white">
+                    {provinces
+                      .filter(
+                        (p) =>
+                          p.name.toLowerCase().includes(searchProvince.toLowerCase()) &&
+                          !config.delivery_provinces.split(",").includes(p.id),
+                      )
+                      .slice(0, 20)
+                      .map((p) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => {
+                            const existing = config.delivery_provinces
+                              ? config.delivery_provinces.split(",").filter(Boolean)
+                              : [];
+                            existing.push(p.id);
+                            setConfig((prev) => ({ ...prev, delivery_provinces: existing.join(",") }));
+                            setSearchProvince("");
+                          }}
+                          className="w-full text-left px-3 py-1.5 text-sm rounded hover:bg-gray-100 transition-colors flex items-center gap-2"
+                        >
+                          <Check size={14} className="text-gray-300" />
+                          {p.name}
+                        </button>
+                      ))}
+                    {provinces.filter(
+                      (p) =>
+                        p.name.toLowerCase().includes(searchProvince.toLowerCase()) &&
+                        !config.delivery_provinces.split(",").includes(p.id),
+                    ).length === 0 && (
+                      <p className="text-xs text-gray-400 text-center py-2">
+                        {searchProvince ? "No provinces found" : "All provinces already selected"}
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -283,12 +393,11 @@ export default function SettingsPage() {
                 </div>
                 <div>
                   <h2 className="font-bold text-lg font-display">Payment QR Codes</h2>
-                  <p className="text-sm text-muted-foreground">Upload GCash and Maya QR codes for customer payments</p>
+                  <p className="text-sm text-muted-foreground">Upload GCash QR code for customer payments</p>
                 </div>
               </div>
 
               <div className="grid grid-cols-1 gap-6">
-                {/* GCash */}
                 <div className="space-y-3 p-4 border border-gray-200 rounded-xl">
                   <h3 className="font-semibold text-sm text-blue-600">GCash</h3>
                   <div className="h-36 w-36 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden bg-gray-50 mx-auto">
@@ -342,62 +451,6 @@ export default function SettingsPage() {
                         size="sm"
                         className="text-red-600"
                         onClick={() => setConfig((p) => ({ ...p, gcash_qr_url: "" }))}
-                      >
-                        <Trash2 className="h-3 w-3" />
-                      </Button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Maya */}
-                <div className="space-y-3 p-4 border border-gray-200 rounded-xl">
-                  <h3 className="font-semibold text-sm text-purple-600">Maya</h3>
-                  <div className="h-36 w-36 rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center overflow-hidden bg-gray-50 mx-auto">
-                    {config.maya_qr_url ? (
-                      <Image
-                        src={config.maya_qr_url}
-                        alt="Maya QR"
-                        width={144}
-                        height={144}
-                        className="object-contain"
-                        unoptimized
-                      />
-                    ) : (
-                      <QrCode className="h-12 w-12 text-gray-300" />
-                    )}
-                  </div>
-                  <input
-                    ref={mayaRef}
-                    type="file"
-                    accept="image/*"
-                    className="hidden"
-                    onChange={(e) => {
-                      const f = e.target.files?.[0];
-                      if (f)
-                        uploadQR(f, "maya", (url) => setConfig((p) => ({ ...p, maya_qr_url: url })), setUploadingMaya);
-                    }}
-                  />
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => mayaRef.current?.click()}
-                      disabled={uploadingMaya}
-                    >
-                      {uploadingMaya ? (
-                        <Loader2 className="h-3 w-3 animate-spin mr-1" />
-                      ) : (
-                        <Upload className="h-3 w-3 mr-1" />
-                      )}
-                      Upload
-                    </Button>
-                    {config.maya_qr_url && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="text-red-600"
-                        onClick={() => setConfig((p) => ({ ...p, maya_qr_url: "" }))}
                       >
                         <Trash2 className="h-3 w-3" />
                       </Button>

@@ -216,11 +216,10 @@ export interface Database {
             | "near_customer"
             | "delivered"
             | "cancelled";
-          payment_method: "cod" | "gcash" | "maya";
+          payment_method: "cod" | "gcash";
           payment_status: "pending" | "verified" | "rejected" | "refunded";
           payment_proof_url: string | null;
           gcash_reference_no: string | null;
-          maya_reference_no: string | null;
           delivery_address: string;
           delivery_lat: number | null;
           delivery_lng: number | null;
@@ -254,11 +253,10 @@ export interface Database {
             | "near_customer"
             | "delivered"
             | "cancelled";
-          payment_method: "cod" | "gcash" | "maya";
+          payment_method: "cod" | "gcash";
           payment_status?: "pending" | "verified" | "rejected" | "refunded";
           payment_proof_url?: string | null;
           gcash_reference_no?: string | null;
-          maya_reference_no?: string | null;
           delivery_address: string;
           delivery_lat?: number | null;
           delivery_lng?: number | null;
@@ -292,11 +290,10 @@ export interface Database {
             | "near_customer"
             | "delivered"
             | "cancelled";
-          payment_method?: "cod" | "gcash" | "maya";
+          payment_method?: "cod" | "gcash";
           payment_status?: "pending" | "verified" | "rejected" | "refunded";
           payment_proof_url?: string | null;
           gcash_reference_no?: string | null;
-          maya_reference_no?: string | null;
           delivery_address?: string;
           delivery_lat?: number | null;
           delivery_lng?: number | null;
@@ -364,9 +361,9 @@ export interface Database {
           logo_url: string | null;
           registration_no: string | null;
           gcash_qr_url: string | null;
-          maya_qr_url: string | null;
           delivery_fee: number;
           free_delivery_min: number;
+          delivery_provinces: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -379,9 +376,9 @@ export interface Database {
           logo_url?: string | null;
           registration_no?: string | null;
           gcash_qr_url?: string | null;
-          maya_qr_url?: string | null;
           delivery_fee?: number;
           free_delivery_min?: number;
+          delivery_provinces?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -394,9 +391,9 @@ export interface Database {
           logo_url?: string | null;
           registration_no?: string | null;
           gcash_qr_url?: string | null;
-          maya_qr_url?: string | null;
           delivery_fee?: number;
           free_delivery_min?: number;
+          delivery_provinces?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -644,7 +641,7 @@ export interface Database {
         | "near_customer"
         | "delivered"
         | "cancelled";
-      payment_method: "cod" | "gcash" | "maya";
+      payment_method: "cod" | "gcash";
       payment_status: "pending" | "verified" | "rejected" | "refunded";
       location_type: "region" | "province" | "city" | "barangay";
       earning_status: "pending" | "paid";

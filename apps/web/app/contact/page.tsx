@@ -185,7 +185,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h4 className="text-sm font-semibold text-gray-900">Do you accept GCash?</h4>
-                    <p className="mt-1 text-sm text-gray-500">Yes! We accept GCash, PayMaya, and cash on delivery.</p>
+                    <p className="mt-1 text-sm text-gray-500">Yes! We accept GCash and cash on delivery.</p>
                   </div>
                   <div>
                     <h4 className="text-sm font-semibold text-gray-900">How far do you deliver?</h4>

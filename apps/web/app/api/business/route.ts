@@ -39,9 +39,10 @@ export async function PATCH(req: NextRequest) {
       "logo_url",
       "registration_no",
       "gcash_qr_url",
-      "maya_qr_url",
+
       "delivery_fee",
       "free_delivery_min",
+      "delivery_provinces",
       "base_lat",
       "base_lng",
     ];

@@ -432,12 +432,7 @@ export default function OrderDetailPage() {
                     <span className="text-sm font-mono bg-gray-50 px-2 py-0.5 rounded">{order.gcash_reference_no}</span>
                   </div>
                 )}
-                {order.payment_method === "maya" && order.maya_reference_no && (
-                  <div className="flex items-center justify-between mt-2">
-                    <span className="text-sm text-muted-foreground">Ref No.</span>
-                    <span className="text-sm font-mono bg-gray-50 px-2 py-0.5 rounded">{order.maya_reference_no}</span>
-                  </div>
-                )}
+
                 <div className="flex items-center justify-between mt-3 pt-3 border-t">
                   <span className="text-sm text-muted-foreground">Status</span>{" "}
                   <Select

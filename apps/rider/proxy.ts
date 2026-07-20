@@ -21,16 +21,16 @@ export async function proxy(request: NextRequest) {
     },
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   const { pathname } = request.nextUrl;
 
-  // Allow login page and API routes
+  // Allow login page and API routes — skip auth check to avoid stale token errors
   if (pathname.startsWith("/login") || pathname.startsWith("/api/")) {
     return supabaseResponse;
   }
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   // Protect all rider dashboard routes
   if (!user) {

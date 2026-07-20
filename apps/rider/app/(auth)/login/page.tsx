@@ -21,16 +21,21 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    const email = await lookupUsername(username.trim());
+    let loginEmail = username.trim();
 
-    if (!email) {
-      setError("Invalid username or password");
-      setLoading(false);
-      return;
+    // If input contains @, treat it as an email directly
+    if (!loginEmail.includes("@")) {
+      const email = await lookupUsername(loginEmail);
+      if (!email) {
+        setError("Invalid username or email");
+        setLoading(false);
+        return;
+      }
+      loginEmail = email;
     }
 
     const { data, error: authError } = await supabase.auth.signInWithPassword({
-      email,
+      email: loginEmail,
       password,
     });
 
@@ -87,7 +92,7 @@ export default function LoginPage() {
 
           <div>
             <label suppressHydrationWarning className="block text-sm font-medium text-gray-700 mb-1">
-              Username
+              Username or Email
             </label>
             <input
               type="text"
@@ -95,7 +100,7 @@ export default function LoginPage() {
               onChange={(e) => setUsername(e.target.value)}
               required
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition"
-              placeholder="Enter your username"
+              placeholder="Enter username or email"
             />
           </div>
 

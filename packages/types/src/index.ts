@@ -13,7 +13,7 @@ export type OrderStatus =
   | "delivered"
   | "cancelled";
 
-export type PaymentMethod = "cod" | "gcash" | "maya";
+export type PaymentMethod = "cod" | "gcash";
 
 export type PaymentStatus = "pending" | "verified" | "rejected" | "refunded";
 
@@ -105,7 +105,6 @@ export interface Order {
   payment_status: PaymentStatus;
   payment_proof_url: string | null;
   gcash_reference_no: string | null;
-  maya_reference_no: string | null;
   delivery_address: string;
   delivery_lat: number | null;
   delivery_lng: number | null;
@@ -199,9 +198,9 @@ export interface BusinessConfig {
   logo_url: string | null;
   registration_no: string | null;
   gcash_qr_url: string | null;
-  maya_qr_url: string | null;
   delivery_fee: number;
   free_delivery_min: number;
+  delivery_provinces: string | null;
   created_at: string;
   updated_at: string;
 }

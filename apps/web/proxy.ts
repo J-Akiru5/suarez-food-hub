@@ -24,13 +24,9 @@ export async function proxy(request: NextRequest) {
     },
   );
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   const { pathname } = request.nextUrl;
 
-  // Let API routes handle their own auth (returns JSON, not redirects)
+  // Let API routes handle their own auth (returns JSON, not redirects) — skip auth check
   if (pathname.startsWith("/api/")) {
     return supabaseResponse;
   }
@@ -38,6 +34,10 @@ export async function proxy(request: NextRequest) {
   // Check if the route is protected
   const isProtected = protectedRoutes.some((route) => pathname.startsWith(route));
   const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   // Redirect authenticated users away from login/register
   if (user && isAuthRoute) {

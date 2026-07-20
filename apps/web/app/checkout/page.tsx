@@ -29,15 +29,15 @@ interface CartItem {
 
 interface Business {
   gcash_qr_url: string | null;
-  maya_qr_url: string | null;
   delivery_fee: number;
   free_delivery_min: number;
+  delivery_provinces?: string | null;
 }
 
 const PH_REGEX = /^(?:\+63|0)9\d{9}$/;
 const REF_REGEX = /^[A-Za-z0-9]{5,20}$/;
 
-type PaymentMethod = "cod" | "gcash" | "maya";
+type PaymentMethod = "cod" | "gcash";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -95,6 +95,16 @@ export default function CheckoutPage() {
       .catch(() => {});
   }, []);
 
+  const deliveryProvinceList = business?.delivery_provinces
+    ? business.delivery_provinces.split(",").filter(Boolean)
+    : null;
+  const isAreaRestricted =
+    deliveryProvinceList &&
+    deliveryProvinceList.length > 0 &&
+    profile &&
+    (profile as any).province_id &&
+    !deliveryProvinceList.includes((profile as any).province_id);
+
   const deliveryFee = business?.delivery_fee ?? 40;
   const freeDeliveryMin = business?.free_delivery_min ?? 200;
   const subtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
@@ -127,9 +137,7 @@ export default function CheckoutPage() {
     setError("");
     if (paymentMethod !== "cod") {
       if (!REF_REGEX.test(refNumber.trim())) {
-        setError(
-          `Enter a valid ${paymentMethod === "gcash" ? "GCash" : "Maya"} reference number (5-20 alphanumeric characters)`,
-        );
+        setError("Enter a valid GCash reference number (5-20 alphanumeric characters)");
         return;
       }
     }
@@ -159,7 +167,7 @@ export default function CheckoutPage() {
           delivery_contact: phone.trim(),
           payment_method: paymentMethod,
           gcash_reference: paymentMethod === "gcash" ? refNumber.trim() : null,
-          maya_reference: paymentMethod === "maya" ? refNumber.trim() : null,
+
           subtotal,
           delivery_fee: fee,
           total,
@@ -528,8 +536,23 @@ export default function CheckoutPage() {
                 </span>
               </div>
             </div>
-          </div>
-
+          </div>{" "}
+          {isAreaRestricted && (
+            <div
+              style={{
+                padding: "16px 20px",
+                borderRadius: 16,
+                background: "#fff7ed",
+                border: "1px solid #fed7aa",
+                color: "#c2410c",
+                fontSize: 14,
+                fontWeight: 500,
+              }}
+            >
+              <strong>Delivery not available</strong> — We currently only deliver within select provinces. Please update
+              your profile address or choose a different service.
+            </div>
+          )}
           {error && (
             <div
               style={{
@@ -545,7 +568,6 @@ export default function CheckoutPage() {
               {error}
             </div>
           )}
-
           {/* Step 1: Delivery */}
           {step === 1 && (
             <div
@@ -709,7 +731,6 @@ export default function CheckoutPage() {
               </div>
             </div>
           )}
-
           {/* Step 2: Payment */}
           {step === 2 && (
             <div
@@ -764,30 +785,6 @@ export default function CheckoutPage() {
                     title="GCash"
                     subtitle="Pay via GCash"
                   />
-                  <PaymentOption
-                    selected={paymentMethod === "maya"}
-                    onClick={() => setPaymentMethod("maya")}
-                    icon={
-                      <div
-                        style={{
-                          width: 28,
-                          height: 28,
-                          borderRadius: 8,
-                          background: "#5C2D91",
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
-                          color: "#fff",
-                          fontSize: 12,
-                          fontWeight: 900,
-                        }}
-                      >
-                        M
-                      </div>
-                    }
-                    title="Maya"
-                    subtitle="Pay via Maya"
-                  />
                 </div>
 
                 {/* Right: Details */}
@@ -803,13 +800,10 @@ export default function CheckoutPage() {
                         border: "1px solid #e2e8f0",
                       }}
                     >
-                      {(paymentMethod === "gcash" && business?.gcash_qr_url) ||
-                      (paymentMethod === "maya" && business?.maya_qr_url) ? (
+                      {paymentMethod === "gcash" && business?.gcash_qr_url ? (
                         <div style={{ display: "flex", alignItems: "center", gap: 24, marginBottom: 24 }}>
                           <div
-                            onClick={() =>
-                              setQrModalUrl(paymentMethod === "gcash" ? business.gcash_qr_url : business.maya_qr_url)
-                            }
+                            onClick={() => setQrModalUrl(business.gcash_qr_url)}
                             style={{
                               width: 100,
                               height: 100,
@@ -823,7 +817,7 @@ export default function CheckoutPage() {
                             }}
                           >
                             <img
-                              src={paymentMethod === "gcash" ? business.gcash_qr_url! : business.maya_qr_url!}
+                              src={business.gcash_qr_url!}
                               alt="QR Code"
                               style={{ width: "100%", height: "100%", objectFit: "contain" }}
                             />
@@ -864,7 +858,7 @@ export default function CheckoutPage() {
                                 color: "var(--secondary-color)",
                               }}
                             >
-                              Scan to pay via {paymentMethod === "gcash" ? "GCash" : "Maya"}
+                              Scan to pay via GCash
                             </p>
                             <p style={{ margin: 0, fontSize: 14, color: "#64748b", lineHeight: 1.5 }}>
                               Transfer the exact Total Amount, then enter the reference number below.
@@ -891,7 +885,7 @@ export default function CheckoutPage() {
                         type="text"
                         value={refNumber}
                         onChange={(e) => setRefNumber(e.target.value)}
-                        placeholder={`${paymentMethod === "gcash" ? "GCash" : "Maya"} Reference Number`}
+                        placeholder="GCash Reference Number"
                         style={{
                           width: "100%",
                           padding: "16px 20px",
@@ -988,7 +982,6 @@ export default function CheckoutPage() {
               </div>
             </div>
           )}
-
           {/* Step 3: Confirm Details */}
           {step === 3 && (
             <div

@@ -157,7 +157,7 @@ export default function InventoryPage() {
       buffer_quantity: parseInt(formBuffer, 10) || 5,
     };
 
-    let result;
+    let result: Awaited<ReturnType<typeof updateProduct>> | Awaited<ReturnType<typeof createProduct>>;
     if (editingProduct) {
       result = await updateProduct(supabase, editingProduct.id, productData);
     } else {

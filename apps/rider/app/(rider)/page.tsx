@@ -512,7 +512,7 @@ export default function RiderDashboard() {
               <div>
                 <p className="text-xs text-gray-500">Payment</p>
                 <p className="text-sm font-medium text-gray-800 capitalize">
-                  {activeOrder.payment_method?.replace(/_/g, " ")}
+                  {activeOrder.payment_method === "cod" ? "Cash on Delivery" : "GCash"}
                 </p>
               </div>
               <div className="text-right">

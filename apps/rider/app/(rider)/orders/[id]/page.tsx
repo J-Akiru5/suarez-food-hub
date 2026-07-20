@@ -380,7 +380,7 @@ export default function RiderOrderDetailPage() {
         </h2>
         <div className="flex justify-between text-sm">
           <span className="text-gray-500">Payment</span>
-          <span className="font-medium capitalize">{order.payment_method.replace(/_/g, " ")}</span>
+          <span className="font-medium">{order.payment_method === "cod" ? "Cash on Delivery" : "GCash"}</span>
         </div>
         {order.payment_method !== "cod" && (
           <div className="flex justify-between text-sm">

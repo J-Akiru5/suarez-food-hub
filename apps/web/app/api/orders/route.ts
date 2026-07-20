@@ -26,7 +26,6 @@ export async function POST(req: NextRequest) {
       delivery_contact,
       payment_method,
       gcash_reference,
-      maya_reference,
       subtotal,
       delivery_fee,
       total,
@@ -38,7 +37,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
     }
 
-    if (!["cod", "gcash", "maya"].includes(payment_method)) {
+    if (!["cod", "gcash"].includes(payment_method)) {
       return NextResponse.json({ success: false, error: "Invalid payment method" }, { status: 400 });
     }
 
@@ -88,11 +87,27 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    // Check delivery area restriction
+    const { data: business } = await serviceSupabase.from("business").select("delivery_provinces").limit(1).single();
+
+    if (business?.delivery_provinces) {
+      const allowedProvinces = business.delivery_provinces.split(",").filter(Boolean);
+      const profile = existingProfile || (await getProfileById(serviceSupabase, user.id));
+      if (profile && profile.province_id && !allowedProvinces.includes(profile.province_id)) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Delivery is not available in your area. We currently only deliver within select provinces.",
+          },
+          { status: 403 },
+        );
+      }
+    }
+
     const { data: order, error: orderError } = await createOrder(serviceSupabase, {
       user_id: user.id,
       payment_method: payment_method,
       gcash_reference_no: payment_method === "gcash" ? gcash_reference || null : null,
-      maya_reference_no: payment_method === "maya" ? maya_reference || null : null,
       delivery_address,
       delivery_lat,
       delivery_lng,
