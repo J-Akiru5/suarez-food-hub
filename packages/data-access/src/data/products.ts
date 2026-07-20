@@ -63,13 +63,14 @@ export async function updateProduct(supabase: TypedSupabaseClient, productId: st
 }
 
 export async function deleteProduct(supabase: TypedSupabaseClient, productId: string) {
-  // Soft-delete: mark as sold_out and zero out stock instead of hard-deleting,
-  // because existing orders reference the product via foreign key.
+  // Soft-delete: mark as sold_out, zero out stock, and set deleted_at timestamp
+  // instead of hard-deleting, because existing orders reference the product via foreign key.
   const { error } = await supabase
     .from("products")
     .update({
       availability: "sold_out",
       quantity: 0,
+      deleted_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     })
     .eq("id", productId);

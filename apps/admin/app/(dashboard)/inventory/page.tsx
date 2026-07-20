@@ -55,7 +55,11 @@ export default function InventoryPage() {
 
   const fetchData = useCallback(async () => {
     const [prodRes, catData] = await Promise.all([
-      supabase.from("products").select("*, category:categories(*)").order("created_at", { ascending: false }),
+      supabase
+        .from("products")
+        .select("*, category:categories(*)")
+        .is("deleted_at", null)
+        .order("created_at", { ascending: false }),
       getCategories(supabase),
     ]);
     setProducts((prodRes.data as (Product & { category?: Category })[]) || []);
@@ -226,7 +230,8 @@ export default function InventoryPage() {
           showConfirmButton: false,
           timer: 3000,
         });
-        fetchData();
+        // Remove from local state immediately for instant UI update
+        setProducts(prev => prev.filter(p => p.id !== product.id));
       }
     }
   }

@@ -81,6 +81,7 @@ export interface Product {
   is_featured: boolean;
   created_at: string;
   updated_at: string;
+  deleted_at: string | null;
   category?: Category;
   variants?: ProductVariant[];
 }
