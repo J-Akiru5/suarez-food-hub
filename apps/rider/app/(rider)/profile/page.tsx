@@ -21,11 +21,12 @@ import {
   X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Swal from "sweetalert2";
 
 export default function ProfilePage() {
-  const supabase = createBrowserTypedClient();
+  const supabaseRef = useRef(createBrowserTypedClient());
+  const supabase = supabaseRef.current;
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -74,47 +75,34 @@ export default function ProfilePage() {
     if (!user) return;
     setUserId(user.id);
 
-    const data = await getProfileById(supabase, user.id);
+    // Run all independent DB queries in parallel
+    const [profileData, deliveriesCount, earningsRes, reviewsRes, cashoutsRes] = await Promise.all([
+      getProfileById(supabase, user.id),
+      supabase.from("orders").select("id", { count: "exact", head: true }).eq("rider_id", user.id).eq("status", "delivered"),
+      supabase.from("rider_earnings").select("amount, status").eq("rider_id", user.id),
+      supabase.from("rider_reviews").select("rating, comment, created_at").eq("rider_id", user.id).order("created_at", { ascending: false }),
+      supabase.from("rider_cashouts").select("amount, status").eq("rider_id", user.id),
+    ]);
+
+    const data = profileData;
     setOnline(data?.rider_status === "available" || data?.rider_status === "vacant");
 
-    const { count: deliveries } = await supabase
-      .from("orders")
-      .select("id", { count: "exact", head: true })
-      .eq("rider_id", user.id)
-      .eq("status", "delivered");
+    const deliveries = (deliveriesCount as any)?.count || 0;
+    const earningsData = (earningsRes as any)?.data || [];
+    const reviewsData = (reviewsRes as any)?.data || [];
+    const cashoutData = (cashoutsRes as any)?.data || [];
 
-    const { data: earningsData } = await supabase
-      .from("rider_earnings")
-      .select("amount, status")
-      .eq("rider_id", user.id);
-
-    const totalEarnings = earningsData ? earningsData.reduce((sum, e) => sum + (e.amount || 0), 0) : 0;
-
-    // Fetch rider ratings
-    const { data: reviewsData } = await supabase
-      .from("rider_reviews")
-      .select("rating, comment, created_at")
-      .eq("rider_id", user.id)
-      .order("created_at", { ascending: false });
-
-    const ratingCount = reviewsData?.length || 0;
-    const ratingAvg = ratingCount > 0 ? reviewsData!.reduce((sum, r) => sum + r.rating, 0) / ratingCount : 0;
-    const recentReviews = (reviewsData || []).slice(0, 5).map((r) => ({
+    const totalEarnings = earningsData.reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
+    const ratingCount = reviewsData.length;
+    const ratingAvg = ratingCount > 0 ? reviewsData.reduce((sum: number, r: any) => sum + r.rating, 0) / ratingCount : 0;
+    const recentReviews = reviewsData.slice(0, 5).map((r: any) => ({
       rating: r.rating,
       comment: r.comment,
       date: r.created_at,
     }));
-
-    const { data: cashoutData } = await supabase
-      .from("rider_cashouts")
-      .select("amount, status")
-      .eq("rider_id", user.id);
-
     const cashouted = cashoutData
-      ? cashoutData
-          .filter((c) => c.status === "paid" || c.status === "approved")
-          .reduce((sum, c) => sum + (c.amount || 0), 0)
-      : 0;
+      .filter((c: any) => c.status === "paid" || c.status === "approved")
+      .reduce((sum: number, c: any) => sum + (c.amount || 0), 0);
 
     setProfile({
       first_name: data?.first_name || "",
@@ -126,7 +114,7 @@ export default function ProfilePage() {
       vehicle_type: data?.vehicle_type || "",
       plate_number: data?.plate_number || "",
       license_number: data?.license_number || "",
-      total_deliveries: deliveries || 0,
+      total_deliveries: deliveries,
       total_earnings: totalEarnings,
       available_balance: Math.max(0, totalEarnings - cashouted),
       member_since: data?.created_at || user.created_at,

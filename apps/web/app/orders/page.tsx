@@ -1,6 +1,8 @@
 "use client";
 
-import { ArrowRight,
+import { createBrowserTypedClient } from "@repo/data-access/client";
+import {
+  ArrowRight,
   Bike,
   CheckCircle,
   ChefHat,
@@ -17,7 +19,6 @@ import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import Swal from "sweetalert2";
 import AuthNavbar from "../../components/AuthNavbar";
 import { useAuth } from "../../components/auth-provider";
-import { createBrowserTypedClient } from "@repo/data-access/client";
 
 const CustomerDeliveryMap = dynamic(() => import("../../components/CustomerDeliveryMap"), {
   ssr: false,
@@ -77,23 +78,26 @@ function OrdersPageInner() {
 
   const supabaseRef = useRef(createBrowserTypedClient());
 
-  const fetchOrders = useCallback(async (showLoading = true) => {
-    if (!user) return;
-    if (showLoading) setLoading(true);
-    setFetchError("");
+  const fetchOrders = useCallback(
+    async (showLoading = true) => {
+      if (!user) return;
+      if (showLoading) setLoading(true);
+      setFetchError("");
 
-    try {
-      const res = await fetch(`/api/orders/user/${user.id}`);
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const response = await res.json();
-      const data = response.data || response;
-      if (Array.isArray(data)) setOrders(data);
-    } catch {
-      setFetchError("Failed to load your orders. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  }, [user]);
+      try {
+        const res = await fetch(`/api/orders/user/${user.id}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const response = await res.json();
+        const data = response.data || response;
+        if (Array.isArray(data)) setOrders(data);
+      } catch {
+        setFetchError("Failed to load your orders. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [user],
+  );
 
   useEffect(() => {
     fetchOrders();

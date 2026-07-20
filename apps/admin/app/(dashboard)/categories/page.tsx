@@ -3,6 +3,10 @@
 import { createBrowserTypedClient } from "@repo/data-access/client";
 import { createCategory, deleteCategory, getCategories, updateCategory } from "@repo/data-access/data/categories";
 import type { Category } from "@repo/types";
+
+interface CategoryWithCount extends Category {
+  productCount: number;
+}
 import {
   Button,
   Card,
@@ -49,7 +53,7 @@ export default function CategoriesPage() {
       }),
     );
 
-    setCategories(counts as any[]);
+    setCategories(counts as CategoryWithCount[]);
     setLoading(false);
   }, [supabase]);
 
@@ -240,7 +244,7 @@ export default function CategoriesPage() {
                       <span className="text-sm text-gray-500">{category.slug}</span>
                     </td>
                     <td className="px-4 py-3">
-                      <span className="text-sm text-gray-600">{(category as any).productCount || 0}</span>
+                      <span className="text-sm text-gray-600">{(category as CategoryWithCount).productCount || 0}</span>
                     </td>
                     <td className="px-4 py-3">
                       <span

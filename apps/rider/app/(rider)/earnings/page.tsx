@@ -4,7 +4,7 @@ import { createBrowserTypedClient } from "@repo/data-access/client";
 import { getCashouts, getRiderEarnings } from "@repo/data-access/data/earnings";
 import { eachDayOfInterval, endOfWeek, format, startOfMonth, startOfWeek, subMonths } from "date-fns";
 import { Banknote, Download, Loader2, Plus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Swal from "sweetalert2";
 
 interface EarningsData {
@@ -29,7 +29,8 @@ const PERIODS = [
 ] as const;
 
 export default function EarningsPage() {
-  const supabase = createBrowserTypedClient();
+  const supabaseRef = useRef(createBrowserTypedClient());
+  const supabase = supabaseRef.current;
   const [earnings, setEarnings] = useState<EarningsData>({
     today: 0,
     week: 0,

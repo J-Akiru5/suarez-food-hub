@@ -85,64 +85,65 @@ export default function RiderDashboard() {
     riderIdRef.current = user.id;
     setRiderId(user.id);
 
-    const order = await getActiveOrderForRider(supabase, user.id);
+    const now = new Date();
+    const weekStart = startOfWeek(now, { weekStartsOn: 1 });
 
+    // Run ALL independent DB queries in parallel for maximum speed
+    const [activeOrderResult, pendingResult, todayEarningsResult, weekEarningsResult, completedResult, bizConfig] =
+      await Promise.all([
+        getActiveOrderForRider(supabase, user.id),
+        getPendingOrdersForRider(supabase, user.id),
+        getTodayEarnings(supabase, user.id),
+        supabase.from("rider_earnings").select("amount, earned_at").eq("rider_id", user.id).gte("earned_at", weekStart.toISOString()),
+        supabase.from("orders").select("created_at, delivered_at, confirmed_at, status").eq("rider_id", user.id).eq("status", "delivered"),
+        supabase.from("business_config").select("base_lat, base_lng").limit(1).maybeSingle(),
+      ]);
+
+    const order = activeOrderResult as any;
     if (order) {
-      setActiveOrder(order as any);
+      setActiveOrder(order);
       setHasNewOrder(false);
-      const pending = await getPendingOrdersForRider(supabase, user.id);
-      setPendingOrders(pending as Order[]);
+      setPendingOrders(pendingResult as Order[]);
     } else {
       setActiveOrder(null);
-      const pending = await getPendingOrdersForRider(supabase, user.id);
-      setPendingOrders(pending as Order[]);
+      setPendingOrders(pendingResult as Order[]);
     }
 
     // Today's earnings
-    const todayEarnings = await getTodayEarnings(supabase, user.id);
-    if (todayEarnings) {
+    if (todayEarningsResult) {
       setTodayStats({
-        deliveries: todayEarnings.length,
-        earnings: todayEarnings.reduce((sum, e) => sum + (e.amount || 0), 0),
+        deliveries: todayEarningsResult.length,
+        earnings: todayEarningsResult.reduce((sum: number, e: any) => sum + (e.amount || 0), 0),
       });
     }
 
-    // Weekly earnings for sparkline
-    const now = new Date();
-    const weekStart = startOfWeek(now, { weekStartsOn: 1 });
-    const { data: weekEarningsRaw } = await supabase
-      .from("rider_earnings")
-      .select("amount, earned_at")
-      .eq("rider_id", user.id)
-      .gte("earned_at", weekStart.toISOString());
-
+    // Weekly earnings for sparkline (compute in memory, no extra query)
     const weekDays = eachDayOfInterval({ start: weekStart, end: endOfWeek(now, { weekStartsOn: 1 }) });
+    const weekEarningsRaw = (weekEarningsResult as any)?.data || [];
     const dailyTotals = weekDays.map((day) => {
       const dayStr = format(day, "yyyy-MM-dd");
-      const amount = (weekEarningsRaw || [])
+      const amount = (weekEarningsRaw as any[])
         .filter((e: any) => format(new Date(e.earned_at), "yyyy-MM-dd") === dayStr)
         .reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
       return { day: format(day, "EEE"), amount };
     });
     setWeeklyEarnings(dailyTotals);
 
-    // Calculate performance metrics
-    // Average delivery time from completed orders
-    const { data: completedOrders } = await supabase
-      .from("orders")
-      .select("created_at, delivered_at, confirmed_at, status")
-      .eq("rider_id", user.id)
-      .eq("status", "delivered");
+    // Restaurant origin (merged into main fetch)
+    const bizData = (bizConfig as any)?.data;
+    if (bizData?.base_lat && bizData?.base_lng) {
+      setRestaurantOrigin(`${bizData.base_lat},${bizData.base_lng}`);
+    }
 
-    if (completedOrders && completedOrders.length > 0) {
+    // Performance metrics from completed orders
+    const completedOrders = (completedResult as any)?.data || [];
+    if (completedOrders.length > 0) {
       const times = completedOrders
         .filter((o: any) => o.delivered_at && o.confirmed_at)
         .map((o: any) => (new Date(o.delivered_at).getTime() - new Date(o.confirmed_at).getTime()) / 60000);
-      const avgTime = times.length > 0 ? times.reduce((a, b) => a + b, 0) / times.length : 0;
+      const avgTime = times.length > 0 ? times.reduce((a: number, b: number) => a + b, 0) / times.length : 0;
       setAvgDeliveryTime(Math.round(avgTime));
-
-      // On-time rate: delivered within 45 min of confirmation
-      const onTime = times.filter((t) => t <= 45).length;
+      const onTime = times.filter((t: number) => t <= 45).length;
       setOnTimeRate(Math.round((onTime / times.length) * 100));
     }
 
@@ -174,16 +175,6 @@ export default function RiderDashboard() {
       }
     } catch {}
   }, []);
-
-  // Fetch restaurant location from DB
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase.from("business_config").select("base_lat, base_lng").limit(1).maybeSingle();
-      if (data?.base_lat && data?.base_lng) {
-        setRestaurantOrigin(`${data.base_lat},${data.base_lng}`);
-      }
-    })();
-  }, [supabase]);
 
   // Pull-to-refresh gesture
   useEffect(() => {
@@ -289,7 +280,8 @@ export default function RiderDashboard() {
       if (watchIdRef.current !== null) {
         navigator.geolocation.clearWatch(watchIdRef.current);
       }
-    };    }, [fetchRiderData, playNotification]);
+    };
+  }, [fetchRiderData, playNotification]);
   // Note: riderId intentionally NOT in deps — we use riderIdRef to avoid re-creating the channel
   // Note: supabase intentionally omitted from deps — it's stable via useRef
 

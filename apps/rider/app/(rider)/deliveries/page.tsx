@@ -72,7 +72,11 @@ export default function DeliveriesPage() {
     fetchOrders();
     // Fetch restaurant location from DB
     (async () => {
-      const { data } = await supabaseRef.current.from("business_config").select("base_lat, base_lng").limit(1).maybeSingle();
+      const { data } = await supabaseRef.current
+        .from("business_config")
+        .select("base_lat, base_lng")
+        .limit(1)
+        .maybeSingle();
       if (data?.base_lat && data?.base_lng) {
         setRestaurantOrigin(`${data.base_lat},${data.base_lng}`);
       }

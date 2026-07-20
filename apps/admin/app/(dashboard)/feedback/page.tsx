@@ -190,6 +190,7 @@ export default function AdminFeedbackPage() {
                     <p className="text-xs text-muted-foreground">{format(new Date(entry.created_at), "MMM d, yyyy")}</p>
                     <p className="text-[11px] text-muted-foreground">{format(new Date(entry.created_at), "h:mm a")}</p>
                     <button
+                      type="button"
                       onClick={() => handleDelete(entry)}
                       className="text-gray-400 hover:text-red-500 transition-colors"
                       title="Delete"
