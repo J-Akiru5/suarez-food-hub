@@ -111,14 +111,22 @@ export default function ReportsPage() {
       }
 
       if (o.items && Array.isArray(o.items)) {
-        o.items.forEach((item: any) => {
-          itemsSold += item.quantity || 0;
-          const name = item.product?.name || item.product_name || "Unknown";
-          const existingProduct = productMap.get(name) || { quantity: 0, revenue: 0 };
-          existingProduct.quantity += item.quantity || 0;
-          existingProduct.revenue += (item.unit_price || 0) * (item.quantity || 0);
-          productMap.set(name, existingProduct);
-        });
+        o.items.forEach(
+          (item: {
+            quantity?: number;
+            unit_price?: number;
+            product_name?: string;
+            product?: { name?: string }[] | { name?: string };
+          }) => {
+            itemsSold += item.quantity || 0;
+            const productData = Array.isArray(item.product) ? item.product[0] : item.product;
+            const name = productData?.name || item.product_name || "Unknown";
+            const existingProduct = productMap.get(name) || { quantity: 0, revenue: 0 };
+            existingProduct.quantity += item.quantity || 0;
+            existingProduct.revenue += (item.unit_price || 0) * (item.quantity || 0);
+            productMap.set(name, existingProduct);
+          },
+        );
       }
     });
 
@@ -224,6 +232,7 @@ export default function ReportsPage() {
             <div className="flex flex-wrap gap-2">
               {presets.map((p) => (
                 <button
+                  type="button"
                   key={p.value}
                   onClick={() => setPreset(p.value)}
                   className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors ${
