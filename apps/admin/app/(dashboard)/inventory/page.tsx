@@ -231,7 +231,7 @@ export default function InventoryPage() {
           timer: 3000,
         });
         // Remove from local state immediately for instant UI update
-        setProducts(prev => prev.filter(p => p.id !== product.id));
+        setProducts((prev) => prev.filter((p) => p.id !== product.id));
       }
     }
   }
