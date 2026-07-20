@@ -7,7 +7,7 @@ import { formatCurrency } from "@repo/utils";
 import { endOfMonth, format, startOfMonth, startOfWeek, subDays } from "date-fns";
 import { BarChart3, Calendar, DollarSign, Download, Loader2, ShoppingBag, TrendingUp } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
-import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import PdfReport from "./pdf-report";
 
 interface ReportData {
@@ -285,33 +285,73 @@ export default function ReportsPage() {
       {/* Revenue Chart */}
       <Card>
         <CardContent className="p-4">
-          <h2 className="font-bold text-lg mb-4 font-display">Daily Revenue</h2>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="font-bold text-lg font-display">Daily Revenue</h2>
+            {!loading && reportData.dailyBreakdown.length > 0 && (
+              <span className="text-xs text-muted-foreground bg-gray-50 px-2.5 py-1 rounded-full">
+                {reportData.dailyBreakdown.length} day{reportData.dailyBreakdown.length > 1 ? "s" : ""}
+              </span>
+            )}
+          </div>
           {loading ? (
             <div className="h-72 bg-gray-100 rounded-lg animate-pulse" />
+          ) : reportData.dailyBreakdown.length === 0 || reportData.dailyBreakdown.every((d) => d.revenue === 0) ? (
+            <div className="h-72 flex flex-col items-center justify-center text-center bg-gray-50/50 rounded-xl border border-dashed border-gray-200">
+              <BarChart3 className="h-12 w-12 text-gray-300 mb-3" />
+              <p className="text-sm font-medium text-gray-500">No revenue data yet</p>
+              <p className="text-xs text-gray-400 mt-1 max-w-[240px]">
+                Orders with completed deliveries will appear here as daily revenue
+              </p>
+            </div>
           ) : (
             <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={reportData.dailyBreakdown}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="date" tick={{ fontSize: 12 }} tickLine={false} axisLine={false} />
-                  <YAxis tick={{ fontSize: 12 }} tickLine={false} axisLine={false} tickFormatter={(v) => `₱${v}`} />
+                <AreaChart data={reportData.dailyBreakdown}>
+                  <defs>
+                    <linearGradient id="revenueGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor="#b1454a" stopOpacity={0.25} />
+                      <stop offset="95%" stopColor="#b1454a" stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" vertical={false} />
+                  <XAxis
+                    dataKey="date"
+                    tick={{ fontSize: 11, fill: "#6b7280" }}
+                    tickLine={false}
+                    axisLine={false}
+                    dy={8}
+                  />
+                  <YAxis
+                    tick={{ fontSize: 11, fill: "#6b7280" }}
+                    tickLine={false}
+                    axisLine={false}
+                    tickFormatter={(v: number) => (v >= 1000 ? `₱${(v / 1000).toFixed(1)}k` : `₱${v}`)}
+                    width={60}
+                  />
                   <Tooltip
-                    formatter={(value: number) => [formatCurrency(value), "Revenue"]}
+                    formatter={(value: number, _name: string, props: { payload?: { orders?: number } }) => [
+                      formatCurrency(value),
+                      `Revenue${props?.payload?.orders ? ` (${props.payload.orders} order${props.payload.orders > 1 ? "s" : ""})` : ""}`,
+                    ]}
+                    labelFormatter={(label: string) => label}
                     contentStyle={{
-                      borderRadius: "8px",
+                      borderRadius: "10px",
                       border: "1px solid #e5e7eb",
-                      boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)",
+                      boxShadow: "0 8px 24px rgba(0,0,0,0.08)",
+                      padding: "10px 14px",
+                      fontSize: "13px",
                     }}
                   />
-                  <Line
+                  <Area
                     type="monotone"
                     dataKey="revenue"
                     stroke="#b1454a"
-                    strokeWidth={2}
-                    dot={false}
-                    activeDot={{ r: 6 }}
+                    strokeWidth={2.5}
+                    fill="url(#revenueGradient)"
+                    dot={reportData.dailyBreakdown.length <= 31 ? { r: 3, fill: "#b1454a", strokeWidth: 0 } : false}
+                    activeDot={{ r: 6, fill: "#b1454a", stroke: "#fff", strokeWidth: 2 }}
                   />
-                </LineChart>
+                </AreaChart>
               </ResponsiveContainer>
             </div>
           )}
