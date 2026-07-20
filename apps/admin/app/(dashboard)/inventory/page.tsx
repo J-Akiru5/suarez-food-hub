@@ -58,7 +58,7 @@ export default function InventoryPage() {
       supabase.from("products").select("*, category:categories(*)").order("created_at", { ascending: false }),
       getCategories(supabase),
     ]);
-    setProducts((prodRes.data as any[]) || []);
+    setProducts((prodRes.data as (Product & { category?: Category })[]) || []);
     setCategories((catData as Category[]) || []);
     setLoading(false);
   }, [supabase]);
@@ -82,7 +82,7 @@ export default function InventoryPage() {
     setDialogOpen(true);
   }
 
-  function openEditDialog(product: any) {
+  function openEditDialog(product: Product & { category?: Category }) {
     setEditingProduct(product);
     setFormName(product.name);
     setFormSlug(product.slug);
@@ -376,17 +376,22 @@ export default function InventoryPage() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       <div className="flex items-center justify-end gap-2">
-                        <Button variant="outline" size="sm" onClick={() => openEditDialog(product)} className="gap-1">
-                          <Pencil className="h-3 w-3" />
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => openEditDialog(product)}
+                          className="gap-1.5 px-2.5"
+                        >
+                          <Pencil className="h-4 w-4" />
                           <span className="hidden sm:inline">Edit</span>
                         </Button>
                         <Button
                           variant="outline"
                           size="sm"
                           onClick={() => handleDeleteProduct(product)}
-                          className="gap-1 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                          className="gap-1.5 px-2.5 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
                         >
-                          <Trash2 className="h-3 w-3" />
+                          <Trash2 className="h-4 w-4" />
                           <span className="hidden sm:inline">Delete</span>
                         </Button>
                       </div>
@@ -448,8 +453,11 @@ export default function InventoryPage() {
               </div>
 
               <div>
-                <label className="text-sm font-medium text-gray-700 block mb-1">Slug</label>
+                <label htmlFor="inventory-slug" className="text-sm font-medium text-gray-700 block mb-1">
+                  Slug
+                </label>
                 <Input
+                  id="inventory-slug"
                   value={formSlug}
                   onChange={(e) => setFormSlug(e.target.value)}
                   placeholder="product-slug (auto-generated if empty)"

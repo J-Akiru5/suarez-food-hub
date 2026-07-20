@@ -94,8 +94,16 @@ export default function RiderDashboard() {
         getActiveOrderForRider(supabase, user.id),
         getPendingOrdersForRider(supabase, user.id),
         getTodayEarnings(supabase, user.id),
-        supabase.from("rider_earnings").select("amount, earned_at").eq("rider_id", user.id).gte("earned_at", weekStart.toISOString()),
-        supabase.from("orders").select("created_at, delivered_at, confirmed_at, status").eq("rider_id", user.id).eq("status", "delivered"),
+        supabase
+          .from("rider_earnings")
+          .select("amount, earned_at")
+          .eq("rider_id", user.id)
+          .gte("earned_at", weekStart.toISOString()),
+        supabase
+          .from("orders")
+          .select("created_at, delivered_at, confirmed_at, status")
+          .eq("rider_id", user.id)
+          .eq("status", "delivered"),
         supabase.from("business_config").select("base_lat, base_lng").limit(1).maybeSingle(),
       ]);
 

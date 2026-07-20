@@ -78,9 +78,17 @@ export default function ProfilePage() {
     // Run all independent DB queries in parallel
     const [profileData, deliveriesCount, earningsRes, reviewsRes, cashoutsRes] = await Promise.all([
       getProfileById(supabase, user.id),
-      supabase.from("orders").select("id", { count: "exact", head: true }).eq("rider_id", user.id).eq("status", "delivered"),
+      supabase
+        .from("orders")
+        .select("id", { count: "exact", head: true })
+        .eq("rider_id", user.id)
+        .eq("status", "delivered"),
       supabase.from("rider_earnings").select("amount, status").eq("rider_id", user.id),
-      supabase.from("rider_reviews").select("rating, comment, created_at").eq("rider_id", user.id).order("created_at", { ascending: false }),
+      supabase
+        .from("rider_reviews")
+        .select("rating, comment, created_at")
+        .eq("rider_id", user.id)
+        .order("created_at", { ascending: false }),
       supabase.from("rider_cashouts").select("amount, status").eq("rider_id", user.id),
     ]);
 
@@ -94,7 +102,8 @@ export default function ProfilePage() {
 
     const totalEarnings = earningsData.reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
     const ratingCount = reviewsData.length;
-    const ratingAvg = ratingCount > 0 ? reviewsData.reduce((sum: number, r: any) => sum + r.rating, 0) / ratingCount : 0;
+    const ratingAvg =
+      ratingCount > 0 ? reviewsData.reduce((sum: number, r: any) => sum + r.rating, 0) / ratingCount : 0;
     const recentReviews = reviewsData.slice(0, 5).map((r: any) => ({
       rating: r.rating,
       comment: r.comment,

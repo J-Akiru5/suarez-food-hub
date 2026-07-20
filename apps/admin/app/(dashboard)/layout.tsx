@@ -293,6 +293,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
           <div className="px-3 py-4 border-t border-gray-200">
             <button
+              type="button"
               onClick={handleLogout}
               className={`flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors ${
                 !sidebarOpen ? "justify-center" : ""
@@ -305,6 +306,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           </div>
 
           <button
+            type="button"
             onClick={() => setSidebarOpen((p) => !p)}
             className="absolute -right-3 top-20 h-6 w-6 bg-white border border-gray-200 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 shadow-sm hidden lg:flex"
           >
@@ -327,6 +329,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   </div>
                 </div>
                 <button
+                  type="button"
                   onClick={() => setMobileOpen(false)}
                   className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-gray-100"
                 >
@@ -369,6 +372,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
               <div className="px-3 py-4 border-t border-gray-200">
                 <button
+                  type="button"
                   onClick={handleLogout}
                   className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-medium text-gray-600 hover:bg-red-50 hover:text-red-600 transition-colors"
                 >
@@ -383,6 +387,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <div className="flex-1 flex flex-col min-w-0">
           <header className="sticky top-0 z-30 bg-white border-b border-gray-200 h-16 flex items-center px-4 gap-4 shadow-sm safe-top print:hidden">
             <button
+              type="button"
               onClick={() => setMobileOpen(true)}
               className="lg:hidden h-9 w-9 flex items-center justify-center rounded-lg hover:bg-gray-100"
             >
@@ -393,6 +398,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
             <div className="relative" ref={notifRef}>
               <button
+                type="button"
                 onClick={() => setNotifOpen(!notifOpen)}
                 className="relative h-9 w-9 flex items-center justify-center rounded-lg hover:bg-gray-100"
               >
@@ -426,6 +432,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         return (
                           <button
                             key={n.id}
+                            type="button"
                             onClick={() => markNotifRead(n.id, link)}
                             className={`w-full text-left flex items-start gap-3 px-4 py-3 transition-colors ${
                               n.read ? "hover:bg-gray-50 opacity-60" : "hover:bg-gray-50"

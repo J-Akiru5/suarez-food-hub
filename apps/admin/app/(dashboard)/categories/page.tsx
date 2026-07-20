@@ -7,6 +7,7 @@ import type { Category } from "@repo/types";
 interface CategoryWithCount extends Category {
   productCount: number;
 }
+
 import {
   Button,
   Card,
