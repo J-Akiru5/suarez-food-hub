@@ -216,6 +216,7 @@ export default function EarningsPage() {
     if (!user) return;
 
     const { error } = await supabase.from("rider_cashouts").insert({
+      id: crypto.randomUUID(),
       rider_id: user.id,
       amount,
       gcash_number,

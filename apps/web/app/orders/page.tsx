@@ -1,7 +1,6 @@
 "use client";
 
-import {
-  ArrowRight,
+import { ArrowRight,
   Bike,
   CheckCircle,
   ChefHat,
@@ -14,10 +13,11 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import Swal from "sweetalert2";
 import AuthNavbar from "../../components/AuthNavbar";
 import { useAuth } from "../../components/auth-provider";
+import { createBrowserTypedClient } from "@repo/data-access/client";
 
 const CustomerDeliveryMap = dynamic(() => import("../../components/CustomerDeliveryMap"), {
   ssr: false,
@@ -75,23 +75,54 @@ function OrdersPageInner() {
   const [reviewComment, setReviewComment] = useState("");
   const [submittingReview, setSubmittingReview] = useState(false);
 
-  useEffect(() => {
+  const supabaseRef = useRef(createBrowserTypedClient());
+
+  const fetchOrders = useCallback(async (showLoading = true) => {
     if (!user) return;
-    setLoading(true);
+    if (showLoading) setLoading(true);
     setFetchError("");
 
-    fetch(`/api/orders/user/${user.id}`)
-      .then((r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
-        return r.json();
-      })
-      .then((response) => {
-        const data = response.data || response;
-        if (Array.isArray(data)) setOrders(data);
-      })
-      .catch(() => setFetchError("Failed to load your orders. Please try again."))
-      .finally(() => setLoading(false));
+    try {
+      const res = await fetch(`/api/orders/user/${user.id}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const response = await res.json();
+      const data = response.data || response;
+      if (Array.isArray(data)) setOrders(data);
+    } catch {
+      setFetchError("Failed to load your orders. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   }, [user]);
+
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
+
+  // Realtime subscription for live order updates
+  useEffect(() => {
+    if (!user) return;
+
+    const channel = supabaseRef.current
+      .channel(`user-orders-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "orders",
+          filter: `user_id=eq.${user.id}`,
+        },
+        () => {
+          fetchOrders(false);
+        },
+      )
+      .subscribe();
+
+    return () => {
+      supabaseRef.current.removeChannel(channel);
+    };
+  }, [user, fetchOrders]);
 
   const [cancellingId, setCancellingId] = useState("");
 

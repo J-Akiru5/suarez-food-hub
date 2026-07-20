@@ -1,5 +1,11 @@
 import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
-import { formatCurrency } from "@repo/utils";
+
+// PDF-safe currency format — Helvetica doesn't render the ₱ symbol,
+// so we use the plain peso sign 'P' which all PDF fonts support.
+function pdfCurrency(amount: number): string {
+  const p = amount.toLocaleString("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  return `P${p}`;
+}
 
 const styles = StyleSheet.create({
   page: {
@@ -147,11 +153,11 @@ export default function PdfReport({ dateFrom, dateTo, data }: ReportProps) {
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statLabel}>Revenue</Text>
-              <Text style={styles.statValue}>{formatCurrency(data.totalRevenue)}</Text>
+              <Text style={styles.statValue}>{pdfCurrency(data.totalRevenue)}</Text>
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statLabel}>Avg. Order Value</Text>
-              <Text style={styles.statValue}>{formatCurrency(data.averageOrderValue)}</Text>
+              <Text style={styles.statValue}>{pdfCurrency(data.averageOrderValue)}</Text>
             </View>
             <View style={styles.statCard}>
               <Text style={styles.statLabel}>Items Sold</Text>
@@ -174,7 +180,7 @@ export default function PdfReport({ dateFrom, dateTo, data }: ReportProps) {
                 <View key={idx} style={styles.tableRow}>
                   <Text style={[styles.tableCell, { flex: 2 }]}>{day.date}</Text>
                   <Text style={[styles.tableCell, { flex: 1, textAlign: "right" }]}>{day.orders}</Text>
-                  <Text style={[styles.tableCell, { flex: 1, textAlign: "right" }]}>{formatCurrency(day.revenue)}</Text>
+                  <Text style={[styles.tableCell, { flex: 1, textAlign: "right" }]}>{pdfCurrency(day.revenue)}</Text>
                 </View>
               ))}
             </View>
@@ -198,7 +204,7 @@ export default function PdfReport({ dateFrom, dateTo, data }: ReportProps) {
                   <Text style={[styles.tableCell, { flex: 2 }]}>{product.name}</Text>
                   <Text style={[styles.tableCell, { flex: 1, textAlign: "right" }]}>{product.quantity}</Text>
                   <Text style={[styles.tableCell, { flex: 1, textAlign: "right" }]}>
-                    {formatCurrency(product.revenue)}
+                    {pdfCurrency(product.revenue)}
                   </Text>
                 </View>
               ))}

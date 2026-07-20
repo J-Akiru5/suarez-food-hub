@@ -18,7 +18,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Swal from "sweetalert2";
 
 interface OrderDetail extends Order {
@@ -50,7 +50,7 @@ const RIDER_ACTIONS: Record<string, { label: string; nextStatus: string; icon: a
 export default function RiderOrderDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const supabase = createBrowserTypedClient();
+  const supabaseRef = useRef(createBrowserTypedClient());
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
@@ -62,10 +62,10 @@ export default function RiderOrderDetailPage() {
   const fetchOrder = useCallback(async () => {
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await supabaseRef.current.auth.getUser();
     if (!user) return;
 
-    const data = await getOrderById(supabase, orderId);
+    const data = await getOrderById(supabaseRef.current, orderId);
     if (!data || data.rider_id !== user.id) {
       setAccessDenied(true);
       setLoading(false);
@@ -73,7 +73,7 @@ export default function RiderOrderDetailPage() {
     }
     setOrder(data as OrderDetail);
     setLoading(false);
-  }, [supabase, orderId]);
+  }, [orderId]);
 
   useEffect(() => {
     fetchOrder();
@@ -81,7 +81,7 @@ export default function RiderOrderDetailPage() {
 
   // Realtime auto-refresh when order status changes
   useEffect(() => {
-    const channel = supabase
+    const channel = supabaseRef.current
       .channel(`order-${orderId}`)
       .on(
         "postgres_changes",
@@ -100,9 +100,9 @@ export default function RiderOrderDetailPage() {
       });
 
     return () => {
-      supabase.removeChannel(channel);
+      supabaseRef.current.removeChannel(channel);
     };
-  }, [fetchOrder, orderId, supabase]);
+  }, [fetchOrder, orderId]);
 
   async function handleStatusAction(nextStatus: string) {
     setUpdating(true);

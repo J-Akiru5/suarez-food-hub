@@ -5,7 +5,7 @@ import { getOrdersForRider } from "@repo/data-access/data/orders";
 import { format } from "date-fns";
 import { ChevronRight, List, Map as MapIcon, MapPin, Package, Search, X } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 interface Delivery {
   id: string;
@@ -46,7 +46,8 @@ const statusColors: Record<string, string> = {
 type SortOption = "newest" | "oldest" | "amount_high" | "amount_low";
 
 export default function DeliveriesPage() {
-  const supabase = createBrowserTypedClient();
+  const supabaseRef = useRef(createBrowserTypedClient());
+  const supabase = supabaseRef.current;
   const [allOrders, setAllOrders] = useState<Delivery[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<string>("all");
@@ -71,25 +72,25 @@ export default function DeliveriesPage() {
     fetchOrders();
     // Fetch restaurant location from DB
     (async () => {
-      const { data } = await supabase.from("business_config").select("base_lat, base_lng").limit(1).maybeSingle();
+      const { data } = await supabaseRef.current.from("business_config").select("base_lat, base_lng").limit(1).maybeSingle();
       if (data?.base_lat && data?.base_lng) {
         setRestaurantOrigin(`${data.base_lat},${data.base_lng}`);
       }
     })();
-  }, [fetchOrders, supabase]);
+  }, [fetchOrders]);
 
   // Realtime updates
   useEffect(() => {
-    const channel = supabase
+    const channel = supabaseRef.current
       .channel("rider-deliveries")
       .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
         fetchOrders();
       })
       .subscribe();
     return () => {
-      supabase.removeChannel(channel);
+      supabaseRef.current.removeChannel(channel);
     };
-  }, [fetchOrders, supabase]);
+  }, [fetchOrders]);
 
   const filteredOrders = useMemo(() => {
     let result = [...allOrders];

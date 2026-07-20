@@ -56,7 +56,8 @@ interface TodayStats {
 }
 
 export default function RiderDashboard() {
-  const supabase = createBrowserTypedClient();
+  const supabaseRef = useRef(createBrowserTypedClient());
+  const supabase = supabaseRef.current;
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
   const [todayStats, setTodayStats] = useState<TodayStats>({ deliveries: 0, earnings: 0 });
@@ -148,7 +149,7 @@ export default function RiderDashboard() {
     setLoading(false);
   }, [supabase]);
 
-  const playNotification = () => {
+  const playNotification = useCallback(() => {
     try {
       // Respect user preferences from localStorage (set in Profile page)
       const soundEnabled = localStorage.getItem("rider_sound_enabled") !== "false";
@@ -172,7 +173,7 @@ export default function RiderDashboard() {
         navigator.vibrate([200, 100, 200]);
       }
     } catch {}
-  };
+  }, []);
 
   // Fetch restaurant location from DB
   useEffect(() => {
@@ -288,9 +289,9 @@ export default function RiderDashboard() {
       if (watchIdRef.current !== null) {
         navigator.geolocation.clearWatch(watchIdRef.current);
       }
-    };
-  }, [fetchRiderData, supabase, playNotification]);
+    };    }, [fetchRiderData, playNotification]);
   // Note: riderId intentionally NOT in deps — we use riderIdRef to avoid re-creating the channel
+  // Note: supabase intentionally omitted from deps — it's stable via useRef
 
   useEffect(() => {
     if (!activeOrder || !riderId) return;
