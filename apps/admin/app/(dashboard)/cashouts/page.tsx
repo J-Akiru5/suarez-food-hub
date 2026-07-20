@@ -15,6 +15,7 @@ interface Cashout {
   rider_id: string;
   amount: number;
   status: CashoutStatus;
+  gcash_number: string | null;
   notes: string | null;
   processed_by: string | null;
   processed_at: string | null;
@@ -140,6 +141,11 @@ export default function CashoutsPage() {
                       <p className="text-xs text-gray-500 mt-1">
                         Requested {new Date(c.requested_at).toLocaleDateString()}
                       </p>
+                      {c.gcash_number && (
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          GCash: <span className="font-medium text-gray-700">{c.gcash_number}</span>
+                        </p>
+                      )}
                     </div>
                     <div className="text-right">
                       <Badge

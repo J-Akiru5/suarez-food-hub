@@ -178,11 +178,23 @@ export default function StaffInventoryPage() {
                         </span>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-2">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <button
+                            onClick={() =>
+                              setQtyEdits((prev) => ({
+                                ...prev,
+                                [product.id]: String(Math.max(0, parseInt(prev[product.id] ?? String(product.quantity)) - 1)),
+                              }))
+                            }
+                            className="h-8 w-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 hover:border-gray-300 transition-colors text-lg font-bold leading-none"
+                            title="Decrease by 1"
+                          >
+                            &minus;
+                          </button>
                           <Input
                             type="number"
                             min="0"
-                            placeholder="New quantity"
+                            placeholder={String(product.quantity)}
                             value={currentEdit ?? ""}
                             onChange={(e) =>
                               setQtyEdits((prev) => ({
@@ -190,13 +202,25 @@ export default function StaffInventoryPage() {
                                 [product.id]: e.target.value,
                               }))
                             }
-                            className="w-full sm:w-20 h-8 text-sm"
+                            className="w-full sm:w-16 h-8 text-sm text-center"
                           />
+                          <button
+                            onClick={() =>
+                              setQtyEdits((prev) => ({
+                                ...prev,
+                                [product.id]: String((parseInt(prev[product.id] ?? String(product.quantity)) || 0) + 1),
+                              }))
+                            }
+                            className="h-8 w-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 hover:border-gray-300 transition-colors text-lg font-bold leading-none"
+                            title="Increase by 1"
+                          >
+                            +
+                          </button>
                           <Button
                             size="sm"
                             onClick={() => saveQuantity(product.id)}
-                            disabled={savingId === product.id || currentEdit === undefined || currentEdit === ""}
-                            className="bg-brand-500 hover:bg-brand-600 text-white h-8"
+                            disabled={savingId === product.id || (currentEdit === undefined || currentEdit === "")}
+                            className="bg-brand-500 hover:bg-brand-600 text-white h-8 w-8 p-0"
                           >
                             {savingId === product.id ? (
                               <Loader2 size={12} className="animate-spin" />

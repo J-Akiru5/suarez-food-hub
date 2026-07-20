@@ -12,8 +12,10 @@ import {
   HelpCircle,
   Info,
   LogOut,
+  MessageSquare,
   Package,
   Save,
+  Star,
   User,
   Volume2,
   X,
@@ -88,6 +90,24 @@ export default function ProfilePage() {
 
     const totalEarnings = earningsData ? earningsData.reduce((sum, e) => sum + (e.amount || 0), 0) : 0;
 
+    // Fetch rider ratings
+    const { data: reviewsData } = await supabase
+      .from("rider_reviews")
+      .select("rating, comment, created_at")
+      .eq("rider_id", user.id)
+      .order("created_at", { ascending: false });
+
+    const ratingCount = reviewsData?.length || 0;
+    const ratingAvg =
+      ratingCount > 0
+        ? reviewsData!.reduce((sum, r) => sum + r.rating, 0) / ratingCount
+        : 0;
+    const recentReviews = (reviewsData || []).slice(0, 5).map((r) => ({
+      rating: r.rating,
+      comment: r.comment,
+      date: r.created_at,
+    }));
+
     const { data: cashoutData } = await supabase
       .from("rider_cashouts")
       .select("amount, status")
@@ -113,6 +133,9 @@ export default function ProfilePage() {
       total_earnings: totalEarnings,
       available_balance: Math.max(0, totalEarnings - cashouted),
       member_since: data?.created_at || user.created_at,
+      rating_avg: Math.round(ratingAvg * 10) / 10,
+      rating_count: ratingCount,
+      recent_reviews: recentReviews,
     });
 
     setFormFirstName(data?.first_name || "");
@@ -407,6 +430,74 @@ export default function ProfilePage() {
           <p className="text-2xl font-bold text-brand-600">₱{Number(profile.total_earnings).toFixed(2)}</p>
           <p className="text-xs text-gray-500">Earnings</p>
         </div>
+      </div>
+
+      {/* Rider Ratings */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-4">
+        <h3 className="font-semibold text-sm text-gray-700 flex items-center gap-1.5 mb-3">
+          <Star size={16} className="text-yellow-500 fill-yellow-500" />
+          Rider Ratings
+        </h3>
+
+        {profile.rating_count === 0 ? (
+          <div className="text-center py-4">
+            <MessageSquare size={28} className="text-gray-300 mx-auto mb-2" />
+            <p className="text-sm text-gray-400">No ratings yet</p>
+            <p className="text-xs text-gray-300 mt-1">Ratings appear after deliveries</p>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center gap-4 mb-3">
+              <div className="text-center">
+                <p className="text-3xl font-bold text-gray-800">{profile.rating_avg}</p>
+                <div className="flex gap-0.5 mt-0.5 justify-center">
+                  {[1, 2, 3, 4, 5].map((s) => (
+                    <Star
+                      key={s}
+                      size={14}
+                      className={`${
+                        s <= Math.round(profile.rating_avg)
+                          ? "fill-yellow-400 text-yellow-400"
+                          : "text-gray-200"
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+              <div className="text-xs text-gray-500">
+                <p className="font-semibold text-gray-700">{profile.rating_count} review{profile.rating_count !== 1 ? "s" : ""}</p>
+                <p className="mt-0.5">Based on completed deliveries</p>
+              </div>
+            </div>
+
+            {profile.recent_reviews.length > 0 && (
+              <div className="border-t border-gray-100 pt-3 space-y-2">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Recent Feedback</p>
+                {profile.recent_reviews.map((r: any, i: number) => (
+                  <div key={i} className="bg-gray-50 rounded-lg p-3">
+                    <div className="flex items-center gap-1 mb-1">
+                      {[1, 2, 3, 4, 5].map((s) => (
+                        <Star
+                          key={s}
+                          size={11}
+                          className={`${
+                            s <= r.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-200"
+                          }`}
+                        />
+                      ))}
+                      <span className="text-[10px] text-gray-400 ml-auto">
+                        {new Date(r.date).toLocaleDateString("en-PH", { month: "short", day: "numeric" })}
+                      </span>
+                    </div>
+                    {r.comment && (
+                      <p className="text-xs text-gray-600 italic">&ldquo;{r.comment}&rdquo;</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {/* Vehicle Info */}

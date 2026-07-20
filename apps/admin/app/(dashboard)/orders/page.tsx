@@ -142,6 +142,14 @@ export default function OrdersPage() {
     fetchOrders();
   }
 
+  function needsAttention(order: OrderWithProfile) {
+    return (
+      order.payment_status !== "verified" ||
+      order.status === "pending" ||
+      (!order.rider_id && order.status !== "cancelled" && order.status !== "delivered")
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -179,8 +187,13 @@ export default function OrdersPage() {
             </Card>
           ) : (
             <div className="space-y-3">
-              {orders.map((order) => (
-                <Card key={order.id}>
+              {orders.map((order) => {
+                const urgent = needsAttention(order);
+                return (
+                <Card
+                  key={order.id}
+                  className={urgent ? "border-red-300 ring-1 ring-red-200" : ""}
+                >
                   <CardContent className="p-4">
                     <div className="flex items-start justify-between gap-4">
                       <div className="min-w-0 flex-1">
@@ -335,7 +348,7 @@ export default function OrdersPage() {
                     </div>
                   </CardContent>
                 </Card>
-              ))}
+              );})}
             </div>
           )}
         </TabsContent>

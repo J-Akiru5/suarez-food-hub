@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "ES2017",
-    "lib": ["dom", "dom.iterable", "esnext"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -19,19 +23,49 @@
       }
     ],
     "paths": {
-      "@/*": ["./*"],
-      "@repo/ui": ["../../packages/ui/src"],
-      "@repo/ui/*": ["../../packages/ui/src/*"],
-      "@repo/utils": ["../../packages/utils/src"],
-      "@repo/utils/*": ["../../packages/utils/src/*"],
-      "@repo/types": ["../../packages/types/src"],
-      "@repo/types/*": ["../../packages/types/src/*"],
-      "@repo/supabase": ["../../packages/supabase/src"],
-      "@repo/supabase/*": ["../../packages/supabase/src/*"],
-      "@repo/data-access": ["../../packages/data-access/src"],
-      "@repo/data-access/*": ["../../packages/data-access/src/*"]
+      "@/*": [
+        "./*"
+      ],
+      "@repo/ui": [
+        "../../packages/ui/src"
+      ],
+      "@repo/ui/*": [
+        "../../packages/ui/src/*"
+      ],
+      "@repo/utils": [
+        "../../packages/utils/src"
+      ],
+      "@repo/utils/*": [
+        "../../packages/utils/src/*"
+      ],
+      "@repo/types": [
+        "../../packages/types/src"
+      ],
+      "@repo/types/*": [
+        "../../packages/types/src/*"
+      ],
+      "@repo/supabase": [
+        "../../packages/supabase/src"
+      ],
+      "@repo/supabase/*": [
+        "../../packages/supabase/src/*"
+      ],
+      "@repo/data-access": [
+        "../../packages/data-access/src"
+      ],
+      "@repo/data-access/*": [
+        "../../packages/data-access/src/*"
+      ]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

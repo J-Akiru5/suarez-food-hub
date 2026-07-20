@@ -2,8 +2,19 @@
 
 import { createBrowserTypedClient } from "@repo/data-access/client";
 import { Button, Card, CardContent, Input } from "@repo/ui";
-import { CheckCircle, Loader2, Shield, UserPlus, Users } from "lucide-react";
+import {
+  CheckCircle,
+  Edit,
+  Loader2,
+  Pencil,
+  Shield,
+  Trash2,
+  UserPlus,
+  Users,
+  X,
+} from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
+import Swal from "sweetalert2";
 import { toast } from "@/lib/use-toast";
 
 interface StaffProfile {
@@ -12,6 +23,7 @@ interface StaffProfile {
   last_name: string;
   email?: string;
   phone: string;
+  username?: string;
   is_active: boolean;
   created_at: string;
 }
@@ -31,6 +43,15 @@ export default function StaffAccountsPage() {
   const [formPhone, setFormPhone] = useState("");
   const [formError, setFormError] = useState("");
   const [formSuccess, setFormSuccess] = useState("");
+
+  // Edit modal
+  const [editStaff, setEditStaff] = useState<StaffProfile | null>(null);
+  const [editFirstName, setEditFirstName] = useState("");
+  const [editLastName, setEditLastName] = useState("");
+  const [editEmail, setEditEmail] = useState("");
+  const [editPhone, setEditPhone] = useState("");
+  const [editUsername, setEditUsername] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
 
   const fetchStaff = useCallback(async () => {
     try {
@@ -108,6 +129,79 @@ export default function StaffAccountsPage() {
     } catch (e) {
       console.error("Failed to toggle status", e);
     }
+  }
+
+  function openEdit(staff: StaffProfile) {
+    setEditStaff(staff);
+    setEditFirstName(staff.first_name || "");
+    setEditLastName(staff.last_name || "");
+    setEditEmail(staff.email || "");
+    setEditPhone(staff.phone || "");
+    setEditUsername(staff.username || "");
+  }
+
+  async function saveEdit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editStaff) return;
+    setEditSaving(true);
+
+    try {
+      const res = await fetch("/api/staff", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editStaff.id,
+          first_name: editFirstName,
+          last_name: editLastName,
+          email: editEmail,
+          phone: editPhone,
+          username: editUsername,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        Swal.fire({ icon: "error", title: "Error", text: data.error || "Failed to update" });
+      } else {
+        Swal.fire({ icon: "success", title: "Updated", timer: 1500, showConfirmButton: false });
+        setEditStaff(null);
+        fetchStaff();
+      }
+    } catch (err: any) {
+      Swal.fire({ icon: "error", title: "Error", text: err.message || "Network error" });
+    }
+
+    setEditSaving(false);
+  }
+
+  function confirmDelete(staff: StaffProfile) {
+    Swal.fire({
+      title: `Delete ${staff.first_name} ${staff.last_name}?`,
+      text: "This will permanently delete the staff account and all associated data. This action cannot be undone.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Delete",
+      cancelButtonText: "Cancel",
+    }).then(async (result) => {
+      if (!result.isConfirmed) return;
+
+      try {
+        const res = await fetch(`/api/staff?id=${staff.id}`, { method: "DELETE" });
+        const data = await res.json();
+
+        if (!data.success) {
+          Swal.fire({ icon: "error", title: "Error", text: data.error || "Failed to delete" });
+        } else {
+          Swal.fire({ icon: "success", title: "Deleted", timer: 1500, showConfirmButton: false });
+          fetchStaff();
+        }
+      } catch (err: any) {
+        Swal.fire({ icon: "error", title: "Error", text: err.message || "Network error" });
+      }
+    });
   }
 
   return (
@@ -199,7 +293,7 @@ export default function StaffAccountsPage() {
               </div>
               <div>
                 <h2 className="font-bold text-lg font-display">Existing Staff ({staffList.length})</h2>
-                <p className="text-sm text-muted-foreground">Manage active status of staff accounts</p>
+                <p className="text-sm text-muted-foreground">Edit, deactivate, or delete staff accounts</p>
               </div>
             </div>
 
@@ -214,23 +308,39 @@ export default function StaffAccountsPage() {
             ) : (
               <div className="divide-y divide-gray-100">
                 {staffList.map((s) => (
-                  <div key={s.id} className="flex items-center justify-between py-3">
-                    <div>
-                      <p className="text-sm font-medium">
+                  <div key={s.id} className="flex items-center justify-between py-3 gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium truncate">
                         {s.first_name} {s.last_name}
                       </p>
-                      <p className="text-xs text-gray-500">{s.phone || "No phone"}</p>
+                      <p className="text-xs text-gray-500 truncate">{s.phone || "No phone"}</p>
                     </div>
-                    <button
-                      onClick={() => toggleActive(s.id, s.is_active)}
-                      className={`text-xs font-medium px-2.5 py-1 rounded-full transition-colors ${
-                        s.is_active
-                          ? "bg-green-100 text-green-800 hover:bg-green-200"
-                          : "bg-red-100 text-red-800 hover:bg-red-200"
-                      }`}
-                    >
-                      {s.is_active ? "Active" : "Inactive"}
-                    </button>
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        onClick={() => openEdit(s)}
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+                        title="Edit staff"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
+                      <button
+                        onClick={() => toggleActive(s.id, s.is_active)}
+                        className={`text-xs font-medium px-2.5 py-1.5 rounded-full transition-colors ${
+                          s.is_active
+                            ? "bg-green-100 text-green-800 hover:bg-green-200"
+                            : "bg-red-100 text-red-800 hover:bg-red-200"
+                        }`}
+                      >
+                        {s.is_active ? "Active" : "Inactive"}
+                      </button>
+                      <button
+                        onClick={() => confirmDelete(s)}
+                        className="p-1.5 rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                        title="Delete staff"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -238,6 +348,92 @@ export default function StaffAccountsPage() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Edit Modal */}
+      {editStaff && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setEditStaff(null)}>
+          <div
+            className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+              <div className="flex items-center gap-3">
+                <div className="h-9 w-9 rounded-lg bg-blue-100 flex items-center justify-center">
+                  <Edit className="h-5 w-5 text-blue-600" />
+                </div>
+                <div>
+                  <h3 className="font-bold text-lg">Edit Staff</h3>
+                  <p className="text-xs text-muted-foreground">
+                    {editStaff.first_name} {editStaff.last_name}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setEditStaff(null)}
+                className="h-8 w-8 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form onSubmit={saveEdit} className="p-6 space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <Input
+                  label="First Name"
+                  value={editFirstName}
+                  onChange={(e) => setEditFirstName(e.target.value)}
+                  required
+                />
+                <Input
+                  label="Last Name"
+                  value={editLastName}
+                  onChange={(e) => setEditLastName(e.target.value)}
+                  required
+                />
+              </div>
+              <Input
+                label="Email"
+                type="email"
+                value={editEmail}
+                onChange={(e) => setEditEmail(e.target.value)}
+              />
+              <Input
+                label="Username"
+                value={editUsername}
+                onChange={(e) => setEditUsername(e.target.value.toLowerCase().replace(/\s+/g, ""))}
+              />
+              <Input label="Phone" value={editPhone} onChange={(e) => setEditPhone(e.target.value)} />
+
+              <div className="flex gap-3 pt-2">
+                <Button
+                  type="button"
+                  onClick={() => setEditStaff(null)}
+                  className="flex-1 bg-gray-100 text-gray-700 hover:bg-gray-200"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  disabled={editSaving}
+                  className="flex-1 bg-brand-500 hover:bg-brand-600 text-white"
+                >
+                  {editSaving ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <CheckCircle className="h-4 w-4 mr-2" />
+                      Save Changes
+                    </>
+                  )}
+                </Button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

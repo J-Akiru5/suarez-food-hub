@@ -89,7 +89,8 @@ export async function PATCH(request: NextRequest) {
   const auth = await requireAdmin();
   if ("error" in auth) return auth.error;
 
-  const { id, is_active } = await request.json();
+  const body = await request.json();
+  const { id, is_active, first_name, last_name, email, phone, username } = body;
 
   if (!id) {
     return NextResponse.json({ success: false, error: "Missing user ID" }, { status: 400 });
@@ -97,12 +98,24 @@ export async function PATCH(request: NextRequest) {
 
   const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!);
 
+  const updateFields: Record<string, any> = {
+    updated_at: new Date().toISOString(),
+  };
+
+  if (is_active !== undefined) updateFields.is_active = is_active;
+  if (first_name !== undefined) updateFields.first_name = first_name;
+  if (last_name !== undefined) updateFields.last_name = last_name;
+  if (phone !== undefined) updateFields.phone = phone;
+  if (username !== undefined) updateFields.username = username;
+  if (first_name !== undefined || last_name !== undefined) {
+    const current = first_name ?? "";
+    const currentLast = last_name ?? "";
+    updateFields.full_name = `${current} ${currentLast}`.trim();
+  }
+
   const { error } = await supabaseAdmin
     .from("profiles")
-    .update({
-      is_active,
-      updated_at: new Date().toISOString(),
-    })
+    .update(updateFields)
     .eq("id", id)
     .eq("role", "staff");
 
@@ -110,5 +123,31 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
   }
 
+  return NextResponse.json({ success: true });
+}
+
+export async function DELETE(request: NextRequest) {
+  const auth = await requireAdmin();
+  if ("error" in auth) return auth.error;
+
+  const { searchParams } = new URL(request.url);
+  const id = searchParams.get("id");
+
+  if (!id) {
+    return NextResponse.json({ success: false, error: "Missing user ID" }, { status: 400 });
+  }
+
+  const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  // Delete the auth user first, then the profile
+  const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(id);
+
+  if (authError) {
+    return NextResponse.json({ success: false, error: authError.message }, { status: 500 });
+  }
+
+  // Profile is deleted by CASCADE from auth user deletion
   return NextResponse.json({ success: true });
 }

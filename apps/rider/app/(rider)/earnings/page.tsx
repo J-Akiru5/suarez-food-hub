@@ -149,7 +149,7 @@ export default function EarningsPage() {
   }, [supabase]);
 
   async function handleCashout() {
-    const { value: amount } = await Swal.fire({
+    const result = await Swal.fire({
       title: "Request Cashout",
       html: `
         <p style="color: #64748b; font-size: 14px; margin-bottom: 12px;">
@@ -162,10 +162,17 @@ export default function EarningsPage() {
           min="50"
           max="${earnings.available}"
           placeholder="Amount (min ₱50)"
-          style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 16px; outline: none;"
+          style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 16px; outline: none; box-sizing: border-box; margin-bottom: 8px;"
+        />
+        <input
+          id="cashout-gcash"
+          type="text"
+          inputmode="numeric"
+          placeholder="GCash number (e.g. 09123456789)"
+          style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 16px; outline: none; box-sizing: border-box;"
         />
         <p style="color: #94a3b8; font-size: 11px; margin-top: 8px; text-align: left;">
-          Funds will be transferred to your registered GCash account.
+          Provide your GCash number so admin can send the payment.
         </p>
       `,
       showCancelButton: true,
@@ -174,8 +181,11 @@ export default function EarningsPage() {
       cancelButtonText: "Cancel",
       cancelButtonColor: "#6b7280",
       preConfirm: () => {
-        const input = document.getElementById("cashout-amount") as HTMLInputElement;
-        const val = parseFloat(input?.value || "0");
+        const amountInput = document.getElementById("cashout-amount") as HTMLInputElement;
+        const gcashInput = document.getElementById("cashout-gcash") as HTMLInputElement;
+        const val = parseFloat(amountInput?.value || "0");
+        const gcash = gcashInput?.value?.trim() || "";
+
         if (!val || val < 50) {
           Swal.showValidationMessage("Minimum cashout is ₱50");
           return false;
@@ -184,11 +194,20 @@ export default function EarningsPage() {
           Swal.showValidationMessage("Amount exceeds available balance");
           return false;
         }
-        return val;
+        if (!gcash) {
+          Swal.showValidationMessage("Please enter your GCash number");
+          return false;
+        }
+        if (!/^09\d{9}$/.test(gcash.replace(/\s/g, ""))) {
+          Swal.showValidationMessage("Enter a valid 11-digit GCash number (e.g. 09123456789)");
+          return false;
+        }
+        return { amount: val, gcash_number: gcash };
       },
     });
 
-    if (!amount) return;
+    if (!result.value) return;
+    const { amount, gcash_number } = result.value;
 
     setCashouting(true);
     const {
@@ -199,6 +218,7 @@ export default function EarningsPage() {
     const { error } = await supabase.from("rider_cashouts").insert({
       rider_id: user.id,
       amount,
+      gcash_number,
       status: "requested",
     });
 
@@ -208,7 +228,7 @@ export default function EarningsPage() {
       Swal.fire({
         icon: "success",
         title: "Cashout Requested!",
-        text: `₱${Number(amount).toFixed(2)} cashout is pending approval.`,
+        text: `₱${Number(amount).toFixed(2)} — Admin will send to ${gcash_number}.`,
         timer: 3000,
         showConfirmButton: false,
       });

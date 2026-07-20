@@ -1,7 +1,7 @@
 "use client";
 
 import { Footer } from "@repo/ui";
-import { MessageCircle, Send } from "lucide-react";
+import { Loader2, MessageCircle, Send } from "lucide-react";
 import Link from "next/link";
 import { useState } from "react";
 import AuthNavbar from "../../components/AuthNavbar";
@@ -11,13 +11,33 @@ export default function FeedbackPage() {
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
   const [sent, setSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const subject = encodeURIComponent(`Feedback from ${name}`);
-    const body = encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`);
-    window.open(`mailto:info@suarezfoodhub.com?subject=${subject}&body=${body}`, "_blank");
-    setSent(true);
+    setSubmitting(true);
+    setError("");
+
+    try {
+      const res = await fetch("/api/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim(), email: email.trim(), message: message.trim() }),
+      });
+
+      const data = await res.json();
+
+      if (!data.success) {
+        throw new Error(data.error || "Failed to send feedback");
+      }
+
+      setSent(true);
+    } catch (err: any) {
+      setError(err.message || "Something went wrong. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -162,12 +182,25 @@ export default function FeedbackPage() {
                 </div>
                 <button
                   type="submit"
-                  className="w-full inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full text-white font-semibold text-base transition-all hover:-translate-y-0.5 border-none cursor-pointer"
-                  style={{ background: "var(--primary-color)" }}
+                  disabled={submitting}
+                  className="w-full inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full text-white font-semibold text-base transition-all hover:-translate-y-0.5 border-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:translate-y-0"
+                  style={{ background: submitting ? "#94a3b8" : "var(--primary-color)" }}
                 >
-                  <Send className="w-4 h-4" />
-                  Send Feedback
+                  {submitting ? (
+                    <>
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Sending...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-4 h-4" />
+                      Send Feedback
+                    </>
+                  )}
                 </button>
+                {error && (
+                  <p className="text-sm text-red-500 text-center">{error}</p>
+                )}
               </form>
             </>
           )}

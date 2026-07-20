@@ -12,6 +12,8 @@ import {
   DollarSign,
   FileBarChart,
   LayoutDashboard,
+  MessageCircle,
+  MessageSquare,
   LogOut,
   Menu,
   Package,
@@ -32,6 +34,8 @@ const navItems = [
   { href: "/inventory", label: "Inventory", icon: Package },
   { href: "/categories", label: "Categories", icon: Tag },
   { href: "/riders", label: "Riders", icon: Bike },
+  { href: "/reviews", label: "Reviews", icon: MessageSquare },
+  { href: "/feedback", label: "Feedback", icon: MessageCircle },
   { href: "/staff", label: "Staff", icon: UserPlus },
   { href: "/cashouts", label: "Cashouts", icon: DollarSign },
   { href: "/reports", label: "Reports", icon: FileBarChart },
@@ -58,8 +62,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [mobileOpen, setMobileOpen] = useState(false);
   const [badgeCounts, setBadgeCounts] = useState<Record<string, number>>({});
 
+  // Real notification system
   const [notifOpen, setNotifOpen] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
+  const [notifications, setNotifications] = useState<any[]>([]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -75,7 +81,92 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     };
   }, [notifOpen]);
 
-  const totalNotifs = (badgeCounts["/orders"] || 0) + (badgeCounts["/cashouts"] || 0) + (badgeCounts["/riders"] || 0);
+  // Fetch notifications from DB
+  const fetchNotifications = useCallback(async () => {
+    const supabase = supabaseRef.current;
+    if (!supabase) return;
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data } = await supabase
+      .from("notifications")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(20);
+    setNotifications(data || []);
+  }, []);
+
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 15000);
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
+
+  // Realtime for new notifications
+  useEffect(() => {
+    const supabase = supabaseRef.current;
+    if (!supabase) return;
+    const channel = supabase
+      .channel("admin-notifications")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications" }, () => {
+        fetchNotifications();
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchNotifications]);
+
+  const unreadNotifs = notifications.filter((n) => !n.read).length;
+
+  async function markNotifRead(notifId: string, link?: string) {
+    const supabase = supabaseRef.current;
+    if (!supabase) return;
+    await supabase.from("notifications").update({ read: true }).eq("id", notifId);
+    setNotifications((prev) => prev.map((n) => (n.id === notifId ? { ...n, read: true } : n)));
+    setNotifOpen(false);
+    if (link) router.push(link);
+  }
+
+  function getNotifIcon(type: string) {
+    switch (type) {
+      case "new_order":
+        return { icon: ClipboardList, bg: "bg-blue-100", color: "text-blue-600" };
+      case "low_stock":
+        return { icon: Package, bg: "bg-red-100", color: "text-red-600" };
+      case "status_change":
+        return { icon: ChevronRight, bg: "bg-purple-100", color: "text-purple-600" };
+      case "rider_approved":
+      case "rider_rejected":
+        return { icon: Bike, bg: "bg-orange-100", color: "text-orange-600" };
+      default:
+        return { icon: Bell, bg: "bg-gray-100", color: "text-gray-600" };
+    }
+  }
+
+  function formatNotifTime(dateStr: string) {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "Just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d ago`;
+    return new Date(dateStr).toLocaleDateString("en-PH", { month: "short", day: "numeric" });
+  }
+
+  function getNotifLink(notif: any): string | undefined {
+    if (notif.type === "new_order" || notif.type === "status_change") {
+      const orderId = notif.data?.order_id;
+      if (orderId) return `/orders/${orderId}`;
+    }
+    if (notif.type === "low_stock") return "/inventory";
+    return undefined;
+  }
 
   useEffect(() => {
     const supabase = supabaseRef.current;
@@ -306,72 +397,58 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 className="relative h-9 w-9 flex items-center justify-center rounded-lg hover:bg-gray-100"
               >
                 <Bell className="h-5 w-5 text-gray-600" />
-                {totalNotifs > 0 && <span className="absolute top-1.5 right-1.5 h-2 w-2 bg-brand-500 rounded-full" />}
+                {unreadNotifs > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 h-5 min-w-[18px] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[9px] font-bold">
+                    {unreadNotifs > 99 ? "99+" : unreadNotifs}
+                  </span>
+                )}
               </button>
 
               {notifOpen && (
-                <div className="absolute right-0 mt-2 w-64 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
-                  <div className="px-4 py-2 border-b border-gray-100">
+                <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
+                  <div className="px-4 py-2 border-b border-gray-100 flex items-center justify-between">
                     <h3 className="font-bold text-sm">Notifications</h3>
+                    {unreadNotifs > 0 && (
+                      <span className="text-[10px] font-medium text-muted-foreground">{unreadNotifs} unread</span>
+                    )}
                   </div>
-                  <div className="max-h-64 overflow-y-auto">
-                    {totalNotifs > 0 ? (
-                      <>
-                        {(badgeCounts["/orders"] || 0) > 0 && (
-                          <Link
-                            href="/orders"
-                            onClick={() => setNotifOpen(false)}
-                            className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
-                          >
-                            <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 shrink-0">
-                              <ClipboardList className="h-4 w-4" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium truncate">New Orders</p>
-                              <p className="text-xs text-muted-foreground truncate">
-                                {badgeCounts["/orders"]} pending order{(badgeCounts["/orders"] || 0) !== 1 ? "s" : ""}
-                              </p>
-                            </div>
-                          </Link>
-                        )}
-                        {(badgeCounts["/riders"] || 0) > 0 && (
-                          <Link
-                            href="/riders"
-                            onClick={() => setNotifOpen(false)}
-                            className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
-                          >
-                            <div className="h-8 w-8 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 shrink-0">
-                              <Bike className="h-4 w-4" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium truncate">Rider Applications</p>
-                              <p className="text-xs text-muted-foreground truncate">
-                                {badgeCounts["/riders"]} pending approval
-                              </p>
-                            </div>
-                          </Link>
-                        )}
-                        {(badgeCounts["/cashouts"] || 0) > 0 && (
-                          <Link
-                            href="/cashouts"
-                            onClick={() => setNotifOpen(false)}
-                            className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors"
-                          >
-                            <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center text-green-600 shrink-0">
-                              <DollarSign className="h-4 w-4" />
-                            </div>
-                            <div className="flex-1 min-w-0">
-                              <p className="text-sm font-medium truncate">Cashout Requests</p>
-                              <p className="text-xs text-muted-foreground truncate">
-                                {badgeCounts["/cashouts"]} pending request
-                                {(badgeCounts["/cashouts"] || 0) !== 1 ? "s" : ""}
-                              </p>
-                            </div>
-                          </Link>
-                        )}
-                      </>
+                  <div className="max-h-72 overflow-y-auto">
+                    {notifications.length === 0 ? (
+                      <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                        <Bell className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                        No notifications yet
+                      </div>
                     ) : (
-                      <div className="px-4 py-6 text-center text-sm text-muted-foreground">No new notifications</div>
+                      notifications.map((n) => {
+                        const vi = getNotifIcon(n.type);
+                        const Icon = vi.icon;
+                        const link = getNotifLink(n);
+                        return (
+                          <button
+                            key={n.id}
+                            onClick={() => markNotifRead(n.id, link)}
+                            className={`w-full text-left flex items-start gap-3 px-4 py-3 transition-colors ${
+                              n.read ? "hover:bg-gray-50 opacity-60" : "hover:bg-gray-50"
+                            }`}
+                          >
+                            <div
+                              className={`h-8 w-8 rounded-full ${vi.bg} flex items-center justify-center ${vi.color} shrink-0 mt-0.5`}
+                            >
+                              <Icon className="h-4 w-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{n.title}</p>
+                              <p className="text-xs text-muted-foreground truncate">{n.message}</p>
+                              <p className="text-[10px] text-muted-foreground mt-0.5">
+                                {formatNotifTime(n.created_at)}
+                              </p>
+                            </div>
+                            {!n.read && (
+                              <span className="h-2 w-2 rounded-full bg-brand-500 shrink-0 mt-2" />
+                            )}
+                          </button>
+                        );
+                      })
                     )}
                   </div>
                 </div>

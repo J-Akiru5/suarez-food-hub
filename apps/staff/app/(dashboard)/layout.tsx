@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
@@ -36,6 +36,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const [profile, setProfile] = useState<{ first_name: string; last_name: string } | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [badgeCounts, setBadgeCounts] = useState<Record<string, number>>({});
+
+  // Real notification system
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
+  const [notifications, setNotifications] = useState<any[]>([]);
+
+  // Click outside handler for notification dropdown
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
+        setNotifOpen(false);
+      }
+    };
+    if (notifOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [notifOpen]);
 
   useEffect(() => {
     const supabase = supabaseRef.current;
@@ -47,6 +68,121 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       }
     });
   }, []);
+
+  // Fetch notifications from DB
+  const fetchNotifications = useCallback(async () => {
+    const supabase = supabaseRef.current;
+    if (!supabase) return;
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+    const { data } = await supabase
+      .from("notifications")
+      .select("*")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(20);
+    setNotifications(data || []);
+  }, []);
+
+  useEffect(() => {
+    fetchNotifications();
+    const interval = setInterval(fetchNotifications, 15000);
+    return () => clearInterval(interval);
+  }, [fetchNotifications]);
+
+  // Realtime for new notifications
+  useEffect(() => {
+    const supabase = supabaseRef.current;
+    if (!supabase) return;
+    const channel = supabase
+      .channel("staff-notifications")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "notifications" }, () => {
+        fetchNotifications();
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchNotifications]);
+
+  const unreadNotifs = notifications.filter((n) => !n.read).length;
+
+  async function markNotifRead(notifId: string, link?: string) {
+    const supabase = supabaseRef.current;
+    if (!supabase) return;
+    await supabase.from("notifications").update({ read: true }).eq("id", notifId);
+    setNotifications((prev) => prev.map((n) => (n.id === notifId ? { ...n, read: true } : n)));
+    setNotifOpen(false);
+    if (link) router.push(link);
+  }
+
+  function getNotifIcon(type: string) {
+    switch (type) {
+      case "new_order":
+        return { icon: ClipboardList, bg: "bg-blue-100", color: "text-blue-600" };
+      case "low_stock":
+        return { icon: Package, bg: "bg-red-100", color: "text-red-600" };
+      case "status_change":
+        return { icon: ChevronRight, bg: "bg-purple-100", color: "text-purple-600" };
+      default:
+        return { icon: Bell, bg: "bg-gray-100", color: "text-gray-600" };
+    }
+  }
+
+  function formatNotifTime(dateStr: string) {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "Just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return `${hours}h ago`;
+    const days = Math.floor(hours / 24);
+    if (days < 7) return `${days}d ago`;
+    return new Date(dateStr).toLocaleDateString("en-PH", { month: "short", day: "numeric" });
+  }
+
+  function getNotifLink(notif: any): string | undefined {
+    if (notif.type === "new_order" || notif.type === "status_change") {
+      const orderId = notif.data?.order_id;
+      if (orderId) return `/orders/${orderId}`;
+    }
+    if (notif.type === "low_stock") return "/inventory";
+    return undefined;
+  }
+
+  // Fetch badge counts
+  const fetchBadgeCounts = useCallback(async () => {
+    const supabase = supabaseRef.current;
+    if (!supabase) return;
+    const { count } = await supabase
+      .from("orders")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "pending");
+    setBadgeCounts({ "/orders": count || 0 });
+  }, []);
+
+  useEffect(() => {
+    fetchBadgeCounts();
+    const interval = setInterval(fetchBadgeCounts, 30000);
+    return () => clearInterval(interval);
+  }, [fetchBadgeCounts]);
+
+  // Realtime badge updates
+  useEffect(() => {
+    const supabase = supabaseRef.current;
+    if (!supabase) return;
+    const channel = supabase
+      .channel("staff-badges")
+      .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
+        fetchBadgeCounts();
+      })
+      .subscribe();
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [fetchBadgeCounts]);
 
   async function handleLogout() {
     const supabase = supabaseRef.current;
@@ -81,17 +217,27 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           {navItems.map((item) => {
             const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
             const Icon = item.icon;
+            const badgeCount = badgeCounts[item.href];
             return (
               <Link
                 key={item.href}
                 href={item.href}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors relative ${
                   isActive ? "bg-brand-500 text-white shadow-md" : "text-gray-600 hover:bg-gray-50 hover:text-gray-900"
                 } ${!sidebarOpen ? "justify-center" : ""}`}
                 title={!sidebarOpen ? item.label : undefined}
               >
                 <Icon className="h-5 w-5 shrink-0" />
                 {sidebarOpen && <span>{item.label}</span>}
+                {badgeCount > 0 && (
+                  <span
+                    className={`inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full text-[10px] font-bold ${
+                      isActive ? "text-brand-600 bg-white shadow-sm" : "text-white bg-brand-500"
+                    } ${!sidebarOpen ? "absolute -top-1 -right-1" : "ml-auto"}`}
+                  >
+                    {badgeCount > 99 ? "99+" : badgeCount}
+                  </span>
+                )}
               </Link>
             );
           })}
@@ -143,6 +289,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               {navItems.map((item) => {
                 const isActive = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
                 const Icon = item.icon;
+                const badgeCount = badgeCounts[item.href];
                 return (
                   <Link
                     key={item.href}
@@ -156,6 +303,11 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   >
                     <Icon className="h-5 w-5 shrink-0" />
                     <span>{item.label}</span>
+                    {badgeCount > 0 && (
+                      <span className="ml-auto inline-flex items-center justify-center h-5 min-w-[20px] px-1.5 rounded-full text-[10px] font-bold bg-brand-500 text-white">
+                        {badgeCount > 99 ? "99+" : badgeCount}
+                      </span>
+                    )}
                   </Link>
                 );
               })}
@@ -182,9 +334,69 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <Menu className="h-5 w-5" />
           </button>
           <div className="flex-1" />
-          <button className="relative h-9 w-9 flex items-center justify-center rounded-lg hover:bg-gray-100">
-            <Bell className="h-5 w-5 text-gray-600" />
-          </button>
+          <div className="relative" ref={notifRef}>
+            <button
+              onClick={() => setNotifOpen(!notifOpen)}
+              className="relative h-9 w-9 flex items-center justify-center rounded-lg hover:bg-gray-100"
+            >
+              <Bell className="h-5 w-5 text-gray-600" />
+              {unreadNotifs > 0 && (
+                <span className="absolute -top-0.5 -right-0.5 h-5 min-w-[18px] px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-[9px] font-bold">
+                  {unreadNotifs > 99 ? "99+" : unreadNotifs}
+                </span>
+              )}
+            </button>
+
+            {notifOpen && (
+              <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
+                <div className="px-4 py-2 border-b border-gray-100 flex items-center justify-between">
+                  <h3 className="font-bold text-sm">Notifications</h3>
+                  {unreadNotifs > 0 && (
+                    <span className="text-[10px] font-medium text-muted-foreground">{unreadNotifs} unread</span>
+                  )}
+                </div>
+                <div className="max-h-72 overflow-y-auto">
+                  {notifications.length === 0 ? (
+                    <div className="px-4 py-8 text-center text-sm text-muted-foreground">
+                      <Bell className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                      No notifications yet
+                    </div>
+                  ) : (
+                    notifications.map((n) => {
+                      const vi = getNotifIcon(n.type);
+                      const Icon = vi.icon;
+                      const link = getNotifLink(n);
+                      return (
+                        <button
+                          key={n.id}
+                          onClick={() => markNotifRead(n.id, link)}
+                          className={`w-full text-left flex items-start gap-3 px-4 py-3 transition-colors ${
+                            n.read ? "hover:bg-gray-50 opacity-60" : "hover:bg-gray-50"
+                          }`}
+                        >
+                          <div
+                            className={`h-8 w-8 rounded-full ${vi.bg} flex items-center justify-center ${vi.color} shrink-0 mt-0.5`}
+                          >
+                            <Icon className="h-4 w-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{n.title}</p>
+                            <p className="text-xs text-muted-foreground truncate">{n.message}</p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">
+                              {formatNotifTime(n.created_at)}
+                            </p>
+                          </div>
+                          {!n.read && (
+                            <span className="h-2 w-2 rounded-full bg-brand-500 shrink-0 mt-2" />
+                          )}
+                        </button>
+                      );
+                    })
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
           <div className="flex items-center gap-3">
             <div className="h-8 w-8 rounded-full bg-brand-500 flex items-center justify-center text-white text-xs font-bold">
               {initials}
