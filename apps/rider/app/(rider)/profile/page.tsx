@@ -98,10 +98,7 @@ export default function ProfilePage() {
       .order("created_at", { ascending: false });
 
     const ratingCount = reviewsData?.length || 0;
-    const ratingAvg =
-      ratingCount > 0
-        ? reviewsData!.reduce((sum, r) => sum + r.rating, 0) / ratingCount
-        : 0;
+    const ratingAvg = ratingCount > 0 ? reviewsData!.reduce((sum, r) => sum + r.rating, 0) / ratingCount : 0;
     const recentReviews = (reviewsData || []).slice(0, 5).map((r) => ({
       rating: r.rating,
       comment: r.comment,
@@ -456,16 +453,16 @@ export default function ProfilePage() {
                       key={s}
                       size={14}
                       className={`${
-                        s <= Math.round(profile.rating_avg)
-                          ? "fill-yellow-400 text-yellow-400"
-                          : "text-gray-200"
+                        s <= Math.round(profile.rating_avg) ? "fill-yellow-400 text-yellow-400" : "text-gray-200"
                       }`}
                     />
                   ))}
                 </div>
               </div>
               <div className="text-xs text-gray-500">
-                <p className="font-semibold text-gray-700">{profile.rating_count} review{profile.rating_count !== 1 ? "s" : ""}</p>
+                <p className="font-semibold text-gray-700">
+                  {profile.rating_count} review{profile.rating_count !== 1 ? "s" : ""}
+                </p>
                 <p className="mt-0.5">Based on completed deliveries</p>
               </div>
             </div>
@@ -480,18 +477,14 @@ export default function ProfilePage() {
                         <Star
                           key={s}
                           size={11}
-                          className={`${
-                            s <= r.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-200"
-                          }`}
+                          className={`${s <= r.rating ? "fill-yellow-400 text-yellow-400" : "text-gray-200"}`}
                         />
                       ))}
                       <span className="text-[10px] text-gray-400 ml-auto">
                         {new Date(r.date).toLocaleDateString("en-PH", { month: "short", day: "numeric" })}
                       </span>
                     </div>
-                    {r.comment && (
-                      <p className="text-xs text-gray-600 italic">&ldquo;{r.comment}&rdquo;</p>
-                    )}
+                    {r.comment && <p className="text-xs text-gray-600 italic">&ldquo;{r.comment}&rdquo;</p>}
                   </div>
                 ))}
               </div>

@@ -2,17 +2,7 @@
 
 import { createBrowserTypedClient } from "@repo/data-access/client";
 import { Button, Card, CardContent, Input } from "@repo/ui";
-import {
-  CheckCircle,
-  Edit,
-  Loader2,
-  Pencil,
-  Shield,
-  Trash2,
-  UserPlus,
-  Users,
-  X,
-} from "lucide-react";
+import { CheckCircle, Edit, Loader2, Pencil, Shield, Trash2, UserPlus, Users, X } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import Swal from "sweetalert2";
 import { toast } from "@/lib/use-toast";
@@ -351,7 +341,10 @@ export default function StaffAccountsPage() {
 
       {/* Edit Modal */}
       {editStaff && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={() => setEditStaff(null)}>
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+          onClick={() => setEditStaff(null)}
+        >
           <div
             className="bg-white rounded-2xl shadow-xl w-full max-w-lg mx-4 overflow-hidden"
             onClick={(e) => e.stopPropagation()}
@@ -391,12 +384,7 @@ export default function StaffAccountsPage() {
                   required
                 />
               </div>
-              <Input
-                label="Email"
-                type="email"
-                value={editEmail}
-                onChange={(e) => setEditEmail(e.target.value)}
-              />
+              <Input label="Email" type="email" value={editEmail} onChange={(e) => setEditEmail(e.target.value)} />
               <Input
                 label="Username"
                 value={editUsername}

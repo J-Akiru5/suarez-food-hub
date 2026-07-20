@@ -12,10 +12,10 @@ import {
   DollarSign,
   FileBarChart,
   LayoutDashboard,
-  MessageCircle,
-  MessageSquare,
   LogOut,
   Menu,
+  MessageCircle,
+  MessageSquare,
   Package,
   Settings,
   Shield,
@@ -443,9 +443,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                                 {formatNotifTime(n.created_at)}
                               </p>
                             </div>
-                            {!n.read && (
-                              <span className="h-2 w-2 rounded-full bg-brand-500 shrink-0 mt-2" />
-                            )}
+                            {!n.read && <span className="h-2 w-2 rounded-full bg-brand-500 shrink-0 mt-2" />}
                           </button>
                         );
                       })

@@ -34,7 +34,7 @@ async function main() {
   if (existingPolicies.rows.length === 0) {
     console.log("   (none)");
   } else {
-    existingPolicies.rows.forEach((p: any) => {
+    existingPolicies.rows.forEach((p: Record<string, unknown>) => {
       console.log(`   - ${p.policyname} (${p.cmd}, ${p.permissive})`);
     });
   }
@@ -56,7 +56,9 @@ async function main() {
   }
 
   // Apply the missing "profiles public read" policy
-  const hasPublicReadPolicy = existingPolicies.rows.some((p: any) => p.policyname === "profiles public read");
+  const hasPublicReadPolicy = existingPolicies.rows.some(
+    (p: Record<string, unknown>) => p.policyname === "profiles public read",
+  );
 
   if (!hasPublicReadPolicy) {
     console.log("\n🛠️  Creating 'profiles public read' policy (FOR SELECT USING true)...");
@@ -99,7 +101,7 @@ async function main() {
   ];
 
   for (const policy of policyDefs) {
-    const exists = existingPolicies.rows.some((p: any) => p.policyname === policy.name);
+    const exists = existingPolicies.rows.some((p: Record<string, unknown>) => p.policyname === policy.name);
     if (!exists) {
       console.log(`\n🛠️  Creating '${policy.name}' policy...`);
       await client.query(policy.sql);
@@ -118,7 +120,7 @@ async function main() {
   `);
 
   console.log("Policies on profiles table:");
-  verify.rows.forEach((p: any) => {
+  verify.rows.forEach((p: Record<string, unknown>) => {
     console.log(`   ✅ ${p.policyname} (${p.cmd})`);
   });
 

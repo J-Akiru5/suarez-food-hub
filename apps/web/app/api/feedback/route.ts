@@ -8,10 +8,7 @@ export async function POST(request: NextRequest) {
     const { name, email, message, page_url } = body;
 
     if (!message?.trim()) {
-      return NextResponse.json(
-        { success: false, error: "Message is required" },
-        { status: 400 },
-      );
+      return NextResponse.json({ success: false, error: "Message is required" }, { status: 400 });
     }
 
     // Try to get the authenticated user
@@ -55,11 +52,7 @@ export async function GET() {
 
     // Verify admin
     const supabase = createServiceClient();
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
+    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
 
     if (!profile || (profile.role !== "admin" && profile.role !== "staff")) {
       return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });

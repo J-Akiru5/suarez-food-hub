@@ -7,7 +7,7 @@ import { getCompletedOrdersCount, getOrdersCountForRider } from "@repo/data-acce
 import { getRiders, updateRiderStatus } from "@repo/data-access/data/profiles";
 import type { Profile } from "@repo/types";
 import { Button, Card, CardContent } from "@repo/ui";
-import { Bike, CheckCircle, MapPin, Package, XCircle } from "lucide-react";
+import { Bike, Calendar, Car, CheckCircle, Mail, Package, Phone, User, XCircle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import Swal from "sweetalert2";
 
@@ -213,22 +213,6 @@ export default function RidersPage() {
                   </div>
                 </div>
 
-                {rider.location && (
-                  <div className="mt-3 flex items-center gap-1 text-xs text-gray-500">
-                    <MapPin className="h-3 w-3" />
-                    <span>
-                      {rider.location.latitude.toFixed(4)}, {rider.location.longitude.toFixed(4)}
-                    </span>
-                  </div>
-                )}
-
-                {!rider.location && (
-                  <div className="mt-3 flex items-center gap-1 text-xs text-gray-400">
-                    <MapPin className="h-3 w-3" />
-                    <span>Location unavailable</span>
-                  </div>
-                )}
-
                 {rider.rider_status === "pending_approval" && (
                   <div className="mt-3 flex gap-2">
                     <Button
@@ -275,26 +259,123 @@ export default function RidersPage() {
         </div>
       )}
 
-      {/* Rider Detail / Map */}
+      {/* Rider Detail */}
       {selectedRider && (
         <Card>
-          <CardContent className="p-4">
-            <h2 className="font-bold mb-3 font-display">
-              {selectedRider.first_name} {selectedRider.last_name} - Location
-            </h2>
-            <div className="h-64 bg-gray-100 rounded-lg flex items-center justify-center">
-              {selectedRider.location ? (
-                <div className="text-center">
-                  <MapPin className="h-8 w-8 text-crimson-600 mx-auto mb-2" />
-                  <p className="text-sm font-medium">Lat: {selectedRider.location.latitude.toFixed(6)}</p>
-                  <p className="text-sm text-muted-foreground">Lng: {selectedRider.location.longitude.toFixed(6)}</p>
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-4">
+                <div className="h-16 w-16 rounded-full bg-crimson-100 flex items-center justify-center text-crimson-700 font-bold text-lg shrink-0">
+                  {selectedRider.first_name?.[0]}
+                  {selectedRider.last_name?.[0]}
                 </div>
-              ) : (
-                <div className="text-center">
-                  <MapPin className="h-8 w-8 text-gray-300 mx-auto mb-2" />
-                  <p className="text-sm text-muted-foreground">No location data available</p>
+                <div>
+                  <h2 className="text-xl font-bold font-display">
+                    {selectedRider.first_name} {selectedRider.last_name}
+                  </h2>
+                  <div className="flex items-center gap-1 text-xs text-gray-500 mt-0.5">
+                    <span
+                      className={`inline-flex h-2 w-2 rounded-full ${
+                        selectedRider.rider_status === "available"
+                          ? "bg-green-500"
+                          : selectedRider.rider_status === "occupied"
+                            ? "bg-orange-500"
+                            : "bg-gray-400"
+                      }`}
+                    />
+                    <span>{selectedRider.rider_status?.replace(/_/g, " ") || "—"}</span>
+                  </div>
                 </div>
-              )}
+              </div>
+              <button
+                onClick={() => setSelectedRider(null)}
+                className="h-8 w-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400"
+              >
+                <XCircle className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Contact Info */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Contact</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3 text-sm">
+                    <Phone className="h-4 w-4 text-gray-400 shrink-0" />
+                    <span>{selectedRider.phone || "N/A"}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <Mail className="h-4 w-4 text-gray-400 shrink-0" />
+                    <span className="truncate">{selectedRider.email || "N/A"}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <User className="h-4 w-4 text-gray-400 shrink-0" />
+                    <span>@{selectedRider.username || "—"}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Vehicle Info */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Vehicle</h3>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3 text-sm">
+                    <Car className="h-4 w-4 text-gray-400 shrink-0" />
+                    <span className="capitalize">{selectedRider.vehicle_type || "—"}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <Bike className="h-4 w-4 text-gray-400 shrink-0" />
+                    <span>Plate: {selectedRider.plate_number || "—"}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <span className="h-4 w-4 text-gray-400 shrink-0 flex items-center justify-center text-[10px] font-bold">
+                      L
+                    </span>
+                    <span>License: {selectedRider.license_number || "—"}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Stats */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Performance</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="p-3 bg-orange-50 rounded-lg text-center">
+                    <p className="text-2xl font-bold text-orange-600">{selectedRider.activeDeliveries}</p>
+                    <p className="text-xs text-orange-600">Active Deliveries</p>
+                  </div>
+                  <div className="p-3 bg-green-50 rounded-lg text-center">
+                    <p className="text-2xl font-bold text-green-600">{selectedRider.totalDeliveries}</p>
+                    <p className="text-xs text-green-600">Total Completed</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Account Info */}
+              <div className="space-y-3">
+                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Account</h3>
+                <div className="flex items-center gap-3 text-sm">
+                  <Calendar className="h-4 w-4 text-gray-400 shrink-0" />
+                  <span>
+                    Member since{" "}
+                    {selectedRider.created_at
+                      ? new Date(selectedRider.created_at).toLocaleDateString("en-PH", {
+                          year: "numeric",
+                          month: "long",
+                          day: "numeric",
+                        })
+                      : "—"}
+                  </span>
+                </div>
+                <div className="flex items-center gap-3 text-sm">
+                  <span
+                    className={`inline-flex h-2.5 w-2.5 rounded-full ${
+                      selectedRider.is_active ? "bg-green-500" : "bg-red-400"
+                    }`}
+                  />
+                  <span>{selectedRider.is_active ? "Account Active" : "Account Disabled"}</span>
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>

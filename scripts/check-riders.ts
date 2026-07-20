@@ -21,7 +21,7 @@ console.log(`   Anon Key:     ${anonKey ? `✅ Set (${anonKey.substring(0, 10)}.
 console.log("");
 
 async function queryWithKey(label: string, key: string) {
-  const client = createClient(supabaseUrl!, key, {
+  const client = createClient(supabaseUrl as string, key, {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 

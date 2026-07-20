@@ -156,10 +156,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const fetchBadgeCounts = useCallback(async () => {
     const supabase = supabaseRef.current;
     if (!supabase) return;
-    const { count } = await supabase
-      .from("orders")
-      .select("*", { count: "exact", head: true })
-      .eq("status", "pending");
+    const { count } = await supabase.from("orders").select("*", { count: "exact", head: true }).eq("status", "pending");
     setBadgeCounts({ "/orders": count || 0 });
   }, []);
 
@@ -382,13 +379,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                           <div className="flex-1 min-w-0">
                             <p className="text-sm font-medium truncate">{n.title}</p>
                             <p className="text-xs text-muted-foreground truncate">{n.message}</p>
-                            <p className="text-[10px] text-muted-foreground mt-0.5">
-                              {formatNotifTime(n.created_at)}
-                            </p>
+                            <p className="text-[10px] text-muted-foreground mt-0.5">{formatNotifTime(n.created_at)}</p>
                           </div>
-                          {!n.read && (
-                            <span className="h-2 w-2 rounded-full bg-brand-500 shrink-0 mt-2" />
-                          )}
+                          {!n.read && <span className="h-2 w-2 rounded-full bg-brand-500 shrink-0 mt-2" />}
                         </button>
                       );
                     })

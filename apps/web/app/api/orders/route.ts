@@ -132,7 +132,7 @@ export async function POST(req: NextRequest) {
       if (result.error || result.newQuantity == null) {
         await deleteOrder(serviceSupabase, order.id);
         return NextResponse.json(
-          { error: `Stock error: ${result.error?.message || "Unknown error"}` },
+          { success: false, error: `Stock error: ${result.error?.message || "Unknown error"}` },
           { status: 500 },
         );
       }

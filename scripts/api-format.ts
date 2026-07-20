@@ -70,7 +70,9 @@ const apiFixes: FileFix[] = [
       },
       // Fix stock error response that was missing success: false
       {
+        // biome-ignore lint/suspicious/noTemplateCurlyInString: find-and-replace pattern string
         from: 'return NextResponse.json(\n          { error: `Stock error: ${result.error?.message || "Unknown error"}` },\n          { status: 500 },\n        );',
+        // biome-ignore lint/suspicious/noTemplateCurlyInString: find-and-replace pattern string
         to: 'return NextResponse.json({ success: false, error: `Stock error: ${result.error?.message || "Unknown error"}` }, { status: 500 });',
       },
       // Wrap POST success in data

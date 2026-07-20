@@ -113,11 +113,7 @@ export async function PATCH(request: NextRequest) {
     updateFields.full_name = `${current} ${currentLast}`.trim();
   }
 
-  const { error } = await supabaseAdmin
-    .from("profiles")
-    .update(updateFields)
-    .eq("id", id)
-    .eq("role", "staff");
+  const { error } = await supabaseAdmin.from("profiles").update(updateFields).eq("id", id).eq("role", "staff");
 
   if (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });

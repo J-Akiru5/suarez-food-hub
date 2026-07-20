@@ -183,7 +183,9 @@ export default function StaffInventoryPage() {
                             onClick={() =>
                               setQtyEdits((prev) => ({
                                 ...prev,
-                                [product.id]: String(Math.max(0, parseInt(prev[product.id] ?? String(product.quantity)) - 1)),
+                                [product.id]: String(
+                                  Math.max(0, parseInt(prev[product.id] ?? String(product.quantity)) - 1),
+                                ),
                               }))
                             }
                             className="h-8 w-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 hover:border-gray-300 transition-colors text-lg font-bold leading-none"
@@ -219,7 +221,7 @@ export default function StaffInventoryPage() {
                           <Button
                             size="sm"
                             onClick={() => saveQuantity(product.id)}
-                            disabled={savingId === product.id || (currentEdit === undefined || currentEdit === "")}
+                            disabled={savingId === product.id || currentEdit === undefined || currentEdit === ""}
                             className="bg-brand-500 hover:bg-brand-600 text-white h-8 w-8 p-0"
                           >
                             {savingId === product.id ? (

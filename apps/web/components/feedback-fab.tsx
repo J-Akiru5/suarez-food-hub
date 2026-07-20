@@ -126,12 +126,8 @@ export function FeedbackFab() {
               >
                 <Send size={20} style={{ color: "var(--primary-color)" }} />
               </div>
-              <p style={{ fontSize: 14, fontWeight: 600, color: "var(--secondary-color)", margin: 0 }}>
-                Thank you!
-              </p>
-              <p style={{ fontSize: 12, color: "#94a3b8", margin: "4px 0 0" }}>
-                Your feedback has been received.
-              </p>
+              <p style={{ fontSize: 14, fontWeight: 600, color: "var(--secondary-color)", margin: 0 }}>Thank you!</p>
+              <p style={{ fontSize: 12, color: "#94a3b8", margin: "4px 0 0" }}>Your feedback has been received.</p>
             </div>
           ) : (
             <form onSubmit={handleSubmit} style={{ padding: 20 }}>
@@ -153,9 +149,7 @@ export function FeedbackFab() {
                   boxSizing: "border-box",
                 }}
               />
-              {error && (
-                <p style={{ fontSize: 12, color: "#ef4444", margin: "6px 0 0" }}>{error}</p>
-              )}
+              {error && <p style={{ fontSize: 12, color: "#ef4444", margin: "6px 0 0" }}>{error}</p>}
               <button
                 type="submit"
                 disabled={submitting || !message.trim()}

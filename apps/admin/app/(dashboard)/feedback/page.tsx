@@ -1,14 +1,7 @@
 "use client";
 
 import { format } from "date-fns";
-import {
-  ExternalLink,
-  Loader2,
-  MessageCircle,
-  Search,
-  Trash2,
-  User,
-} from "lucide-react";
+import { ExternalLink, Loader2, MessageCircle, Search, Trash2, User } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Swal from "sweetalert2";
 
@@ -41,9 +34,9 @@ export default function AdminFeedbackPage() {
       }
 
       setFeedback(data.data || []);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Failed to fetch feedback:", err);
-      setError(err.message || "Failed to load feedback");
+      setError(err instanceof Error ? err.message : "Failed to load feedback");
     } finally {
       setLoading(false);
     }
@@ -58,9 +51,7 @@ export default function AdminFeedbackPage() {
     const q = search.toLowerCase();
     return feedback.filter(
       (f) =>
-        f.message.toLowerCase().includes(q) ||
-        f.name.toLowerCase().includes(q) ||
-        f.email.toLowerCase().includes(q),
+        f.message.toLowerCase().includes(q) || f.name.toLowerCase().includes(q) || f.email.toLowerCase().includes(q),
     );
   }, [feedback, search]);
 
@@ -84,8 +75,8 @@ export default function AdminFeedbackPage() {
 
         setFeedback((prev) => prev.filter((f) => f.id !== entry.id));
         Swal.fire({ icon: "success", title: "Deleted", timer: 1500, showConfirmButton: false });
-      } catch (err: any) {
-        Swal.fire({ icon: "error", title: "Error", text: err.message });
+      } catch (err: unknown) {
+        Swal.fire({ icon: "error", title: "Error", text: err instanceof Error ? err.message : "Unknown error" });
       }
     });
   };
@@ -109,9 +100,7 @@ export default function AdminFeedbackPage() {
         </button>
       </div>
 
-      {error && (
-        <div className="p-4 bg-red-50 text-red-600 rounded-lg border border-red-100 text-sm">{error}</div>
-      )}
+      {error && <div className="p-4 bg-red-50 text-red-600 rounded-lg border border-red-100 text-sm">{error}</div>}
 
       {/* Stats */}
       <div className="grid grid-cols-3 gap-4">
@@ -121,15 +110,11 @@ export default function AdminFeedbackPage() {
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">With Name</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">
-            {feedback.filter((f) => f.name).length}
-          </p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{feedback.filter((f) => f.name).length}</p>
         </div>
         <div className="bg-white rounded-xl border border-gray-200 p-4">
           <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">With Email</p>
-          <p className="text-2xl font-bold text-gray-900 mt-1">
-            {feedback.filter((f) => f.email).length}
-          </p>
+          <p className="text-2xl font-bold text-gray-900 mt-1">{feedback.filter((f) => f.email).length}</p>
         </div>
       </div>
 
@@ -175,9 +160,7 @@ export default function AdminFeedbackPage() {
               <div className="p-5">
                 <div className="flex items-start justify-between gap-4">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm text-gray-900 leading-relaxed whitespace-pre-wrap">
-                      {entry.message}
-                    </p>
+                    <p className="text-sm text-gray-900 leading-relaxed whitespace-pre-wrap">{entry.message}</p>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-xs text-muted-foreground">
                       {(entry.name || entry.email) && (
                         <span className="inline-flex items-center gap-1">
@@ -204,12 +187,8 @@ export default function AdminFeedbackPage() {
                     </div>
                   </div>
                   <div className="text-right shrink-0 flex flex-col items-end gap-2">
-                    <p className="text-xs text-muted-foreground">
-                      {format(new Date(entry.created_at), "MMM d, yyyy")}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground">
-                      {format(new Date(entry.created_at), "h:mm a")}
-                    </p>
+                    <p className="text-xs text-muted-foreground">{format(new Date(entry.created_at), "MMM d, yyyy")}</p>
+                    <p className="text-[11px] text-muted-foreground">{format(new Date(entry.created_at), "h:mm a")}</p>
                     <button
                       onClick={() => handleDelete(entry)}
                       className="text-gray-400 hover:text-red-500 transition-colors"

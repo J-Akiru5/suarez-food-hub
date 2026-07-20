@@ -2,15 +2,7 @@
 
 import { createBrowserTypedClient } from "@repo/data-access/client";
 import { format } from "date-fns";
-import {
-  ChevronDown,
-  ChevronUp,
-  MessageSquare,
-  Search,
-  Star,
-  ThumbsUp,
-  User,
-} from "lucide-react";
+import { ChevronDown, ChevronUp, MessageSquare, Search, Star, ThumbsUp, User } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Swal from "sweetalert2";
 
@@ -163,9 +155,7 @@ export default function AdminReviewsPage() {
         {[1, 2, 3, 4, 5].map((s) => (
           <Star
             key={s}
-            className={`${className} ${
-              s <= rating ? "fill-yellow-400 text-yellow-400" : "text-gray-200"
-            }`}
+            className={`${className} ${s <= rating ? "fill-yellow-400 text-yellow-400" : "text-gray-200"}`}
           />
         ))}
       </span>
@@ -178,15 +168,11 @@ export default function AdminReviewsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Rider Reviews</h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            Customer feedback and ratings for delivery riders
-          </p>
+          <p className="text-sm text-muted-foreground mt-1">Customer feedback and ratings for delivery riders</p>
         </div>
       </div>
 
-      {error && (
-        <div className="p-4 bg-red-50 text-red-600 rounded-lg border border-red-100 text-sm">{error}</div>
-      )}
+      {error && <div className="p-4 bg-red-50 text-red-600 rounded-lg border border-red-100 text-sm">{error}</div>}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -240,10 +226,7 @@ export default function AdminReviewsPage() {
           })}
         </div>
         {ratingFilter && (
-          <button
-            onClick={() => setRatingFilter(null)}
-            className="text-xs text-brand-500 hover:text-brand-600 mt-2"
-          >
+          <button onClick={() => setRatingFilter(null)} className="text-xs text-brand-500 hover:text-brand-600 mt-2">
             Clear filter
           </button>
         )}
@@ -277,10 +260,7 @@ export default function AdminReviewsPage() {
       {loading ? (
         <div className="space-y-3">
           {[1, 2, 3, 4].map((i) => (
-            <div
-              key={i}
-              className="bg-white rounded-xl border border-gray-200 p-5 animate-pulse"
-            >
+            <div key={i} className="bg-white rounded-xl border border-gray-200 p-5 animate-pulse">
               <div className="h-4 bg-gray-200 rounded w-1/3 mb-3" />
               <div className="h-3 bg-gray-100 rounded w-1/2 mb-2" />
               <div className="h-3 bg-gray-100 rounded w-2/3" />
@@ -314,9 +294,7 @@ export default function AdminReviewsPage() {
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       {renderStars(review.rating, "md")}
-                      <span className="text-xs font-medium text-muted-foreground">
-                        {RATING_LABELS[review.rating]}
-                      </span>
+                      <span className="text-xs font-medium text-muted-foreground">{RATING_LABELS[review.rating]}</span>
                     </div>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground mt-1">
                       <span className="inline-flex items-center gap-1">
@@ -333,9 +311,7 @@ export default function AdminReviewsPage() {
                     <p className="text-xs text-muted-foreground">
                       {format(new Date(review.created_at), "MMM d, yyyy")}
                     </p>
-                    <p className="text-[11px] text-muted-foreground">
-                      {format(new Date(review.created_at), "h:mm a")}
-                    </p>
+                    <p className="text-[11px] text-muted-foreground">{format(new Date(review.created_at), "h:mm a")}</p>
                   </div>
                 </div>
 
@@ -349,13 +325,9 @@ export default function AdminReviewsPage() {
                 )}
 
                 <div className="mt-3 flex items-center justify-between">
-                  <span className="text-[11px] text-gray-400 font-mono">
-                    Order: {review.order_id.slice(0, 8)}...
-                  </span>
+                  <span className="text-[11px] text-gray-400 font-mono">Order: {review.order_id.slice(0, 8)}...</span>
                   <button
-                    onClick={() =>
-                      setExpandedId(expandedId === review.id ? null : review.id)
-                    }
+                    onClick={() => setExpandedId(expandedId === review.id ? null : review.id)}
                     className="text-xs text-brand-500 hover:text-brand-600 flex items-center gap-1"
                   >
                     {expandedId === review.id ? (
