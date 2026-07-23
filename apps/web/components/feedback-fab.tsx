@@ -12,8 +12,8 @@ export function FeedbackFab() {
   const [sent, setSent] = useState(false);
   const [error, setError] = useState("");
 
-  if (pathname === "/menu") return null;
-
+  const hiddenPages = ["/menu", "/checkout"];
+  if (hiddenPages.includes(pathname)) return null;
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim()) return;

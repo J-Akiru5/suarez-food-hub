@@ -60,12 +60,7 @@ export default function CheckoutPage() {
   const addressRef = useRef<HTMLTextAreaElement>(null);
   const initialProfileLoaded = useRef(false);
 
-  useEffect(() => {
-    if (addressRef.current) {
-      addressRef.current.style.height = "auto";
-      addressRef.current.style.height = `${addressRef.current.scrollHeight}px`;
-    }
-  }, []);
+
 
   useEffect(() => {
     try {
@@ -350,9 +345,9 @@ export default function CheckoutPage() {
         }
         @media (max-width: 640px) {
           .bento-grid { padding: 100px 16px 40px !important; }
-          .checkout-step-indicator { width: 200px !important; }
+          .checkout-step-indicator { width: 100% !important; max-width: 320px !important; align-self: center !important; margin-top: 12px !important; }
           .checkout-step-indicator span { font-size: 11px !important; }
-          .checkout-step-indicator > div { width: 32px !important; height: 32px !important; }
+          .step-circle { width: 32px !important; height: 32px !important; }
           .checkout-heading { font-size: 28px !important; }
           .delivery-address-phone-grid { grid-template-columns: 1fr !important; }
           .delivery-address-phone-grid button { width: 100% !important; }
@@ -360,6 +355,8 @@ export default function CheckoutPage() {
           .checkout-buttons { flex-direction: column !important; gap: 12px !important; }
           .checkout-buttons button { width: 100% !important; justify-content: center !important; }
           .order-summary { max-height: 250px !important; }
+          .address-header { flex-direction: column !important; align-items: flex-start !important; gap: 4px !important; }
+          .checkout-top-row { flex-direction: column !important; align-items: flex-start !important; gap: 8px !important; }
         }
       `}</style>
 
@@ -377,7 +374,7 @@ export default function CheckoutPage() {
       >
         {/* Left Column: Checkout Steps */}
         <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <div className="checkout-top-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
             <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
               <button
                 onClick={() => router.back()}
@@ -448,6 +445,7 @@ export default function CheckoutPage() {
 
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, zIndex: 2 }}>
                 <div
+                  className="step-circle"
                   style={{
                     width: 40,
                     height: 40,
@@ -478,6 +476,7 @@ export default function CheckoutPage() {
 
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, zIndex: 2 }}>
                 <div
+                  className="step-circle"
                   style={{
                     width: 40,
                     height: 40,
@@ -508,6 +507,7 @@ export default function CheckoutPage() {
 
               <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8, zIndex: 2 }}>
                 <div
+                  className="step-circle"
                   style={{
                     width: 40,
                     height: 40,
@@ -596,6 +596,7 @@ export default function CheckoutPage() {
                 >
                   <div>
                     <div
+                      className="address-header"
                       style={{
                         display: "flex",
                         justifyContent: "space-between",
@@ -640,7 +641,7 @@ export default function CheckoutPage() {
                       value={address}
                       onChange={(e) => setAddress(e.target.value)}
                       required
-                      rows={1}
+                      rows={3}
                       placeholder="House #, Street, Barangay, City"
                       style={{
                         width: "100%",
@@ -649,11 +650,11 @@ export default function CheckoutPage() {
                         border: "1px solid #e2e8f0",
                         fontFamily: "var(--plus-jakarta-sans)",
                         fontSize: 15,
-                        resize: "none",
+                        resize: "vertical",
                         outline: "none",
                         boxSizing: "border-box",
                         transition: "border-color 0.2s",
-                        overflow: "hidden",
+                        overflow: "auto",
                       }}
                       onFocus={(e) => (e.target.style.borderColor = "var(--primary-color)")}
                       onBlur={(e) => (e.target.style.borderColor = "#e2e8f0")}

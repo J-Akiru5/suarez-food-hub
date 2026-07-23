@@ -39,7 +39,7 @@ export default function CartSidebar({
 }: CartSidebarProps) {
   const content =
     user === null ? (
-      <div className="flex flex-col h-full bg-[#f1f5f9] p-4 lg:p-6 justify-center">
+      <div className="flex flex-col flex-1 bg-[#f1f5f9] p-4 lg:p-6 justify-center">
         <div className="bg-white rounded-3xl shadow-sm p-8 flex flex-col items-center text-center">
           <div className="w-16 h-16 rounded-full bg-brand-50 flex items-center justify-center mb-5 flex-shrink-0">
             <ShoppingCart className="w-7 h-7 text-brand-500" />
@@ -68,7 +68,7 @@ export default function CartSidebar({
         </div>
       </div>
     ) : (
-      <div className="flex flex-col h-full bg-[#f1f5f9]">
+      <div className="flex flex-col flex-1 overflow-hidden bg-[#f1f5f9]">
         {/* Receipt Paper */}
         <div className="flex-1 flex flex-col mx-4 mt-4 mb-0 overflow-hidden">
           <div className="bg-white rounded-t-2xl shadow-sm flex-shrink-0">
@@ -221,7 +221,7 @@ export default function CartSidebar({
       />
       <div
         className={cn(
-          "w-[400px] max-w-full bg-[#f1f5f9] h-full shadow-2xl transition-transform duration-300 ease-in-out",
+          "w-[400px] max-w-full bg-[#f1f5f9] h-full shadow-2xl transition-transform duration-300 ease-in-out flex flex-col",
           showCart ? "translate-x-0" : "translate-x-full",
         )}
       >

@@ -707,7 +707,7 @@ export default function MenuPage() {
 
       {/* ── Mobile Bottom Cart Bar ── */}
       {cart.length > 0 && (
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-xl border-t border-gray-200/50 px-4 py-3 shadow-2xl">
+        <div className="lg:hidden fixed bottom-6 left-4 right-4 z-50 bg-white/95 backdrop-blur-xl border border-gray-200/50 rounded-3xl px-4 py-3 shadow-2xl">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-xs text-gray-500 m-0">

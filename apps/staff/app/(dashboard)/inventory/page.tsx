@@ -189,7 +189,7 @@ export default function StaffInventoryPage() {
                                 ),
                               }))
                             }
-                            className="h-8 w-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 hover:border-gray-300 transition-colors text-lg font-bold leading-none"
+                            className="h-8 w-8 shrink-0 rounded-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 hover:border-gray-300 transition-all text-lg font-bold leading-none cursor-pointer shadow-sm active:scale-95 bg-white"
                             title="Decrease by 1"
                           >
                             &minus;
@@ -214,7 +214,7 @@ export default function StaffInventoryPage() {
                                 [product.id]: String((parseInt(prev[product.id] ?? String(product.quantity)) || 0) + 1),
                               }))
                             }
-                            className="h-8 w-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 hover:border-gray-300 transition-colors text-lg font-bold leading-none"
+                            className="h-8 w-8 shrink-0 rounded-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 hover:border-gray-300 transition-all text-lg font-bold leading-none cursor-pointer shadow-sm active:scale-95 bg-white"
                             title="Increase by 1"
                           >
                             +
@@ -223,7 +223,7 @@ export default function StaffInventoryPage() {
                             size="sm"
                             onClick={() => saveQuantity(product.id)}
                             disabled={savingId === product.id || currentEdit === undefined || currentEdit === ""}
-                            className="bg-brand-500 hover:bg-brand-600 text-white h-8 w-8 p-0"
+                            className="bg-brand-500 hover:bg-brand-600 text-white h-8 w-8 shrink-0 p-0 shadow-sm transition-all"
                           >
                             {savingId === product.id ? (
                               <Loader2 size={12} className="animate-spin" />

@@ -5,7 +5,11 @@ type ProductInsert = Database["public"]["Tables"]["products"]["Insert"];
 type ProductUpdate = Database["public"]["Tables"]["products"]["Update"];
 
 export async function getProducts(supabase: TypedSupabaseClient) {
-  const { data, error } = await supabase.from("products").select("*").order("created_at", { ascending: false });
+  const { data, error } = await supabase
+    .from("products")
+    .select("*")
+    .is("deleted_at", null)
+    .order("created_at", { ascending: false });
   if (error) return [];
   return data || [];
 }

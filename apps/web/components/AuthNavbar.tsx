@@ -193,7 +193,7 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
         </nav>
 
         {mobileOpen && (
-          <div className="md:hidden absolute top-[80px] left-6 right-6 bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100">
+          <div className="md:hidden absolute top-[80px] left-6 right-6 bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 divide-y divide-gray-100 flex flex-col">
             {navLinks.map((link) => (
               <Link
                 key={link.label}
@@ -211,7 +211,7 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
               <>
                 <Link
                   href="/profile"
-                  className="block px-6 py-4 text-sm font-medium text-near-black hover:bg-gray-50 transition-colors no-underline border-t border-gray-100"
+                  className="block px-6 py-4 text-sm font-medium text-near-black hover:bg-gray-50 transition-colors no-underline"
                   onClick={() => setMobileOpen(false)}
                 >
                   My Profile
@@ -235,7 +235,7 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
                     setMobileOpen(false);
                     signOut();
                   }}
-                  className="block w-full text-left px-6 py-4 text-sm font-medium text-red-500 hover:bg-red-50 transition-colors border-t border-gray-100 no-underline bg-transparent border-none cursor-pointer"
+                  className="block w-full text-left px-6 py-4 text-sm font-medium text-red-500 hover:bg-red-50 transition-colors no-underline bg-transparent border-none cursor-pointer"
                 >
                   Logout
                 </button>
@@ -243,7 +243,7 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
             ) : (
               <Link
                 href="/login"
-                className="block px-6 py-4 text-sm font-medium text-brand-500 hover:bg-gray-50 transition-colors no-underline border-t border-gray-100"
+                className="block px-6 py-4 text-sm font-medium text-brand-500 hover:bg-gray-50 transition-colors no-underline"
                 onClick={() => setMobileOpen(false)}
               >
                 Login
