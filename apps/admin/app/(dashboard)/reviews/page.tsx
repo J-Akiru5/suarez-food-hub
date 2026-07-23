@@ -113,7 +113,7 @@ export default function AdminReviewsPage() {
           r.rider_name.toLowerCase().includes(q) ||
           r.customer_name.toLowerCase().includes(q) ||
           r.order_id.toLowerCase().includes(q) ||
-          (r.comment && r.comment.toLowerCase().includes(q)),
+          r.comment?.toLowerCase().includes(q),
       );
     }
 

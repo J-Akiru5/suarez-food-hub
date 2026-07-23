@@ -185,7 +185,7 @@ export default function StaffInventoryPage() {
                               setQtyEdits((prev) => ({
                                 ...prev,
                                 [product.id]: String(
-                                  Math.max(0, parseInt(prev[product.id] ?? String(product.quantity)) - 1),
+                                  Math.max(0, parseInt(prev[product.id] ?? String(product.quantity), 10) - 1),
                                 ),
                               }))
                             }
@@ -211,7 +211,9 @@ export default function StaffInventoryPage() {
                             onClick={() =>
                               setQtyEdits((prev) => ({
                                 ...prev,
-                                [product.id]: String((parseInt(prev[product.id] ?? String(product.quantity)) || 0) + 1),
+                                [product.id]: String(
+                                  (parseInt(prev[product.id] ?? String(product.quantity), 10) || 0) + 1,
+                                ),
                               }))
                             }
                             className="h-8 w-8 shrink-0 rounded-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 hover:border-gray-300 transition-all text-lg font-bold leading-none cursor-pointer shadow-sm active:scale-95 bg-white"

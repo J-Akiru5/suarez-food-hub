@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
     if (business?.delivery_provinces) {
       const allowedProvinces = business.delivery_provinces.split(",").filter(Boolean);
       const profile = existingProfile || (await getProfileById(serviceSupabase, user.id));
-      if (profile && profile.province_id && !allowedProvinces.includes(profile.province_id)) {
+      if (profile?.province_id && !allowedProvinces.includes(profile.province_id)) {
         return NextResponse.json(
           {
             success: false,

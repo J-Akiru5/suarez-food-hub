@@ -289,7 +289,7 @@ export default function RiderDashboard() {
         navigator.geolocation.clearWatch(watchIdRef.current);
       }
     };
-  }, [fetchRiderData, playNotification]);
+  }, [fetchRiderData, playNotification, supabase.removeChannel, supabase.channel]);
   // Note: riderId intentionally NOT in deps — we use riderIdRef to avoid re-creating the channel
   // Note: supabase intentionally omitted from deps — it's stable via useRef
 

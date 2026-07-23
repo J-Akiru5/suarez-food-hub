@@ -60,8 +60,6 @@ export default function CheckoutPage() {
   const addressRef = useRef<HTMLTextAreaElement>(null);
   const initialProfileLoaded = useRef(false);
 
-
-
   useEffect(() => {
     try {
       const saved = localStorage.getItem("sfh_cart");
@@ -81,7 +79,7 @@ export default function CheckoutPage() {
       setAddress((profile as any).address || (profile as any).street_address || "");
       if (!phone) setPhone(profile.phone || "");
     }
-  }, [profile]);
+  }, [profile, phone]);
 
   useEffect(() => {
     fetch("/api/business")
@@ -374,7 +372,10 @@ export default function CheckoutPage() {
       >
         {/* Left Column: Checkout Steps */}
         <div style={{ display: "flex", flexDirection: "column", gap: 24 }}>
-          <div className="checkout-top-row" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+          <div
+            className="checkout-top-row"
+            style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}
+          >
             <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
               <button
                 onClick={() => router.back()}

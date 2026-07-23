@@ -17,7 +17,7 @@ export async function GET() {
     const supabase = createServiceClient();
     const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
 
-    if (!profile || profile.role !== "admin") {
+    if (profile?.role !== "admin") {
       return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
     }
 
@@ -53,7 +53,7 @@ export async function DELETE(request: NextRequest) {
     const supabase = createServiceClient();
     const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
 
-    if (!profile || profile.role !== "admin") {
+    if (profile?.role !== "admin") {
       return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
     }
 
