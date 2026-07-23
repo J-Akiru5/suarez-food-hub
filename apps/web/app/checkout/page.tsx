@@ -58,6 +58,7 @@ export default function CheckoutPage() {
   const [position, _setPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [step, setStep] = useState(1);
   const addressRef = useRef<HTMLTextAreaElement>(null);
+  const initialProfileLoaded = useRef(false);
 
   useEffect(() => {
     if (addressRef.current) {
@@ -80,13 +81,12 @@ export default function CheckoutPage() {
   }, []);
 
   useEffect(() => {
-    if (profile) {
-      if (!address) {
-        setAddress((profile as any).address || (profile as any).street_address || "");
-      }
+    if (profile && !initialProfileLoaded.current) {
+      initialProfileLoaded.current = true;
+      setAddress((profile as any).address || (profile as any).street_address || "");
       if (!phone) setPhone(profile.phone || "");
     }
-  }, [profile, phone, address]);
+  }, [profile]);
 
   useEffect(() => {
     fetch("/api/business")

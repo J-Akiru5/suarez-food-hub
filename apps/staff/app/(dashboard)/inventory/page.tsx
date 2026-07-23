@@ -22,6 +22,7 @@ export default function StaffInventoryPage() {
       supabase
         .from("products")
         .select("id, name, base_price, quantity, buffer_quantity, availability, image_url, category:categories(name)")
+        .is("deleted_at", null)
         .order("name"),
       supabase.from("categories").select("id, name").order("name"),
     ]);
