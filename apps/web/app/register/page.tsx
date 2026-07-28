@@ -1,10 +1,10 @@
 "use client";
 
 import { createBrowserTypedClient } from "@repo/data-access/client";
-import { ArrowLeft, Bike, Eye, EyeOff, Loader2, User } from "lucide-react";
+import { ArrowLeft, Bike, Eye, EyeOff, Image as ImageIcon, Loader2, Upload, User } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import Swal from "sweetalert2";
 
 const PH_REGEX = /^(?:\+63|0)9\d{9}$/;
@@ -30,6 +30,9 @@ export default function Register() {
   const [vehicleType, setVehicleType] = useState("motorcycle");
   const [plateNumber, setPlateNumber] = useState("");
   const [licenseNumber, setLicenseNumber] = useState("");
+  const [validIdUrl, setValidIdUrl] = useState("");
+  const [uploadingId, setUploadingId] = useState(false);
+  const idFileInputRef = useRef<HTMLInputElement>(null);
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -75,6 +78,10 @@ export default function Register() {
       }
       if (!licenseNumber.trim()) {
         setError("License number is required for riders");
+        return;
+      }
+      if (!validIdUrl) {
+        setError("Please upload a valid ID (driver's license or government ID)");
         return;
       }
     }
@@ -127,6 +134,7 @@ export default function Register() {
         profileData.vehicle_type = vehicleType;
         profileData.plate_number = plateNumber;
         profileData.license_number = licenseNumber;
+        profileData.valid_id_url = validIdUrl || null;
         profileData.is_active = false;
       }
 
@@ -425,6 +433,68 @@ export default function Register() {
                         required
                         className="w-full px-3 py-2.5 rounded-xl border border-orange-200/60 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white shadow-sm"
                       />
+                    </div>
+                  </div>
+
+                  {/* Valid ID Upload */}
+                  <div className="pt-2 border-t border-orange-200/40">
+                    <label className="text-[11px] font-bold text-gray-700 ml-1 block mb-2">
+                      Valid Government ID <span className="text-red-500">*</span>
+                    </label>
+                    <p className="text-[10px] text-gray-500 mb-3 ml-1">
+                      Upload a clear photo of your driver&apos;s license or any valid government ID.
+                    </p>
+                    <div className="flex items-center gap-4">
+                      <div className="h-20 w-20 rounded-xl bg-gray-100 flex items-center justify-center overflow-hidden shrink-0 border border-orange-200/60">
+                        {validIdUrl ? (
+                          <img src={validIdUrl} alt="Valid ID" className="object-cover w-full h-full" />
+                        ) : (
+                          <ImageIcon className="h-8 w-8 text-gray-300" />
+                        )}
+                      </div>
+                      <div>
+                        <input
+                          ref={idFileInputRef}
+                          type="file"
+                          accept="image/*"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            setUploadingId(true);
+                            try {
+                              const fileExt = file.name.split(".").pop();
+                              const fileName = `valid_ids/${Date.now()}_${Math.random().toString(36).slice(2)}.${fileExt}`;
+                              const { error } = await supabase.storage
+                                .from("images")
+                                .upload(fileName, file, { contentType: file.type, upsert: true });
+                              if (!error) {
+                                const { data: urlData } = supabase.storage.from("images").getPublicUrl(fileName);
+                                setValidIdUrl(urlData.publicUrl);
+                              }
+                            } catch {}
+                            setUploadingId(false);
+                          }}
+                          className="hidden"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => idFileInputRef.current?.click()}
+                          disabled={uploadingId}
+                          className="flex items-center gap-2 px-4 py-2 rounded-xl border border-orange-200 bg-white text-sm font-medium text-gray-700 hover:bg-orange-50 hover:border-[#F08013] transition-colors disabled:opacity-60 cursor-pointer"
+                        >
+                          {uploadingId ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                          {uploadingId ? "Uploading..." : validIdUrl ? "Change ID" : "Upload ID"}
+                        </button>
+                        {validIdUrl && (
+                          <button
+                            type="button"
+                            onClick={() => setValidIdUrl("")}
+                            className="ml-2 text-[11px] text-red-500 hover:text-red-700 bg-transparent border-none cursor-pointer"
+                          >
+                            Remove
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

@@ -126,6 +126,19 @@ export async function getOrdersCountForRider(supabase: TypedSupabaseClient, ride
   return count || 0;
 }
 
+export async function getOrdersByPendingRiders(supabase: TypedSupabaseClient, riderId: string) {
+  // Find orders where this rider has been invited (broadcast model)
+  // Uses .filter with "cs" (contains) operator to check if riderId is in pending_riders array
+  // pending_riders @> '["riderId"]'::jsonb
+  const { data } = await supabase
+    .from("orders")
+    .select("*, customer:profiles!orders_user_id_fkey(first_name, last_name, full_name, phone)")
+    .filter("pending_riders", "cs", JSON.stringify([riderId]))
+    .in("status", ["ready_for_pickup"] as OrderStatus[])
+    .order("created_at", { ascending: false });
+  return data || [];
+}
+
 export async function getCompletedOrdersCount(supabase: TypedSupabaseClient, riderId: string) {
   const { count } = await supabase
     .from("orders")

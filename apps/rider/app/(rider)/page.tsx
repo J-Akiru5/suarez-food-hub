@@ -2,7 +2,11 @@
 
 import { createBrowserTypedClient } from "@repo/data-access/client";
 import { getTodayEarnings } from "@repo/data-access/data/earnings";
-import { getActiveOrderForRider, getPendingOrdersForRider } from "@repo/data-access/data/orders";
+import {
+  getActiveOrderForRider,
+  getOrdersByPendingRiders,
+  getPendingOrdersForRider,
+} from "@repo/data-access/data/orders";
 import { eachDayOfInterval, endOfWeek, format, startOfWeek } from "date-fns";
 import {
   BarChart3,
@@ -15,6 +19,7 @@ import {
   Phone,
   RefreshCw,
   TrendingUp,
+  XCircle,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -60,12 +65,17 @@ export default function RiderDashboard() {
   const supabase = supabaseRef.current;
   const [activeOrder, setActiveOrder] = useState<Order | null>(null);
   const [pendingOrders, setPendingOrders] = useState<Order[]>([]);
+  const [availableOrders, setAvailableOrders] = useState<Order[]>([]);
   const [todayStats, setTodayStats] = useState<TodayStats>({ deliveries: 0, earnings: 0 });
   const [hasNewOrder, setHasNewOrder] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [riderId, setRiderId] = useState<string | null>(null);
+  const [showProofDialog, setShowProofDialog] = useState(false);
+  const [proofFile, setProofFile] = useState<File | null>(null);
+  const [proofPreview, setProofPreview] = useState<string | null>(null);
+  const [uploadingProof, setUploadingProof] = useState(false);
   const [_avgDeliveryTime, setAvgDeliveryTime] = useState(0);
   const [_onTimeRate, setOnTimeRate] = useState(0);
   const [weeklyEarnings, setWeeklyEarnings] = useState<{ day: string; amount: number }[]>([]);
@@ -89,32 +99,46 @@ export default function RiderDashboard() {
     const weekStart = startOfWeek(now, { weekStartsOn: 1 });
 
     // Run ALL independent DB queries in parallel for maximum speed
-    const [activeOrderResult, pendingResult, todayEarningsResult, weekEarningsResult, completedResult, bizConfig] =
-      await Promise.all([
-        getActiveOrderForRider(supabase, user.id),
-        getPendingOrdersForRider(supabase, user.id),
-        getTodayEarnings(supabase, user.id),
-        supabase
-          .from("rider_earnings")
-          .select("amount, earned_at")
-          .eq("rider_id", user.id)
-          .gte("earned_at", weekStart.toISOString()),
-        supabase
-          .from("orders")
-          .select("created_at, delivered_at, confirmed_at, status")
-          .eq("rider_id", user.id)
-          .eq("status", "delivered"),
-        supabase.from("business_config").select("base_lat, base_lng").limit(1).maybeSingle(),
-      ]);
+    const [
+      activeOrderResult,
+      pendingResult,
+      availableResult,
+      todayEarningsResult,
+      weekEarningsResult,
+      completedResult,
+      bizConfig,
+    ] = await Promise.all([
+      getActiveOrderForRider(supabase, user.id),
+      getPendingOrdersForRider(supabase, user.id),
+      getOrdersByPendingRiders(supabase, user.id!),
+      getTodayEarnings(supabase, user.id),
+      supabase
+        .from("rider_earnings")
+        .select("amount, earned_at")
+        .eq("rider_id", user.id)
+        .gte("earned_at", weekStart.toISOString()),
+      supabase
+        .from("orders")
+        .select("created_at, delivered_at, confirmed_at, status")
+        .eq("rider_id", user.id)
+        .eq("status", "delivered"),
+      supabase.from("business_config").select("base_lat, base_lng").limit(1).maybeSingle(),
+    ]);
 
-    const order = activeOrderResult as any;
-    if (order) {
-      setActiveOrder(order);
+    // Filter available orders to exclude ones this rider already has a pending relationship with
+    const availOrders = (availableResult as Order[]) || [];
+    const activeRiderOrder = activeOrderResult as any;
+
+    if (activeRiderOrder) {
+      setActiveOrder(activeRiderOrder);
       setHasNewOrder(false);
       setPendingOrders(pendingResult as Order[]);
+      // Don't show available if rider already has an active order
+      setAvailableOrders([]);
     } else {
       setActiveOrder(null);
       setPendingOrders(pendingResult as Order[]);
+      setAvailableOrders(availOrders);
     }
 
     // Today's earnings
@@ -232,7 +256,11 @@ export default function RiderDashboard() {
         (payload) => {
           const newOrder = payload.new as any;
           const currentRiderId = riderIdRef.current;
-          if (newOrder.rider_id !== currentRiderId) return;
+          // Check both direct assignment AND pending_riders (broadcast model)
+          const isAssignedToMe = newOrder.rider_id === currentRiderId;
+          const pendingIds: string[] = newOrder.pending_riders || [];
+          const isInvitedToMe = currentRiderId ? pendingIds.includes(currentRiderId) : false;
+          if (!isAssignedToMe && !isInvitedToMe) return;
 
           if (
             newOrder.status === "confirmed" ||
@@ -482,6 +510,68 @@ export default function RiderDashboard() {
         </div>
       </div>
 
+      {/* Available Orders (broadcast — first to accept wins) */}
+      {availableOrders.length > 0 && !activeOrder && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-bold text-gray-700 flex items-center gap-1.5 px-1">
+            <Package size={14} className="text-cyan-500" />
+            Available Deliveries ({availableOrders.length})
+          </h3>
+          {availableOrders.map((order) => (
+            <div key={order.id} className="bg-white rounded-xl shadow-sm border border-cyan-100 overflow-hidden">
+              <div className="p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <p className="font-semibold text-gray-800">
+                    {(() => {
+                      const c = (order as any).customer;
+                      if (!c) return "Customer";
+                      return `${c.first_name || ""} ${c.last_name || ""}`.trim() || c.full_name || "Customer";
+                    })()}
+                  </p>
+                  <span className="text-xs font-bold text-brand-600">₱{Number(order.total).toFixed(2)}</span>
+                </div>
+                <div className="flex items-start gap-2">
+                  <MapPin size={14} className="text-gray-400 mt-0.5 shrink-0" />
+                  <p className="text-xs text-gray-600">{order.delivery_address}</p>
+                </div>
+                <div className="grid grid-cols-2 gap-2 pt-1">
+                  <button
+                    onClick={() => handleStatusAction(order.id, "claimed_by_rider")}
+                    disabled={updating}
+                    className="flex items-center justify-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-white py-2.5 rounded-xl font-semibold text-sm transition disabled:opacity-50"
+                  >
+                    <CheckCircle size={16} />
+                    {updating ? "..." : "Accept"}
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const result = await Swal.fire({
+                        title: "Skip This Delivery?",
+                        text: "Another rider can take it.",
+                        icon: "question",
+                        showCancelButton: true,
+                        confirmButtonColor: "#6b7280",
+                        cancelButtonColor: "#dc2626",
+                        confirmButtonText: "Skip",
+                        cancelButtonText: "Cancel",
+                      });
+                      if (result.isConfirmed) {
+                        handleStatusAction(order.id, "rejected");
+                      }
+                    }}
+                    disabled={updating}
+                    className="flex items-center justify-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-600 py-2.5 rounded-xl font-semibold text-sm transition disabled:opacity-50"
+                  >
+                    <XCircle size={16} />
+                    {updating ? "..." : "Skip"}
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {activeOrder && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
           <div className="bg-brand-600 text-white px-4 py-2 flex items-center justify-between">
@@ -539,14 +629,37 @@ export default function RiderDashboard() {
             activeOrder.status === "near_customer") && (
             <div className="px-4 pb-2">
               {activeOrder.status === "ready_for_pickup" && (
-                <button
-                  onClick={() => handleStatusAction(activeOrder.id, "claimed_by_rider")}
-                  disabled={updating}
-                  className="w-full flex items-center justify-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-white py-3 rounded-xl font-semibold text-sm transition disabled:opacity-50"
-                >
-                  <Package size={18} />
-                  {updating ? "Updating..." : "Accept & Pick Up Order"}
-                </button>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => handleStatusAction(activeOrder.id, "claimed_by_rider")}
+                    disabled={updating}
+                    className="flex items-center justify-center gap-2 bg-cyan-500 hover:bg-cyan-600 text-white py-3 rounded-xl font-semibold text-sm transition disabled:opacity-50"
+                  >
+                    <Package size={18} />
+                    {updating ? "..." : "Accept"}
+                  </button>
+                  <button
+                    onClick={async () => {
+                      const result = await Swal.fire({
+                        title: "Reject Delivery?",
+                        text: "This order will be reassigned to another rider.",
+                        icon: "warning",
+                        showCancelButton: true,
+                        confirmButtonColor: "#dc2626",
+                        cancelButtonColor: "#6b7280",
+                        confirmButtonText: "Yes, reject",
+                      });
+                      if (result.isConfirmed) {
+                        handleStatusAction(activeOrder.id, "rejected");
+                      }
+                    }}
+                    disabled={updating}
+                    className="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white py-3 rounded-xl font-semibold text-sm transition disabled:opacity-50"
+                  >
+                    <XCircle size={18} />
+                    {updating ? "..." : "Reject"}
+                  </button>
+                </div>
               )}
               {activeOrder.status === "claimed_by_rider" && (
                 <button
@@ -570,12 +683,12 @@ export default function RiderDashboard() {
               )}
               {activeOrder.status === "near_customer" && (
                 <button
-                  onClick={() => handleStatusAction(activeOrder.id, "delivered")}
+                  onClick={() => setShowProofDialog(true)}
                   disabled={updating}
                   className="w-full flex items-center justify-center gap-2 bg-green-600 hover:bg-green-700 text-white py-3 rounded-xl font-semibold text-sm transition disabled:opacity-50"
                 >
                   <CheckCircle size={18} />
-                  {updating ? "Updating..." : "Mark Delivered"}
+                  {updating ? "..." : "Mark Delivered"}
                 </button>
               )}
             </div>
@@ -614,6 +727,155 @@ export default function RiderDashboard() {
         </div>
       )}
 
+      {/* Delivery Proof Dialog */}
+      {showProofDialog && activeOrder && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !uploadingProof) setShowProofDialog(false);
+          }}
+        >
+          <div className="bg-white rounded-2xl w-full max-w-sm p-6 shadow-2xl" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-gray-800 mb-1">Proof of Delivery</h3>
+            <p className="text-sm text-gray-500 mb-4">Take a photo of the delivered parcel as proof.</p>
+
+            {proofPreview ? (
+              <div className="mb-4">
+                <img src={proofPreview} alt="Delivery proof" className="w-full h-48 object-cover rounded-xl" />
+                <button
+                  onClick={() => {
+                    setProofFile(null);
+                    setProofPreview(null);
+                  }}
+                  disabled={uploadingProof}
+                  className="text-xs text-red-500 mt-1 hover:underline"
+                >
+                  Remove photo
+                </button>
+              </div>
+            ) : (
+              <label className="flex flex-col items-center justify-center w-full h-40 border-2 border-dashed border-gray-300 rounded-xl cursor-pointer hover:border-brand-500 transition mb-4 bg-gray-50">
+                <svg className="w-10 h-10 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={1.5}
+                    d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
+                  />
+                </svg>
+                <span className="text-sm text-gray-500">Tap to take or select a photo</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  className="hidden"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) {
+                      // Revoke previous preview to prevent memory leak
+                      if (proofPreview) URL.revokeObjectURL(proofPreview);
+                      setProofFile(file);
+                      setProofPreview(URL.createObjectURL(file));
+                    }
+                  }}
+                />
+              </label>
+            )}
+
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  setShowProofDialog(false);
+                  setProofFile(null);
+                  setProofPreview(null);
+                }}
+                disabled={uploadingProof}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-gray-600 font-semibold text-sm hover:bg-gray-50 transition disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={async () => {
+                  if (!proofFile || !activeOrder) return;
+                  setUploadingProof(true);
+                  try {
+                    const formData = new FormData();
+                    formData.append("file", proofFile);
+                    formData.append("order_id", activeOrder.id);
+
+                    const uploadRes = await fetch("/api/orders/upload-proof", {
+                      method: "POST",
+                      body: formData,
+                    });
+                    const uploadData = await uploadRes.json();
+
+                    if (!uploadData.success) {
+                      Swal.fire({
+                        icon: "error",
+                        title: "Upload Failed",
+                        text: uploadData.error || "Please try again.",
+                      });
+                      setUploadingProof(false);
+                      return;
+                    }
+
+                    // Now mark as delivered with the proof URL
+                    const statusRes = await fetch("/api/orders/status", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        order_id: activeOrder.id,
+                        status: "delivered",
+                        delivery_proof_url: uploadData.data.url,
+                      }),
+                    });
+                    const statusData = await statusRes.json();
+
+                    if (statusData.success) {
+                      Swal.fire({
+                        icon: "success",
+                        title: "Delivered!",
+                        timer: 2000,
+                        showConfirmButton: false,
+                        toast: true,
+                        position: "top-end",
+                      });
+                      setShowProofDialog(false);
+                      setProofFile(null);
+                      setProofPreview(null);
+                      fetchRiderData();
+                    } else {
+                      Swal.fire({ icon: "error", title: "Error", text: statusData.error || "Failed to update." });
+                    }
+                  } catch (err: any) {
+                    Swal.fire({ icon: "error", title: "Error", text: err.message });
+                  }
+                  setUploadingProof(false);
+                }}
+                disabled={!proofFile || uploadingProof}
+                className="flex-1 py-2.5 rounded-xl bg-green-600 hover:bg-green-700 text-white font-semibold text-sm transition disabled:opacity-50 flex items-center justify-center gap-2"
+              >
+                {uploadingProof ? (
+                  <>
+                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                      />
+                    </svg>
+                    Uploading...
+                  </>
+                ) : (
+                  "Mark Delivered"
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Pending Orders (assigned but not yet out for delivery) */}
       {pendingOrders.length > 0 && (
         <div className="space-y-2">
@@ -648,11 +910,11 @@ export default function RiderDashboard() {
       )}
 
       {/* No assignments state */}
-      {!activeOrder && pendingOrders.length === 0 && (
+      {!activeOrder && pendingOrders.length === 0 && availableOrders.length === 0 && (
         <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-8 text-center">
           <Package size={48} className="text-gray-300 mx-auto mb-3" />
           <p className="text-gray-500 font-medium">No Active Delivery</p>
-          <p className="text-sm text-gray-400 mt-1">Waiting for order assignment...</p>
+          <p className="text-sm text-gray-400 mt-1">Waiting for order assignments...</p>
         </div>
       )}
     </div>

@@ -7,7 +7,7 @@ import { type NextRequest, NextResponse } from "next/server";
 
 // Valid status transitions a rider can make
 const RIDER_STATUS_FLOW: Record<string, string[]> = {
-  ready_for_pickup: ["claimed_by_rider"],
+  ready_for_pickup: ["claimed_by_rider", "rejected"],
   claimed_by_rider: ["out_for_delivery"],
   out_for_delivery: ["near_customer"],
   near_customer: ["delivered"],
@@ -16,7 +16,7 @@ const RIDER_STATUS_FLOW: Record<string, string[]> = {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { order_id, status } = body;
+    const { order_id, status, delivery_proof_url } = body;
 
     if (!order_id || !status) {
       return NextResponse.json({ success: false, error: "order_id and status required" }, { status: 400 });
@@ -33,8 +33,13 @@ export async function POST(request: NextRequest) {
 
     const order = await getOrderById(supabase, order_id);
     if (!order) return NextResponse.json({ success: false, error: "Order not found" }, { status: 404 });
-    if (order.rider_id !== user.id)
-      return NextResponse.json({ success: false, error: "Not your order" }, { status: 403 });
+
+    // Check authorization: rider must be assigned OR in pending_riders (broadcast model)
+    const pendingRiders = (order as any).pending_riders || [];
+    const isAssigned = order.rider_id === user.id;
+    const isInvited = pendingRiders.includes(user.id);
+    if (!isAssigned && !isInvited)
+      return NextResponse.json({ success: false, error: "Not authorized for this order" }, { status: 403 });
 
     // Validate status transition
     const allowedNext = RIDER_STATUS_FLOW[order.status];
@@ -48,18 +53,100 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Build update payload with timestamp fields
+    // Handle rejection: remove rider from pending_riders (broadcast model)
+    if (status === "rejected") {
+      const updatedPending = pendingRiders.filter((id: string) => id !== user.id);
+      const updatePayload: Record<string, any> = {
+        pending_riders: updatedPending,
+        updated_at: new Date().toISOString(),
+      };
+      // If no more pending riders, set status back to confirmed so staff knows
+      if (updatedPending.length === 0) {
+        updatePayload.status = "confirmed";
+      }
+
+      const { error: rejectError } = await supabase.from("orders").update(updatePayload).eq("id", order_id);
+      if (rejectError) return NextResponse.json({ success: false, error: rejectError.message }, { status: 500 });
+
+      // Notify staff about the rejection
+      const { data: staff } = await supabase.from("profiles").select("id").in("role", ["admin", "staff"]);
+      if (staff) {
+        const staffNotifs = staff.map((s) => ({
+          user_id: s.id,
+          type: "rider_rejected",
+          title: "Rider Rejected Delivery",
+          message: `Rider rejected order #${order_id.slice(0, 8)}.${updatedPending.length > 0 ? ` ${updatedPending.length} rider(s) still pending.` : " Please reassign."}`,
+          data: { order_id },
+        }));
+        await supabase.from("notifications").insert(staffNotifs);
+      }
+
+      return NextResponse.json({ success: true });
+    }
+
+    // Handle acceptance (claimed_by_rider): this rider wins the order
+    if (status === "claimed_by_rider") {
+      const _extraFields: Record<string, string> = {
+        picked_up_at: new Date().toISOString(),
+      };
+
+      // Set this rider as the assigned rider and clear pending_riders
+      const { error: acceptError } = await supabase
+        .from("orders")
+        .update({
+          rider_id: user.id,
+          pending_riders: [],
+          status: "claimed_by_rider",
+          picked_up_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", order_id);
+      if (acceptError) return NextResponse.json({ success: false, error: acceptError.message }, { status: 500 });
+
+      // Notify other pending riders that the order was taken
+      const otherRiderIds = pendingRiders.filter((id: string) => id !== user.id);
+      if (otherRiderIds.length > 0) {
+        const otherNotifs = otherRiderIds.map((riderId: string) => ({
+          user_id: riderId,
+          type: "delivery_taken",
+          title: "Delivery No Longer Available",
+          message: "Another rider has accepted the delivery order.",
+          data: { order_id },
+        }));
+        await supabase.from("notifications").insert(otherNotifs);
+      }
+
+      // Notify staff that rider accepted
+      const { data: staff } = await supabase.from("profiles").select("id").in("role", ["admin", "staff"]);
+      if (staff) {
+        const staffNotifs = staff.map((s) => ({
+          user_id: s.id,
+          type: "rider_accepted",
+          title: "Rider Accepted Delivery",
+          message: `Rider has accepted order #${order_id.slice(0, 8)}.`,
+          data: { order_id, rider_id: user.id },
+        }));
+        await supabase.from("notifications").insert(staffNotifs);
+      }
+
+      return NextResponse.json({ success: true });
+    }
+
+    // For other status transitions (out_for_delivery, near_customer, delivered)
     const extraFields: Record<string, string> = {};
-    if (status === "claimed_by_rider") extraFields.picked_up_at = new Date().toISOString();
-    if (status === "delivered") extraFields.delivered_at = new Date().toISOString();
+    if (status === "delivered") {
+      extraFields.delivered_at = new Date().toISOString();
+      if (delivery_proof_url) extraFields.delivery_proof_url = delivery_proof_url;
+    }
 
     const { error: updateError } = await updateOrderStatus(supabase, order_id, status, extraFields);
     if (updateError) return NextResponse.json({ success: false, error: updateError.message }, { status: 500 });
 
     // Create earning when delivered
-    if (status === "delivered" && order.rider_id) {
-      const earningAmount = Number(order.rider_earnings) || 40;
-      const { error: earnError } = await createRiderEarning(supabase, order.rider_id, order.id, earningAmount);
+    if (status === "delivered" && (order as any).rider_id) {
+      const riderId = order.rider_id || user.id;
+      const earningAmount = Number((order as any).rider_earnings) || 40;
+      const { error: earnError } = await createRiderEarning(supabase, riderId, order.id, earningAmount);
       if (earnError) {
         console.error("Failed to create rider earning:", earnError);
       }

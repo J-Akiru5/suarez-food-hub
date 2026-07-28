@@ -8,6 +8,12 @@ import {
   Button,
   Card,
   CardContent,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
   Select,
   SelectContent,
   SelectItem,
@@ -19,9 +25,10 @@ import {
   TabsTrigger,
 } from "@repo/ui";
 import { formatCurrency } from "@repo/utils";
-import { ChevronDown, ChevronUp, Eye, RefreshCw } from "lucide-react";
+import { CheckCircle2, ChevronDown, ChevronUp, Clock, Eye, RefreshCw, Send, UserPlus } from "lucide-react";
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import Swal from "sweetalert2";
 
 const statusTabs = [
@@ -60,12 +67,30 @@ interface OrderWithProfile extends Order {
 }
 
 export default function OrdersPage() {
+  return (
+    <Suspense fallback={<div className="space-y-6"><div className="h-8 bg-gray-100 rounded animate-pulse w-48 mb-4" /><div className="space-y-3">{[1,2,3,4,5].map((i) => <div key={i} className="h-20 bg-gray-100 rounded-lg animate-pulse" />)}</div></div>}>
+      <OrdersPageContent />
+    </Suspense>
+  );
+}
+
+function OrdersPageContent() {
   const supabase = createBrowserTypedClient();
+  const searchParams = useSearchParams();
   const [orders, setOrders] = useState<OrderWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState("all");
+  const statusFromUrl = searchParams.get("status");
+  const initialTab =
+    statusFromUrl && statusTabs.find((t) => t.value === statusFromUrl.replace(/ /g, "_"))
+      ? statusFromUrl.replace(/ /g, "_")
+      : "all";
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [riders, setRiders] = useState<Profile[]>([]);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
+  const [inviteModalOpen, setInviteModalOpen] = useState(false);
+  const [inviteOrderId, setInviteOrderId] = useState<string | null>(null);
+  const [selectedRiderIds, setSelectedRiderIds] = useState<string[]>([]);
+  const [sendingInvites, setSendingInvites] = useState(false);
 
   const fetchOrders = useCallback(async () => {
     const data = await getOrdersWithProfiles(supabase, {
@@ -100,13 +125,49 @@ export default function OrdersPage() {
     };
   }, [supabase, fetchOrders]);
 
-  async function assignRider(orderId: string, riderId: string, currentStatus?: string) {
-    const updates: Record<string, any> = { rider_id: riderId };
-    // Don't regress kitchen status - only set to confirmed if still pending/confirmed
-    if (!currentStatus || currentStatus === "pending" || currentStatus === "confirmed") {
-      updates.status = "confirmed";
+  function openInviteModal(orderId: string) {
+    const order = orders.find((o) => o.id === orderId);
+    if (!order) return;
+    setInviteOrderId(orderId);
+    // Pre-select currently pending riders
+    const pendingIds = (order as any).pending_riders || [];
+    const existing = pendingIds.filter((id: string) => riders.find((r) => r.id === id));
+    setSelectedRiderIds(existing);
+    setInviteModalOpen(true);
+  }
+
+  function toggleRiderSelection(riderId: string) {
+    setSelectedRiderIds((prev) => (prev.includes(riderId) ? prev.filter((id) => id !== riderId) : [...prev, riderId]));
+  }
+
+  async function sendInvitations() {
+    if (!inviteOrderId || selectedRiderIds.length === 0) return;
+    setSendingInvites(true);
+    try {
+      // Update order with pending_riders (does NOT set rider_id yet — first to accept wins)
+      await supabase
+        .from("orders")
+        .update({
+          pending_riders: selectedRiderIds,
+          status: "ready_for_pickup",
+          updated_at: new Date().toISOString(),
+        })
+        .eq("id", inviteOrderId);
+
+      // Notify each invited rider
+      const notifications = selectedRiderIds.map((riderId: string) => ({
+        user_id: riderId,
+        type: "delivery_invitation",
+        title: "New Delivery Available",
+        message: "A new order is ready for pickup. First to accept gets it!",
+        data: { order_id: inviteOrderId },
+      }));
+      await supabase.from("notifications").insert(notifications);
+    } catch (err) {
+      console.error("Failed to send invitations:", err);
     }
-    await supabase.from("orders").update(updates).eq("id", orderId);
+    setSendingInvites(false);
+    setInviteModalOpen(false);
     fetchOrders();
   }
 
@@ -127,11 +188,6 @@ export default function OrdersPage() {
       console.error("Status update error:", message);
       Swal.fire({ icon: "error", title: "Error", text: "Network error while updating order. Please try again." });
     }
-    fetchOrders();
-  }
-
-  async function updatePaymentStatus(orderId: string, payment_status: string) {
-    await supabase.from("orders").update({ payment_status }).eq("id", orderId);
     fetchOrders();
   }
 
@@ -260,77 +316,87 @@ export default function OrdersPage() {
                               <p className="text-sm">{order.delivery_address}</p>
                             </div>
 
-                            {/* Assign Rider */}
+                            {/* Rider Assignment — Broadcast Model */}
                             {order.status !== "cancelled" && order.status !== "delivered" && (
                               <div>
-                                <p className="text-xs font-medium text-gray-500 mb-1">
-                                  {order.rider_id ? "Reassign Rider" : "Assign Rider"}
-                                </p>
-                                <Select
-                                  value={order.rider_id || undefined}
-                                  onValueChange={(value) => assignRider(order.id, value, order.status)}
-                                >
-                                  <SelectTrigger className="w-full">
-                                    <SelectValue
-                                      placeholder={riders.length === 0 ? "No riders available" : "Select rider"}
-                                    />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {riders.length === 0 ? (
-                                      <SelectItem value="none" disabled>
-                                        No riders available
-                                      </SelectItem>
-                                    ) : (
-                                      riders.map((rider) => (
-                                        <SelectItem key={rider.id} value={rider.id}>
-                                          {rider.first_name || rider.full_name} {rider.last_name || ""}
-                                        </SelectItem>
-                                      ))
+                                <p className="text-xs font-medium text-gray-500 mb-1">Rider Status</p>
+                                {order.rider_id && order.rider ? (
+                                  <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 px-3 py-2 rounded-lg">
+                                    <CheckCircle2 className="h-4 w-4 shrink-0" />
+                                    <span className="font-medium">
+                                      {order.rider.first_name} {order.rider.last_name}
+                                    </span>
+                                    <span className="text-xs text-green-500">accepted</span>
+                                    <button
+                                      onClick={() => openInviteModal(order.id)}
+                                      className="ml-auto text-xs text-gray-500 hover:text-gray-700 underline"
+                                    >
+                                      Reassign
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <div className="space-y-2">
+                                    <div className="flex items-center gap-2">
+                                      {(order as any).pending_riders?.length > 0 ? (
+                                        <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 px-3 py-2 rounded-lg flex-1">
+                                          <Clock className="h-4 w-4 shrink-0" />
+                                          <span>
+                                            Awaiting acceptance from {(order as any).pending_riders.length} rider
+                                            {(order as any).pending_riders.length > 1 ? "s" : ""}
+                                          </span>
+                                        </div>
+                                      ) : (
+                                        <p className="text-xs text-gray-400 flex-1">No riders invited yet</p>
+                                      )}
+                                      <Button
+                                        size="sm"
+                                        onClick={() => openInviteModal(order.id)}
+                                        className="gap-1 shrink-0"
+                                      >
+                                        <UserPlus className="h-3 w-3" />
+                                        Invite
+                                      </Button>
+                                    </div>
+                                    {/* Show invited rider names */}
+                                    {(order as any).pending_riders?.length > 0 && (
+                                      <div className="flex flex-wrap gap-1">
+                                        {(order as any).pending_riders.map((riderId: string) => {
+                                          const rider = riders.find((r) => r.id === riderId);
+                                          return rider ? (
+                                            <span
+                                              key={riderId}
+                                              className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full"
+                                            >
+                                              {rider.first_name || rider.full_name}
+                                            </span>
+                                          ) : null;
+                                        })}
+                                      </div>
                                     )}
-                                  </SelectContent>
-                                </Select>
+                                  </div>
+                                )}
                               </div>
                             )}
 
-                            {/* Status Actions */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              <div>
-                                <p className="text-xs font-medium text-gray-500 mb-1">Payment Status</p>
-                                <Select
-                                  value={order.payment_status}
-                                  onValueChange={(value) => updatePaymentStatus(order.id, value)}
-                                >
-                                  <SelectTrigger className="w-full h-8 text-xs">
-                                    <SelectValue placeholder="Select payment status" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="pending">Pending</SelectItem>
-                                    <SelectItem value="verified">Verified</SelectItem>
-                                    <SelectItem value="rejected">Rejected</SelectItem>
-                                    <SelectItem value="refunded">Refunded</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-
-                              <div>
-                                <p className="text-xs font-medium text-gray-500 mb-1">Order Status</p>
-                                <Select
-                                  value={kitchenOptions.includes(order.status) ? order.status : undefined}
-                                  onValueChange={(value) => updateStatus(order.id, value)}
-                                >
-                                  <SelectTrigger className="w-full h-8 text-xs">
-                                    <SelectValue placeholder="Update kitchen status" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="confirmed">Confirm</SelectItem>
-                                    <SelectItem value="preparing">Start Preparing</SelectItem>
-                                    <SelectItem value="ready_for_pickup">Ready for Pickup</SelectItem>
-                                    <SelectItem value="cancelled" className="text-red-600">
-                                      Cancel Order
-                                    </SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
+                            {/* Kitchen Status */}
+                            <div>
+                              <p className="text-xs font-medium text-gray-500 mb-1">Kitchen Status</p>
+                              <Select
+                                value={kitchenOptions.includes(order.status) ? order.status : undefined}
+                                onValueChange={(value) => updateStatus(order.id, value)}
+                              >
+                                <SelectTrigger className="w-full h-8 text-xs">
+                                  <SelectValue placeholder="Update kitchen status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="confirmed">Confirm</SelectItem>
+                                  <SelectItem value="preparing">Start Preparing</SelectItem>
+                                  <SelectItem value="ready_for_pickup">Ready for Pickup</SelectItem>
+                                  <SelectItem value="cancelled" className="text-red-600">
+                                    Cancel Order
+                                  </SelectItem>
+                                </SelectContent>
+                              </Select>
                             </div>
                           </div>
                         )}
@@ -343,6 +409,69 @@ export default function OrdersPage() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Invite Riders Modal */}
+      <Dialog open={inviteModalOpen} onOpenChange={setInviteModalOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Invite Riders</DialogTitle>
+            <DialogDescription>Select riders to notify. First to accept gets the delivery.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2 max-h-64 overflow-y-auto">
+            {riders.length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-4">No riders available</p>
+            ) : (
+              riders.map((rider) => {
+                const isSelected = selectedRiderIds.includes(rider.id);
+                return (
+                  <button
+                    key={rider.id}
+                    type="button"
+                    onClick={() => toggleRiderSelection(rider.id)}
+                    className={`w-full flex items-center gap-3 p-3 rounded-lg border text-left transition-all ${
+                      isSelected
+                        ? "border-brand-500 bg-brand-50"
+                        : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
+                    }`}
+                  >
+                    <div
+                      className={`h-5 w-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
+                        isSelected ? "bg-brand-500 border-brand-500 text-white" : "border-gray-300"
+                      }`}
+                    >
+                      {isSelected && <CheckCircle2 className="h-3.5 w-3.5" />}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {rider.first_name || rider.full_name} {rider.last_name || ""}
+                      </p>
+                      <p className="text-xs text-gray-400 capitalize">{rider.rider_status?.replace(/_/g, " ")}</p>
+                    </div>
+                    {rider.vehicle_type && (
+                      <span className="text-[10px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full shrink-0">
+                        {rider.vehicle_type}
+                      </span>
+                    )}
+                  </button>
+                );
+              })
+            )}
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setInviteModalOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={sendInvitations}
+              disabled={selectedRiderIds.length === 0 || sendingInvites}
+              className="gap-2"
+            >
+              {sendingInvites ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              Send to {selectedRiderIds.length} rider{selectedRiderIds.length !== 1 ? "s" : ""}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

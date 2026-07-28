@@ -69,12 +69,29 @@ function OrdersPageInner() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
-  const [showActiveOnly, setShowActiveOnly] = useState(searchParams.get("active") === "true");
+  const [activeTab, setActiveTab] = useState(searchParams.get("tab") || "all");
   const [receiptOrder, setReceiptOrder] = useState<Order | null>(null);
   const [reviewOrder, setReviewOrder] = useState<Order | null>(null);
   const [reviewRating, setReviewRating] = useState(0);
   const [reviewComment, setReviewComment] = useState("");
   const [submittingReview, setSubmittingReview] = useState(false);
+  // Product review state
+  const [prodReviewOrder, setProdReviewOrder] = useState<Order | null>(null);
+  const [prodReviews, setProdReviews] = useState<Record<string, { rating: number; comment: string }>>({});
+  const [submittingProdReview, setSubmittingProdReview] = useState(false);
+
+  // Track which orders have been reviewed (for To Review / History tabs)
+  const [reviewedOrderIds, setReviewedOrderIds] = useState<Set<string>>(new Set());
+  // Store review data for display in History tab
+  const [orderReviewData, setOrderReviewData] = useState<
+    Record<
+      string,
+      {
+        rider_review?: { rating: number; comment: string };
+        product_reviews?: { product_name: string; rating: number; comment: string }[];
+      }
+    >
+  >({});
 
   const supabaseRef = useRef(createBrowserTypedClient());
 
@@ -89,7 +106,67 @@ function OrdersPageInner() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
         const response = await res.json();
         const data = response.data || response;
-        if (Array.isArray(data)) setOrders(data);
+        if (Array.isArray(data)) {
+          setOrders(data);
+
+          // Fetch user's reviews to determine which orders are reviewed
+          try {
+            const [riderReviewsRes, productReviewsRes] = await Promise.all([
+              supabaseRef.current.from("rider_reviews").select("order_id, rating, comment").eq("user_id", user.id),
+              supabaseRef.current
+                .from("product_reviews")
+                .select("order_id, product_id, rating, comment, product:products(name)")
+                .eq("user_id", user.id),
+            ]);
+
+            const reviewed = new Set<string>();
+            const reviewData: Record<string, any> = {};
+
+            // Process rider reviews
+            for (const r of riderReviewsRes.data || []) {
+              reviewed.add(r.order_id);
+              if (!reviewData[r.order_id]) reviewData[r.order_id] = {};
+              reviewData[r.order_id].rider_review = { rating: r.rating, comment: r.comment || "" };
+            }
+
+            // Process product reviews
+            for (const r of productReviewsRes.data || []) {
+              reviewed.add(r.order_id);
+              if (!reviewData[r.order_id]) reviewData[r.order_id] = {};
+              if (!reviewData[r.order_id].product_reviews) reviewData[r.order_id].product_reviews = [];
+              const productName = (r as any).product?.name || "Product";
+              reviewData[r.order_id].product_reviews.push({
+                product_name: productName,
+                rating: r.rating,
+                comment: r.comment || "",
+              });
+            }
+
+            setReviewedOrderIds(reviewed);
+            setOrderReviewData(reviewData);
+          } catch {
+            /* review fetch is non-critical */
+          }
+
+          // Fetch rider profiles (non-critical, errors won't break the page)
+          try {
+            const riderIds = [...new Set((data as any[]).filter((o) => o.rider_id).map((o) => o.rider_id))];
+            if (riderIds.length > 0) {
+              const { data: riders } = await supabaseRef.current
+                .from("profiles")
+                .select("id, first_name, last_name")
+                .in("id", riderIds);
+              if (riders) {
+                const riderMap: Record<string, { name: string }> = {};
+                for (const r of riders)
+                  riderMap[r.id] = { name: `${r.first_name || ""} ${r.last_name || ""}`.trim() || "Rider" };
+                setRiderProfiles(riderMap);
+              }
+            }
+          } catch {
+            /* rider fetch failure is non-critical */
+          }
+        }
       } catch {
         setFetchError("Failed to load your orders. Please try again.");
       } finally {
@@ -129,6 +206,7 @@ function OrdersPageInner() {
   }, [user, fetchOrders]);
 
   const [cancellingId, setCancellingId] = useState("");
+  const [riderProfiles, setRiderProfiles] = useState<Record<string, { name: string }>>({});
 
   const handleCancel = async (orderId: string) => {
     const result = await Swal.fire({
@@ -181,7 +259,13 @@ function OrdersPageInner() {
     return idx >= 0 ? idx : -1;
   };
 
-  const filteredOrders = showActiveOnly ? orders.filter((o) => activeStatuses.includes(o.status)) : orders;
+  const filteredOrders = orders.filter((o) => {
+    if (activeTab === "active") return activeStatuses.includes(o.status);
+    if (activeTab === "to_review") return o.status === "delivered" && !reviewedOrderIds.has(o.id);
+    if (activeTab === "history") return o.status === "delivered" && reviewedOrderIds.has(o.id);
+    // "all" tab — show everything EXCEPT delivered (like Shopee/TikTok)
+    return o.status !== "delivered";
+  });
 
   const formatDate = (dateStr: string) => {
     const d = new Date(dateStr);
@@ -217,48 +301,95 @@ function OrdersPageInner() {
             margin: "0 0 8px",
           }}
         >
-          {showActiveOnly ? "Track Order" : "My Orders"}
+          {activeTab === "active"
+            ? "Active Orders"
+            : activeTab === "to_review"
+              ? "To Review"
+              : activeTab === "history"
+                ? "My Reviews"
+                : "All Orders"}
         </h1>
         <p style={{ color: "#64748b", margin: "0 0 32px", fontSize: 15 }}>
-          {showActiveOnly ? "View your active orders in real-time" : "View all your past and current orders"}
+          {activeTab === "active"
+            ? "View your active orders in real-time"
+            : activeTab === "to_review"
+              ? "Review and rate your completed orders"
+              : activeTab === "history"
+                ? "Orders you've reviewed"
+                : "View all your orders"}
         </p>
 
         {/* Toggle tabs */}
-        <div style={{ display: "flex", gap: 8, marginBottom: 32 }}>
+        <div style={{ display: "flex", gap: 8, marginBottom: 32, flexWrap: "wrap" }}>
           <button
-            onClick={() => setShowActiveOnly(false)}
+            onClick={() => setActiveTab("all")}
             style={{
               padding: "10px 24px",
               borderRadius: 30,
               border: "none",
-              background: !showActiveOnly ? "var(--primary-color)" : "#fff",
-              color: !showActiveOnly ? "#fff" : "#64748b",
+              background: activeTab === "all" ? "var(--primary-color)" : "#fff",
+              color: activeTab === "all" ? "#fff" : "#64748b",
               fontWeight: 700,
               fontSize: 14,
               cursor: "pointer",
-              boxShadow: !showActiveOnly ? "0 8px 20px rgba(177,69,74,0.25)" : "0 4px 12px rgba(0,0,0,0.04)",
+              boxShadow: activeTab === "all" ? "0 8px 20px rgba(177,69,74,0.25)" : "0 4px 12px rgba(0,0,0,0.04)",
               transition: "all 0.2s",
             }}
           >
             All Orders
           </button>
           <button
-            onClick={() => setShowActiveOnly(true)}
+            onClick={() => setActiveTab("active")}
             style={{
               padding: "10px 24px",
               borderRadius: 30,
               border: "none",
-              background: showActiveOnly ? "var(--primary-color)" : "#fff",
-              color: showActiveOnly ? "#fff" : "#64748b",
+              background: activeTab === "active" ? "var(--primary-color)" : "#fff",
+              color: activeTab === "active" ? "#fff" : "#64748b",
               fontWeight: 700,
               fontSize: 14,
               cursor: "pointer",
-              boxShadow: showActiveOnly ? "0 8px 20px rgba(177,69,74,0.25)" : "0 4px 12px rgba(0,0,0,0.04)",
+              boxShadow: activeTab === "active" ? "0 8px 20px rgba(177,69,74,0.25)" : "0 4px 12px rgba(0,0,0,0.04)",
               transition: "all 0.2s",
             }}
           >
-            <Bike size={16} style={{ marginRight: 6, display: "inline" }} />
-            Active Orders
+            Active
+          </button>
+          <button
+            onClick={() => setActiveTab("to_review")}
+            style={{
+              padding: "10px 24px",
+              borderRadius: 30,
+              border: "none",
+              background: activeTab === "to_review" ? "var(--primary-color)" : "#fff",
+              color: activeTab === "to_review" ? "#fff" : "#64748b",
+              fontWeight: 700,
+              fontSize: 14,
+              cursor: "pointer",
+              boxShadow: activeTab === "to_review" ? "0 8px 20px rgba(177,69,74,0.25)" : "0 4px 12px rgba(0,0,0,0.04)",
+              transition: "all 0.2s",
+            }}
+          >
+            <Star size={14} style={{ marginRight: 4, display: "inline" }} />
+            To Review
+          </button>
+          <button
+            onClick={() => setActiveTab("history")}
+            style={{
+              padding: "10px 24px",
+              borderRadius: 30,
+              border: "none",
+              background: activeTab === "history" ? "var(--primary-color)" : "#fff",
+              color: activeTab === "history" ? "#fff" : "#64748b",
+              fontWeight: 700,
+              fontSize: 14,
+              cursor: "pointer",
+              boxShadow: activeTab === "history" ? "0 8px 20px rgba(177,69,74,0.25)" : "0 4px 12px rgba(0,0,0,0.04)",
+              transition: "all 0.2s",
+            }}
+          >
+            <CheckCircle size={14} style={{ marginRight: 4, display: "inline" }} />
+            Reviews
           </button>
         </div>
 
@@ -335,10 +466,22 @@ function OrdersPageInner() {
                 margin: 0,
               }}
             >
-              {showActiveOnly ? "No active orders" : "No orders yet"}
+              {activeTab === "active"
+                ? "No active orders"
+                : activeTab === "to_review"
+                  ? "All caught up!"
+                  : activeTab === "history"
+                    ? "No reviews yet"
+                    : "No orders yet"}
             </h3>
             <p style={{ color: "#94a3b8", marginTop: 8 }}>
-              {showActiveOnly ? "Your active orders will appear here" : "Start by exploring our menu"}
+              {activeTab === "active"
+                ? "Your active orders will appear here"
+                : activeTab === "to_review"
+                  ? "You've reviewed all your completed orders"
+                  : activeTab === "history"
+                    ? "Your reviewed orders will appear here"
+                    : "Start by exploring our menu"}
             </p>
             <button
               onClick={() => router.push("/menu")}
@@ -394,7 +537,7 @@ function OrdersPageInner() {
                       </p>
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      {order.status === "pending" && (
+                      {order.status === "pending" && order.payment_method === "cod" && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -614,6 +757,28 @@ function OrdersPageInner() {
                     )}
                   </div>
 
+                  {/* Rider Info */}
+                  {order.rider_id && riderProfiles[order.rider_id] && (
+                    <div
+                      style={{
+                        padding: "12px 28px",
+                        background: "#f8fafc",
+                        borderTop: "1px solid #f1f5f9",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 10,
+                      }}
+                    >
+                      <Bike size={16} color="var(--primary-color)" />
+                      <span style={{ fontSize: 13, color: "#64748b" }}>
+                        Delivery Rider:{" "}
+                        <strong style={{ color: "var(--secondary-color)" }}>
+                          {riderProfiles[order.rider_id].name}
+                        </strong>
+                      </span>
+                    </div>
+                  )}
+
                   {/* Footer */}
                   <div
                     style={{
@@ -629,30 +794,104 @@ function OrdersPageInner() {
                       {order.payment_method === "cod" ? `₱${order.total}` : "Paid"}
                     </div>
                     <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                      {order.status === "delivered" && (
-                        <button
-                          onClick={() => {
-                            setReviewOrder(order);
-                            setReviewRating(0);
-                            setReviewComment("");
-                          }}
-                          style={{
-                            background: "#f59e0b",
-                            border: "none",
-                            padding: "8px 16px",
-                            borderRadius: 12,
-                            fontSize: 13,
-                            fontWeight: 700,
-                            cursor: "pointer",
-                            color: "#fff",
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 6,
-                          }}
-                        >
-                          <Star size={14} />
-                          Rate Delivery
-                        </button>
+                      {order.status === "delivered" && activeTab !== "history" && (
+                        <>
+                          {order.rider_id && !reviewedOrderIds.has(order.id) && (
+                            <button
+                              onClick={() => {
+                                setReviewOrder(order);
+                                setReviewRating(0);
+                                setReviewComment("");
+                              }}
+                              style={{
+                                background: "#f59e0b",
+                                border: "none",
+                                padding: "8px 16px",
+                                borderRadius: 12,
+                                fontSize: 13,
+                                fontWeight: 700,
+                                cursor: "pointer",
+                                color: "#fff",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 6,
+                              }}
+                            >
+                              <Star size={14} />
+                              Rate Delivery
+                            </button>
+                          )}
+                          {order.order_items && order.order_items.length > 0 && !reviewedOrderIds.has(order.id) && (
+                            <button
+                              onClick={() => {
+                                setProdReviewOrder(order);
+                                const initial: Record<string, { rating: number; comment: string }> = {};
+                                for (const item of order.order_items) {
+                                  initial[item.product_name] = { rating: 5, comment: "" };
+                                }
+                                setProdReviews(initial);
+                              }}
+                              style={{
+                                background: "#8b5cf6",
+                                border: "none",
+                                padding: "8px 16px",
+                                borderRadius: 12,
+                                fontSize: 13,
+                                fontWeight: 700,
+                                cursor: "pointer",
+                                color: "#fff",
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 6,
+                              }}
+                            >
+                              <Star size={14} />
+                              Rate Products
+                            </button>
+                          )}
+                        </>
+                      )}
+                      {/* Show review content in history tab */}
+                      {activeTab === "history" && orderReviewData[order.id] && (
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+                          {orderReviewData[order.id]?.rider_review && (
+                            <div
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 4,
+                                padding: "4px 10px",
+                                background: "#fffbeb",
+                                borderRadius: 8,
+                                fontSize: 12,
+                              }}
+                            >
+                              <Star size={12} style={{ fill: "#f59e0b", color: "#f59e0b" }} />
+                              <span style={{ fontWeight: 700, color: "#92400e" }}>
+                                {orderReviewData[order.id]?.rider_review?.rating}
+                              </span>
+                            </div>
+                          )}
+                          {orderReviewData[order.id]?.product_reviews?.map((pr: any, idx: number) => (
+                            <div
+                              key={idx}
+                              style={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 4,
+                                padding: "4px 10px",
+                                background: "#f5f3ff",
+                                borderRadius: 8,
+                                fontSize: 12,
+                              }}
+                            >
+                              <Star size={12} style={{ fill: "#8b5cf6", color: "#8b5cf6" }} />
+                              <span style={{ fontWeight: 700, color: "#5b21b6" }}>
+                                {pr.product_name}: {pr.rating}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
                       )}
                       <button
                         onClick={() => setReceiptOrder(order)}
@@ -804,6 +1043,15 @@ function OrdersPageInner() {
                     });
                     const data = await res.json();
                     if (data.success) {
+                      // Move order from "To Review" to "Reviews" immediately
+                      setReviewedOrderIds((prev) => new Set(prev).add(reviewOrder.id));
+                      setOrderReviewData((prev) => ({
+                        ...prev,
+                        [reviewOrder.id]: {
+                          rider_review: { rating: reviewRating, comment: reviewComment },
+                          product_reviews: prev[reviewOrder.id]?.product_reviews || [],
+                        },
+                      }));
                       Swal.fire({
                         icon: "success",
                         title: "Thank you!",
@@ -837,6 +1085,193 @@ function OrdersPageInner() {
                 }}
               >
                 {submittingReview ? "Submitting..." : "Submit Rating"}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Product Review Modal */}
+        {prodReviewOrder && (
+          <div
+            style={{
+              position: "fixed",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              background: "rgba(0,0,0,0.5)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 9999,
+              padding: 20,
+            }}
+            onClick={() => !submittingProdReview && setProdReviewOrder(null)}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                width: "100%",
+                maxWidth: 420,
+                background: "#fff",
+                borderRadius: 24,
+                padding: 32,
+                maxHeight: "90vh",
+                overflowY: "auto",
+              }}
+            >
+              <h3
+                style={{
+                  fontFamily: "var(--playfair-display)",
+                  fontSize: 22,
+                  color: "var(--secondary-color)",
+                  margin: "0 0 4px",
+                  textAlign: "center",
+                }}
+              >
+                Rate Your Items
+              </h3>
+              <p style={{ color: "#94a3b8", fontSize: 14, margin: "0 0 20px", textAlign: "center" }}>
+                How were the food items?
+              </p>
+
+              {prodReviewOrder.order_items?.map((item: OrderItem) => (
+                <div key={item.id} style={{ marginBottom: 20, padding: 16, background: "#f8fafc", borderRadius: 16 }}>
+                  <p style={{ fontWeight: 700, fontSize: 14, color: "var(--secondary-color)", margin: "0 0 8px" }}>
+                    {item.product_name}
+                    {item.variant_name && (
+                      <span style={{ fontWeight: 400, color: "#94a3b8", marginLeft: 6 }}>({item.variant_name})</span>
+                    )}
+                  </p>
+                  <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 8 }}>
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        key={star}
+                        onClick={() =>
+                          setProdReviews((prev) => ({
+                            ...prev,
+                            [item.product_name]: { ...prev[item.product_name], rating: star },
+                          }))
+                        }
+                        disabled={submittingProdReview}
+                        style={{
+                          background: "none",
+                          border: "none",
+                          cursor: submittingProdReview ? "not-allowed" : "pointer",
+                          padding: 4,
+                        }}
+                      >
+                        <Star
+                          size={28}
+                          style={{
+                            fill: star <= (prodReviews[item.product_name]?.rating || 5) ? "#f59e0b" : "#e2e8f0",
+                            color: star <= (prodReviews[item.product_name]?.rating || 5) ? "#f59e0b" : "#e2e8f0",
+                            transition: "all 0.15s",
+                          }}
+                        />
+                      </button>
+                    ))}
+                  </div>
+                  <input
+                    type="text"
+                    value={prodReviews[item.product_name]?.comment || ""}
+                    onChange={(e) =>
+                      setProdReviews((prev) => ({
+                        ...prev,
+                        [item.product_name]: { ...prev[item.product_name], comment: e.target.value },
+                      }))
+                    }
+                    disabled={submittingProdReview}
+                    placeholder="Optional comment..."
+                    style={{
+                      width: "100%",
+                      padding: "8px 12px",
+                      borderRadius: 10,
+                      border: "1px solid #e2e8f0",
+                      fontSize: 13,
+                      fontFamily: "inherit",
+                      outline: "none",
+                      boxSizing: "border-box",
+                    }}
+                  />
+                </div>
+              ))}
+
+              <button
+                onClick={async () => {
+                  setSubmittingProdReview(true);
+                  let success = true;
+                  for (const item of prodReviewOrder.order_items || []) {
+                    const review = prodReviews[item.product_name];
+                    if (!review?.rating) continue;
+                    try {
+                      const res = await fetch("/api/reviews/products", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          product_id: (item as any).product_id || item.id,
+                          order_id: prodReviewOrder.id,
+                          rating: review.rating,
+                          comment: review.comment || "",
+                        }),
+                      });
+                      const data = await res.json();
+                      if (!data.success) success = false;
+                    } catch {
+                      success = false;
+                    }
+                  }
+                  setSubmittingProdReview(false);
+                  if (success) {
+                    // Move order from "To Review" to "Reviews" immediately
+                    setReviewedOrderIds((prev) => new Set(prev).add(prodReviewOrder.id));
+                    setOrderReviewData((prev) => {
+                      const existing = prev[prodReviewOrder.id] || {};
+                      const productReviews =
+                        prodReviewOrder.order_items?.map((item) => {
+                          const review = prodReviews[item.product_name];
+                          return {
+                            product_name: item.product_name,
+                            rating: review?.rating || 5,
+                            comment: review?.comment || "",
+                          };
+                        }) || [];
+                      return {
+                        ...prev,
+                        [prodReviewOrder.id]: {
+                          ...existing,
+                          product_reviews: productReviews,
+                        },
+                      };
+                    });
+                    Swal.fire({
+                      icon: "success",
+                      title: "Thank you!",
+                      text: "Your product ratings help us improve!",
+                      timer: 2000,
+                      showConfirmButton: false,
+                    });
+                    setProdReviewOrder(null);
+                    setProdReviews({});
+                  } else {
+                    Swal.fire({ icon: "error", title: "Error", text: "Some reviews failed to save." });
+                  }
+                }}
+                disabled={submittingProdReview}
+                style={{
+                  width: "100%",
+                  padding: "14px 0",
+                  borderRadius: 14,
+                  border: "none",
+                  background: "var(--primary-color)",
+                  color: "#fff",
+                  fontWeight: 700,
+                  fontSize: 15,
+                  cursor: submittingProdReview ? "not-allowed" : "pointer",
+                  transition: "all 0.2s",
+                }}
+              >
+                {submittingProdReview ? "Submitting..." : "Submit Product Ratings"}
               </button>
             </div>
           </div>

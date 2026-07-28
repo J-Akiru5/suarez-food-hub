@@ -21,6 +21,7 @@ export interface Database {
           barangay_id: string | null;
           zip_code: string;
           avatar_url: string | null;
+          valid_id_url: string | null;
           rider_status: "pending_approval" | "available" | "vacant" | "occupied" | "rejected" | null;
           vehicle_type: string | null;
           plate_number: string | null;
@@ -46,6 +47,7 @@ export interface Database {
           barangay_id?: string | null;
           zip_code?: string;
           avatar_url?: string | null;
+          valid_id_url?: string | null;
           rider_status?: "pending_approval" | "available" | "vacant" | "occupied" | "rejected" | null;
           vehicle_type?: string | null;
           plate_number?: string | null;
@@ -71,6 +73,7 @@ export interface Database {
           barangay_id?: string | null;
           zip_code?: string;
           avatar_url?: string | null;
+          valid_id_url?: string | null;
           rider_status?: "pending_approval" | "available" | "vacant" | "occupied" | "rejected" | null;
           vehicle_type?: string | null;
           plate_number?: string | null;
@@ -219,6 +222,7 @@ export interface Database {
           payment_method: "cod" | "gcash";
           payment_status: "pending" | "verified" | "rejected" | "refunded";
           payment_proof_url: string | null;
+          delivery_proof_url: string | null;
           gcash_reference_no: string | null;
           delivery_address: string;
           delivery_lat: number | null;
@@ -231,6 +235,7 @@ export interface Database {
           delivery_fee: number;
           total: number;
           rider_earnings: number;
+          pending_riders: Json;
           confirmed_at: string | null;
           prepared_at: string | null;
           picked_up_at: string | null;
@@ -256,6 +261,7 @@ export interface Database {
           payment_method: "cod" | "gcash";
           payment_status?: "pending" | "verified" | "rejected" | "refunded";
           payment_proof_url?: string | null;
+          delivery_proof_url?: string | null;
           gcash_reference_no?: string | null;
           delivery_address: string;
           delivery_lat?: number | null;
@@ -293,6 +299,7 @@ export interface Database {
           payment_method?: "cod" | "gcash";
           payment_status?: "pending" | "verified" | "rejected" | "refunded";
           payment_proof_url?: string | null;
+          delivery_proof_url?: string | null;
           gcash_reference_no?: string | null;
           delivery_address?: string;
           delivery_lat?: number | null;
@@ -305,6 +312,7 @@ export interface Database {
           delivery_fee?: number;
           total?: number;
           rider_earnings?: number;
+          pending_riders?: Json;
           confirmed_at?: string | null;
           prepared_at?: string | null;
           picked_up_at?: string | null;

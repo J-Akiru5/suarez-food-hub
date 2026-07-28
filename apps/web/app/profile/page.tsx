@@ -1,7 +1,8 @@
 "use client";
 
+import { createBrowserTypedClient } from "@repo/data-access/client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@repo/ui";
-import { ArrowLeft, CheckCircle, Loader2, Phone, Save, User } from "lucide-react";
+import { ArrowLeft, CheckCircle, Eye, EyeOff, Loader2, Lock, Phone, Save, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import AuthNavbar from "../../components/AuthNavbar";
@@ -34,6 +35,18 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
+
+  // Password change state
+  const [showPasswordForm, setShowPasswordForm] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [savingPassword, setSavingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState("");
+  const [passwordSaved, setPasswordSaved] = useState(false);
+  const [showCurrentPw, setShowCurrentPw] = useState(false);
+  const [showNewPw, setShowNewPw] = useState(false);
+  const supabase = createBrowserTypedClient();
 
   useEffect(() => {
     if (profile) {
@@ -150,6 +163,58 @@ export default function ProfilePage() {
       setError(err.message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError("");
+    setPasswordSaved(false);
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      setPasswordError("All fields are required");
+      return;
+    }
+    if (newPassword.length < 6) {
+      setPasswordError("New password must be at least 6 characters");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setPasswordError("New passwords do not match");
+      return;
+    }
+
+    setSavingPassword(true);
+    try {
+      if (!user?.email) {
+        setPasswordError("Email not found. Please reload the page.");
+        setSavingPassword(false);
+        return;
+      }
+      const { error: signInError } = await supabase.auth.signInWithPassword({
+        email: user.email,
+        password: currentPassword,
+      });
+      if (signInError) {
+        setPasswordError("Current password is incorrect");
+        setSavingPassword(false);
+        return;
+      }
+
+      const { error: updateError } = await supabase.auth.updateUser({ password: newPassword });
+      if (updateError) {
+        setPasswordError(updateError.message);
+      } else {
+        setPasswordSaved(true);
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+        setTimeout(() => setPasswordSaved(false), 3000);
+      }
+    } catch {
+      setPasswordError("Failed to change password. Please try again.");
+    } finally {
+      setSavingPassword(false);
     }
   };
 
@@ -400,6 +465,129 @@ export default function ProfilePage() {
             Save Changes
           </button>
         </form>
+
+        {/* Password Change Section */}
+        <div className="mt-10 bg-white/90 backdrop-blur-xl rounded-[28px] p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-white/60">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-xl font-bold text-[var(--secondary-color)]">Password</h2>
+              <p className="text-sm text-slate-500 mt-1">Change your account password</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowPasswordForm(!showPasswordForm)}
+              className="px-5 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2"
+              style={{
+                background: showPasswordForm ? "#f1f5f9" : "var(--primary-color)",
+                color: showPasswordForm ? "#64748b" : "#fff",
+              }}
+            >
+              <Lock size={16} />
+              {showPasswordForm ? "Cancel" : "Change Password"}
+            </button>
+          </div>
+
+          {showPasswordForm && (
+            <form onSubmit={handlePasswordChange} className="mt-6 space-y-4 max-w-md">
+              {passwordError && (
+                <div
+                  style={{
+                    padding: "12px 20px",
+                    borderRadius: 12,
+                    background: "#fef2f2",
+                    border: "1px solid #fecaca",
+                    color: "#dc2626",
+                    fontSize: 14,
+                  }}
+                >
+                  {passwordError}
+                </div>
+              )}
+              {passwordSaved && (
+                <div
+                  style={{
+                    padding: "12px 20px",
+                    borderRadius: 12,
+                    background: "#f0fdf4",
+                    border: "1px solid #bbf7d0",
+                    color: "#16a34a",
+                    fontSize: 14,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                >
+                  <CheckCircle size={18} /> Password changed successfully
+                </div>
+              )}
+
+              <div>
+                <label className={labelClass}>Current Password</label>
+                <div className="relative">
+                  <input
+                    type={showCurrentPw ? "text" : "password"}
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder="Enter current password"
+                    className={inputClass}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrentPw(!showCurrentPw)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 bg-transparent border-none cursor-pointer"
+                  >
+                    {showCurrentPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className={labelClass}>New Password</label>
+                <div className="relative">
+                  <input
+                    type={showNewPw ? "text" : "password"}
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="At least 6 characters"
+                    className={inputClass}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowNewPw(!showNewPw)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 bg-transparent border-none cursor-pointer"
+                  >
+                    {showNewPw ? <EyeOff size={16} /> : <Eye size={16} />}
+                  </button>
+                </div>
+              </div>
+
+              <div>
+                <label className={labelClass}>Confirm New Password</label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="Re-enter new password"
+                  className={inputClass}
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={savingPassword}
+                className={`w-full py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${
+                  savingPassword
+                    ? "opacity-60 cursor-not-allowed bg-slate-400 text-white"
+                    : "bg-[var(--primary-color)] text-white hover:shadow-lg"
+                }`}
+              >
+                {savingPassword && <Loader2 size={16} className="animate-spin" />}
+                <Lock size={16} />
+                Update Password
+              </button>
+            </form>
+          )}
+        </div>
       </div>
     </div>
   );

@@ -31,7 +31,8 @@ export default function StaffDashboard() {
       supabase
         .from("products")
         .select("id, quantity, buffer_quantity", { count: "exact" })
-        .eq("availability", "available"),
+        .eq("availability", "available")
+        .is("deleted_at", null),
     ]);
 
     const lowStockItems = (lowStockRes.data || []).filter((p: any) => (p.quantity ?? 0) <= (p.buffer_quantity ?? 5));
@@ -93,15 +94,25 @@ export default function StaffDashboard() {
           {tiles.map((tile) => {
             const Icon = tile.icon;
             return (
-              <Card key={tile.label}>
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-2 text-gray-500 mb-1">
-                    <Icon size={16} />
-                    <span className="text-xs font-medium">{tile.label}</span>
-                  </div>
-                  <p className="text-2xl font-bold text-gray-900">{tile.value}</p>
-                </CardContent>
-              </Card>
+              <Link
+                key={tile.label}
+                href={
+                  tile.label === "Completed Today"
+                    ? "/orders?status=delivered"
+                    : `/orders?status=${tile.label.toLowerCase().replace(/ /g, "_")}`
+                }
+                className="block no-underline"
+              >
+                <Card>
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-2 text-gray-500 mb-1">
+                      <Icon size={16} />
+                      <span className="text-xs font-medium">{tile.label}</span>
+                    </div>
+                    <p className="text-2xl font-bold text-gray-900">{tile.value}</p>
+                  </CardContent>
+                </Card>
+              </Link>
             );
           })}
         </div>

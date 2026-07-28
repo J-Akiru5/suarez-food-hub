@@ -84,7 +84,7 @@ function hasVariants(product: Product): boolean {
 }
 
 export default function MenuPage() {
-  const _router = useRouter();
+  const router = useRouter();
   const [products, setProducts] = useState<Product[]>([]);
   const [categories, setCategories] = useState<string[]>(["All"]);
   const [loading, setLoading] = useState(true);
@@ -197,8 +197,9 @@ export default function MenuPage() {
   };
 
   // ─── Guest guard ─────────────────────────────────────
+  const [showGuestModal, setShowGuestModal] = useState(false);
   const requireAuth = () => {
-    setShowCart(true);
+    setShowGuestModal(true);
   };
 
   const openModal = (product: Product) => {
@@ -333,6 +334,71 @@ export default function MenuPage() {
         </div>
         <span className="text-sm">{toast}</span>
       </div>
+
+      {/* ── Guest Login Modal ── */}
+      {showGuestModal && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setShowGuestModal(false);
+          }}
+        >
+          <div className="bg-white rounded-3xl shadow-2xl w-full max-w-[420px] p-8 relative animate-slideUp">
+            <button
+              type="button"
+              onClick={() => setShowGuestModal(false)}
+              className="absolute top-4 right-4 w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center border-none cursor-pointer hover:bg-gray-200 transition-colors"
+            >
+              <X className="w-4 h-4 text-gray-500" />
+            </button>
+
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 rounded-full bg-brand-50 flex items-center justify-center mx-auto mb-4">
+                <ShoppingCart className="w-7 h-7 text-brand-500" />
+              </div>
+              <h2 className="text-2xl font-bold text-near-black m-0" style={{ fontFamily: "var(--playfair-display)" }}>
+                Sign in to Order
+              </h2>
+              <p className="text-sm text-gray-500 mt-2 mb-0 leading-relaxed">
+                Create an account or sign in to start adding items to your basket.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowGuestModal(false);
+                  router.push("/login");
+                }}
+                className="w-full py-3.5 rounded-2xl bg-near-black text-white font-semibold text-sm border-none cursor-pointer hover:bg-near-black/90 transition-colors"
+              >
+                Sign In
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowGuestModal(false);
+                  router.push("/register");
+                }}
+                className="w-full py-3.5 rounded-2xl bg-white text-near-black font-semibold text-sm border-2 border-gray-200 cursor-pointer hover:border-brand-500/30 hover:bg-brand-50/30 transition-all"
+              >
+                Create an Account
+              </button>
+            </div>
+
+            <p className="text-center mt-5 mb-0">
+              <button
+                type="button"
+                onClick={() => setShowGuestModal(false)}
+                className="text-xs text-gray-400 hover:text-gray-600 bg-transparent border-none cursor-pointer transition-colors"
+              >
+                Continue browsing
+              </button>
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* ── Product Modal ── */}
       {modalProduct && (
@@ -648,6 +714,11 @@ export default function MenuPage() {
                             >
                               {item.name}
                             </h3>
+                            {item.description && (
+                              <p className="text-[11px] text-white/70 m-0 mt-0.5 leading-tight line-clamp-1">
+                                {item.description}
+                              </p>
+                            )}
                             <p className="text-sm font-bold text-white/90 m-0 mt-1">
                               {hasVariants(item)
                                 ? `₱${Math.min(...item.variants.map((v) => v.price))} – ₱${Math.max(...item.variants.map((v) => v.price))}`

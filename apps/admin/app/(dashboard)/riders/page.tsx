@@ -334,6 +334,29 @@ export default function RidersPage() {
                     <span>License: {selectedRider.license_number || "—"}</span>
                   </div>
                 </div>
+
+                {/* Valid ID Image */}
+                {selectedRider.valid_id_url && (
+                  <div className="pt-3 border-t border-gray-100">
+                    <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Valid ID</h4>
+                    <a
+                      href={selectedRider.valid_id_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block relative h-32 w-full max-w-[200px] rounded-lg overflow-hidden border border-gray-200 hover:ring-2 hover:ring-brand-500 transition-all"
+                    >
+                      <img
+                        src={selectedRider.valid_id_url}
+                        alt="Valid ID"
+                        className="object-cover w-full h-full"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = "none";
+                        }}
+                      />
+                    </a>
+                    <p className="text-[10px] text-gray-400 mt-1">Click to view full size</p>
+                  </div>
+                )}
               </div>
 
               {/* Stats */}

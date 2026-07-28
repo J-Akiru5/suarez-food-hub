@@ -4,6 +4,7 @@ import { getProfile } from "@repo/data-access/auth";
 import { createBrowserTypedClient } from "@repo/data-access/client";
 import {
   Bell,
+  Bike,
   ChefHat,
   ChevronLeft,
   ChevronRight,
@@ -12,6 +13,7 @@ import {
   LogOut,
   Menu,
   Package,
+  Tag,
   X,
 } from "lucide-react";
 import Link from "next/link";
@@ -22,6 +24,8 @@ const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/orders", label: "Orders", icon: ClipboardList },
   { href: "/inventory", label: "Inventory", icon: Package },
+  { href: "/categories", label: "Categories", icon: Tag },
+  { href: "/riders", label: "Riders", icon: Bike },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
@@ -348,9 +352,40 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <div className="absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-lg border border-gray-100 py-2 z-50">
                 <div className="px-4 py-2 border-b border-gray-100 flex items-center justify-between">
                   <h3 className="font-bold text-sm">Notifications</h3>
-                  {unreadNotifs > 0 && (
-                    <span className="text-[10px] font-medium text-muted-foreground">{unreadNotifs} unread</span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {unreadNotifs > 0 && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const supabase = supabaseRef.current;
+                          if (!supabase) return;
+                          await supabase
+                            .from("notifications")
+                            .update({ read: true })
+                            .eq("user_id", user?.id)
+                            .is("read", false);
+                          setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
+                        }}
+                        className="text-[10px] font-medium text-brand-600 hover:text-brand-700 bg-transparent border-none cursor-pointer"
+                      >
+                        Mark all read
+                      </button>
+                    )}
+                    {notifications.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const supabase = supabaseRef.current;
+                          if (!supabase) return;
+                          await supabase.from("notifications").delete().eq("user_id", user?.id);
+                          setNotifications([]);
+                        }}
+                        className="text-[10px] font-medium text-red-500 hover:text-red-600 bg-transparent border-none cursor-pointer"
+                      >
+                        Delete all
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="max-h-72 overflow-y-auto">
                   {notifications.length === 0 ? (
@@ -364,25 +399,42 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                       const Icon = vi.icon;
                       const link = getNotifLink(n);
                       return (
-                        <button
-                          key={n.id}
-                          onClick={() => markNotifRead(n.id, link)}
-                          className={`w-full text-left flex items-start gap-3 px-4 py-3 transition-colors ${
-                            n.read ? "hover:bg-gray-50 opacity-60" : "hover:bg-gray-50"
-                          }`}
-                        >
-                          <div
-                            className={`h-8 w-8 rounded-full ${vi.bg} flex items-center justify-center ${vi.color} shrink-0 mt-0.5`}
+                        <div key={n.id} className="group relative">
+                          <button
+                            type="button"
+                            onClick={() => markNotifRead(n.id, link)}
+                            className={`w-full text-left flex items-start gap-3 px-4 py-3 transition-colors ${
+                              n.read ? "hover:bg-gray-50 opacity-60" : "hover:bg-gray-50"
+                            }`}
                           >
-                            <Icon className="h-4 w-4" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium truncate">{n.title}</p>
-                            <p className="text-xs text-muted-foreground truncate">{n.message}</p>
-                            <p className="text-[10px] text-muted-foreground mt-0.5">{formatNotifTime(n.created_at)}</p>
-                          </div>
-                          {!n.read && <span className="h-2 w-2 rounded-full bg-brand-500 shrink-0 mt-2" />}
-                        </button>
+                            <div
+                              className={`h-8 w-8 rounded-full ${vi.bg} flex items-center justify-center ${vi.color} shrink-0 mt-0.5`}
+                            >
+                              <Icon className="h-4 w-4" />
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium truncate">{n.title}</p>
+                              <p className="text-xs text-muted-foreground truncate">{n.message}</p>
+                              <p className="text-[10px] text-muted-foreground mt-0.5">
+                                {formatNotifTime(n.created_at)}
+                              </p>
+                            </div>
+                            {!n.read && <span className="h-2 w-2 rounded-full bg-brand-500 shrink-0 mt-2" />}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              const supabase = supabaseRef.current;
+                              if (!supabase) return;
+                              await supabase.from("notifications").delete().eq("id", n.id);
+                              setNotifications((prev) => prev.filter((x) => x.id !== n.id));
+                            }}
+                            className="absolute top-2 right-2 h-5 w-5 rounded-full bg-gray-200 hover:bg-red-200 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity border-none cursor-pointer"
+                            title="Delete notification"
+                          >
+                            <X className="h-3 w-3 text-gray-500" />
+                          </button>
+                        </div>
                       );
                     })
                   )}

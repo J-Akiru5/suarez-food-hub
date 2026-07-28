@@ -121,6 +121,14 @@ export default function OrderDetailPage() {
       setSelectedStatus(null);
     } else {
       toast({ title: "Status updated", description: `Order status changed to ${status.replace(/_/g, " ")}.` });
+      // Notify staff when admin confirms
+      if (status === "confirmed" && order) {
+        fetch("/api/orders/notify-staff", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ order_id: orderId, order_number: order.order_number }),
+        }).catch(() => {});
+      }
     }
     await fetchOrder();
     setUpdating(false);
@@ -298,6 +306,21 @@ export default function OrderDetailPage() {
                 </div>
               </CardContent>
             </Card>
+            {/* Delivery Proof Photo */}
+            {(order as any).delivery_proof_url && (
+              <Card>
+                <CardContent className="p-4">
+                  <h2 className="font-bold font-display">Proof of Delivery</h2>
+                  <div className="mt-2">
+                    <img
+                      src={(order as any).delivery_proof_url}
+                      alt="Delivery proof"
+                      className="w-full max-h-64 object-cover rounded-lg border border-gray-200"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            )}
             {/* Delivery Location Map */}
             <Card>
               <CardContent className="p-4">
@@ -450,6 +473,30 @@ export default function OrderDetailPage() {
                       <SelectItem value="refunded">Refunded</SelectItem>
                     </SelectContent>
                   </Select>
+                </div>
+
+                {/* Rider Earnings */}
+                <div className="flex items-center justify-between mt-3 pt-3 border-t">
+                  <span className="text-sm text-muted-foreground">Rider Earnings</span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-gray-400">₱</span>
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.50"
+                      defaultValue={Number(order.rider_earnings) || 40}
+                      className="w-20 h-8 px-2 rounded-md border border-gray-200 text-xs font-medium text-right focus:outline-none focus:ring-1 focus:ring-crimson-500"
+                      onBlur={async (e) => {
+                        const val = parseFloat(e.target.value);
+                        if (Number.isNaN(val) || val < 0) return;
+                        await supabase.from("orders").update({ rider_earnings: val }).eq("id", orderId);
+                        toast({ title: "Updated", description: `Rider earnings set to ₱${val.toFixed(2)}` });
+                      }}
+                      onKeyDown={async (e) => {
+                        if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                      }}
+                    />
+                  </div>
                 </div>
               </CardContent>
             </Card>

@@ -1,33 +1,86 @@
 "use client";
 
 import { createBrowserTypedClient } from "@repo/data-access/client";
-import { updateProduct } from "@repo/data-access/data/products";
-import { Badge, Button, Card, CardContent, Input } from "@repo/ui";
-import { AlertTriangle, ImageIcon, Loader2, Package, Save, Search } from "lucide-react";
-
-import { useCallback, useEffect, useState } from "react";
+import { createProduct, deleteProduct, updateProduct } from "@repo/data-access/data/products";
+import type { Category } from "@repo/types";
+import {
+  Badge,
+  Button,
+  Card,
+  CardContent,
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  Input,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@repo/ui";
+import { formatCurrency } from "@repo/utils";
+import {
+  AlertTriangle,
+  Image as ImageIcon,
+  List,
+  Loader2,
+  Package,
+  Pencil,
+  Plus,
+  Save,
+  Search,
+  Trash2,
+  Upload,
+  X,
+} from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import Swal from "sweetalert2";
 
 export default function StaffInventoryPage() {
   const supabase = createBrowserTypedClient();
   const [products, setProducts] = useState<any[]>([]);
-  const [categories, setCategories] = useState<any[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
+  const [filterLowStock, setFilterLowStock] = useState(false);
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [qtyEdits, setQtyEdits] = useState<Record<string, string>>({});
+
+  // Dialog state
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<any | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  // Form state for add/edit dialog
+  const [formName, setFormName] = useState("");
+  const [formSlug, setFormSlug] = useState("");
+  const [formDescription, setFormDescription] = useState("");
+  const [formPrice, setFormPrice] = useState("");
+  const [formCategoryId, setFormCategoryId] = useState("");
+  const [formAvailability, setFormAvailability] = useState<string>("available");
+  const [formImageUrl, setFormImageUrl] = useState("");
+  const [formIsFeatured, setFormIsFeatured] = useState(false);
+  const [formQuantity, setFormQuantity] = useState("");
+  const [formBuffer, setFormBuffer] = useState("5");
+  const [formVariantType, setFormVariantType] = useState<string>("none");
+  const [formVariants, setFormVariants] = useState<{ name: string; price: string; qty: string }[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const fetchData = useCallback(async () => {
     const [prodRes, catRes] = await Promise.all([
       supabase
         .from("products")
-        .select("id, name, base_price, quantity, buffer_quantity, availability, image_url, category:categories(name)")
+        .select("*, category:categories(*), product_variants(*)")
         .is("deleted_at", null)
-        .order("name"),
-      supabase.from("categories").select("id, name").order("name"),
+        .order("created_at", { ascending: false }),
+      supabase.from("categories").select("id, name, slug").order("name"),
     ]);
     setProducts(prodRes.data || []);
-    setCategories(catRes.data || []);
+    setCategories((catRes.data as Category[]) || []);
     setLoading(false);
   }, [supabase]);
 
@@ -46,7 +99,6 @@ export default function StaffInventoryPage() {
         availability,
         low_stock_alerted_at: null,
       });
-      // Clear edit
       setQtyEdits((prev) => {
         const next = { ...prev };
         delete next[productId];
@@ -58,17 +110,181 @@ export default function StaffInventoryPage() {
     }
   }
 
+  function openCreateDialog() {
+    setEditingProduct(null);
+    setFormName("");
+    setFormSlug("");
+    setFormDescription("");
+    setFormPrice("");
+    setFormCategoryId(categories[0]?.id || "");
+    setFormAvailability("available");
+    setFormImageUrl("");
+    setFormIsFeatured(false);
+    setFormQuantity("0");
+    setFormBuffer("5");
+    setFormVariantType("none");
+    setFormVariants([]);
+    setDialogOpen(true);
+  }
+
+  function openEditDialog(product: any) {
+    setEditingProduct(product);
+    setFormName(product.name);
+    setFormSlug(product.slug);
+    setFormDescription(product.description || "");
+    setFormPrice(String(product.base_price));
+    setFormCategoryId(product.category_id || "");
+    setFormAvailability(product.availability);
+    setFormImageUrl(product.image_url || "");
+    setFormIsFeatured(!!product.is_featured);
+    setFormQuantity(String(product.quantity ?? 0));
+    setFormBuffer(String(product.buffer_quantity ?? 5));
+    setFormVariantType(product.variant_type || "none");
+    // Load existing variants (key from Supabase select: product_variants)
+    if (product.product_variants && product.product_variants.length > 0) {
+      setFormVariants(
+        product.product_variants
+          .filter((v: any) => v.is_active !== false)
+          .map((v: any) => ({
+            name: v.name,
+            price: String(v.price),
+            qty: String(v.quantity ?? 0),
+          })),
+      );
+    } else {
+      setFormVariants([]);
+    }
+    setDialogOpen(true);
+  }
+
+  async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploading(true);
+    const fileExt = file.name.split(".").pop();
+    const fileName = `${Date.now()}_${Math.random().toString(36).slice(2)}.${fileExt}`;
+    const filePath = `products/${fileName}`;
+
+    const { error } = await supabase.storage
+      .from("images")
+      .upload(filePath, file, { contentType: file.type, upsert: true });
+
+    if (!error) {
+      const { data } = supabase.storage.from("images").getPublicUrl(filePath);
+      setFormImageUrl(data.publicUrl);
+    } else {
+      Swal.fire({ title: "Error", text: `Failed to upload image: ${error.message}`, icon: "error" });
+    }
+    setUploading(false);
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    const productData: any = {
+      name: formName,
+      slug: formSlug || formName.toLowerCase().replace(/\s+/g, "-"),
+      description: formDescription || null,
+      base_price: parseFloat(formPrice) || 0,
+      category_id: formCategoryId,
+      variant_type: formVariantType,
+      availability: formAvailability as "available" | "sold_out",
+      image_url: formImageUrl || null,
+      is_featured: formIsFeatured,
+      quantity: parseInt(formQuantity, 10) || 0,
+      buffer_quantity: parseInt(formBuffer, 10) || 5,
+    };
+
+    let result: any;
+    let productId: string;
+    if (editingProduct) {
+      productId = editingProduct.id;
+      result = await updateProduct(supabase, productId, productData);
+    } else {
+      result = await createProduct(supabase, productData);
+      if (result.data) productId = result.data.id;
+      else productId = result[0]?.id;
+    }
+
+    if (result.error) {
+      Swal.fire({
+        title: "Error",
+        text: `Failed to save product: ${result.error.message || "Unknown error"}`,
+        icon: "error",
+      });
+      setSaving(false);
+      return;
+    }
+
+    // Save variants if variant type is selected
+    if (formVariantType !== "none" && productId && formVariants.length > 0) {
+      // Delete existing variants first (when editing)
+      if (editingProduct) {
+        await supabase.from("product_variants").delete().eq("product_id", productId);
+      }
+      // Insert new variants
+      const variantInserts = formVariants.map((v, i) => ({
+        product_id: productId,
+        name: v.name,
+        price: parseFloat(v.price) || 0,
+        quantity: parseInt(v.qty, 10) || 0,
+        sort_order: i,
+        is_active: true,
+      }));
+      const { error: varError } = await supabase.from("product_variants").insert(variantInserts);
+      if (varError) {
+        console.error("Failed to save variants:", varError);
+      }
+    } else if (editingProduct && productId) {
+      // If switching to no variants, delete existing ones
+      await supabase.from("product_variants").delete().eq("product_id", productId);
+    }
+
+    Swal.fire({ title: "Success", text: `Product ${editingProduct ? "updated" : "created"}!`, icon: "success" });
+    setDialogOpen(false);
+    fetchData();
+    setSaving(false);
+  }
+
+  async function handleDeleteProduct(product: any) {
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: `Delete ${product.name}?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      confirmButtonText: "Yes, delete it!",
+    });
+    if (!result.isConfirmed) return;
+
+    const { error } = await deleteProduct(supabase, product.id);
+    if (error) {
+      Swal.fire({ title: "Error", text: error.message, icon: "error" });
+    } else {
+      Swal.fire({ title: "Deleted!", text: "Product deleted.", icon: "success" });
+      setProducts((prev) => prev.filter((p) => p.id !== product.id));
+    }
+  }
+
   const filtered = products.filter((p) => {
     const matchesSearch = !search || p.name.toLowerCase().includes(search.toLowerCase());
-    const matchesCategory = filterCategory === "all" || p.category?.name === filterCategory;
-    return matchesSearch && matchesCategory;
+    const matchesCategory = filterCategory === "all" || p.category_id === filterCategory;
+    const isLow = (p.quantity ?? 0) <= (p.buffer_quantity ?? 5);
+    const matchesLowStock = !filterLowStock || isLow;
+    return matchesSearch && matchesCategory && matchesLowStock;
   });
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Inventory</h1>
-        <p className="text-sm text-muted-foreground">Update product stock quantities</p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 font-display">Inventory</h1>
+          <p className="text-sm text-muted-foreground">Manage products, stock, and categories</p>
+        </div>
+        <Button onClick={openCreateDialog} className="gap-2 bg-brand-500 hover:bg-brand-600 text-white">
+          <Plus className="h-4 w-4" />
+          Add Product
+        </Button>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">
@@ -89,11 +305,23 @@ export default function StaffInventoryPage() {
         >
           <option value="all">All Categories</option>
           {categories.map((c) => (
-            <option key={c.id} value={c.name}>
+            <option key={c.id} value={c.id}>
               {c.name}
             </option>
           ))}
         </select>
+        <button
+          type="button"
+          onClick={() => setFilterLowStock(!filterLowStock)}
+          className={`h-10 px-4 rounded-lg border text-sm font-medium transition-colors flex items-center gap-2 ${
+            filterLowStock
+              ? "bg-red-100 border-red-300 text-red-700"
+              : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
+          }`}
+        >
+          <AlertTriangle className="h-4 w-4" />
+          Low Stock Only
+        </button>
       </div>
 
       {loading ? (
@@ -121,6 +349,9 @@ export default function StaffInventoryPage() {
                   <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 hidden sm:table-cell">
                     Category
                   </th>
+                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">
+                    Price
+                  </th>
                   <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 hidden sm:table-cell">
                     Stock
                   </th>
@@ -128,7 +359,7 @@ export default function StaffInventoryPage() {
                     Status
                   </th>
                   <th className="text-right text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">
-                    Update
+                    Actions
                   </th>
                 </tr>
               </thead>
@@ -149,11 +380,19 @@ export default function StaffInventoryPage() {
                           </div>
                           <div className="min-w-0">
                             <p className="text-sm font-medium truncate">{product.name}</p>
+                            {product.is_featured && (
+                              <Badge className="mt-0.5 bg-amber-100 text-amber-700 border-0 text-[10px]">
+                                Featured
+                              </Badge>
+                            )}
                           </div>
                         </div>
                       </td>
                       <td className="px-4 py-3 hidden sm:table-cell">
                         <span className="text-sm text-gray-600">{product.category?.name || "—"}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-sm font-bold">{formatCurrency(product.base_price)}</span>
                       </td>
                       <td className="px-4 py-3 hidden sm:table-cell">
                         <div className="flex items-center gap-2">
@@ -180,6 +419,25 @@ export default function StaffInventoryPage() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center justify-end gap-1.5">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openEditDialog(product)}
+                            className="gap-1 px-2"
+                          >
+                            <Pencil className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleDeleteProduct(product)}
+                            className="gap-1 px-2 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        </div>
+                        {/* Quick stock update */}
+                        <div className="flex items-center justify-end gap-1.5 mt-2 pt-2 border-t border-gray-100">
                           <button
                             onClick={() =>
                               setQtyEdits((prev) => ({
@@ -189,8 +447,7 @@ export default function StaffInventoryPage() {
                                 ),
                               }))
                             }
-                            className="h-8 w-8 shrink-0 rounded-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 hover:border-gray-300 transition-all text-lg font-bold leading-none cursor-pointer shadow-sm active:scale-95 bg-white"
-                            title="Decrease by 1"
+                            className="h-7 w-7 shrink-0 rounded-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 text-lg font-bold leading-none cursor-pointer bg-white"
                           >
                             &minus;
                           </button>
@@ -199,13 +456,8 @@ export default function StaffInventoryPage() {
                             min="0"
                             placeholder={String(product.quantity)}
                             value={currentEdit ?? ""}
-                            onChange={(e) =>
-                              setQtyEdits((prev) => ({
-                                ...prev,
-                                [product.id]: e.target.value,
-                              }))
-                            }
-                            className="w-full sm:w-16 h-8 text-sm text-center"
+                            onChange={(e) => setQtyEdits((prev) => ({ ...prev, [product.id]: e.target.value }))}
+                            className="w-14 h-7 text-xs text-center"
                           />
                           <button
                             onClick={() =>
@@ -216,8 +468,7 @@ export default function StaffInventoryPage() {
                                 ),
                               }))
                             }
-                            className="h-8 w-8 shrink-0 rounded-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 hover:border-gray-300 transition-all text-lg font-bold leading-none cursor-pointer shadow-sm active:scale-95 bg-white"
-                            title="Increase by 1"
+                            className="h-7 w-7 shrink-0 rounded-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 text-lg font-bold leading-none cursor-pointer bg-white"
                           >
                             +
                           </button>
@@ -225,12 +476,12 @@ export default function StaffInventoryPage() {
                             size="sm"
                             onClick={() => saveQuantity(product.id)}
                             disabled={savingId === product.id || currentEdit === undefined || currentEdit === ""}
-                            className="bg-brand-500 hover:bg-brand-600 text-white h-8 w-8 shrink-0 p-0 shadow-sm transition-all"
+                            className="bg-brand-500 hover:bg-brand-600 text-white h-7 w-7 shrink-0 p-0"
                           >
                             {savingId === product.id ? (
-                              <Loader2 size={12} className="animate-spin" />
+                              <Loader2 size={10} className="animate-spin" />
                             ) : (
-                              <Save size={12} />
+                              <Save size={10} />
                             )}
                           </Button>
                         </div>
@@ -243,6 +494,279 @@ export default function StaffInventoryPage() {
           </div>
         </div>
       )}
+
+      {/* Create/Edit Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" aria-describedby={undefined}>
+          <DialogHeader>
+            <DialogTitle>{editingProduct ? "Edit Product" : "Add Product"}</DialogTitle>
+          </DialogHeader>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 py-4">
+            <div className="space-y-5">
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-1">Product Image</label>
+                <div className="flex items-center gap-4">
+                  <div className="h-20 w-20 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden shrink-0">
+                    {formImageUrl ? (
+                      <img src={formImageUrl} alt="Product" className="object-cover w-full h-full" />
+                    ) : (
+                      <ImageIcon className="h-8 w-8 text-gray-400" />
+                    )}
+                  </div>
+                  <div className="flex-1">
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      onChange={handleImageUpload}
+                      className="hidden"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => fileInputRef.current?.click()}
+                      disabled={uploading}
+                      className="gap-2"
+                    >
+                      {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                      Upload Image
+                    </Button>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-1">Name</label>
+                <Input value={formName} onChange={(e) => setFormName(e.target.value)} placeholder="Product name" />
+              </div>
+              <div>
+                <label htmlFor="inv-slug" className="text-sm font-medium text-gray-700 block mb-1">
+                  Slug
+                </label>
+                <Input
+                  id="inv-slug"
+                  value={formSlug}
+                  onChange={(e) => setFormSlug(e.target.value)}
+                  placeholder="product-slug"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-1">Description</label>
+                <textarea
+                  value={formDescription}
+                  onChange={(e) => setFormDescription(e.target.value)}
+                  placeholder="Product description"
+                  rows={5}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 focus:border-transparent resize-none"
+                />
+              </div>
+            </div>
+            <div className="space-y-5">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700 block mb-1">Category</label>
+                  <Select value={formCategoryId} onValueChange={setFormCategoryId}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {categories.map((cat) => (
+                        <SelectItem key={cat.id} value={cat.id}>
+                          {cat.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 block mb-1">Variant Type</label>
+                  <Select
+                    value={formVariantType}
+                    onValueChange={(val) => {
+                      setFormVariantType(val);
+                      if (val === "none") setFormVariants([]);
+                      else if (formVariants.length === 0) {
+                        // Pre-fill default variants based on type
+                        if (val === "size")
+                          setFormVariants([
+                            { name: "Small", price: "", qty: "0" },
+                            { name: "Medium", price: "", qty: "0" },
+                            { name: "Large", price: "", qty: "0" },
+                          ]);
+                        else if (val === "sugar_level")
+                          setFormVariants([
+                            { name: "Less Sugar", price: "", qty: "0" },
+                            { name: "Regular", price: "", qty: "0" },
+                            { name: "Extra Sweet", price: "", qty: "0" },
+                          ]);
+                        else if (val === "preparation")
+                          setFormVariants([
+                            { name: "Steamed", price: "", qty: "0" },
+                            { name: "Fried", price: "", qty: "0" },
+                          ]);
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">No Variants</SelectItem>
+                      <SelectItem value="size">Size (Small/Medium/Large)</SelectItem>
+                      <SelectItem value="sugar_level">Sugar Level</SelectItem>
+                      <SelectItem value="preparation">Preparation</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Price section: Single price or Variant prices */}
+              {formVariantType === "none" ? (
+                <div>
+                  <label className="text-sm font-medium text-gray-700 block mb-1">Price</label>
+                  <Input
+                    type="number"
+                    value={formPrice}
+                    onChange={(e) => setFormPrice(e.target.value)}
+                    placeholder="0.00"
+                    min="0"
+                    step="0.01"
+                  />
+                </div>
+              ) : (
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-sm font-medium text-gray-700 block">
+                      <span className="inline-flex items-center gap-1">
+                        <List className="h-4 w-4" />
+                        Variant Prices
+                      </span>
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => setFormVariants([...formVariants, { name: "", price: "", qty: "0" }])}
+                      className="text-xs text-brand-600 hover:text-brand-700 font-medium bg-transparent border-none cursor-pointer"
+                    >
+                      + Add Variant
+                    </button>
+                  </div>
+                  <div className="space-y-2">
+                    {formVariants.map((v, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={v.name}
+                          onChange={(e) => {
+                            const updated = [...formVariants];
+                            updated[idx] = { ...updated[idx], name: e.target.value };
+                            setFormVariants(updated);
+                          }}
+                          placeholder={
+                            formVariantType === "size"
+                              ? "e.g. Small"
+                              : formVariantType === "sugar_level"
+                                ? "e.g. Regular"
+                                : "e.g. Steamed"
+                          }
+                          className="flex-1 h-9 px-3 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
+                        />
+                        <div className="relative w-24">
+                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">₱</span>
+                          <input
+                            type="number"
+                            value={v.price}
+                            onChange={(e) => {
+                              const updated = [...formVariants];
+                              updated[idx] = { ...updated[idx], price: e.target.value };
+                              setFormVariants(updated);
+                            }}
+                            placeholder="0.00"
+                            min="0"
+                            step="0.01"
+                            className="w-full h-9 pl-6 pr-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            if (formVariants.length <= 1) return;
+                            setFormVariants(formVariants.filter((_, i) => i !== idx));
+                          }}
+                          disabled={formVariants.length <= 1}
+                          className="h-8 w-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 disabled:opacity-30 bg-transparent border-none cursor-pointer"
+                        >
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700 block mb-1">Stock Quantity</label>
+                  <Input
+                    type="number"
+                    value={formQuantity}
+                    onChange={(e) => setFormQuantity(e.target.value)}
+                    placeholder="0"
+                    min="0"
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 block mb-1">Low-stock Buffer</label>
+                  <Input
+                    type="number"
+                    value={formBuffer}
+                    onChange={(e) => setFormBuffer(e.target.value)}
+                    placeholder="5"
+                    min="0"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-1">Availability</label>
+                <Select value={formAvailability} onValueChange={setFormAvailability}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="available">Available</SelectItem>
+                    <SelectItem value="sold_out">Sold Out</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2 pt-2">
+                <input
+                  type="checkbox"
+                  id="featured"
+                  checked={formIsFeatured}
+                  onChange={(e) => setFormIsFeatured(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <label htmlFor="featured" className="text-sm font-medium text-gray-700 cursor-pointer">
+                  Featured Product
+                </label>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSave}
+              disabled={saving || !formName || !formPrice}
+              className="bg-brand-500 hover:bg-brand-600 text-white"
+            >
+              {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+              {editingProduct ? "Save Changes" : "Create Product"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

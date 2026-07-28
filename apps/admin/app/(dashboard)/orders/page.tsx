@@ -110,7 +110,7 @@ export default function OrdersPage() {
     fetchOrders();
   }
 
-  async function updateStatus(orderId: string, status: string) {
+  async function updateStatus(orderId: string, status: string, orderNumber?: string) {
     setPendingStatus((p) => ({ ...p, [orderId]: status }));
     const { error } = await supabase.from("orders").update({ status }).eq("id", orderId);
     if (error) {
@@ -122,6 +122,14 @@ export default function OrdersPage() {
       });
     } else {
       toast({ title: "Status updated", description: `Order status changed to ${status.replace(/_/g, " ")}.` });
+      // Notify staff when admin confirms the order
+      if (status === "confirmed") {
+        fetch("/api/orders/notify-staff", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ order_id: orderId, order_number: orderNumber || orderId }),
+        }).catch(() => {});
+      }
     }
     fetchOrders();
   }
@@ -322,14 +330,14 @@ export default function OrdersPage() {
                                 <p className="text-xs font-medium text-gray-500 mb-1">Order Status</p>
                                 <Select
                                   value={pendingStatus[order.id] || order.status}
-                                  onValueChange={(value) => updateStatus(order.id, value)}
+                                  onValueChange={(value) => updateStatus(order.id, value, order.order_number)}
                                 >
                                   <SelectTrigger className="w-full h-8 text-xs">
                                     <SelectValue placeholder="Select order status" />
                                   </SelectTrigger>
                                   <SelectContent>
                                     <SelectItem value="pending">Pending</SelectItem>
-                                    <SelectItem value="confirmed">Confirmed</SelectItem>
+                                    <SelectItem value="confirmed">Confirm & Notify Staff</SelectItem>
                                     <SelectItem value="preparing">Preparing</SelectItem>
                                     <SelectItem value="out_for_delivery">Out for Delivery</SelectItem>
                                     <SelectItem value="delivered">Delivered</SelectItem>

@@ -41,7 +41,10 @@ const STATUS_FLOW = [
 const JANIUAY_ORIGIN = "10.9501875,122.5065625";
 
 const RIDER_ACTIONS: Record<string, { label: string; nextStatus: string; icon: any; color: string }[]> = {
-  ready_for_pickup: [{ label: "Accept & Pick Up", nextStatus: "claimed_by_rider", icon: Package, color: "#06b6d4" }],
+  ready_for_pickup: [
+    { label: "Accept & Pick Up", nextStatus: "claimed_by_rider", icon: Package, color: "#06b6d4" },
+    { label: "Reject Order", nextStatus: "rejected", icon: XCircle, color: "#dc2626" },
+  ],
   claimed_by_rider: [{ label: "Start Delivery", nextStatus: "out_for_delivery", icon: Navigation, color: "#f97316" }],
   out_for_delivery: [{ label: "I'm Near Customer", nextStatus: "near_customer", icon: MapPin, color: "#10b981" }],
   near_customer: [{ label: "Mark Delivered", nextStatus: "delivered", icon: CheckCircle, color: "#22c55e" }],

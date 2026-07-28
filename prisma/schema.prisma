@@ -121,6 +121,7 @@ model Profile {
   barangayId    String?      @map("barangay_id")
   zipCode       String       @default("") @map("zip_code")
   avatarUrl     String?      @map("avatar_url")
+  validIdUrl    String?      @map("valid_id_url")
   riderStatus   RiderStatus? @map("rider_status")
   vehicleType   String?      @map("vehicle_type")
   plateNumber   String?      @map("plate_number")
@@ -217,6 +218,7 @@ model Order {
   paymentMethod    PaymentMethod @map("payment_method")
   paymentStatus    PaymentStatus @default(pending) @map("payment_status")
   paymentProofUrl  String?       @map("payment_proof_url")
+  deliveryProofUrl String?       @map("delivery_proof_url")
   gcashReferenceNo String?       @map("gcash_reference_no")
   mayaReferenceNo  String?       @map("maya_reference_no")
   deliveryAddress  String        @map("delivery_address")
@@ -230,6 +232,7 @@ model Order {
   deliveryFee      Decimal       @default(0) @map("delivery_fee") @db.Decimal(10, 2)
   total            Decimal       @db.Decimal(10, 2)
   riderEarnings    Decimal       @default(40.00) @map("rider_earnings") @db.Decimal(10, 2)
+  pendingRiders    Json          @default("[]") @map("pending_riders") @db.JsonB
   confirmedAt      DateTime?     @map("confirmed_at") @db.Timestamptz
   preparedAt       DateTime?     @map("prepared_at") @db.Timestamptz
   pickedUpAt       DateTime?     @map("picked_up_at") @db.Timestamptz
@@ -411,6 +414,27 @@ model RiderReview {
   @@index([riderId])
   @@index([userId])
   @@map("rider_reviews")
+}
+
+model ProductReview {
+  id          String   @id @default(uuid()) @db.Uuid
+  productId   String   @map("product_id") @db.Uuid
+  userId      String   @map("user_id") @db.Uuid
+  orderId     String   @map("order_id") @db.Uuid
+  orderItemId String?  @map("order_item_id") @db.Uuid
+  rating      Int      @default(5)
+  comment     String?
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  // Relations
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  user    Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([productId])
+  @@index([userId])
+  @@index([orderId])
+  @@map("product_reviews")
 }
 
 model UserCart {

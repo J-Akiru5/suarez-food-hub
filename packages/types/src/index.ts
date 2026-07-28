@@ -44,6 +44,7 @@ export interface Profile {
   barangay_id: string | null;
   zip_code: string;
   avatar_url: string | null;
+  valid_id_url: string | null;
   rider_status: RiderStatus | null;
   vehicle_type: string | null;
   plate_number: string | null;
