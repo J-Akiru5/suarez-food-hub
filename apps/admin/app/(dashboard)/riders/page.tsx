@@ -314,7 +314,6 @@ export default function RidersPage() {
                   </div>
                 </div>
               </div>
-
               {/* Vehicle Info */}
               <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Vehicle</h3>
@@ -358,7 +357,6 @@ export default function RidersPage() {
                   </div>
                 )}
               </div>
-
               {/* Stats */}
               <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Performance</h3>
@@ -372,7 +370,8 @@ export default function RidersPage() {
                     <p className="text-xs text-green-600">Total Completed</p>
                   </div>
                 </div>
-              </div>                {/* Account Info */}
+              </div>{" "}
+              {/* Account Info */}
               <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Account</h3>
                 <div className="flex items-center gap-3 text-sm">
@@ -420,12 +419,22 @@ export default function RidersPage() {
                       if (!result.isConfirmed) return;
                       const { error } = await supabase
                         .from("profiles")
-                        .update({ rider_status: "resigned" as any, is_active: false, updated_at: new Date().toISOString() })
+                        .update({
+                          rider_status: "resigned" as any,
+                          is_active: false,
+                          updated_at: new Date().toISOString(),
+                        })
                         .eq("id", selectedRider.id);
                       if (error) {
                         Swal.fire({ icon: "error", title: "Error", text: error.message });
                       } else {
-                        Swal.fire({ icon: "success", title: "Resigned", text: "Rider marked as resigned.", timer: 1500, showConfirmButton: false });
+                        Swal.fire({
+                          icon: "success",
+                          title: "Resigned",
+                          text: "Rider marked as resigned.",
+                          timer: 1500,
+                          showConfirmButton: false,
+                        });
                         fetchRiders();
                       }
                     }}
@@ -451,7 +460,13 @@ export default function RidersPage() {
                       if (error) {
                         Swal.fire({ icon: "error", title: "Error", text: error.message });
                       } else {
-                        Swal.fire({ icon: "success", title: "Deleted", text: "Rider deleted permanently.", timer: 1500, showConfirmButton: false });
+                        Swal.fire({
+                          icon: "success",
+                          title: "Deleted",
+                          text: "Rider deleted permanently.",
+                          timer: 1500,
+                          showConfirmButton: false,
+                        });
                         setSelectedRider(null);
                         fetchRiders();
                       }
@@ -468,7 +483,9 @@ export default function RidersPage() {
             {(selectedRider.rider_status as string) === "resigned" && (
               <div className="border-t border-gray-100 pt-4 mt-4">
                 <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-3">Resigned Rider</h3>
-                <p className="text-xs text-gray-500 mb-3">This rider has resigned. You can delete their account permanently.</p>
+                <p className="text-xs text-gray-500 mb-3">
+                  This rider has resigned. You can delete their account permanently.
+                </p>
                 <Button
                   variant="outline"
                   className="text-red-600 border-red-200 hover:bg-red-50 gap-2"
@@ -487,7 +504,13 @@ export default function RidersPage() {
                     if (error) {
                       Swal.fire({ icon: "error", title: "Error", text: error.message });
                     } else {
-                      Swal.fire({ icon: "success", title: "Deleted", text: "Rider deleted permanently.", timer: 1500, showConfirmButton: false });
+                      Swal.fire({
+                        icon: "success",
+                        title: "Deleted",
+                        text: "Rider deleted permanently.",
+                        timer: 1500,
+                        showConfirmButton: false,
+                      });
                       setSelectedRider(null);
                       fetchRiders();
                     }

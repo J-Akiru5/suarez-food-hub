@@ -36,11 +36,8 @@ export default function StaffDashboard() {
     ]);
 
     // Exclude variant-type products (stock managed per-variant, main stock may be 0)
-    const lowStockItems = (lowStockRes.data || []).filter(
-      (p: any) =>
-        !p.variant_type || p.variant_type === "none"
-          ? (p.quantity ?? 0) <= (p.buffer_quantity ?? 5)
-          : false,
+    const lowStockItems = (lowStockRes.data || []).filter((p: any) =>
+      !p.variant_type || p.variant_type === "none" ? (p.quantity ?? 0) <= (p.buffer_quantity ?? 5) : false,
     );
 
     setStats({

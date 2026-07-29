@@ -20,18 +20,16 @@ export async function GET() {
 export async function PUT(req: NextRequest) {
   try {
     const supabase = createServiceClient();
-    const authSupabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return req.cookies.getAll();
-          },
-          setAll() {},
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+    const authSupabase = createServerClient(supabaseUrl, supabaseAnonKey, {
+      cookies: {
+        getAll() {
+          return req.cookies.getAll();
         },
+        setAll() {},
       },
-    );
+    });
     const user = await getUser(authSupabase);
     if (!user) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 
@@ -64,18 +62,16 @@ export async function PUT(req: NextRequest) {
 export async function POST(req: NextRequest) {
   try {
     const supabase = createServiceClient();
-    const authSupabase = createServerClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-      {
-        cookies: {
-          getAll() {
-            return req.cookies.getAll();
-          },
-          setAll() {},
+    const supabaseUrl2 = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+    const supabaseAnonKey2 = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+    const authSupabase = createServerClient(supabaseUrl2, supabaseAnonKey2, {
+      cookies: {
+        getAll() {
+          return req.cookies.getAll();
         },
+        setAll() {},
       },
-    );
+    });
     const user = await getUser(authSupabase);
     if (!user) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
 

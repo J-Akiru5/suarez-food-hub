@@ -131,7 +131,7 @@ export default function MenuPage() {
           setProducts(products);
         }
         if (Array.isArray(categories)) {
-          const catNames = categories.map((c: any) => c.name);
+          const catNames = categories.map((c: { name: string }) => c.name);
           setCategories(["All", ...catNames]);
         }
       })
@@ -317,15 +317,15 @@ export default function MenuPage() {
 
   // Simple Levenshtein distance for typo tolerance
   function levenshtein(a: string, b: string): number {
-    const m = a.length, n = b.length;
+    const m = a.length,
+      n = b.length;
     const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
     for (let i = 0; i <= m; i++) dp[i][0] = i;
     for (let j = 0; j <= n; j++) dp[0][j] = j;
     for (let i = 1; i <= m; i++) {
       for (let j = 1; j <= n; j++) {
-        dp[i][j] = a[i - 1] === b[j - 1]
-          ? dp[i - 1][j - 1]
-          : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+        dp[i][j] =
+          a[i - 1] === b[j - 1] ? dp[i - 1][j - 1] : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
       }
     }
     return dp[m][n];
@@ -364,9 +364,14 @@ export default function MenuPage() {
       {/* ── Guest Login Modal ── */}
       {showGuestModal && (
         <div
+          role="dialog"
+          aria-modal="true"
           className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
           onClick={(e) => {
             if (e.target === e.currentTarget) setShowGuestModal(false);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setShowGuestModal(false);
           }}
         >
           <div className="bg-white rounded-3xl shadow-2xl w-full max-w-[420px] p-8 relative animate-slideUp">
@@ -429,13 +434,19 @@ export default function MenuPage() {
       {/* ── Product Modal ── */}
       {modalProduct && (
         <div
+          role="dialog"
+          aria-modal="true"
           className="fixed inset-0 z-[9998] flex items-center justify-center bg-black/40 backdrop-blur-sm p-4"
           onClick={(e) => {
             if (e.target === e.currentTarget) setModalProduct(null);
           }}
+          onKeyDown={(e) => {
+            if (e.key === "Escape") setModalProduct(null);
+          }}
         >
           <div className="relative w-full max-w-[480px] md:max-w-[860px] bg-white rounded-3xl overflow-hidden shadow-2xl animate-slideUp flex flex-col md:flex-row">
             <button
+              type="button"
               onClick={() => setModalProduct(null)}
               className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-white/80 backdrop-blur-sm flex items-center justify-center border-none shadow-md cursor-pointer hover:bg-white transition-colors"
             >
@@ -615,6 +626,7 @@ export default function MenuPage() {
                   className="w-full h-9 pl-9 pr-3 rounded-full bg-white/80 border border-gray-200 text-xs focus:outline-none focus:border-brand-400 focus:bg-white transition-all"
                 />
                 <svg
+                  aria-label="Search"
                   className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400"
                   fill="none"
                   viewBox="0 0 24 24"
@@ -687,8 +699,11 @@ export default function MenuPage() {
                       (hasVar ? item.variants.every((v) => v.quantity <= 0) && item.quantity <= 0 : item.quantity <= 0);
 
                     return (
+                      // biome-ignore lint/a11y/useSemanticElements: Nested buttons not allowed in HTML
                       <div
                         key={item.id}
+                        role="button"
+                        tabIndex={isSoldOut ? -1 : 0}
                         className={cn(
                           "group relative bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden border border-white/60 transition-all duration-300",
                           isSoldOut
@@ -697,6 +712,9 @@ export default function MenuPage() {
                         )}
                         onClick={() => {
                           if (!isSoldOut) openModal(item);
+                        }}
+                        onKeyDown={(e) => {
+                          if (!isSoldOut && (e.key === "Enter" || e.key === " ")) openModal(item);
                         }}
                       >
                         {/* Image */}

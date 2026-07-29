@@ -1,0 +1,374 @@
+npm warn Unknown project config "shamefully-hoist". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
+apps\admin\app\(dashboard)\orders\[id]\page.tsx:275:38 lint/suspicious/noExplicitAny ━━━━━━━━━━━━━━━
+
+  ! Unexpected any. Specify a different type.
+  
+    273 │                     {/* biome-ignore lint/performance/noImgElement: External images may not be optimizable by next/image */}
+    274 │                     <img
+  > 275 │                       src={(order as any).delivery_proof_url}
+        │                                      ^^^
+    276 │                       alt="Delivery proof"
+    277 │                       className="w-full max-h-56 object-cover rounded-lg border border-gray-200"
+  
+  i any disables many type checking rules. Its use should be avoided.
+  
+
+apps\admin\app\(dashboard)\orders\[id]\page.tsx:428:9 lint/a11y/useKeyWithClickEvents ━━━━━━━━━━━━━━
+
+  ! Enforce to have the onClick mouse event with the onKeyUp, the onKeyDown, or the onKeyPress keyboard event.
+  
+    426 │       {/* Fullscreen Image Modal */}
+    427 │       {proofModalUrl && (
+  > 428 │         <div
+        │         ^^^^
+  > 429 │           className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/85 backdrop-blur-sm p-6"
+  > 430 │           onClick={() => setProofModalUrl(null)}
+  > 431 │         >
+        │         ^
+    432 │           <button
+    433 │             onClick={() => setProofModalUrl(null)}
+  
+  i Actions triggered using mouse events should have corresponding keyboard events to account for keyboard-only navigation.
+  
+
+apps\admin\app\(dashboard)\orders\[id]\page.tsx:428:9 lint/a11y/noStaticElementInteractions ━━━━━━━━━━
+
+  ! Static Elements should not be interactive.
+  
+    426 │       {/* Fullscreen Image Modal */}
+    427 │       {proofModalUrl && (
+  > 428 │         <div
+        │         ^^^^
+  > 429 │           className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/85 backdrop-blur-sm p-6"
+  > 430 │           onClick={() => setProofModalUrl(null)}
+  > 431 │         >
+        │         ^
+    432 │           <button
+    433 │             onClick={() => setProofModalUrl(null)}
+  
+  i To add interactivity such as a mouse or key event listener to a static element, give the element an appropriate role value.
+  
+
+apps\admin\app\(dashboard)\orders\[id]\page.tsx:439:11 lint/a11y/useKeyWithClickEvents ━━━━━━━━━━━━━
+
+  ! Enforce to have the onClick mouse event with the onKeyUp, the onKeyDown, or the onKeyPress keyboard event.
+  
+    437 │           </button>
+    438 │           {/* biome-ignore lint/performance/noImgElement: External images may not be optimizable by next/image */}
+  > 439 │           <img
+        │           ^^^^
+  > 440 │             src={proofModalUrl}
+  > 441 │             alt="Delivery proof (full size)"
+  > 442 │             className="max-w-full max-h-[90vh] rounded-xl shadow-2xl object-contain"
+  > 443 │             onClick={(e) => e.stopPropagation()}
+  > 444 │           />
+        │           ^^
+    445 │         </div>
+    446 │       )}
+  
+  i Actions triggered using mouse events should have corresponding keyboard events to account for keyboard-only navigation.
+  
+
+apps\admin\app\(dashboard)\orders\[id]\page.tsx:479:36 lint/suspicious/noExplicitAny ━━━━━━━━━━━━━━━
+
+  ! Unexpected any. Specify a different type.
+  
+    477 │             <span>Amount</span>
+    478 │           </div>
+  > 479 │           {order.items?.map((item: any, idx: number) => (
+        │                                    ^^^
+    480 │             <div key={idx} className="flex justify-between text-sm mb-1">
+    481 │               <span className="pr-4">
+  
+  i any disables many type checking rules. Its use should be avoided.
+  
+
+apps\admin\app\(dashboard)\orders\[id]\page.tsx:228:31 lint/suspicious/noArrayIndexKey ━━━━━━━━━━━━━
+
+  ! Avoid using the index of an array as key property in an element.
+  
+    226 │                   {/* biome-ignore lint/suspicious/noExplicitAny: Order items shape */}
+    227 │                   {order.items?.map((item: any, idx: number) => (
+  > 228 │                     <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+        │                               ^^^
+    229 │                       <div>
+    230 │                         <p className="text-sm font-medium">{item.product?.name || "Product"}</p>
+  
+  i This is the source of the key value.
+  
+    225 │                 <div className="space-y-2">
+    226 │                   {/* biome-ignore lint/suspicious/noExplicitAny: Order items shape */}
+  > 227 │                   {order.items?.map((item: any, idx: number) => (
+        │                                                 ^^^
+    228 │                     <div key={idx} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+    229 │                       <div>
+  
+  i The order of the items may change, and this also affects performances and component state.
+  
+  i Check the React documentation. 
+  
+
+apps\admin\app\(dashboard)\orders\[id]\page.tsx:432:11 lint/a11y/useButtonType ━━━━━━━━━━━━━━━━━━━━━
+
+  ! Provide an explicit type prop for the button element.
+  
+    430 │           onClick={() => setProofModalUrl(null)}
+    431 │         >
+  > 432 │           <button
+        │           ^^^^^^^
+  > 433 │             onClick={() => setProofModalUrl(null)}
+  > 434 │             className="absolute top-5 right-5 w-11 h-11 rounded-full bg-white/15 border-none text-white flex items-center justify-center cursor-pointer backdrop-blur-sm hover:bg-white/25 transition-all"
+  > 435 │           >
+        │           ^
+    436 │             <XCircle size={24} />
+    437 │           </button>
+  
+  i The default type of a button is submit, which causes the submission of a form when placed inside a `form` element. This is likely not the behaviour that you want inside a React application.
+  
+  i Allowed button types are: submit, button or reset
+  
+
+apps\admin\app\(dashboard)\orders\[id]\page.tsx:480:23 lint/suspicious/noArrayIndexKey ━━━━━━━━━━━━━
+
+  ! Avoid using the index of an array as key property in an element.
+  
+    478 │           </div>
+    479 │           {order.items?.map((item: any, idx: number) => (
+  > 480 │             <div key={idx} className="flex justify-between text-sm mb-1">
+        │                       ^^^
+    481 │               <span className="pr-4">
+    482 │                 {item.quantity}x {item.product?.name || "Product"}
+  
+  i This is the source of the key value.
+  
+    477 │             <span>Amount</span>
+    478 │           </div>
+  > 479 │           {order.items?.map((item: any, idx: number) => (
+        │                                         ^^^
+    480 │             <div key={idx} className="flex justify-between text-sm mb-1">
+    481 │               <span className="pr-4">
+  
+  i The order of the items may change, and this also affects performances and component state.
+  
+  i Check the React documentation. 
+  
+
+apps\admin\app\(dashboard)\page.tsx:126:51 lint/suspicious/noExplicitAny ━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Unexpected any. Specify a different type.
+  
+    124 │       setRecentOrders((ordersRes.data || []) as unknown as RecentOrder[]);
+    125 │ 
+  > 126 │       const items = (orderItemsRes.data || []) as any[];
+        │                                                   ^^^
+    127 │       const productMap = new Map<string, TopProduct>();
+    128 │       items.forEach((item) => {
+  
+  i any disables many type checking rules. Its use should be avoided.
+  
+
+apps\admin\app\(dashboard)\page.tsx:281:15 lint/a11y/useButtonType ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Provide an explicit type prop for the button element.
+  
+    279 │             </div>
+    280 │             <div className="flex bg-gray-100 rounded-lg p-0.5">
+  > 281 │               <button
+        │               ^^^^^^^
+  > 282 │                 onClick={() => setChartMode("weekly")}
+  > 283 │                 className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+  > 284 │                   chartMode === "weekly" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
+  > 285 │                 }`}
+  > 286 │               >
+        │               ^
+    287 │                 7 Days
+    288 │               </button>
+  
+  i The default type of a button is submit, which causes the submission of a form when placed inside a `form` element. This is likely not the behaviour that you want inside a React application.
+  
+  i Allowed button types are: submit, button or reset
+  
+
+apps\admin\app\(dashboard)\page.tsx:289:15 lint/a11y/useButtonType ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Provide an explicit type prop for the button element.
+  
+    287 │                 7 Days
+    288 │               </button>
+  > 289 │               <button
+        │               ^^^^^^^
+  > 290 │                 onClick={() => setChartMode("monthly")}
+  > 291 │                 className={`px-3 py-1 text-xs font-medium rounded-md transition-colors ${
+  > 292 │                   chartMode === "monthly" ? "bg-white text-gray-900 shadow-sm" : "text-gray-500 hover:text-gray-700"
+  > 293 │                 }`}
+  > 294 │               >
+        │               ^
+    295 │                 30 Days
+    296 │               </button>
+  
+  i The default type of a button is submit, which causes the submission of a form when placed inside a `form` element. This is likely not the behaviour that you want inside a React application.
+  
+  i Allowed button types are: submit, button or reset
+  
+
+apps\admin\app\(dashboard)\reports\pdf-report.tsx:180:28 lint/suspicious/noArrayIndexKey ━━━━━━━━━━━
+
+  ! Avoid using the index of an array as key property in an element.
+  
+    178 │               </View>
+    179 │               {data.dailyBreakdown.map((day, idx) => (
+  > 180 │                 <View key={idx} style={styles.tableRow}>
+        │                            ^^^
+    181 │                   <Text style={[styles.tableCell, { flex: 2 }]}>{day.date}</Text>
+    182 │                   <Text style={[styles.tableCell, { flex: 1, textAlign: "right" }]}>{day.orders}</Text>
+  
+  i This is the source of the key value.
+  
+    177 │                 <Text style={[styles.tableHeaderText, { flex: 1, textAlign: "right" }]}>Revenue</Text>
+    178 │               </View>
+  > 179 │               {data.dailyBreakdown.map((day, idx) => (
+        │                                              ^^^
+    180 │                 <View key={idx} style={styles.tableRow}>
+    181 │                   <Text style={[styles.tableCell, { flex: 2 }]}>{day.date}</Text>
+  
+  i The order of the items may change, and this also affects performances and component state.
+  
+  i Check the React documentation. 
+  
+
+apps\admin\app\(dashboard)\reports\pdf-report.tsx:202:28 lint/suspicious/noArrayIndexKey ━━━━━━━━━━━
+
+  ! Avoid using the index of an array as key property in an element.
+  
+    200 │               </View>
+    201 │               {data.topProducts.map((product, idx) => (
+  > 202 │                 <View key={idx} style={styles.tableRow}>
+        │                            ^^^
+    203 │                   <Text style={[styles.tableCell, { flex: 0.5 }]}>{idx + 1}</Text>
+    204 │                   <Text style={[styles.tableCell, { flex: 2 }]}>{product.name}</Text>
+  
+  i This is the source of the key value.
+  
+    199 │                 <Text style={[styles.tableHeaderText, { flex: 1, textAlign: "right" }]}>Revenue</Text>
+    200 │               </View>
+  > 201 │               {data.topProducts.map((product, idx) => (
+        │                                               ^^^
+    202 │                 <View key={idx} style={styles.tableRow}>
+    203 │                   <Text style={[styles.tableCell, { flex: 0.5 }]}>{idx + 1}</Text>
+  
+  i The order of the items may change, and this also affects performances and component state.
+  
+  i Check the React documentation. 
+  
+
+apps\admin\app\(dashboard)\reviews\page.tsx:62:52 lint/suspicious/noExplicitAny ━━━━━━━━━━━━━━━━━━━━
+
+  ! Unexpected any. Specify a different type.
+  
+    61 │ // ─── Rider Reviews Tab ───────────────────────
+  > 62 │ function RiderReviewsTab({ supabase }: { supabase: any }) {
+       │                                                    ^^^
+    63 │   const [reviews, setReviews] = useState<RiderReview[]>([]);
+    64 │   const [loading, setLoading] = useState(true);
+  
+  i any disables many type checking rules. Its use should be avoided.
+  
+
+apps\admin\app\(dashboard)\reviews\page.tsx:83:58 lint/suspicious/noExplicitAny ━━━━━━━━━━━━━━━━━━━━
+
+  ! Unexpected any. Specify a different type.
+  
+    82 │       if (err) throw new Error(err.message);
+  > 83 │       const mapped: RiderReview[] = (data || []).map((r: any) => ({
+       │                                                          ^^^
+    84 │         id: r.id,
+    85 │         order_id: r.order_id,
+  
+  i any disables many type checking rules. Its use should be avoided.
+  
+
+apps\admin\app\(dashboard)\reviews\page.tsx:95:19 lint/suspicious/noExplicitAny ━━━━━━━━━━━━━━━━━━━━
+
+  ! Unexpected any. Specify a different type.
+  
+    93 │       }));
+    94 │       setReviews(mapped);
+  > 95 │     } catch (err: any) {
+       │                   ^^^
+    96 │       setError(err.message || "Failed to load reviews");
+    97 │     } finally {
+  
+  i any disables many type checking rules. Its use should be avoided.
+  
+
+apps\admin\app\(dashboard)\riders\page.tsx:59:19 lint/suspicious/noExplicitAny ━━━━━━━━━━━━━━━━━━━━━
+
+  ! Unexpected any. Specify a different type.
+  
+    57 │       setRiders(ridersWithStats as RiderWithStats[]);
+    58 │       setLoading(false);
+  > 59 │     } catch (err: any) {
+       │                   ^^^
+    60 │       console.error("fetchRiders error:", err);
+    61 │       setErrorMsg(err.message || String(err));
+  
+  i any disables many type checking rules. Its use should be avoided.
+  
+
+apps\admin\app\(dashboard)\riders\page.tsx:347:23 lint/performance/noImgElement ━━━━━━━━━━━━━━━━━━━━
+
+  ! Don't use <img> element.
+  
+    345 │                       className="block relative h-32 w-full max-w-[200px] rounded-lg overflow-hidden border border-gray-200 hover:ring-2 hover:ring-brand-500 transition-all"
+    346 │                     >
+  > 347 │                       <img
+        │                       ^^^^
+  > 348 │                         src={selectedRider.valid_id_url}
+         ...
+  > 353 │                         }}
+  > 354 │                       />
+        │                       ^^
+    355 │                     </a>
+    356 │                     <p className="text-[10px] text-gray-400 mt-1">Click to view full size</p>
+  
+  i Using the <img> can lead to slower LCP and higher bandwidth. Consider using <Image /> from next/image to automatically optimize images.
+  
+
+apps\admin\app\(dashboard)\riders\page.tsx:423:55 lint/suspicious/noExplicitAny ━━━━━━━━━━━━━━━━━━━━
+
+  ! Unexpected any. Specify a different type.
+  
+    421 │                         .from("profiles")
+    422 │                         .update({
+  > 423 │                           rider_status: "resigned" as any,
+        │                                                       ^^^
+    424 │                           is_active: false,
+    425 │                           updated_at: new Date().toISOString(),
+  
+  i any disables many type checking rules. Its use should be avoided.
+  
+
+apps\admin\app\(dashboard)\riders\page.tsx:290:15 lint/a11y/useButtonType ━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  ! Provide an explicit type prop for the button element.
+  
+    288 │                 </div>
+    289 │               </div>
+  > 290 │               <button
+        │               ^^^^^^^
+  > 291 │                 onClick={() => setSelectedRider(null)}
+  > 292 │                 className="h-8 w-8 rounded-lg hover:bg-gray-100 flex items-center justify-center text-gray-400"
+  > 293 │               >
+        │               ^
+    294 │                 <XCircle className="h-5 w-5" />
+    295 │               </button>
+  
+  i The default type of a button is submit, which causes the submission of a form when placed inside a `form` element. This is likely not the behaviour that you want inside a React application.
+  
+  i Allowed button types are: submit, button or reset
+  
+
+The number of diagnostics exceeds the limit allowed. Use --max-diagnostics to increase it.
+Diagnostics not shown: 613.
+Checked 245 files in 813ms. No fixes applied.
+Found 633 warnings.

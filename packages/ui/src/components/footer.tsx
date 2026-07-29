@@ -16,7 +16,7 @@ export interface FooterProps {
   className?: string;
 }
 
-const Footer = React.forwardRef<HTMLElement, FooterProps>(({ className }, ref) => {
+const Footer = React.forwardRef<HTMLElement, FooterProps>((_props, ref) => {
   const [info, setInfo] = React.useState<BusinessInfo | null>(null);
 
   React.useEffect(() => {
@@ -82,7 +82,10 @@ const Footer = React.forwardRef<HTMLElement, FooterProps>(({ className }, ref) =
                 </a>
               </li>
               <li>
-                <a href="/how-to-order" className="text-sm text-white/60 hover:text-white transition-colors duration-200">
+                <a
+                  href="/how-to-order"
+                  className="text-sm text-white/60 hover:text-white transition-colors duration-200"
+                >
                   How to Order
                 </a>
               </li>

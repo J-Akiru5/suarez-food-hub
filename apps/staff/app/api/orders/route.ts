@@ -1,8 +1,8 @@
 import { createAuthClient, createServiceClient } from "@repo/data-access/client";
+import { createNotifications } from "@repo/data-access/data/notifications";
 import { updateOrderStatus } from "@repo/data-access/data/orders";
 import { deductStock, deductVariantStock, markLowStockAlerted } from "@repo/data-access/data/products";
 import { getAdminIds, getProfileRole } from "@repo/data-access/data/profiles";
-import { createNotifications } from "@repo/data-access/data/notifications";
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -70,7 +70,7 @@ export async function PATCH(request: NextRequest) {
               .eq("product_id", item.product_id);
 
             if (variants && variants.length > 0) {
-              const match = variants.find((v: any) => v.name === item.variant_name);
+              const match = variants.find((v: { name: string; id: string }) => v.name === item.variant_name);
               if (match) {
                 await deductVariantStock(serviceSupabase, match.id, item.quantity);
               }
@@ -79,14 +79,15 @@ export async function PATCH(request: NextRequest) {
             const result = await deductStock(serviceSupabase, item.product_id, item.quantity);
             if (result && !result.error && result.newQuantity != null) {
               // Check low stock alert
-              const bufferQty = (item.product as any)?.buffer_quantity ?? 5;
-              const productName = (item.product as any)?.name || "Product";
+              const productInfo = item.product as { buffer_quantity?: number; name?: string } | null;
+              const bufferQty = productInfo?.buffer_quantity ?? 5;
+              const productName = productInfo?.name || "Product";
               if (result.newQuantity <= bufferQty && result.newQuantity >= 0) {
                 const admins = await getAdminIds(serviceSupabase);
                 if (admins && admins.length > 0) {
                   await createNotifications(
                     serviceSupabase,
-                    admins.map((a: any) => ({
+                    admins.map((a: { id: string }) => ({
                       id: crypto.randomUUID(),
                       user_id: a.id,
                       type: "low_stock",

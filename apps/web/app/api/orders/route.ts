@@ -39,7 +39,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: "Invalid payment method" }, { status: 400 });
     }
 
-
     const stockErrors: string[] = [];
     for (const item of cart) {
       if (item.variantId) {
