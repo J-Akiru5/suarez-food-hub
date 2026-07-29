@@ -304,11 +304,30 @@ function OrdersPageInner() {
           .order-timeline .timeline-step svg { width: 12px !important; height: 12px !important; }
           .order-timeline .timeline-step span { font-size: 8px !important; margin-top: 4px !important; }
           .order-timeline-timeline { padding: 16px 16px 8px !important; }
+          .orders-container { padding: 100px 16px 40px !important; }
+          .orders-title { font-size: 28px !important; }
+          .order-card-header { padding: 16px 18px !important; }
+          .order-card-body { padding: 16px 18px !important; }
+          .order-card-footer { padding: 12px 18px !important; flex-direction: column !important; gap: 10px !important; }
+          .order-card-footer > div:first-child { font-size: 11px !important; }
+          .order-card-footer > div:last-child { display: flex !important; flex-wrap: wrap !important; gap: 8px !important; align-items: center !important; justify-content: space-between !important; width: 100% !important; }
+          .order-timeline-wrapper { padding: 16px 18px 8px !important; }
+          .order-section-map { padding: 12px 18px !important; }
+          .order-section-items { padding: 14px 18px !important; }
+          .order-section-rider { padding: 10px 18px !important; }
+          .order-section-proof { padding: 12px 18px !important; }
+          .tab-button { padding: 8px 16px !important; font-size: 12px !important; }
+          .orders-tabs { gap: 6px !important; margin-bottom: 24px !important; }
+          .status-badge { padding: 4px 10px !important; font-size: 11px !important; }
+          .cancel-btn { padding: 4px 10px !important; font-size: 11px !important; }
+          .rider-location-text { font-size: 12px !important; }
+          .item-name { font-size: 13px !important; }
         }
       `}</style>
 
-      <div style={{ maxWidth: 800, margin: "0 auto", padding: "120px 24px 60px" }}>
+      <div className="orders-container" style={{ maxWidth: 800, margin: "0 auto", padding: "120px 24px 60px" }}>
         <h1
+          className="orders-title"
           style={{
             fontFamily: "var(--playfair-display)",
             fontSize: 40,
@@ -335,8 +354,9 @@ function OrdersPageInner() {
         </p>
 
         {/* Toggle tabs */}
-        <div style={{ display: "flex", gap: 8, marginBottom: 32, flexWrap: "wrap" }}>
+        <div className="orders-tabs" style={{ display: "flex", gap: 8, marginBottom: 32, flexWrap: "wrap" }}>
           <button
+            className="tab-btn"
             onClick={() => setActiveTab("all")}
             style={{
               padding: "10px 24px",
@@ -355,6 +375,7 @@ function OrdersPageInner() {
           </button>
           <button
             onClick={() => setActiveTab("active")}
+            className="tab-btn"
             style={{
               padding: "10px 24px",
               borderRadius: 30,
@@ -372,6 +393,7 @@ function OrdersPageInner() {
           </button>
           <button
             onClick={() => setActiveTab("to_review")}
+            className="tab-btn"
             style={{
               padding: "10px 24px",
               borderRadius: 30,
@@ -390,6 +412,7 @@ function OrdersPageInner() {
           </button>
           <button
             onClick={() => setActiveTab("history")}
+            className="tab-btn"
             style={{
               padding: "10px 24px",
               borderRadius: 30,
@@ -533,6 +556,7 @@ function OrdersPageInner() {
                 >
                   {/* Header */}
                   <div
+                    className="order-card-header"
                     style={{
                       padding: "24px 28px",
                       borderBottom: "1px solid #f1f5f9",
@@ -600,7 +624,7 @@ function OrdersPageInner() {
                   {/* Status Timeline */}
                   {order.status !== "cancelled" && (
                     <div
-                      className="order-timeline"
+                      className="order-timeline order-timeline-wrapper"
                       style={{ padding: "24px 28px 8px", borderBottom: "1px solid #f1f5f9" }}
                     >
                       <div
@@ -693,8 +717,11 @@ function OrdersPageInner() {
                     order.rider_id &&
                     order.delivery_lat &&
                     order.delivery_lng && (
-                      <div style={{ padding: "16px 28px" }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+                      <div className="order-section-map" style={{ padding: "16px 28px" }}>
+                        <div
+                          className="rider-location-text"
+                          style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}
+                        >
                           <Navigation size={16} color="var(--primary-color)" />
                           <span style={{ fontSize: 14, fontWeight: 700, color: "var(--secondary-color)" }}>
                             Rider Location
@@ -720,7 +747,7 @@ function OrdersPageInner() {
                     )}
 
                   {/* Items */}
-                  <div style={{ padding: "20px 28px" }}>
+                  <div className="order-section-items" style={{ padding: "20px 28px" }}>
                     {order.order_items?.map((item: OrderItem) => (
                       <div
                         key={item.id}
@@ -733,7 +760,11 @@ function OrdersPageInner() {
                         }}
                       >
                         <div>
-                          <span style={{ fontWeight: 700, color: "var(--secondary-color)", fontSize: 14 }}>
+                          {" "}
+                          <span
+                            className="item-name"
+                            style={{ fontWeight: 700, color: "var(--secondary-color)", fontSize: 14 }}
+                          >
                             {item.product_name}
                           </span>
                           {item.variant_name && (
@@ -775,6 +806,7 @@ function OrdersPageInner() {
                   {/* Rider Info */}
                   {order.rider_id && riderProfiles[order.rider_id] && (
                     <div
+                      className="order-section-rider"
                       style={{
                         padding: "12px 28px",
                         background: "#f8fafc",
@@ -797,6 +829,7 @@ function OrdersPageInner() {
                   {/* Proof of Delivery Photo */}
                   {order.delivery_proof_url && (
                     <div
+                      className="order-section-proof"
                       style={{
                         padding: "16px 28px",
                         borderTop: "1px solid #f1f5f9",
@@ -869,6 +902,7 @@ function OrdersPageInner() {
 
                   {/* Footer */}
                   <div
+                    className="order-card-footer"
                     style={{
                       padding: "16px 28px",
                       background: "#fafafa",

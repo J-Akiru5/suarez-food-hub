@@ -718,7 +718,7 @@ export default function MenuPage() {
                         }}
                       >
                         {/* Image */}
-                        <div className="relative aspect-[4/3] overflow-hidden bg-gray-50">
+                        <div className="relative aspect-[4/3] sm:aspect-[4/3] overflow-hidden bg-gray-50">
                           <img
                             src={getImageSrc(item.image)}
                             alt={item.name}
@@ -749,7 +749,7 @@ export default function MenuPage() {
                           {/* Name + Price on image */}
                           <div className="absolute bottom-0 left-0 right-0 p-4">
                             <h3
-                              className="text-base font-bold text-white m-0 leading-tight"
+                              className="text-sm sm:text-base font-bold text-white m-0 leading-tight truncate"
                               style={{ fontFamily: "var(--playfair-display)" }}
                             >
                               {item.name}
@@ -762,7 +762,7 @@ export default function MenuPage() {
                             <p className="text-sm font-bold text-white/90 m-0 mt-1">
                               {hasVariants(item)
                                 ? `₱${Math.min(...item.variants.map((v) => v.price))} – ₱${Math.max(...item.variants.map((v) => v.price))}`
-                                : `₱${item.price}.00`}
+                                : `₱${item.price}`}
                             </p>
                           </div>
                         </div>

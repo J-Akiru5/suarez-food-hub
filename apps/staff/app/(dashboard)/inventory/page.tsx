@@ -355,161 +355,289 @@ export default function StaffInventoryPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200 bg-gray-50">
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">
-                    Product
-                  </th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 hidden sm:table-cell">
-                    Category
-                  </th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">
-                    Price
-                  </th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 hidden sm:table-cell">
-                    Stock
-                  </th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">
-                    Status
-                  </th>
-                  <th className="text-right text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filtered.map((product) => {
-                  const isLow = (product.quantity ?? 0) <= (product.buffer_quantity ?? 5);
-                  const currentEdit = qtyEdits[product.id];
-                  return (
-                    <tr key={product.id} className="hover:bg-gray-50">
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-3">
-                          <div className="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden shrink-0">
-                            {product.image_url ? (
-                              <img src={product.image_url} alt={product.name} className="object-cover w-full h-full" />
-                            ) : (
-                              <ImageIcon className="h-5 w-5 text-gray-400" />
+        <>
+          {/* Desktop Table — unchanged */}
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hidden lg:block">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200 bg-gray-50">
+                    <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">
+                      Product
+                    </th>
+                    <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 hidden sm:table-cell">
+                      Category
+                    </th>
+                    <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">
+                      Price
+                    </th>
+                    <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 hidden sm:table-cell">
+                      Stock
+                    </th>
+                    <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">
+                      Status
+                    </th>
+                    <th className="text-right text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {filtered.map((product) => {
+                    const isLow = (product.quantity ?? 0) <= (product.buffer_quantity ?? 5);
+                    const currentEdit = qtyEdits[product.id];
+                    return (
+                      <tr key={product.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3">
+                          <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden shrink-0">
+                              {product.image_url ? (
+                                <img
+                                  src={product.image_url}
+                                  alt={product.name}
+                                  className="object-cover w-full h-full"
+                                />
+                              ) : (
+                                <ImageIcon className="h-5 w-5 text-gray-400" />
+                              )}
+                            </div>
+                            <div className="min-w-0">
+                              <p className="text-sm font-medium truncate">{product.name}</p>
+                              {product.is_featured && (
+                                <Badge className="mt-0.5 bg-amber-100 text-amber-700 border-0 text-[10px]">
+                                  Featured
+                                </Badge>
+                              )}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-3 hidden sm:table-cell">
+                          <span className="text-sm text-gray-600">{product.category?.name || "—"}</span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <span className="text-sm font-bold">{formatCurrency(product.base_price)}</span>
+                        </td>
+                        <td className="px-4 py-3 hidden sm:table-cell">
+                          <div className="flex items-center gap-2">
+                            <span className={`text-sm font-bold ${isLow ? "text-red-600" : "text-gray-900"}`}>
+                              {product.quantity ?? 0}
+                            </span>
+                            {isLow && (
+                              <Badge className="bg-red-100 text-red-700 text-[9px] border-0">
+                                <AlertTriangle size={9} className="mr-1" /> Low
+                              </Badge>
                             )}
                           </div>
-                          <div className="min-w-0">
-                            <p className="text-sm font-medium truncate">{product.name}</p>
-                            {product.is_featured && (
-                              <Badge className="mt-0.5 bg-amber-100 text-amber-700 border-0 text-[10px]">
-                                Featured
+                        </td>
+                        <td className="px-4 py-3">
+                          <span
+                            className={`text-xs font-medium px-2 py-1 rounded-full ${
+                              product.availability === "available"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {product.availability === "available" ? "In Stock" : "Sold Out"}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openEditDialog(product)}
+                              className="gap-1 px-2"
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteProduct(product)}
+                              className="gap-1 px-2 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          {/* Quick stock update */}
+                          <div className="flex items-center justify-end gap-1.5 mt-2 pt-2 border-t border-gray-100">
+                            <button
+                              onClick={() =>
+                                setQtyEdits((prev) => ({
+                                  ...prev,
+                                  [product.id]: String(
+                                    Math.max(0, parseInt(prev[product.id] ?? String(product.quantity), 10) - 1),
+                                  ),
+                                }))
+                              }
+                              className="h-7 w-7 shrink-0 rounded-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 text-lg font-bold leading-none cursor-pointer bg-white"
+                            >
+                              &minus;
+                            </button>
+                            <Input
+                              type="number"
+                              min="0"
+                              placeholder={String(product.quantity)}
+                              value={currentEdit ?? ""}
+                              onChange={(e) => setQtyEdits((prev) => ({ ...prev, [product.id]: e.target.value }))}
+                              className="w-14 h-7 text-xs text-center"
+                            />
+                            <button
+                              onClick={() =>
+                                setQtyEdits((prev) => ({
+                                  ...prev,
+                                  [product.id]: String(
+                                    (parseInt(prev[product.id] ?? String(product.quantity), 10) || 0) + 1,
+                                  ),
+                                }))
+                              }
+                              className="h-7 w-7 shrink-0 rounded-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 text-lg font-bold leading-none cursor-pointer bg-white"
+                            >
+                              +
+                            </button>
+                            <Button
+                              size="sm"
+                              onClick={() => saveQuantity(product.id)}
+                              disabled={savingId === product.id || currentEdit === undefined || currentEdit === ""}
+                              className="bg-brand-500 hover:bg-brand-600 text-white h-7 w-7 shrink-0 p-0"
+                            >
+                              {savingId === product.id ? (
+                                <Loader2 size={10} className="animate-spin" />
+                              ) : (
+                                <Save size={10} />
+                              )}
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Mobile Cards — lg:hidden, no desktop impact */}
+          <div className="lg:hidden space-y-3">
+            {filtered.map((product) => {
+              const isLow = (product.quantity ?? 0) <= (product.buffer_quantity ?? 5);
+              const currentEdit = qtyEdits[product.id];
+              return (
+                <Card key={product.id}>
+                  <CardContent className="p-4">
+                    <div className="flex items-start gap-3">
+                      <div className="h-12 w-12 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden shrink-0">
+                        {product.image_url ? (
+                          <img src={product.image_url} alt={product.name} className="object-cover w-full h-full" />
+                        ) : (
+                          <ImageIcon className="h-5 w-5 text-gray-400" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm font-semibold truncate">{product.name}</p>
+                          <span
+                            className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded-full ${
+                              product.availability === "available"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
+                          >
+                            {product.availability === "available" ? "In Stock" : "Sold Out"}
+                          </span>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-0.5">{product.category?.name || "—"}</p>
+                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
+                          <span className="text-sm font-bold">{formatCurrency(product.base_price)}</span>
+                          <div className="flex items-center gap-1">
+                            <span className={`text-xs font-bold ${isLow ? "text-red-600" : "text-gray-900"}`}>
+                              Stock: {product.quantity ?? 0}
+                            </span>
+                            {isLow && (
+                              <Badge className="bg-red-100 text-red-700 text-[9px] border-0">
+                                <AlertTriangle size={9} className="mr-1" /> Low
                               </Badge>
                             )}
                           </div>
                         </div>
-                      </td>
-                      <td className="px-4 py-3 hidden sm:table-cell">
-                        <span className="text-sm text-gray-600">{product.category?.name || "—"}</span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="text-sm font-bold">{formatCurrency(product.base_price)}</span>
-                      </td>
-                      <td className="px-4 py-3 hidden sm:table-cell">
-                        <div className="flex items-center gap-2">
-                          <span className={`text-sm font-bold ${isLow ? "text-red-600" : "text-gray-900"}`}>
-                            {product.quantity ?? 0}
-                          </span>
-                          {isLow && (
-                            <Badge className="bg-red-100 text-red-700 text-[9px] border-0">
-                              <AlertTriangle size={9} className="mr-1" /> Low
-                            </Badge>
-                          )}
+                        {/* Actions row */}
+                        <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
+                          <div className="flex items-center gap-2">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openEditDialog(product)}
+                              className="gap-1 px-2.5"
+                            >
+                              <Pencil className="h-3 w-3" />
+                              Edit
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleDeleteProduct(product)}
+                              className="gap-1 px-2.5 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              onClick={() =>
+                                setQtyEdits((prev) => ({
+                                  ...prev,
+                                  [product.id]: String(
+                                    Math.max(0, parseInt(prev[product.id] ?? String(product.quantity), 10) - 1),
+                                  ),
+                                }))
+                              }
+                              className="h-8 w-8 shrink-0 rounded-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 text-lg font-bold leading-none cursor-pointer bg-white"
+                            >
+                              &minus;
+                            </button>
+                            <Input
+                              type="number"
+                              min="0"
+                              placeholder={String(product.quantity)}
+                              value={currentEdit ?? ""}
+                              onChange={(e) => setQtyEdits((prev) => ({ ...prev, [product.id]: e.target.value }))}
+                              className="w-16 h-8 text-xs text-center"
+                            />
+                            <button
+                              onClick={() =>
+                                setQtyEdits((prev) => ({
+                                  ...prev,
+                                  [product.id]: String(
+                                    (parseInt(prev[product.id] ?? String(product.quantity), 10) || 0) + 1,
+                                  ),
+                                }))
+                              }
+                              className="h-8 w-8 shrink-0 rounded-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 text-lg font-bold leading-none cursor-pointer bg-white"
+                            >
+                              +
+                            </button>
+                            <Button
+                              size="sm"
+                              onClick={() => saveQuantity(product.id)}
+                              disabled={savingId === product.id || currentEdit === undefined || currentEdit === ""}
+                              className="bg-brand-500 hover:bg-brand-600 text-white h-8 w-8 shrink-0 p-0"
+                            >
+                              {savingId === product.id ? (
+                                <Loader2 size={12} className="animate-spin" />
+                              ) : (
+                                <Save size={12} />
+                              )}
+                            </Button>
+                          </div>
                         </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span
-                          className={`text-xs font-medium px-2 py-1 rounded-full ${
-                            product.availability === "available"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
-                          }`}
-                        >
-                          {product.availability === "available" ? "In Stock" : "Sold Out"}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center justify-end gap-1.5">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => openEditDialog(product)}
-                            className="gap-1 px-2"
-                          >
-                            <Pencil className="h-3 w-3" />
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDeleteProduct(product)}
-                            className="gap-1 px-2 text-red-600 hover:text-red-700 hover:bg-red-50 border-red-200"
-                          >
-                            <Trash2 className="h-3 w-3" />
-                          </Button>
-                        </div>
-                        {/* Quick stock update */}
-                        <div className="flex items-center justify-end gap-1.5 mt-2 pt-2 border-t border-gray-100">
-                          <button
-                            onClick={() =>
-                              setQtyEdits((prev) => ({
-                                ...prev,
-                                [product.id]: String(
-                                  Math.max(0, parseInt(prev[product.id] ?? String(product.quantity), 10) - 1),
-                                ),
-                              }))
-                            }
-                            className="h-7 w-7 shrink-0 rounded-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 text-lg font-bold leading-none cursor-pointer bg-white"
-                          >
-                            &minus;
-                          </button>
-                          <Input
-                            type="number"
-                            min="0"
-                            placeholder={String(product.quantity)}
-                            value={currentEdit ?? ""}
-                            onChange={(e) => setQtyEdits((prev) => ({ ...prev, [product.id]: e.target.value }))}
-                            className="w-14 h-7 text-xs text-center"
-                          />
-                          <button
-                            onClick={() =>
-                              setQtyEdits((prev) => ({
-                                ...prev,
-                                [product.id]: String(
-                                  (parseInt(prev[product.id] ?? String(product.quantity), 10) || 0) + 1,
-                                ),
-                              }))
-                            }
-                            className="h-7 w-7 shrink-0 rounded-lg border border-gray-200 flex items-center justify-center text-gray-600 hover:bg-gray-100 text-lg font-bold leading-none cursor-pointer bg-white"
-                          >
-                            +
-                          </button>
-                          <Button
-                            size="sm"
-                            onClick={() => saveQuantity(product.id)}
-                            disabled={savingId === product.id || currentEdit === undefined || currentEdit === ""}
-                            className="bg-brand-500 hover:bg-brand-600 text-white h-7 w-7 shrink-0 p-0"
-                          >
-                            {savingId === product.id ? (
-                              <Loader2 size={10} className="animate-spin" />
-                            ) : (
-                              <Save size={10} />
-                            )}
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
           </div>
-        </div>
+        </>
       )}
 
       {/* Create/Edit Dialog */}

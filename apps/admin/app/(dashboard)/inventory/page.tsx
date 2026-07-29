@@ -92,82 +92,133 @@ export default function InventoryPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead>
-                <tr className="border-b border-gray-200 bg-gray-50">
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">
-                    Product
-                  </th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 hidden sm:table-cell">
-                    Category
-                  </th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">
-                    Price
-                  </th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 hidden sm:table-cell">
-                    Stock
-                  </th>
-                  <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">
-                    Status
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200">
-                {filteredProducts.map((product) => (
-                  <tr key={product.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden shrink-0">
-                          {product.image_url ? (
-                            // biome-ignore lint/performance/noImgElement: External images may not be optimizable by next/image
-                            <img src={product.image_url} alt={product.name} className="object-cover w-full h-full" />
-                          ) : (
-                            <ImageIcon className="h-5 w-5 text-gray-400" />
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="text-sm font-medium truncate">{product.name}</p>
-                          {product.is_featured && (
-                            <Badge className="mt-0.5 bg-crimson-100 text-crimson-700 border-0 text-[10px]">
-                              Featured
-                            </Badge>
-                          )}
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 hidden sm:table-cell">
-                      <span className="text-sm text-gray-600">{product.category?.name || "N/A"}</span>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span className="text-sm font-bold">{formatCurrency(product.base_price)}</span>
-                    </td>
-                    <td className="px-4 py-3 hidden sm:table-cell">
-                      <div className="flex items-center gap-1">
-                        <span
-                          className={`text-sm font-bold ${(product.quantity ?? 0) <= (product.buffer_quantity ?? 5) ? "text-red-600" : "text-gray-900"}`}
-                        >
-                          {product.quantity ?? 0}
-                        </span>
-                        {(product.quantity ?? 0) <= (product.buffer_quantity ?? 5) && (
-                          <Badge className="bg-red-100 text-red-700 text-[9px] border-0">Low</Badge>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`text-xs font-medium px-2.5 py-1 rounded-full ${product.availability === "available" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}
-                      >
-                        {product.availability.replace(/_/g, " ")}
-                      </span>
-                    </td>
+        <>
+          {/* Desktop Table — unchanged */}
+          <div className="bg-white rounded-xl border border-gray-200 overflow-hidden hidden lg:block">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200 bg-gray-50">
+                    <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">
+                      Product
+                    </th>
+                    <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 hidden sm:table-cell">
+                      Category
+                    </th>
+                    <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">
+                      Price
+                    </th>
+                    <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 hidden sm:table-cell">
+                      Stock
+                    </th>
+                    <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">
+                      Status
+                    </th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody className="divide-y divide-gray-200">
+                  {filteredProducts.map((product) => (
+                    <tr key={product.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden shrink-0">
+                            {product.image_url ? (
+                              // biome-ignore lint/performance/noImgElement: External images may not be optimizable by next/image
+                              <img src={product.image_url} alt={product.name} className="object-cover w-full h-full" />
+                            ) : (
+                              <ImageIcon className="h-5 w-5 text-gray-400" />
+                            )}
+                          </div>
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium truncate">{product.name}</p>
+                            {product.is_featured && (
+                              <Badge className="mt-0.5 bg-crimson-100 text-crimson-700 border-0 text-[10px]">
+                                Featured
+                              </Badge>
+                            )}
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 hidden sm:table-cell">
+                        <span className="text-sm text-gray-600">{product.category?.name || "N/A"}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="text-sm font-bold">{formatCurrency(product.base_price)}</span>
+                      </td>
+                      <td className="px-4 py-3 hidden sm:table-cell">
+                        <div className="flex items-center gap-1">
+                          <span
+                            className={`text-sm font-bold ${(product.quantity ?? 0) <= (product.buffer_quantity ?? 5) ? "text-red-600" : "text-gray-900"}`}
+                          >
+                            {product.quantity ?? 0}
+                          </span>
+                          {(product.quantity ?? 0) <= (product.buffer_quantity ?? 5) && (
+                            <Badge className="bg-red-100 text-red-700 text-[9px] border-0">Low</Badge>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`text-xs font-medium px-2.5 py-1 rounded-full ${product.availability === "available" ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}
+                        >
+                          {product.availability.replace(/_/g, " ")}
+                        </span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+
+          {/* Mobile Cards — lg:hidden, no desktop impact */}
+          <div className="lg:hidden space-y-3">
+            {filteredProducts.map((product) => (
+              <Card key={product.id}>
+                <CardContent className="p-4">
+                  <div className="flex items-start gap-3">
+                    <div className="h-12 w-12 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden shrink-0">
+                      {product.image_url ? (
+                        // biome-ignore lint/performance/noImgElement: External images may not be optimizable by next/image
+                        <img src={product.image_url} alt={product.name} className="object-cover w-full h-full" />
+                      ) : (
+                        <ImageIcon className="h-5 w-5 text-gray-400" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="text-sm font-semibold truncate">{product.name}</p>
+                        <span
+                          className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded-full ${
+                            product.availability === "available"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }`}
+                        >
+                          {product.availability === "available" ? "In Stock" : "Sold Out"}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-500 mt-0.5">{product.category?.name || "N/A"}</p>
+                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
+                        <span className="text-sm font-bold">{formatCurrency(product.base_price)}</span>
+                        <div className="flex items-center gap-1">
+                          <span
+                            className={`text-xs font-bold ${(product.quantity ?? 0) <= (product.buffer_quantity ?? 5) ? "text-red-600" : "text-gray-900"}`}
+                          >
+                            Stock: {product.quantity ?? 0}
+                          </span>
+                          {(product.quantity ?? 0) <= (product.buffer_quantity ?? 5) && (
+                            <Badge className="bg-red-100 text-red-700 text-[9px] border-0">Low</Badge>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </>
       )}
     </div>
   );

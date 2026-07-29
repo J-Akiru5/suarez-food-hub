@@ -421,7 +421,10 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
         </nav>
 
         {mobileOpen && (
-          <div className="md:hidden absolute top-[80px] left-6 right-6 bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 divide-y divide-gray-100 flex flex-col">
+          <div
+            className="md:hidden absolute top-[72px] left-0 right-0 mx-4 bg-white rounded-2xl shadow-xl overflow-hidden border border-gray-100 divide-y divide-gray-100 flex flex-col"
+            style={{ maxWidth: "calc(100% - 32px)" }}
+          >
             {navLinks.map((link) => (
               <Link
                 key={link.label}
