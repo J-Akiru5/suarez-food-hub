@@ -63,6 +63,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   // Real notification system
   const [notifOpen, setNotifOpen] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
+  // biome-ignore lint/suspicious/noExplicitAny: Notifications shape is dynamic
   const [notifications, setNotifications] = useState<any[]>([]);
 
   useEffect(() => {
@@ -157,6 +158,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     return new Date(dateStr).toLocaleDateString("en-PH", { month: "short", day: "numeric" });
   }
 
+  // biome-ignore lint/suspicious/noExplicitAny: Notifications shape is dynamic
   function getNotifLink(notif: any): string | undefined {
     if (notif.type === "new_order" || notif.type === "status_change") {
       const orderId = notif.data?.order_id;
@@ -314,6 +316,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
         {mobileOpen && (
           <div className="fixed inset-0 z-50 lg:hidden">
+            {/* biome-ignore lint/a11y/useKeyWithClickEvents: Backdrop overlay */}
+            {/* biome-ignore lint/a11y/noStaticElementInteractions: Backdrop overlay */}
             <div className="absolute inset-0 bg-black/50" onClick={() => setMobileOpen(false)} />
             <aside className="absolute left-0 top-0 bottom-0 w-72 bg-white shadow-xl flex flex-col">
               <div className="flex items-center justify-between px-4 h-16 border-b border-gray-200">

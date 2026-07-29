@@ -179,6 +179,7 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
           <div className="flex items-center gap-4 ml-auto">
             {showCartIcon && (
               <button
+                type="button"
                 onClick={onCartClick}
                 className="relative w-10 h-10 flex items-center justify-center rounded-full bg-white/50 hover:bg-white/80 transition-colors shadow-sm border-none cursor-pointer"
               >
@@ -195,6 +196,7 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
             {user && (
               <div ref={notifRef} className="relative">
                 <button
+                  type="button"
                   onClick={() => setNotifOpen(!notifOpen)}
                   className="relative w-10 h-10 flex items-center justify-center rounded-full bg-white/50 hover:bg-white/80 transition-colors shadow-sm border-none cursor-pointer"
                 >
@@ -329,6 +331,7 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
             {loading ? null : user ? (
               <div ref={dropdownRef} className="relative">
                 <button
+                  type="button"
                   onClick={() => setDropdownOpen(!dropdownOpen)}
                   className="h-10 flex items-center gap-1.5 pl-1 pr-3 rounded-full bg-white/50 hover:bg-white/80 transition-colors shadow-sm border-none cursor-pointer"
                 >
@@ -365,6 +368,7 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
                     </div>
                     <div className="px-2 pb-2 pt-1 border-t border-gray-100">
                       <button
+                        type="button"
                         onClick={() => {
                           setDropdownOpen(false);
                           signOut();
@@ -387,6 +391,7 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
             )}
 
             <button
+              type="button"
               onClick={() => setMobileOpen(!mobileOpen)}
               className="md:hidden w-10 h-10 flex items-center justify-center rounded-full bg-white/50 hover:bg-white/80 border-none cursor-pointer"
             >
@@ -454,6 +459,7 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
                   Track Order
                 </Link>
                 <button
+                  type="button"
                   onClick={() => {
                     setMobileOpen(false);
                     signOut();

@@ -270,7 +270,7 @@ function OrdersPageInner() {
 
   const isFullyReviewed = (o: Order) => {
     const hasRiderReview = o.rider_id ? riderReviewedIds.has(o.id) : true;
-    const hasProductReview = (o.order_items && o.order_items.length > 0) ? productReviewedIds.has(o.id) : true;
+    const hasProductReview = o.order_items && o.order_items.length > 0 ? productReviewedIds.has(o.id) : true;
     return hasRiderReview && hasProductReview;
   };
 

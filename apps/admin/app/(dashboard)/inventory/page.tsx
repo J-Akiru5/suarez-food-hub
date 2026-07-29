@@ -121,6 +121,7 @@ export default function InventoryPage() {
                       <div className="flex items-center gap-3">
                         <div className="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden shrink-0">
                           {product.image_url ? (
+                            // biome-ignore lint/performance/noImgElement: External images may not be optimizable by next/image
                             <img src={product.image_url} alt={product.name} className="object-cover w-full h-full" />
                           ) : (
                             <ImageIcon className="h-5 w-5 text-gray-400" />

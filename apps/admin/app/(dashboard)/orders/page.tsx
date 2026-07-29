@@ -39,6 +39,7 @@ const paymentColors: Record<string, string> = {
 
 interface OrderWithProfile extends Order {
   profile?: Profile | null;
+  // biome-ignore lint/suspicious/noExplicitAny: Order items shape
   items?: any[];
 }
 
@@ -209,6 +210,7 @@ export default function OrdersPage() {
                       {/* Expandable Details */}
                       <div className="mt-3">
                         <button
+                          type="button"
                           onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
                           className="flex items-center gap-1 text-xs text-crimson-600 font-medium hover:text-crimson-700"
                         >
@@ -225,7 +227,9 @@ export default function OrdersPage() {
                             {/* Order Items */}
                             <div>
                               <p className="text-xs font-medium text-gray-500 mb-1">Items</p>
+                              {/* biome-ignore lint/suspicious/noExplicitAny: Order items shape */}
                               {order.items?.map((item: any, idx: number) => (
+                                // biome-ignore lint/suspicious/noArrayIndexKey: order item index is stable
                                 <div key={idx} className="flex justify-between text-sm">
                                   <span>
                                     {item.product?.name || "Product"} x{item.quantity}
