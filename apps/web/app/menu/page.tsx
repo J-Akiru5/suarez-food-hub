@@ -649,9 +649,7 @@ export default function MenuPage() {
                     const hasVar = hasVariants(item);
                     const isSoldOut =
                       item.availability === "sold_out" ||
-                      (hasVar
-                        ? item.variants.every((v) => v.quantity <= 0) && item.quantity <= 0
-                        : item.quantity <= 0);
+                      (hasVar ? item.variants.every((v) => v.quantity <= 0) && item.quantity <= 0 : item.quantity <= 0);
 
                     return (
                       <div

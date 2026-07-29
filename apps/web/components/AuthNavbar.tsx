@@ -268,10 +268,7 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
                                 type="button"
                                 onClick={async () => {
                                   if (!supabaseRef.current) return;
-                                  await supabaseRef.current
-                                    .from("notifications")
-                                    .update({ read: true })
-                                    .eq("id", n.id);
+                                  await supabaseRef.current.from("notifications").update({ read: true }).eq("id", n.id);
                                   setNotifications((prev: any[]) =>
                                     prev.map((x: any) => (x.id === n.id ? { ...x, read: true } : x)),
                                   );
@@ -289,13 +286,9 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
                                 <div className="flex-1 min-w-0">
                                   <p className="m-0 text-sm font-semibold text-near-black truncate">{n.title}</p>
                                   <p className="m-0 mt-0.5 text-xs text-gray-500 leading-relaxed">{n.message}</p>
-                                  <p className="m-0 mt-1 text-[10px] text-gray-400">
-                                    {formatNotifTime(n.created_at)}
-                                  </p>
+                                  <p className="m-0 mt-1 text-[10px] text-gray-400">{formatNotifTime(n.created_at)}</p>
                                 </div>
-                                {!n.read && (
-                                  <span className="h-2.5 w-2.5 rounded-full bg-brand-500 shrink-0 mt-2.5" />
-                                )}
+                                {!n.read && <span className="h-2.5 w-2.5 rounded-full bg-brand-500 shrink-0 mt-2.5" />}
                               </button>
                               <button
                                 type="button"

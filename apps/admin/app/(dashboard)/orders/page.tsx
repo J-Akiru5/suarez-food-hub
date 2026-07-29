@@ -3,15 +3,7 @@
 import { createBrowserTypedClient } from "@repo/data-access/client";
 import { getOrdersWithProfiles } from "@repo/data-access/data/orders";
 import type { Order, Profile } from "@repo/types";
-import {
-  Button,
-  Card,
-  CardContent,
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@repo/ui";
+import { Button, Card, CardContent, Tabs, TabsContent, TabsList, TabsTrigger } from "@repo/ui";
 import { formatCurrency } from "@repo/utils";
 import { ChevronDown, ChevronUp, Eye, RefreshCw } from "lucide-react";
 import Link from "next/link";

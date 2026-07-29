@@ -337,7 +337,9 @@ function OrdersPageContent() {
                             </div>
 
                             {/* Rider Assignment — only shown when order is ready for pickup or beyond */}
-                            {["ready_for_pickup", "claimed_by_rider", "out_for_delivery", "near_customer"].includes(order.status) && (
+                            {["ready_for_pickup", "claimed_by_rider", "out_for_delivery", "near_customer"].includes(
+                              order.status,
+                            ) && (
                               <div>
                                 <p className="text-xs font-medium text-gray-500 mb-1">Rider Status</p>
                                 {order.rider_id && order.rider ? (

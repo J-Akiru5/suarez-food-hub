@@ -282,7 +282,10 @@ export default function Register() {
               </div>
             )}
 
-            <form onSubmit={handleRegister} className={`grid grid-cols-1 ${role === "rider" ? "lg:grid-cols-3" : "md:grid-cols-2"} gap-4 text-left`}>
+            <form
+              onSubmit={handleRegister}
+              className={`grid grid-cols-1 ${role === "rider" ? "lg:grid-cols-3" : "md:grid-cols-2"} gap-4 text-left`}
+            >
               {/* Personal Info Box */}
               <div className="bg-gray-50/50 p-5 rounded-2xl border border-gray-100 flex flex-col gap-4 shadow-sm">
                 <h3 className="text-xs font-extrabold text-gray-500 uppercase tracking-widest mb-1">Personal Info</h3>
@@ -426,7 +429,7 @@ export default function Register() {
                         />
                       </div>
                     </div>
-                    
+
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[11px] font-bold text-gray-700 ml-1">License Number</label>
                       <input
@@ -484,7 +487,11 @@ export default function Register() {
                             disabled={uploadingId}
                             className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-orange-200 bg-white text-xs font-medium text-gray-700 hover:bg-orange-50 hover:border-[#F08013] transition-colors disabled:opacity-60 cursor-pointer"
                           >
-                            {uploadingId ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                            {uploadingId ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <Upload className="h-4 w-4" />
+                            )}
                             {uploadingId ? "Uploading..." : validIdUrl ? "Change ID" : "Upload ID"}
                           </button>
                           {validIdUrl && (

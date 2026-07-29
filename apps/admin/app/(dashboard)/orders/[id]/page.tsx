@@ -347,7 +347,9 @@ export default function OrderDetailPage() {
                     )}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">No rider assigned yet. Staff will handle rider assignment.</p>
+                  <p className="text-sm text-muted-foreground">
+                    No rider assigned yet. Staff will handle rider assignment.
+                  </p>
                 )}
               </CardContent>
             </Card>
@@ -388,7 +390,9 @@ export default function OrderDetailPage() {
                 {/* Rider Earnings — auto-calculated from delivery fee */}
                 <div className="flex items-center justify-between mt-3 pt-3 border-t">
                   <span className="text-sm text-muted-foreground">Rider Earnings</span>
-                  <span className="text-sm font-medium text-green-600">₱{Number(order.rider_earnings || order.delivery_fee).toFixed(2)}</span>
+                  <span className="text-sm font-medium text-green-600">
+                    ₱{Number(order.rider_earnings || order.delivery_fee).toFixed(2)}
+                  </span>
                 </div>
               </CardContent>
             </Card>

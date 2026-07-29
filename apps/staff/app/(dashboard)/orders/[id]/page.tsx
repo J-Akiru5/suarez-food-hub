@@ -437,7 +437,9 @@ export default function OrderDetailPage() {
                     )}
                   </div>
                 )}
-                {["ready_for_pickup", "claimed_by_rider", "out_for_delivery", "near_customer"].includes(order.status) && (
+                {["ready_for_pickup", "claimed_by_rider", "out_for_delivery", "near_customer"].includes(
+                  order.status,
+                ) && (
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Rider Status</p>
                     {order.rider_id && (order as any).rider?.first_name ? (

@@ -688,7 +688,9 @@ export default function StaffInventoryPage() {
                           className="flex-[2] h-9 px-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500 min-w-0"
                         />
                         <div className="relative w-[70px] shrink-0">
-                          <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-[10px] text-gray-400">₱</span>
+                          <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-[10px] text-gray-400">
+                            ₱
+                          </span>
                           <input
                             type="number"
                             value={v.price}
@@ -758,7 +760,8 @@ export default function StaffInventoryPage() {
                 </div>
               ) : (
                 <div className="text-xs text-gray-400 italic">
-                  Stock is managed per variant above. Total: {formVariants.reduce((sum, v) => sum + (parseInt(v.qty, 10) || 0), 0)} units
+                  Stock is managed per variant above. Total:{" "}
+                  {formVariants.reduce((sum, v) => sum + (parseInt(v.qty, 10) || 0), 0)} units
                 </div>
               )}
               <div>
@@ -794,7 +797,9 @@ export default function StaffInventoryPage() {
             </Button>
             <Button
               onClick={handleSave}
-              disabled={saving || !formName || (formVariantType === "none" ? !formPrice : formVariants.every((v) => !v.price))}
+              disabled={
+                saving || !formName || (formVariantType === "none" ? !formPrice : formVariants.every((v) => !v.price))
+              }
               className="bg-brand-500 hover:bg-brand-600 text-white"
             >
               {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}

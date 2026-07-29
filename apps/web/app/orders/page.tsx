@@ -8,8 +8,8 @@ import {
   ChefHat,
   Clock,
   Loader2,
-  Package,
   Navigation,
+  Package,
   Search,
   ShoppingBag,
   Star,
@@ -85,7 +85,8 @@ function OrdersPageInner() {
   const [submittingProdReview, setSubmittingProdReview] = useState(false);
 
   // Track which orders have been reviewed (for To Review / History tabs)
-  const [reviewedOrderIds, setReviewedOrderIds] = useState<Set<string>>(new Set());
+  const [riderReviewedIds, setRiderReviewedIds] = useState<Set<string>>(new Set());
+  const [productReviewedIds, setProductReviewedIds] = useState<Set<string>>(new Set());
   // Store review data for display in History tab
   const [orderReviewData, setOrderReviewData] = useState<
     Record<
@@ -123,19 +124,20 @@ function OrdersPageInner() {
                 .eq("user_id", user.id),
             ]);
 
-            const reviewed = new Set<string>();
+            const rReviewed = new Set<string>();
+            const pReviewed = new Set<string>();
             const reviewData: Record<string, any> = {};
 
             // Process rider reviews
             for (const r of riderReviewsRes.data || []) {
-              reviewed.add(r.order_id);
+              rReviewed.add(r.order_id);
               if (!reviewData[r.order_id]) reviewData[r.order_id] = {};
               reviewData[r.order_id].rider_review = { rating: r.rating, comment: r.comment || "" };
             }
 
             // Process product reviews
             for (const r of productReviewsRes.data || []) {
-              reviewed.add(r.order_id);
+              pReviewed.add(r.order_id);
               if (!reviewData[r.order_id]) reviewData[r.order_id] = {};
               if (!reviewData[r.order_id].product_reviews) reviewData[r.order_id].product_reviews = [];
               const productName = (r as any).product?.name || "Product";
@@ -146,7 +148,8 @@ function OrdersPageInner() {
               });
             }
 
-            setReviewedOrderIds(reviewed);
+            setRiderReviewedIds(rReviewed);
+            setProductReviewedIds(pReviewed);
             setOrderReviewData(reviewData);
           } catch {
             /* review fetch is non-critical */
@@ -265,10 +268,16 @@ function OrdersPageInner() {
     return idx >= 0 ? idx : -1;
   };
 
+  const isFullyReviewed = (o: Order) => {
+    const hasRiderReview = o.rider_id ? riderReviewedIds.has(o.id) : true;
+    const hasProductReview = (o.order_items && o.order_items.length > 0) ? productReviewedIds.has(o.id) : true;
+    return hasRiderReview && hasProductReview;
+  };
+
   const filteredOrders = orders.filter((o) => {
     if (activeTab === "active") return activeStatuses.includes(o.status);
-    if (activeTab === "to_review") return o.status === "delivered" && !reviewedOrderIds.has(o.id);
-    if (activeTab === "history") return o.status === "delivered" && reviewedOrderIds.has(o.id);
+    if (activeTab === "to_review") return o.status === "delivered" && !isFullyReviewed(o);
+    if (activeTab === "history") return o.status === "delivered" && isFullyReviewed(o);
     // "all" tab — show everything EXCEPT delivered (like Shopee/TikTok)
     return o.status !== "delivered";
   });
@@ -875,7 +884,7 @@ function OrdersPageInner() {
                     <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
                       {order.status === "delivered" && activeTab !== "history" && (
                         <>
-                          {order.rider_id && !reviewedOrderIds.has(order.id) && (
+                          {order.rider_id && !riderReviewedIds.has(order.id) && (
                             <button
                               onClick={() => {
                                 setReviewOrder(order);
@@ -900,13 +909,16 @@ function OrdersPageInner() {
                               Rate Delivery
                             </button>
                           )}
-                          {order.order_items && order.order_items.length > 0 && !reviewedOrderIds.has(order.id) && (
+                          {order.order_items && order.order_items.length > 0 && !productReviewedIds.has(order.id) && (
                             <button
                               onClick={() => {
                                 setProdReviewOrder(order);
-                                const initial: Record<string, { rating: number; comment: string }> = {};
+                                const initial: Record<string, any> = {};
                                 for (const item of order.order_items) {
-                                  initial[item.product_name] = { rating: 0, comment: "" };
+                                  const pid = (item as any).product_id || item.id;
+                                  if (!initial[pid]) {
+                                    initial[pid] = { rating: 0, comment: "", productName: item.product_name };
+                                  }
                                 }
                                 setProdReviews(initial);
                               }}
@@ -1122,8 +1134,8 @@ function OrdersPageInner() {
                     });
                     const data = await res.json();
                     if (data.success) {
-                      // Move order from "To Review" to "Reviews" immediately
-                      setReviewedOrderIds((prev) => new Set(prev).add(reviewOrder.id));
+                      // Update rider reviewed state
+                      setRiderReviewedIds((prev) => new Set(prev).add(reviewOrder.id));
                       setOrderReviewData((prev) => ({
                         ...prev,
                         [reviewOrder.id]: {
@@ -1214,13 +1226,10 @@ function OrdersPageInner() {
                 How were the food items?
               </p>
 
-              {prodReviewOrder.order_items?.map((item: OrderItem) => (
-                <div key={item.id} style={{ marginBottom: 20, padding: 16, background: "#f8fafc", borderRadius: 16 }}>
+              {Object.entries(prodReviews).map(([pid, reviewData]: [string, any]) => (
+                <div key={pid} style={{ marginBottom: 20, padding: 16, background: "#f8fafc", borderRadius: 16 }}>
                   <p style={{ fontWeight: 700, fontSize: 14, color: "var(--secondary-color)", margin: "0 0 8px" }}>
-                    {item.product_name}
-                    {item.variant_name && (
-                      <span style={{ fontWeight: 400, color: "#94a3b8", marginLeft: 6 }}>({item.variant_name})</span>
-                    )}
+                    {reviewData.productName}
                   </p>
                   <div style={{ display: "flex", justifyContent: "center", gap: 6, marginBottom: 8 }}>
                     {[1, 2, 3, 4, 5].map((star) => (
@@ -1229,7 +1238,7 @@ function OrdersPageInner() {
                         onClick={() =>
                           setProdReviews((prev) => ({
                             ...prev,
-                            [item.product_name]: { ...prev[item.product_name], rating: star },
+                            [pid]: { ...prev[pid], rating: star },
                           }))
                         }
                         disabled={submittingProdReview}
@@ -1243,8 +1252,8 @@ function OrdersPageInner() {
                         <Star
                           size={28}
                           style={{
-                            fill: star <= (prodReviews[item.product_name]?.rating || 0) ? "#f59e0b" : "#e2e8f0",
-                            color: star <= (prodReviews[item.product_name]?.rating || 0) ? "#f59e0b" : "#e2e8f0",
+                            fill: star <= (prodReviews[pid]?.rating || 0) ? "#f59e0b" : "#e2e8f0",
+                            color: star <= (prodReviews[pid]?.rating || 0) ? "#f59e0b" : "#e2e8f0",
                             transition: "all 0.15s",
                           }}
                         />
@@ -1253,11 +1262,11 @@ function OrdersPageInner() {
                   </div>
                   <input
                     type="text"
-                    value={prodReviews[item.product_name]?.comment || ""}
+                    value={prodReviews[pid]?.comment || ""}
                     onChange={(e) =>
                       setProdReviews((prev) => ({
                         ...prev,
-                        [item.product_name]: { ...prev[item.product_name], comment: e.target.value },
+                        [pid]: { ...prev[pid], comment: e.target.value },
                       }))
                     }
                     disabled={submittingProdReview}
@@ -1280,18 +1289,17 @@ function OrdersPageInner() {
                 onClick={async () => {
                   setSubmittingProdReview(true);
                   let success = true;
-                  for (const item of prodReviewOrder.order_items || []) {
-                    const review = prodReviews[item.product_name];
-                    if (!review?.rating) continue;
+                  for (const [pid, review] of Object.entries(prodReviews)) {
+                    if (!(review as any)?.rating) continue;
                     try {
                       const res = await fetch("/api/reviews/products", {
                         method: "POST",
                         headers: { "Content-Type": "application/json" },
                         body: JSON.stringify({
-                          product_id: (item as any).product_id || item.id,
+                          product_id: pid,
                           order_id: prodReviewOrder.id,
-                          rating: review.rating,
-                          comment: review.comment || "",
+                          rating: (review as any).rating,
+                          comment: (review as any).comment || "",
                         }),
                       });
                       const data = await res.json();
@@ -1302,18 +1310,14 @@ function OrdersPageInner() {
                   }
                   setSubmittingProdReview(false);
                   if (success) {
-                    setReviewedOrderIds((prev) => new Set(prev).add(prodReviewOrder.id));
+                    setProductReviewedIds((prev) => new Set(prev).add(prodReviewOrder.id));
                     setOrderReviewData((prev) => {
                       const existing = prev[prodReviewOrder.id] || {};
-                      const productReviews =
-                        prodReviewOrder.order_items?.map((item) => {
-                          const review = prodReviews[item.product_name];
-                          return {
-                            product_name: item.product_name,
-                            rating: review?.rating || 5,
-                            comment: review?.comment || "",
-                          };
-                        }) || [];
+                      const productReviews = Object.entries(prodReviews).map(([_, r]: [string, any]) => ({
+                        product_name: r.productName,
+                        rating: r.rating || 5,
+                        comment: r.comment || "",
+                      }));
                       return {
                         ...prev,
                         [prodReviewOrder.id]: {
@@ -1342,15 +1346,16 @@ function OrdersPageInner() {
                   borderRadius: 14,
                   border: "none",
                   marginBottom: 4,
-                  background: submittingProdReview || Object.values(prodReviews).every((r) => !r.rating)
-                    ? "#e2e8f0"
-                    : "#8b5cf6",
-                  color: submittingProdReview || Object.values(prodReviews).every((r) => !r.rating)
-                    ? "#94a3b8"
-                    : "#fff",
+                  background:
+                    submittingProdReview || Object.values(prodReviews).every((r) => !r.rating) ? "#e2e8f0" : "#8b5cf6",
+                  color:
+                    submittingProdReview || Object.values(prodReviews).every((r) => !r.rating) ? "#94a3b8" : "#fff",
                   fontWeight: 700,
                   fontSize: 15,
-                  cursor: submittingProdReview || Object.values(prodReviews).every((r) => !r.rating) ? "not-allowed" : "pointer",
+                  cursor:
+                    submittingProdReview || Object.values(prodReviews).every((r) => !r.rating)
+                      ? "not-allowed"
+                      : "pointer",
                   transition: "all 0.2s",
                 }}
               >

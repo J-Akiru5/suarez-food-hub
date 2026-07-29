@@ -328,21 +328,22 @@ export default function RiderOrderDetailPage() {
             </p>
             {(order as any).delivery_proof_url && (
               <div className="mt-3">
-                <p className="text-xs font-medium text-green-700 mb-1">Proof of Delivery:</p>                  <div
-                    className="relative cursor-pointer"
-                    onClick={() => setProofModalUrl((order as any).delivery_proof_url)}
-                  >
-                    <img
-                      src={(order as any).delivery_proof_url}
-                      alt="Proof of delivery"
-                      className="w-full max-h-48 object-cover rounded-lg border border-green-200"
-                    />
-                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-lg">
-                      <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center backdrop-blur-sm shadow-lg">
-                        <Search size={18} className="text-gray-700" />
-                      </div>
+                <p className="text-xs font-medium text-green-700 mb-1">Proof of Delivery:</p>{" "}
+                <div
+                  className="relative cursor-pointer"
+                  onClick={() => setProofModalUrl((order as any).delivery_proof_url)}
+                >
+                  <img
+                    src={(order as any).delivery_proof_url}
+                    alt="Proof of delivery"
+                    className="w-full max-h-48 object-cover rounded-lg border border-green-200"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-lg">
+                    <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center backdrop-blur-sm shadow-lg">
+                      <Search size={18} className="text-gray-700" />
                     </div>
                   </div>
+                </div>
               </div>
             )}
           </div>
