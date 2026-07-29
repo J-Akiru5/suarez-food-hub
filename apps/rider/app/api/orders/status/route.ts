@@ -6,7 +6,13 @@ import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 
 // Valid status transitions a rider can make
+// Riders can accept/reject ANY order they're invited to (via pending_riders),
+// regardless of kitchen status. The "claimed_by_rider" set on accept,
+// and follow the normal flow from there.
 const RIDER_STATUS_FLOW: Record<string, string[]> = {
+  pending: ["claimed_by_rider", "rejected"],
+  confirmed: ["claimed_by_rider", "rejected"],
+  preparing: ["claimed_by_rider", "rejected"],
   ready_for_pickup: ["claimed_by_rider", "rejected"],
   claimed_by_rider: ["out_for_delivery"],
   out_for_delivery: ["near_customer"],

@@ -34,12 +34,6 @@ export default function InventoryPage() {
     fetchData();
   }, [fetchData]);
 
-  async function toggleAvailability(product: Product) {
-    const newStatus = product.availability === "available" ? "sold_out" : "available";
-    await supabase.from("products").update({ availability: newStatus }).eq("id", product.id);
-    fetchData();
-  }
-
   const filteredProducts = products.filter((p) => {
     const matchesSearch =
       !search ||
@@ -118,9 +112,6 @@ export default function InventoryPage() {
                   <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">
                     Status
                   </th>
-                  <th className="text-right text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">
-                    Toggle
-                  </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200">
@@ -169,18 +160,6 @@ export default function InventoryPage() {
                       >
                         {product.availability.replace(/_/g, " ")}
                       </span>
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <button
-                        onClick={() => toggleAvailability(product)}
-                        className={`text-xs font-medium px-2.5 py-1 rounded-full transition-colors ${
-                          product.availability === "available"
-                            ? "bg-green-100 text-green-800 hover:bg-green-200"
-                            : "bg-red-100 text-red-800 hover:bg-red-200"
-                        }`}
-                      >
-                        Toggle
-                      </button>
                     </td>
                   </tr>
                 ))}

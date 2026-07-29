@@ -1,9 +1,7 @@
 "use client";
 
-import type { Database } from "@repo/data-access";
 import { createBrowserTypedClient } from "@repo/data-access/client";
-import { getOrderById, updateOrderStatus } from "@repo/data-access/data/orders";
-import { getRiders } from "@repo/data-access/data/profiles";
+import { getOrderById } from "@repo/data-access/data/orders";
 import type { Order, Profile } from "@repo/types";
 import { Button, Card, CardContent, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@repo/ui";
 import { formatCurrency } from "@repo/utils";
@@ -16,6 +14,7 @@ const statusSteps = [
   { key: "pending", label: "Pending" },
   { key: "confirmed", label: "Confirmed" },
   { key: "preparing", label: "Preparing" },
+  { key: "ready_for_pickup", label: "Ready for Pickup" },
   { key: "out_for_delivery", label: "Out for Delivery" },
   { key: "delivered", label: "Delivered" },
 ];
@@ -40,7 +39,6 @@ export default function OrderDetailPage() {
   const router = useRouter();
   const supabase = createBrowserTypedClient();
   const [order, setOrder] = useState<OrderDetail | null>(null);
-  const [riders, setRiders] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [realtimeStatus, setRealtimeStatus] = useState<string>("connecting");
@@ -53,15 +51,9 @@ export default function OrderDetailPage() {
     setLoading(false);
   }, [supabase, orderId]);
 
-  const fetchRiders = useCallback(async () => {
-    const data = await getRiders(supabase);
-    setRiders((data as Profile[]) || []);
-  }, [supabase]);
-
   useEffect(() => {
     fetchOrder();
-    fetchRiders();
-  }, [fetchOrder, fetchRiders]);
+  }, [fetchOrder]);
 
   // Realtime auto-refresh when order status or rider changes
   useEffect(() => {
@@ -77,7 +69,6 @@ export default function OrderDetailPage() {
         },
         () => {
           fetchOrder();
-          fetchRiders();
         },
       )
       .subscribe((status) => {
@@ -87,52 +78,10 @@ export default function OrderDetailPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [fetchOrder, fetchRiders, orderId, supabase]);
+  }, [fetchOrder, orderId, supabase]);
 
-  const [selectedStatus, setSelectedStatus] = useState<string | null>(null);
   const [selectedPaymentStatus, setSelectedPaymentStatus] = useState<string | null>(null);
-  const [riderSearch, setRiderSearch] = useState("");
-
-  const filteredRiders = riders.filter((r) => {
-    if (!riderSearch) return true;
-    const name = `${r.first_name || ""} ${r.last_name || ""}`.toLowerCase();
-    const phone = (r.phone || "").toLowerCase();
-    const s = riderSearch.toLowerCase();
-    return name.includes(s) || phone.includes(s);
-  });
-
-  async function assignRider(riderId: string) {
-    if (!order) return;
-    setUpdating(true);
-    // Only advance status to "confirmed" if it's still "pending"
-    const newStatus = order.status === "pending" ? "confirmed" : order.status;
-    await updateOrderStatus(supabase, orderId, newStatus, { rider_id: riderId });
-    await fetchOrder();
-    toast({ title: "Rider assigned", description: "Rider has been assigned to this order." });
-    setUpdating(false);
-  }
-
-  async function updateStatus(status: string) {
-    setUpdating(true);
-    setSelectedStatus(status);
-    const { error } = await updateOrderStatus(supabase, orderId, status as Database["public"]["Enums"]["order_status"]);
-    if (error) {
-      toast({ title: "Error", description: "Failed to update status.", variant: "destructive" });
-      setSelectedStatus(null);
-    } else {
-      toast({ title: "Status updated", description: `Order status changed to ${status.replace(/_/g, " ")}.` });
-      // Notify staff when admin confirms
-      if (status === "confirmed" && order) {
-        fetch("/api/orders/notify-staff", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ order_id: orderId, order_number: order.order_number }),
-        }).catch(() => {});
-      }
-    }
-    await fetchOrder();
-    setUpdating(false);
-  }
+  const [proofModalUrl, setProofModalUrl] = useState<string | null>(null);
 
   async function updatePaymentStatus(payment_status: string) {
     setUpdating(true);
@@ -311,42 +260,47 @@ export default function OrderDetailPage() {
               <Card>
                 <CardContent className="p-4">
                   <h2 className="font-bold font-display">Proof of Delivery</h2>
-                  <div className="mt-2">
+                  <div
+                    className="relative mt-2 cursor-pointer"
+                    onClick={() => setProofModalUrl((order as any).delivery_proof_url)}
+                  >
                     <img
                       src={(order as any).delivery_proof_url}
                       alt="Delivery proof"
-                      className="w-full max-h-64 object-cover rounded-lg border border-gray-200"
+                      className="w-full max-h-56 object-cover rounded-lg border border-gray-200"
                     />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-lg">
+                      <div className="w-11 h-11 rounded-full bg-white/90 flex items-center justify-center backdrop-blur-sm shadow-lg">
+                        <Search size={20} className="text-gray-700" />
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             )}
-            {/* Delivery Location Map */}
+            {/* Delivery Location (text only) */}
             <Card>
               <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between mb-1">
                   <h2 className="font-bold font-display m-0">Delivery Location</h2>
                   {order.delivery_lat && order.delivery_lng && (
                     <a
                       href={`https://www.google.com/maps/dir/?api=1&destination=${order.delivery_lat},${order.delivery_lng}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs text-crimson-600 font-bold hover:underline flex items-center gap-1 bg-crimson-50 px-2 py-1 rounded-md"
+                      className="text-xs text-crimson-600 font-bold hover:underline flex items-center gap-1"
                     >
                       <MapPin className="h-3 w-3" />
-                      Navigate
+                      Open in Maps
                     </a>
                   )}
                 </div>
-                <div className="h-64 bg-gray-50 rounded-lg border border-gray-100 flex flex-col items-center justify-center p-6 text-center">
-                  <MapPin className="h-10 w-10 text-gray-300 mb-3" />
-                  <p className="text-base font-medium text-gray-800">{order.delivery_address}</p>
-                  {order.delivery_lat && order.delivery_lng && (
-                    <p className="text-xs text-gray-400 mt-3 font-mono bg-gray-100 px-2 py-1 rounded">
-                      GPS: {order.delivery_lat.toFixed(6)}, {order.delivery_lng.toFixed(6)}
-                    </p>
-                  )}
-                </div>
+                <p className="text-sm text-gray-700 mt-2">{order.delivery_address}</p>
+                {order.delivery_lat && order.delivery_lng && (
+                  <p className="text-xs text-gray-400 mt-1 font-mono">
+                    GPS: {order.delivery_lat.toFixed(6)}, {order.delivery_lng.toFixed(6)}
+                  </p>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -381,10 +335,9 @@ export default function OrderDetailPage() {
             {/* Rider Info */}
             <Card>
               <CardContent className="p-4 space-y-3">
-                <h2 className="font-bold font-display">Assigned Rider</h2>
-
-                {order.rider && (
-                  <div className="flex items-center gap-2 text-sm mb-2 p-2 bg-gray-50 rounded-lg">
+                <h2 className="font-bold font-display">Rider</h2>
+                {order.rider ? (
+                  <div className="flex items-center gap-2 text-sm p-2 bg-gray-50 rounded-lg">
                     <User className="h-4 w-4 text-gray-400 shrink-0" />
                     <span className="font-medium">
                       {order.rider.first_name} {order.rider.last_name}
@@ -393,51 +346,8 @@ export default function OrderDetailPage() {
                       <span className="text-xs text-muted-foreground ml-auto">{order.rider.phone}</span>
                     )}
                   </div>
-                )}
-
-                {order.status !== "cancelled" && order.status !== "delivered" && (
-                  <div className="space-y-2">
-                    {!order.rider && <p className="text-sm text-muted-foreground">No rider assigned</p>}
-
-                    {/* Search input for riders */}
-                    {riders.length > 5 && (
-                      <div className="relative">
-                        <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
-                        <input
-                          type="text"
-                          placeholder="Search riders..."
-                          value={riderSearch}
-                          onChange={(e) => setRiderSearch(e.target.value)}
-                          className="w-full h-8 pl-8 pr-3 rounded-md border border-gray-200 text-xs focus:outline-none focus:ring-1 focus:ring-crimson-500"
-                        />
-                      </div>
-                    )}
-
-                    <Select onValueChange={assignRider}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder={order.rider ? "Change rider..." : "Assign a rider"} />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-60">
-                        {filteredRiders.length > 0 ? (
-                          filteredRiders.map((rider) => (
-                            <SelectItem key={rider.id} value={rider.id}>
-                              {rider.first_name || rider.full_name} {rider.last_name || ""}
-                              {rider.phone ? ` — ${rider.phone}` : ""}
-                            </SelectItem>
-                          ))
-                        ) : (
-                          <div className="py-4 text-sm text-gray-500 text-center select-none">
-                            {riderSearch ? "No riders match your search" : "No active riders available"}
-                          </div>
-                        )}
-                      </SelectContent>
-                    </Select>
-                    {order.rider && (
-                      <p className="text-[10px] text-muted-foreground">
-                        Select a different rider from the dropdown to re-assign
-                      </p>
-                    )}
-                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">No rider assigned yet. Staff will handle rider assignment.</p>
                 )}
               </CardContent>
             </Card>
@@ -475,58 +385,53 @@ export default function OrderDetailPage() {
                   </Select>
                 </div>
 
-                {/* Rider Earnings */}
+                {/* Rider Earnings — auto-calculated from delivery fee */}
                 <div className="flex items-center justify-between mt-3 pt-3 border-t">
                   <span className="text-sm text-muted-foreground">Rider Earnings</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-gray-400">₱</span>
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.50"
-                      defaultValue={Number(order.rider_earnings) || 40}
-                      className="w-20 h-8 px-2 rounded-md border border-gray-200 text-xs font-medium text-right focus:outline-none focus:ring-1 focus:ring-crimson-500"
-                      onBlur={async (e) => {
-                        const val = parseFloat(e.target.value);
-                        if (Number.isNaN(val) || val < 0) return;
-                        await supabase.from("orders").update({ rider_earnings: val }).eq("id", orderId);
-                        toast({ title: "Updated", description: `Rider earnings set to ₱${val.toFixed(2)}` });
-                      }}
-                      onKeyDown={async (e) => {
-                        if (e.key === "Enter") (e.target as HTMLInputElement).blur();
-                      }}
-                    />
-                  </div>
+                  <span className="text-sm font-medium text-green-600">₱{Number(order.rider_earnings || order.delivery_fee).toFixed(2)}</span>
                 </div>
               </CardContent>
             </Card>
-            {/* Actions */}
+            {/* Order Status — read-only for admin, staff handles kitchen flow */}
             <Card>
               <CardContent className="p-4">
-                <h2 className="font-bold mb-3 font-display">Update Order Status</h2>
-                <div className="flex items-center gap-2">
-                  <Select value={selectedStatus || order.status} onValueChange={updateStatus} disabled={updating}>
-                    <SelectTrigger className="w-full">
-                      <SelectValue placeholder="Select order status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="confirmed">Confirmed</SelectItem>
-                      <SelectItem value="preparing">Preparing</SelectItem>
-                      <SelectItem value="out_for_delivery">Out for Delivery</SelectItem>
-                      <SelectItem value="delivered">Delivered</SelectItem>
-                      <SelectItem value="cancelled" className="text-red-600">
-                        Cancelled
-                      </SelectItem>
-                    </SelectContent>
-                  </Select>
-                  {updating && <Loader2 className="h-5 w-5 animate-spin text-gray-400 shrink-0" />}
+                <h2 className="font-bold mb-2 font-display">Order Status</h2>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Current</span>
+                  <span
+                    className={`text-xs font-medium px-3 py-1 rounded-full ${
+                      statusColors[order.status] || "bg-gray-100 text-gray-800"
+                    }`}
+                  >
+                    {order.status.replace(/_/g, " ")}
+                  </span>
                 </div>
               </CardContent>
             </Card>
           </div>
         </div>
       </div>
+
+      {/* Fullscreen Image Modal */}
+      {proofModalUrl && (
+        <div
+          className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/85 backdrop-blur-sm p-6"
+          onClick={() => setProofModalUrl(null)}
+        >
+          <button
+            onClick={() => setProofModalUrl(null)}
+            className="absolute top-5 right-5 w-11 h-11 rounded-full bg-white/15 border-none text-white flex items-center justify-center cursor-pointer backdrop-blur-sm hover:bg-white/25 transition-all"
+          >
+            <XCircle size={24} />
+          </button>
+          <img
+            src={proofModalUrl}
+            alt="Delivery proof (full size)"
+            className="max-w-full max-h-[90vh] rounded-xl shadow-2xl object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
 
       {/* Printable Receipt (only visible on print) */}
       <div className="hidden print:block font-mono bg-white text-black p-4 w-full">

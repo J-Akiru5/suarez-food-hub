@@ -28,7 +28,7 @@ import { formatCurrency } from "@repo/utils";
 import { CheckCircle2, ChevronDown, ChevronUp, Clock, Eye, RefreshCw, Send, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
-import { Suspense, useCallback, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import Swal from "sweetalert2";
 
 const statusTabs = [
@@ -68,14 +68,25 @@ interface OrderWithProfile extends Order {
 
 export default function OrdersPage() {
   return (
-    <Suspense fallback={<div className="space-y-6"><div className="h-8 bg-gray-100 rounded animate-pulse w-48 mb-4" /><div className="space-y-3">{[1,2,3,4,5].map((i) => <div key={i} className="h-20 bg-gray-100 rounded-lg animate-pulse" />)}</div></div>}>
+    <Suspense
+      fallback={
+        <div className="space-y-6">
+          <div className="h-8 bg-gray-100 rounded animate-pulse w-48 mb-4" />
+          <div className="space-y-3">
+            {[1, 2, 3, 4, 5].map((i) => (
+              <div key={i} className="h-20 bg-gray-100 rounded-lg animate-pulse" />
+            ))}
+          </div>
+        </div>
+      }
+    >
       <OrdersPageContent />
     </Suspense>
   );
 }
 
 function OrdersPageContent() {
-  const supabase = createBrowserTypedClient();
+  const supabaseRef = useRef(createBrowserTypedClient());
   const searchParams = useSearchParams();
   const [orders, setOrders] = useState<OrderWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -93,19 +104,19 @@ function OrdersPageContent() {
   const [sendingInvites, setSendingInvites] = useState(false);
 
   const fetchOrders = useCallback(async () => {
-    const data = await getOrdersWithProfiles(supabase, {
+    const data = await getOrdersWithProfiles(supabaseRef.current, {
       status: activeTab !== "all" ? activeTab : undefined,
     });
     setOrders((data as OrderWithProfile[]) || []);
     setLoading(false);
-  }, [activeTab, supabase]);
+  }, [activeTab]);
 
   const fetchRiders = useCallback(async () => {
     // Include all currently assigned rider IDs so dropdown doesn't break
     const assignedIds = orders.map((o) => o.rider_id).filter(Boolean) as string[];
-    const data = await getAvailableRiders(supabase, assignedIds);
+    const data = await getAvailableRiders(supabaseRef.current, assignedIds);
     setRiders((data as Profile[]) || []);
-  }, [supabase, orders]);
+  }, [orders]);
 
   useEffect(() => {
     fetchOrders();
@@ -113,17 +124,26 @@ function OrdersPageContent() {
   }, [fetchOrders, fetchRiders]);
 
   useEffect(() => {
+    const supabase = supabaseRef.current;
     const channel = supabase
       .channel("orders-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "orders" }, () => {
         fetchOrders();
+        fetchRiders();
       })
       .subscribe();
 
+    // Periodic poll as fallback every 15 seconds
+    const pollInterval = setInterval(() => {
+      fetchOrders();
+      fetchRiders();
+    }, 15000);
+
     return () => {
       supabase.removeChannel(channel);
+      clearInterval(pollInterval);
     };
-  }, [supabase, fetchOrders]);
+  }, [fetchOrders, fetchRiders]);
 
   function openInviteModal(orderId: string) {
     const order = orders.find((o) => o.id === orderId);
@@ -144,12 +164,11 @@ function OrdersPageContent() {
     if (!inviteOrderId || selectedRiderIds.length === 0) return;
     setSendingInvites(true);
     try {
-      // Update order with pending_riders (does NOT set rider_id yet — first to accept wins)
-      await supabase
+      // Only set pending_riders — kitchen status is NOT changed here
+      await supabaseRef.current
         .from("orders")
         .update({
           pending_riders: selectedRiderIds,
-          status: "ready_for_pickup",
           updated_at: new Date().toISOString(),
         })
         .eq("id", inviteOrderId);
@@ -162,9 +181,10 @@ function OrdersPageContent() {
         message: "A new order is ready for pickup. First to accept gets it!",
         data: { order_id: inviteOrderId },
       }));
-      await supabase.from("notifications").insert(notifications);
+      await supabaseRef.current.from("notifications").insert(notifications);
     } catch (err) {
       console.error("Failed to send invitations:", err);
+      Swal.fire({ icon: "error", title: "Failed", text: "Could not assign riders. Please check console for details." });
     }
     setSendingInvites(false);
     setInviteModalOpen(false);
@@ -316,8 +336,8 @@ function OrdersPageContent() {
                               <p className="text-sm">{order.delivery_address}</p>
                             </div>
 
-                            {/* Rider Assignment — Broadcast Model */}
-                            {order.status !== "cancelled" && order.status !== "delivered" && (
+                            {/* Rider Assignment — only shown when order is ready for pickup or beyond */}
+                            {["ready_for_pickup", "claimed_by_rider", "out_for_delivery", "near_customer"].includes(order.status) && (
                               <div>
                                 <p className="text-xs font-medium text-gray-500 mb-1">Rider Status</p>
                                 {order.rider_id && order.rider ? (
@@ -354,7 +374,7 @@ function OrdersPageContent() {
                                         className="gap-1 shrink-0"
                                       >
                                         <UserPlus className="h-3 w-3" />
-                                        Invite
+                                        Assign
                                       </Button>
                                     </div>
                                     {/* Show invited rider names */}

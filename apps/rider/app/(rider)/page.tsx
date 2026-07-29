@@ -255,12 +255,21 @@ export default function RiderDashboard() {
         },
         (payload) => {
           const newOrder = payload.new as any;
+          const oldOrder = payload.old as any;
           const currentRiderId = riderIdRef.current;
-          // Check both direct assignment AND pending_riders (broadcast model)
+          if (!currentRiderId) return;
+
+          // Check new data: still assigned or still invited
           const isAssignedToMe = newOrder.rider_id === currentRiderId;
           const pendingIds: string[] = newOrder.pending_riders || [];
-          const isInvitedToMe = currentRiderId ? pendingIds.includes(currentRiderId) : false;
-          if (!isAssignedToMe && !isInvitedToMe) return;
+          const isInvitedToMe = pendingIds.includes(currentRiderId);
+
+          // Check old data: rider WAS invited but order was taken by someone else
+          const oldPendingIds: string[] = oldOrder?.pending_riders || [];
+          const wasInvitedToMe = oldPendingIds.includes(currentRiderId) && !isInvitedToMe && !isAssignedToMe;
+
+          // If this order has nothing to do with this rider past or present, skip
+          if (!isAssignedToMe && !isInvitedToMe && !wasInvitedToMe) return;
 
           if (
             newOrder.status === "confirmed" ||
@@ -520,15 +529,22 @@ export default function RiderDashboard() {
           {availableOrders.map((order) => (
             <div key={order.id} className="bg-white rounded-xl shadow-sm border border-cyan-100 overflow-hidden">
               <div className="p-4 space-y-3">
-                <div className="flex items-center justify-between">
-                  <p className="font-semibold text-gray-800">
-                    {(() => {
-                      const c = (order as any).customer;
-                      if (!c) return "Customer";
-                      return `${c.first_name || ""} ${c.last_name || ""}`.trim() || c.full_name || "Customer";
-                    })()}
-                  </p>
-                  <span className="text-xs font-bold text-brand-600">₱{Number(order.total).toFixed(2)}</span>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="font-semibold text-gray-800 truncate">
+                      {(() => {
+                        const c = (order as any).customer;
+                        if (!c) return "Customer";
+                        return `${c.first_name || ""} ${c.last_name || ""}`.trim() || c.full_name || "Customer";
+                      })()}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 shrink-0">
+                    <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-500 capitalize">
+                      {order.status.replace(/_/g, " ")}
+                    </span>
+                    <span className="text-xs font-bold text-brand-600">₱{Number(order.total).toFixed(2)}</span>
+                  </div>
                 </div>
                 <div className="flex items-start gap-2">
                   <MapPin size={14} className="text-gray-400 mt-0.5 shrink-0" />

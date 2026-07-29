@@ -4,7 +4,6 @@ import { getProfile } from "@repo/data-access/auth";
 import { createBrowserTypedClient } from "@repo/data-access/client";
 import {
   Bell,
-  Bike,
   ChefHat,
   ChevronLeft,
   ChevronRight,
@@ -25,7 +24,6 @@ const navItems = [
   { href: "/orders", label: "Orders", icon: ClipboardList },
   { href: "/inventory", label: "Inventory", icon: Package },
   { href: "/categories", label: "Categories", icon: Tag },
-  { href: "/riders", label: "Riders", icon: Bike },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

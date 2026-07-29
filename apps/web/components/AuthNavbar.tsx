@@ -1,9 +1,9 @@
 "use client";
 
 import { cn } from "@repo/utils";
-import { ChevronDown, LogOut, Package, ShoppingCart, User } from "lucide-react";
+import { Bell, ChevronDown, LogOut, Package, ShoppingCart, User, X } from "lucide-react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import * as React from "react";
 import { useAuth } from "./auth-provider";
 
@@ -27,9 +27,97 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
   ({ showCartIcon = true, cartItemCount = 0, onCartClick, className, kioskMode }, ref) => {
     const { user, profile, loading, signOut } = useAuth();
     const pathname = usePathname();
+    const router = useRouter();
     const [mobileOpen, setMobileOpen] = React.useState(false);
     const [dropdownOpen, setDropdownOpen] = React.useState(false);
     const dropdownRef = React.useRef<HTMLDivElement>(null);
+
+    // Notification state
+    const [notifOpen, setNotifOpen] = React.useState(false);
+    const [notifications, setNotifications] = React.useState<any[]>([]);
+    const notifRef = React.useRef<HTMLDivElement>(null);
+    const supabaseRef = React.useRef<any>(null);
+
+    // Close notification dropdown on outside click
+    React.useEffect(() => {
+      const handleClickOutside = (e: MouseEvent) => {
+        if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+          setNotifOpen(false);
+        }
+      };
+      if (notifOpen) {
+        document.addEventListener("mousedown", handleClickOutside);
+      }
+      return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [notifOpen]);
+
+    // Fetch notifications
+    const fetchNotifications = React.useCallback(async () => {
+      if (!supabaseRef.current || !user) return;
+      const { data } = await supabaseRef.current
+        .from("notifications")
+        .select("*")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(20);
+      if (data) setNotifications(data);
+    }, [user]);
+
+    // Lazy-load createBrowserTypedClient on mount
+    React.useEffect(() => {
+      if (typeof window === "undefined") return;
+      import("@repo/data-access/client").then((mod) => {
+        supabaseRef.current = mod.createBrowserTypedClient();
+      });
+    }, []);
+
+    // Fetch notifications & poll
+    React.useEffect(() => {
+      if (!user) return;
+      const timer = setTimeout(() => fetchNotifications(), 500);
+      const interval = setInterval(fetchNotifications, 15000);
+      return () => {
+        clearTimeout(timer);
+        clearInterval(interval);
+      };
+    }, [user, fetchNotifications]);
+
+    // Realtime subscription for new notifications
+    React.useEffect(() => {
+      if (!supabaseRef.current || !user) return;
+      const channel = supabaseRef.current
+        .channel("customer-notifications")
+        .on(
+          "postgres_changes",
+          { event: "INSERT", schema: "public", table: "notifications", filter: `user_id=eq.${user.id}` },
+          () => {
+            fetchNotifications();
+          },
+        )
+        .subscribe();
+      return () => {
+        if (supabaseRef.current) supabaseRef.current.removeChannel(channel);
+      };
+    }, [user, fetchNotifications]);
+
+    const unreadNotifs = notifications.filter((n: any) => !n.read).length;
+
+    function formatNotifTime(dateStr: string) {
+      const diff = Date.now() - new Date(dateStr).getTime();
+      const mins = Math.floor(diff / 60000);
+      if (mins < 1) return "Just now";
+      if (mins < 60) return `${mins}m ago`;
+      const hours = Math.floor(mins / 60);
+      if (hours < 24) return `${hours}h ago`;
+      const days = Math.floor(hours / 24);
+      if (days < 7) return `${days}d ago`;
+      return new Date(dateStr).toLocaleDateString("en-PH", { month: "short", day: "numeric" });
+    }
+
+    function getNotifIcon(type: string) {
+      if (type === "order_update") return { icon: Package, bg: "bg-brand-100", color: "text-brand-600" };
+      return { icon: Bell, bg: "bg-gray-100", color: "text-gray-600" };
+    }
 
     React.useEffect(() => {
       const handleClickOutside = (e: MouseEvent) => {
@@ -101,6 +189,148 @@ const AuthNavbar = React.forwardRef<HTMLElement, AuthNavbarProps>(
                   </span>
                 )}
               </button>
+            )}
+
+            {/* Notification Bell */}
+            {user && (
+              <div ref={notifRef} className="relative">
+                <button
+                  onClick={() => setNotifOpen(!notifOpen)}
+                  className="relative w-10 h-10 flex items-center justify-center rounded-full bg-white/50 hover:bg-white/80 transition-colors shadow-sm border-none cursor-pointer"
+                >
+                  <Bell className="w-5 h-5 text-near-black" />
+                  {unreadNotifs > 0 && (
+                    <span className="absolute -top-1 -right-1 w-[18px] h-[18px] bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center border-2 border-white">
+                      {unreadNotifs > 99 ? "99+" : unreadNotifs}
+                    </span>
+                  )}
+                </button>
+
+                {notifOpen && (
+                  <div
+                    className="fixed left-4 right-4 md:absolute md:left-auto md:right-0 mt-2 md:w-96 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden z-[9999]"
+                    style={{ animation: "slideDown 0.2s ease-out", top: "64px" }}
+                  >
+                    <div className="px-5 py-3 border-b border-gray-100 flex items-center justify-between">
+                      <h3 className="m-0 font-bold text-sm text-near-black">Notifications</h3>
+                      <div className="flex items-center gap-2">
+                        {unreadNotifs > 0 && (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (!supabaseRef.current) return;
+                              await supabaseRef.current
+                                .from("notifications")
+                                .update({ read: true })
+                                .eq("user_id", user.id)
+                                .is("read", false);
+                              setNotifications((prev: any[]) => prev.map((n: any) => ({ ...n, read: true })));
+                            }}
+                            className="text-[10px] font-medium text-brand-600 hover:text-brand-700 bg-transparent border-none cursor-pointer"
+                          >
+                            Mark all read
+                          </button>
+                        )}
+                        {notifications.length > 0 && (
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (!supabaseRef.current) return;
+                              await supabaseRef.current.from("notifications").delete().eq("user_id", user.id);
+                              setNotifications([]);
+                            }}
+                            className="text-[10px] font-medium text-red-500 hover:text-red-600 bg-transparent border-none cursor-pointer"
+                          >
+                            Delete all
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <div className="max-h-80 overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <div className="px-5 py-10 text-center">
+                          <Bell className="w-8 h-8 mx-auto mb-2 text-gray-300" />
+                          <p className="m-0 text-sm text-gray-400">No notifications yet</p>
+                          <p className="m-0 mt-1 text-xs text-gray-300">Order updates will appear here</p>
+                        </div>
+                      ) : (
+                        notifications.map((n: any) => {
+                          const vi = getNotifIcon(n.type);
+                          const Icon = vi.icon;
+                          return (
+                            <div
+                              key={n.id}
+                              className={`group relative border-b border-gray-50 last:border-0 ${
+                                n.read ? "opacity-60" : ""
+                              }`}
+                            >
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  if (!supabaseRef.current) return;
+                                  await supabaseRef.current
+                                    .from("notifications")
+                                    .update({ read: true })
+                                    .eq("id", n.id);
+                                  setNotifications((prev: any[]) =>
+                                    prev.map((x: any) => (x.id === n.id ? { ...x, read: true } : x)),
+                                  );
+                                  setNotifOpen(false);
+                                  const orderId = n.data?.order_id;
+                                  if (orderId) router.push(`/orders`);
+                                }}
+                                className="w-full text-left flex items-start gap-3 px-5 py-3.5 hover:bg-gray-50 transition-colors cursor-pointer bg-transparent border-none"
+                              >
+                                <div
+                                  className={`h-9 w-9 rounded-full ${vi.bg} flex items-center justify-center ${vi.color} shrink-0 mt-0.5`}
+                                >
+                                  <Icon className="h-[18px] w-[18px]" />
+                                </div>
+                                <div className="flex-1 min-w-0">
+                                  <p className="m-0 text-sm font-semibold text-near-black truncate">{n.title}</p>
+                                  <p className="m-0 mt-0.5 text-xs text-gray-500 leading-relaxed">{n.message}</p>
+                                  <p className="m-0 mt-1 text-[10px] text-gray-400">
+                                    {formatNotifTime(n.created_at)}
+                                  </p>
+                                </div>
+                                {!n.read && (
+                                  <span className="h-2.5 w-2.5 rounded-full bg-brand-500 shrink-0 mt-2.5" />
+                                )}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={async () => {
+                                  if (!supabaseRef.current) return;
+                                  await supabaseRef.current.from("notifications").delete().eq("id", n.id);
+                                  setNotifications((prev: any[]) => prev.filter((x: any) => x.id !== n.id));
+                                }}
+                                className="absolute top-2.5 right-2.5 h-5 w-5 rounded-full bg-gray-200 hover:bg-red-200 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity border-none cursor-pointer"
+                                title="Delete"
+                              >
+                                <X className="h-3 w-3 text-gray-500" />
+                              </button>
+                            </div>
+                          );
+                        })
+                      )}
+                    </div>
+                    {notifications.length > 0 && (
+                      <div className="px-5 py-2.5 border-t border-gray-100 text-center">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setNotifOpen(false);
+                            router.push("/orders");
+                          }}
+                          className="text-xs font-medium text-brand-600 hover:text-brand-700 bg-transparent border-none cursor-pointer"
+                        >
+                          View all orders
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
 
             {loading ? null : user ? (

@@ -194,7 +194,7 @@ export default function Register() {
 
       {/* Register Card */}
       <div
-        className={`relative z-10 w-full bg-[#fdfdfd] rounded-[24px] shadow-2xl p-8 text-center my-8 transition-all duration-500 ${step === "form" ? "max-w-[440px] md:max-w-4xl" : "max-w-[440px]"}`}
+        className={`relative z-10 w-full bg-[#fdfdfd] rounded-[24px] shadow-2xl p-8 text-center my-8 transition-all duration-500 ${step === "form" ? (role === "rider" ? "max-w-[440px] lg:max-w-[1100px]" : "max-w-[440px] md:max-w-4xl") : "max-w-[440px]"}`}
       >
         {step === "form" && (
           <button
@@ -206,8 +206,8 @@ export default function Register() {
         )}
 
         <div className="flex flex-col items-center justify-center mb-6 mt-2">
-          <div className="w-[72px] h-[72px] rounded-full bg-white shadow-sm border border-gray-100 flex items-center justify-center p-2 mb-3">
-            <img src="/logo.svg" alt="Logo" className="w-full h-full object-contain" />
+          <div className="w-24 h-24 rounded-full bg-white shadow-sm border border-gray-100 flex items-center justify-center mb-4 overflow-hidden">
+            <img src="/logo.png" alt="Suarez Food Hub Logo" className="w-full h-full object-contain drop-shadow-sm" />
           </div>
           <span className="text-[10px] font-bold text-gray-600 uppercase tracking-[0.2em]">
             {step === "role" ? "Create Account" : role === "rider" ? "RIDER REGISTRATION" : "CUSTOMER REGISTRATION"}
@@ -282,7 +282,7 @@ export default function Register() {
               </div>
             )}
 
-            <form onSubmit={handleRegister} className="grid grid-cols-1 md:grid-cols-2 gap-4 text-left">
+            <form onSubmit={handleRegister} className={`grid grid-cols-1 ${role === "rider" ? "lg:grid-cols-3" : "md:grid-cols-2"} gap-4 text-left`}>
               {/* Personal Info Box */}
               <div className="bg-gray-50/50 p-5 rounded-2xl border border-gray-100 flex flex-col gap-4 shadow-sm">
                 <h3 className="text-xs font-extrabold text-gray-500 uppercase tracking-widest mb-1">Personal Info</h3>
@@ -396,34 +396,37 @@ export default function Register() {
 
               {/* Rider Vehicle Box */}
               {role === "rider" && (
-                <div className="md:col-span-2 bg-orange-50/50 p-5 rounded-2xl border border-orange-100/60 flex flex-col gap-4 shadow-sm">
+                <div className="bg-orange-50/50 p-5 rounded-2xl border border-orange-100/60 flex flex-col gap-4 shadow-sm h-full">
                   <h3 className="text-xs font-extrabold text-[#F08013] uppercase tracking-widest mb-1">
-                    Vehicle Details
+                    Vehicle & ID Details
                   </h3>
 
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[11px] font-bold text-gray-700 ml-1">Vehicle Type</label>
-                      <select
-                        value={vehicleType}
-                        onChange={(e) => setVehicleType(e.target.value)}
-                        className="w-full px-3 py-2.5 rounded-xl border border-orange-200/60 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white shadow-sm"
-                      >
-                        <option value="motorcycle">Motorcycle</option>
-                        <option value="bicycle">Bicycle</option>
-                        <option value="car">Car</option>
-                      </select>
+                  <div className="flex flex-col gap-4 flex-1">
+                    <div className="grid grid-cols-2 gap-3">
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[11px] font-bold text-gray-700 ml-1">Vehicle Type</label>
+                        <select
+                          value={vehicleType}
+                          onChange={(e) => setVehicleType(e.target.value)}
+                          className="w-full px-3 py-2.5 rounded-xl border border-orange-200/60 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white shadow-sm"
+                        >
+                          <option value="motorcycle">Motorcycle</option>
+                          <option value="bicycle">Bicycle</option>
+                          <option value="car">Car</option>
+                        </select>
+                      </div>
+                      <div className="flex flex-col gap-1.5">
+                        <label className="text-[11px] font-bold text-gray-700 ml-1">Plate Number</label>
+                        <input
+                          type="text"
+                          value={plateNumber}
+                          onChange={(e) => setPlateNumber(e.target.value)}
+                          required
+                          className="w-full px-3 py-2.5 rounded-xl border border-orange-200/60 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white shadow-sm"
+                        />
+                      </div>
                     </div>
-                    <div className="flex flex-col gap-1.5">
-                      <label className="text-[11px] font-bold text-gray-700 ml-1">Plate Number</label>
-                      <input
-                        type="text"
-                        value={plateNumber}
-                        onChange={(e) => setPlateNumber(e.target.value)}
-                        required
-                        className="w-full px-3 py-2.5 rounded-xl border border-orange-200/60 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white shadow-sm"
-                      />
-                    </div>
+                    
                     <div className="flex flex-col gap-1.5">
                       <label className="text-[11px] font-bold text-gray-700 ml-1">License Number</label>
                       <input
@@ -434,66 +437,66 @@ export default function Register() {
                         className="w-full px-3 py-2.5 rounded-xl border border-orange-200/60 text-sm focus:outline-none focus:border-[#F08013] focus:ring-1 focus:ring-[#F08013] transition-colors bg-white shadow-sm"
                       />
                     </div>
-                  </div>
 
-                  {/* Valid ID Upload */}
-                  <div className="pt-2 border-t border-orange-200/40">
-                    <label className="text-[11px] font-bold text-gray-700 ml-1 block mb-2">
-                      Valid Government ID <span className="text-red-500">*</span>
-                    </label>
-                    <p className="text-[10px] text-gray-500 mb-3 ml-1">
-                      Upload a clear photo of your driver&apos;s license or any valid government ID.
-                    </p>
-                    <div className="flex items-center gap-4">
-                      <div className="h-20 w-20 rounded-xl bg-gray-100 flex items-center justify-center overflow-hidden shrink-0 border border-orange-200/60">
-                        {validIdUrl ? (
-                          <img src={validIdUrl} alt="Valid ID" className="object-cover w-full h-full" />
-                        ) : (
-                          <ImageIcon className="h-8 w-8 text-gray-300" />
-                        )}
-                      </div>
-                      <div>
-                        <input
-                          ref={idFileInputRef}
-                          type="file"
-                          accept="image/*"
-                          onChange={async (e) => {
-                            const file = e.target.files?.[0];
-                            if (!file) return;
-                            setUploadingId(true);
-                            try {
-                              const fileExt = file.name.split(".").pop();
-                              const fileName = `valid_ids/${Date.now()}_${Math.random().toString(36).slice(2)}.${fileExt}`;
-                              const { error } = await supabase.storage
-                                .from("images")
-                                .upload(fileName, file, { contentType: file.type, upsert: true });
-                              if (!error) {
-                                const { data: urlData } = supabase.storage.from("images").getPublicUrl(fileName);
-                                setValidIdUrl(urlData.publicUrl);
-                              }
-                            } catch {}
-                            setUploadingId(false);
-                          }}
-                          className="hidden"
-                        />
-                        <button
-                          type="button"
-                          onClick={() => idFileInputRef.current?.click()}
-                          disabled={uploadingId}
-                          className="flex items-center gap-2 px-4 py-2 rounded-xl border border-orange-200 bg-white text-sm font-medium text-gray-700 hover:bg-orange-50 hover:border-[#F08013] transition-colors disabled:opacity-60 cursor-pointer"
-                        >
-                          {uploadingId ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
-                          {uploadingId ? "Uploading..." : validIdUrl ? "Change ID" : "Upload ID"}
-                        </button>
-                        {validIdUrl && (
+                    {/* Valid ID Upload */}
+                    <div className="flex flex-col gap-2 pt-4 mt-auto border-t border-orange-200/40">
+                      <label className="text-[11px] font-bold text-gray-700 ml-1 block">
+                        Valid Government ID <span className="text-red-500">*</span>
+                      </label>
+                      <p className="text-[10px] text-gray-500 mb-1 ml-1">
+                        e.g., Driver's License, Passport, or Postal ID.
+                      </p>
+                      <div className="flex items-center gap-4 mt-1">
+                        <div className="h-16 w-16 rounded-xl bg-gray-100 flex items-center justify-center overflow-hidden shrink-0 border border-orange-200/60">
+                          {validIdUrl ? (
+                            <img src={validIdUrl} alt="Valid ID" className="object-cover w-full h-full" />
+                          ) : (
+                            <ImageIcon className="h-6 w-6 text-gray-300" />
+                          )}
+                        </div>
+                        <div className="flex flex-col items-start gap-2">
+                          <input
+                            ref={idFileInputRef}
+                            type="file"
+                            accept="image/*"
+                            onChange={async (e) => {
+                              const file = e.target.files?.[0];
+                              if (!file) return;
+                              setUploadingId(true);
+                              try {
+                                const fileExt = file.name.split(".").pop();
+                                const fileName = `valid_ids/${Date.now()}_${Math.random().toString(36).slice(2)}.${fileExt}`;
+                                const { error } = await supabase.storage
+                                  .from("images")
+                                  .upload(fileName, file, { contentType: file.type, upsert: true });
+                                if (!error) {
+                                  const { data: urlData } = supabase.storage.from("images").getPublicUrl(fileName);
+                                  setValidIdUrl(urlData.publicUrl);
+                                }
+                              } catch {}
+                              setUploadingId(false);
+                            }}
+                            className="hidden"
+                          />
                           <button
                             type="button"
-                            onClick={() => setValidIdUrl("")}
-                            className="ml-2 text-[11px] text-red-500 hover:text-red-700 bg-transparent border-none cursor-pointer"
+                            onClick={() => idFileInputRef.current?.click()}
+                            disabled={uploadingId}
+                            className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-orange-200 bg-white text-xs font-medium text-gray-700 hover:bg-orange-50 hover:border-[#F08013] transition-colors disabled:opacity-60 cursor-pointer"
                           >
-                            Remove
+                            {uploadingId ? <Loader2 className="h-4 w-4 animate-spin" /> : <Upload className="h-4 w-4" />}
+                            {uploadingId ? "Uploading..." : validIdUrl ? "Change ID" : "Upload ID"}
                           </button>
-                        )}
+                          {validIdUrl && (
+                            <button
+                              type="button"
+                              onClick={() => setValidIdUrl("")}
+                              className="text-[10px] text-red-500 hover:text-red-700 bg-transparent border-none cursor-pointer ml-1"
+                            >
+                              Remove
+                            </button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -501,7 +504,7 @@ export default function Register() {
               )}
 
               {/* Submit Button */}
-              <div className="md:col-span-2 mt-2">
+              <div className={`${role === "rider" ? "lg:col-span-3" : "md:col-span-2"} mt-2`}>
                 <button
                   type="submit"
                   disabled={loading}

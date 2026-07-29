@@ -129,7 +129,7 @@ export default function StaffDashboard() {
             </p>
             <p className="text-xs text-red-600">Check the inventory page to restock.</p>
           </div>
-          <Link href="/inventory" className="text-sm text-red-700 font-medium hover:underline">
+          <Link href="/inventory?lowStock=true" className="text-sm text-red-700 font-medium hover:underline">
             View
           </Link>
         </div>

@@ -13,6 +13,7 @@ import {
   Navigation,
   Package,
   Phone,
+  Search,
   ShoppingBag,
   User,
   XCircle,
@@ -59,6 +60,7 @@ export default function RiderOrderDetailPage() {
   const [updating, setUpdating] = useState(false);
   const [accessDenied, setAccessDenied] = useState(false);
   const [realtimeStatus, setRealtimeStatus] = useState<string>("connecting");
+  const [proofModalUrl, setProofModalUrl] = useState<string | null>(null);
 
   const orderId = params.id as string;
 
@@ -318,12 +320,31 @@ export default function RiderOrderDetailPage() {
           <div className="w-10 h-10 rounded-full bg-green-100 flex items-center justify-center shrink-0 mt-0.5">
             <CheckCircle size={20} className="text-green-600" />
           </div>
-          <div>
+          <div className="flex-1">
             <p className="font-semibold text-sm text-green-800">Order Delivered</p>
             <p className="text-xs text-green-600 mt-1">
               This order has been successfully delivered. ₱{Number(order.rider_earnings || 40).toFixed(2)} has been
               added to your earnings.
             </p>
+            {(order as any).delivery_proof_url && (
+              <div className="mt-3">
+                <p className="text-xs font-medium text-green-700 mb-1">Proof of Delivery:</p>                  <div
+                    className="relative cursor-pointer"
+                    onClick={() => setProofModalUrl((order as any).delivery_proof_url)}
+                  >
+                    <img
+                      src={(order as any).delivery_proof_url}
+                      alt="Proof of delivery"
+                      className="w-full max-h-48 object-cover rounded-lg border border-green-200"
+                    />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-lg">
+                      <div className="w-10 h-10 rounded-full bg-white/90 flex items-center justify-center backdrop-blur-sm shadow-lg">
+                        <Search size={18} className="text-gray-700" />
+                      </div>
+                    </div>
+                  </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -450,6 +471,26 @@ export default function RiderOrderDetailPage() {
           </div>
         )}
       </div>
+      {/* Fullscreen Image Modal */}
+      {proofModalUrl && (
+        <div
+          className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/85 backdrop-blur-sm p-6"
+          onClick={() => setProofModalUrl(null)}
+        >
+          <button
+            onClick={() => setProofModalUrl(null)}
+            className="absolute top-5 right-5 w-11 h-11 rounded-full bg-white/15 border-none text-white flex items-center justify-center cursor-pointer backdrop-blur-sm hover:bg-white/25 transition-all"
+          >
+            <XCircle size={24} />
+          </button>
+          <img
+            src={proofModalUrl}
+            alt="Delivery proof (full size)"
+            className="max-w-full max-h-[90vh] rounded-xl shadow-2xl object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
     </div>
   );
 }

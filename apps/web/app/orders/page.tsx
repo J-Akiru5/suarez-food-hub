@@ -8,7 +8,9 @@ import {
   ChefHat,
   Clock,
   Loader2,
+  Package,
   Navigation,
+  Search,
   ShoppingBag,
   Star,
   XCircle,
@@ -49,18 +51,20 @@ interface Order {
   rider_id: string | null;
   delivery_lat: number | null;
   delivery_lng: number | null;
+  delivery_proof_url: string | null;
 }
 
 const statusConfig: Record<string, { label: string; icon: any; color: string; bg: string }> = {
   pending: { label: "Pending", icon: Clock, color: "#f59e0b", bg: "#fffbeb" },
   confirmed: { label: "Confirmed", icon: CheckCircle, color: "#3b82f6", bg: "#eff6ff" },
   preparing: { label: "Preparing", icon: ChefHat, color: "#8b5cf6", bg: "#f5f3ff" },
+  ready_for_pickup: { label: "Ready for Pickup", icon: Package, color: "#06b6d4", bg: "#ecfeff" },
   out_for_delivery: { label: "Out for Delivery", icon: Bike, color: "#06b6d4", bg: "#ecfeff" },
   delivered: { label: "Delivered", icon: CheckCircle, color: "#22c55e", bg: "#f0fdf4" },
   cancelled: { label: "Cancelled", icon: XCircle, color: "#ef4444", bg: "#fef2f2" },
 };
 
-const activeStatuses = ["pending", "confirmed", "preparing", "out_for_delivery"];
+const activeStatuses = ["pending", "confirmed", "preparing", "ready_for_pickup", "out_for_delivery"];
 
 function OrdersPageInner() {
   const router = useRouter();
@@ -207,6 +211,7 @@ function OrdersPageInner() {
 
   const [cancellingId, setCancellingId] = useState("");
   const [riderProfiles, setRiderProfiles] = useState<Record<string, { name: string }>>({});
+  const [proofModalUrl, setProofModalUrl] = useState<string | null>(null);
 
   const handleCancel = async (orderId: string) => {
     const result = await Swal.fire({
@@ -250,6 +255,7 @@ function OrdersPageInner() {
     { key: "pending", label: "Pending", icon: Clock, color: "#f59e0b" },
     { key: "confirmed", label: "Confirmed", icon: CheckCircle, color: "#3b82f6" },
     { key: "preparing", label: "Preparing", icon: ChefHat, color: "#8b5cf6" },
+    { key: "ready_for_pickup", label: "Ready", icon: Package, color: "#06b6d4" },
     { key: "out_for_delivery", label: "Out for Delivery", icon: Bike, color: "#06b6d4" },
     { key: "delivered", label: "Delivered", icon: CheckCircle, color: "#22c55e" },
   ];
@@ -662,7 +668,7 @@ function OrdersPageInner() {
                               style={{
                                 height: "100%",
                                 background: "var(--primary-color)",
-                                width: `${Math.max(0, getTimelineProgress(order.status)) * 25}%`,
+                                width: `${(Math.max(0, getTimelineProgress(order.status)) / (timelineSteps.length - 1)) * 100}%`,
                                 transition: "width 0.5s",
                                 borderRadius: 2,
                               }}
@@ -779,6 +785,79 @@ function OrdersPageInner() {
                     </div>
                   )}
 
+                  {/* Proof of Delivery Photo */}
+                  {order.delivery_proof_url && (
+                    <div
+                      style={{
+                        padding: "16px 28px",
+                        borderTop: "1px solid #f1f5f9",
+                      }}
+                    >
+                      <p
+                        style={{
+                          margin: "0 0 10px",
+                          fontSize: 13,
+                          fontWeight: 700,
+                          color: "var(--secondary-color)",
+                        }}
+                      >
+                        📸 Proof of Delivery
+                      </p>
+                      <div
+                        onClick={() => setProofModalUrl(order.delivery_proof_url)}
+                        style={{
+                          borderRadius: 16,
+                          overflow: "hidden",
+                          border: "1px solid #f1f5f9",
+                          position: "relative",
+                          cursor: "pointer",
+                          background: "#f8fafc",
+                        }}
+                      >
+                        <img
+                          src={order.delivery_proof_url}
+                          alt="Delivery proof"
+                          style={{
+                            width: "100%",
+                            maxHeight: 200,
+                            objectFit: "cover",
+                            display: "block",
+                          }}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = "none";
+                          }}
+                        />
+                        <div
+                          style={{
+                            position: "absolute",
+                            inset: 0,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            background: "rgba(0,0,0,0.18)",
+                            opacity: 1,
+                            transition: "opacity 0.2s",
+                          }}
+                        >
+                          <div
+                            style={{
+                              width: 44,
+                              height: 44,
+                              borderRadius: "50%",
+                              background: "rgba(255,255,255,0.9)",
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              backdropFilter: "blur(4px)",
+                            }}
+                          >
+                            <Search size={20} style={{ color: "var(--secondary-color)" }} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Footer */}
                   <div
                     style={{
@@ -827,7 +906,7 @@ function OrdersPageInner() {
                                 setProdReviewOrder(order);
                                 const initial: Record<string, { rating: number; comment: string }> = {};
                                 for (const item of order.order_items) {
-                                  initial[item.product_name] = { rating: 5, comment: "" };
+                                  initial[item.product_name] = { rating: 0, comment: "" };
                                 }
                                 setProdReviews(initial);
                               }}
@@ -1164,8 +1243,8 @@ function OrdersPageInner() {
                         <Star
                           size={28}
                           style={{
-                            fill: star <= (prodReviews[item.product_name]?.rating || 5) ? "#f59e0b" : "#e2e8f0",
-                            color: star <= (prodReviews[item.product_name]?.rating || 5) ? "#f59e0b" : "#e2e8f0",
+                            fill: star <= (prodReviews[item.product_name]?.rating || 0) ? "#f59e0b" : "#e2e8f0",
+                            color: star <= (prodReviews[item.product_name]?.rating || 0) ? "#f59e0b" : "#e2e8f0",
                             transition: "all 0.15s",
                           }}
                         />
@@ -1223,7 +1302,6 @@ function OrdersPageInner() {
                   }
                   setSubmittingProdReview(false);
                   if (success) {
-                    // Move order from "To Review" to "Reviews" immediately
                     setReviewedOrderIds((prev) => new Set(prev).add(prodReviewOrder.id));
                     setOrderReviewData((prev) => {
                       const existing = prev[prodReviewOrder.id] || {};
@@ -1257,22 +1335,52 @@ function OrdersPageInner() {
                     Swal.fire({ icon: "error", title: "Error", text: "Some reviews failed to save." });
                   }
                 }}
-                disabled={submittingProdReview}
+                disabled={submittingProdReview || Object.values(prodReviews).every((r) => !r.rating)}
                 style={{
                   width: "100%",
-                  padding: "14px 0",
+                  padding: "10px 0",
                   borderRadius: 14,
                   border: "none",
-                  background: "var(--primary-color)",
-                  color: "#fff",
+                  marginBottom: 4,
+                  background: submittingProdReview || Object.values(prodReviews).every((r) => !r.rating)
+                    ? "#e2e8f0"
+                    : "#8b5cf6",
+                  color: submittingProdReview || Object.values(prodReviews).every((r) => !r.rating)
+                    ? "#94a3b8"
+                    : "#fff",
                   fontWeight: 700,
                   fontSize: 15,
-                  cursor: submittingProdReview ? "not-allowed" : "pointer",
+                  cursor: submittingProdReview || Object.values(prodReviews).every((r) => !r.rating) ? "not-allowed" : "pointer",
                   transition: "all 0.2s",
                 }}
               >
-                {submittingProdReview ? "Submitting..." : "Submit Product Ratings"}
+                {submittingProdReview
+                  ? "Submitting..."
+                  : Object.values(prodReviews).every((r) => !r.rating)
+                    ? "Tap stars above to rate"
+                    : "Submit Product Ratings"}
               </button>
+
+              {/* Cancel link */}
+              <div style={{ textAlign: "center", marginTop: 4 }}>
+                <button
+                  onClick={() => {
+                    setProdReviewOrder(null);
+                    setProdReviews({});
+                  }}
+                  disabled={submittingProdReview}
+                  style={{
+                    background: "none",
+                    border: "none",
+                    color: "#94a3b8",
+                    fontSize: 13,
+                    cursor: submittingProdReview ? "not-allowed" : "pointer",
+                    padding: "6px 12px",
+                  }}
+                >
+                  Cancel
+                </button>
+              </div>
             </div>
           </div>
         )}
@@ -1414,6 +1522,61 @@ function OrdersPageInner() {
           </div>
         )}
       </div>
+
+      {/* Fullscreen Image Modal */}
+      {proofModalUrl && (
+        <div
+          onClick={() => setProofModalUrl(null)}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.85)",
+            zIndex: 99999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 24,
+            backdropFilter: "blur(8px)",
+          }}
+        >
+          <button
+            onClick={() => setProofModalUrl(null)}
+            style={{
+              position: "absolute",
+              top: 20,
+              right: 20,
+              width: 44,
+              height: 44,
+              borderRadius: "50%",
+              background: "rgba(255,255,255,0.15)",
+              border: "none",
+              color: "#fff",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              fontSize: 24,
+              backdropFilter: "blur(4px)",
+            }}
+          >
+            <XCircle size={24} />
+          </button>
+          <img
+            src={proofModalUrl}
+            alt="Delivery proof (full size)"
+            style={{
+              maxWidth: "100%",
+              maxHeight: "90vh",
+              borderRadius: 12,
+              boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
+              objectFit: "contain",
+            }}
+          />
+        </div>
+      )}
     </div>
   );
 }

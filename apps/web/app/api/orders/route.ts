@@ -115,6 +115,7 @@ export async function POST(req: NextRequest) {
       subtotal,
       delivery_fee,
       total,
+      rider_earnings: delivery_fee, // Rider earnings = delivery fee (auto-set from business config)
     });
 
     if (orderError) {

@@ -26,47 +26,60 @@ function LoginForm() {
     setError("");
     setLoading(true);
 
-    let loginEmail = username.trim();
+    try {
+      let loginEmail = username.trim();
 
-    if (!loginEmail.includes("@")) {
-      const email = await lookupUsername(loginEmail);
-      if (!email) {
-        setError("Invalid username or password");
+      if (!loginEmail.includes("@")) {
+        try {
+          const email = await lookupUsername(loginEmail);
+          if (!email) {
+            setError("Invalid username or password");
+            setLoading(false);
+            return;
+          }
+          loginEmail = email;
+        } catch (err) {
+          console.error("lookupUsername error:", err);
+          setError("Login service is temporarily unavailable. Please try again or use your email directly.");
+          setLoading(false);
+          return;
+        }
+      }
+
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: loginEmail,
+        password,
+      });
+
+      if (authError) {
+        setError(authError.message);
         setLoading(false);
         return;
       }
-      loginEmail = email;
-    }
 
-    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-      email: loginEmail,
-      password,
-    });
+      if (authData.user) {
+        const profile = await getProfileRole(supabase, authData.user.id);
+        if (profile?.role && profile.role !== "customer") {
+          setError(`Access denied. You are registered as a ${profile.role}. Please use the correct app to log in.`);
+          await supabase.auth.signOut();
+          setLoading(false);
+          return;
+        }
+        if (profile?.is_active === false) {
+          setError("Your account has been deactivated. Please contact support.");
+          await supabase.auth.signOut();
+          setLoading(false);
+          return;
+        }
+      }
 
-    if (authError) {
-      setError(authError.message);
+      router.push(redirectTo);
+      router.refresh();
+    } catch (err) {
+      console.error("Login error:", err);
+      setError("An unexpected error occurred. Please try again.");
       setLoading(false);
-      return;
     }
-
-    if (authData.user) {
-      const profile = await getProfileRole(supabase, authData.user.id);
-      if (profile?.role && profile.role !== "customer") {
-        setError(`Access denied. You are registered as a ${profile.role}. Please use the correct app to log in.`);
-        await supabase.auth.signOut();
-        setLoading(false);
-        return;
-      }
-      if (profile?.is_active === false) {
-        setError("Your account has been deactivated. Please contact support.");
-        await supabase.auth.signOut();
-        setLoading(false);
-        return;
-      }
-    }
-
-    router.push(redirectTo);
-    router.refresh();
   };
 
   return (
@@ -163,10 +176,10 @@ export default function Login() {
         </h1>
 
         <div className="flex flex-col items-center justify-center mb-6">
-          <div className="w-[72px] h-[72px] rounded-full bg-white shadow-sm border border-gray-100 flex items-center justify-center p-2 mb-3">
-            <img src="/logo.svg" alt="Logo" className="w-full h-full object-contain" />
+          <div className="w-24 h-24 rounded-full bg-white shadow-sm border border-gray-100 flex items-center justify-center mb-4 overflow-hidden">
+            <img src="/logo.png" alt="Suarez Food Hub Logo" className="w-full h-full object-contain drop-shadow-sm" />
           </div>
-          <span className="text-[10px] font-bold text-gray-600 uppercase tracking-[0.2em]">ONLINE STORE</span>
+          <span className="text-[10px] font-bold text-gray-600 uppercase tracking-[0.2em]">SUAREZ FOOD HUB</span>
         </div>
 
         <Suspense

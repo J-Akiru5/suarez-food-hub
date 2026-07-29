@@ -29,13 +29,14 @@ import {
   MapPin,
   Phone,
   Printer,
+  Search,
   Send,
   User,
   UserPlus,
   XCircle,
 } from "lucide-react";
 import { useParams, useRouter } from "next/navigation";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Swal from "sweetalert2";
 
 const statusSteps = [
@@ -63,7 +64,7 @@ interface OrderDetail extends Order {
 export default function OrderDetailPage() {
   const params = useParams();
   const router = useRouter();
-  const supabase = createBrowserTypedClient();
+  const supabaseRef = useRef(createBrowserTypedClient());
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [riders, setRiders] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
@@ -72,21 +73,24 @@ export default function OrderDetailPage() {
   const [inviteModalOpen, setInviteModalOpen] = useState(false);
   const [selectedRiderIds, setSelectedRiderIds] = useState<string[]>([]);
   const [sendingInvites, setSendingInvites] = useState(false);
+  const [proofModalUrl, setProofModalUrl] = useState<string | null>(null);
 
   const orderId = params.id as string;
 
   const fetchOrder = useCallback(async () => {
-    const data = await getOrderById(supabase, orderId);
-    setOrder(data as OrderDetail);
+    const data = await getOrderById(supabaseRef.current, orderId);
+    // Only update if data is truthy — prevents race conditions from resetting order to null
+    // during realtime updates. The initial load gracefully shows "Order not found" if null.
+    if (data) setOrder(data as OrderDetail);
     setLoading(false);
-  }, [supabase, orderId]);
+  }, [orderId]);
 
   const fetchRiders = useCallback(async () => {
     // Pass current rider ID so they appear in dropdown even if occupied
     const currentRiderId = order?.rider_id || undefined;
-    const data = await getAvailableRiders(supabase, currentRiderId);
+    const data = await getAvailableRiders(supabaseRef.current, currentRiderId);
     setRiders((data as Profile[]) || []);
-  }, [supabase, order?.rider_id]);
+  }, [order?.rider_id]);
 
   useEffect(() => {
     fetchOrder();
@@ -95,6 +99,7 @@ export default function OrderDetailPage() {
 
   // Realtime auto-refresh when order status or rider changes
   useEffect(() => {
+    const supabase = supabaseRef.current;
     const channel = supabase
       .channel(`staff-order-${orderId}`)
       .on(
@@ -117,7 +122,7 @@ export default function OrderDetailPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [fetchOrder, fetchRiders, orderId, supabase]);
+  }, [fetchOrder, fetchRiders, orderId]);
 
   function toggleRiderSelection(riderId: string) {
     setSelectedRiderIds((prev) => (prev.includes(riderId) ? prev.filter((id) => id !== riderId) : [...prev, riderId]));
@@ -127,11 +132,11 @@ export default function OrderDetailPage() {
     if (!order || selectedRiderIds.length === 0) return;
     setSendingInvites(true);
     try {
-      await supabase
+      // Only set pending_riders — kitchen status is controlled separately
+      await supabaseRef.current
         .from("orders")
         .update({
           pending_riders: selectedRiderIds,
-          status: "ready_for_pickup",
           updated_at: new Date().toISOString(),
         })
         .eq("id", orderId);
@@ -143,9 +148,10 @@ export default function OrderDetailPage() {
         message: "A new order is ready for pickup. First to accept gets it!",
         data: { order_id: orderId },
       }));
-      await supabase.from("notifications").insert(notifications);
+      await supabaseRef.current.from("notifications").insert(notifications);
     } catch (err) {
       console.error("Failed to send invitations:", err);
+      Swal.fire({ icon: "error", title: "Failed", text: "Could not assign riders. Please check console for details." });
     }
     setSendingInvites(false);
     setInviteModalOpen(false);
@@ -170,13 +176,6 @@ export default function OrderDetailPage() {
       console.error("Status update error:", message);
       Swal.fire({ icon: "error", title: "Error", text: "Network error while updating status. Please try again." });
     }
-    await fetchOrder();
-    setUpdating(false);
-  }
-
-  async function updatePaymentStatus(payment_status: string) {
-    setUpdating(true);
-    await supabase.from("orders").update({ payment_status }).eq("id", orderId);
     await fetchOrder();
     setUpdating(false);
   }
@@ -346,57 +345,47 @@ export default function OrderDetailPage() {
               <Card>
                 <CardContent className="p-4">
                   <h2 className="font-bold font-display">Proof of Delivery</h2>
-                  <div className="mt-2">
+                  <div
+                    className="relative mt-2 cursor-pointer"
+                    onClick={() => setProofModalUrl((order as any).delivery_proof_url)}
+                  >
                     <img
                       src={(order as any).delivery_proof_url}
                       alt="Delivery proof"
-                      className="w-full max-h-64 object-cover rounded-lg border border-gray-200"
+                      className="w-full max-h-56 object-cover rounded-lg border border-gray-200"
                     />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-lg">
+                      <div className="w-11 h-11 rounded-full bg-white/90 flex items-center justify-center backdrop-blur-sm shadow-lg">
+                        <Search size={20} className="text-gray-700" />
+                      </div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
             )}
-            {/* Delivery Proof Photo */}
-            {(order as any).delivery_proof_url && (
-              <Card>
-                <CardContent className="p-4">
-                  <h2 className="font-bold font-display">Proof of Delivery</h2>
-                  <div className="mt-2">
-                    <img
-                      src={(order as any).delivery_proof_url}
-                      alt="Delivery proof"
-                      className="w-full max-h-64 object-cover rounded-lg border border-gray-200"
-                    />
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-            {/* Delivery Location Map */}
+            {/* Delivery Location (text only) */}
             <Card>
               <CardContent className="p-4">
-                <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center justify-between mb-1">
                   <h2 className="font-bold font-display m-0">Delivery Location</h2>
                   {order.delivery_lat && order.delivery_lng && (
                     <a
                       href={`https://www.google.com/maps/dir/?api=1&destination=${order.delivery_lat},${order.delivery_lng}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-xs text-crimson-600 font-bold hover:underline flex items-center gap-1 bg-crimson-50 px-2 py-1 rounded-md"
+                      className="text-xs text-crimson-600 font-bold hover:underline flex items-center gap-1"
                     >
                       <MapPin className="h-3 w-3" />
-                      Navigate
+                      Open in Maps
                     </a>
                   )}
                 </div>
-                <div className="h-64 bg-gray-50 rounded-lg border border-gray-100 flex flex-col items-center justify-center p-6 text-center">
-                  <MapPin className="h-10 w-10 text-gray-300 mb-3" />
-                  <p className="text-base font-medium text-gray-800">{order.delivery_address}</p>
-                  {order.delivery_lat && order.delivery_lng && (
-                    <p className="text-xs text-gray-400 mt-3 font-mono bg-gray-100 px-2 py-1 rounded">
-                      GPS: {order.delivery_lat.toFixed(6)}, {order.delivery_lng.toFixed(6)}
-                    </p>
-                  )}
-                </div>
+                <p className="text-sm text-gray-700 mt-2">{order.delivery_address}</p>
+                {order.delivery_lat && order.delivery_lng && (
+                  <p className="text-xs text-gray-400 mt-1 font-mono">
+                    GPS: {order.delivery_lat.toFixed(6)}, {order.delivery_lng.toFixed(6)}
+                  </p>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -448,7 +437,7 @@ export default function OrderDetailPage() {
                     )}
                   </div>
                 )}
-                {order.status !== "cancelled" && order.status !== "delivered" && (
+                {["ready_for_pickup", "claimed_by_rider", "out_for_delivery", "near_customer"].includes(order.status) && (
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Rider Status</p>
                     {order.rider_id && (order as any).rider?.first_name ? (
@@ -481,7 +470,7 @@ export default function OrderDetailPage() {
                           )}
                           <Button size="sm" onClick={() => setInviteModalOpen(true)} className="gap-1 shrink-0">
                             <UserPlus className="h-3 w-3" />
-                            Invite
+                            Assign
                           </Button>
                         </div>
                         {(order as any).pending_riders?.length > 0 && (
@@ -505,38 +494,7 @@ export default function OrderDetailPage() {
                 )}
               </CardContent>
             </Card>
-            {/* Payment Info */}
-            <Card>
-              <CardContent className="p-4">
-                <h2 className="font-bold mb-2 font-display">Payment</h2>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Method</span>
-                  <span className="text-sm font-medium">{order.payment_method.replace(/_/g, " ")}</span>
-                </div>
-                {order.payment_method === "gcash" && order.gcash_reference_no && (
-                  <div className="flex items-center justify-between mt-2">
-                    <span className="text-sm text-muted-foreground">Ref No.</span>
-                    <span className="text-sm font-mono bg-gray-50 px-2 py-0.5 rounded">{order.gcash_reference_no}</span>
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between mt-3 pt-3 border-t">
-                  <span className="text-sm text-muted-foreground">Status</span>
-                  <Select value={order.payment_status} onValueChange={updatePaymentStatus} disabled={updating}>
-                    <SelectTrigger className="w-[140px] h-8 text-xs font-medium">
-                      <SelectValue placeholder="Status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="verified">Verified</SelectItem>
-                      <SelectItem value="rejected">Rejected</SelectItem>
-                      <SelectItem value="refunded">Refunded</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </CardContent>
-            </Card>
-            {/* Actions */}
+            {/* Kitchen Actions */}
             <Card>
               <CardContent className="p-4">
                 <h2 className="font-bold mb-3 font-display">Kitchen Actions</h2>
@@ -558,9 +516,62 @@ export default function OrderDetailPage() {
                 </div>
               </CardContent>
             </Card>
+            {/* Payment Info — read-only for staff, admin handles verification */}
+            <Card>
+              <CardContent className="p-4">
+                <h2 className="font-bold mb-2 font-display">Payment</h2>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Method</span>
+                  <span className="text-sm font-medium">{order.payment_method.replace(/_/g, " ")}</span>
+                </div>
+                {order.payment_method === "gcash" && order.gcash_reference_no && (
+                  <div className="flex items-center justify-between mt-2">
+                    <span className="text-sm text-muted-foreground">Ref No.</span>
+                    <span className="text-sm font-mono bg-gray-50 px-2 py-0.5 rounded">{order.gcash_reference_no}</span>
+                  </div>
+                )}
+                <div className="flex items-center justify-between mt-3 pt-3 border-t">
+                  <span className="text-sm text-muted-foreground">Status</span>
+                  <span
+                    className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                      order.payment_status === "verified"
+                        ? "bg-green-100 text-green-700"
+                        : order.payment_status === "rejected"
+                          ? "bg-red-100 text-red-700"
+                          : order.payment_status === "refunded"
+                            ? "bg-gray-100 text-gray-600"
+                            : "bg-yellow-100 text-yellow-700"
+                    }`}
+                  >
+                    {order.payment_status}
+                  </span>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
+
+      {/* Fullscreen Image Modal */}
+      {proofModalUrl && (
+        <div
+          className="fixed inset-0 z-[99999] flex items-center justify-center bg-black/85 backdrop-blur-sm p-6"
+          onClick={() => setProofModalUrl(null)}
+        >
+          <button
+            onClick={() => setProofModalUrl(null)}
+            className="absolute top-5 right-5 w-11 h-11 rounded-full bg-white/15 border-none text-white flex items-center justify-center cursor-pointer backdrop-blur-sm hover:bg-white/25 transition-all"
+          >
+            <XCircle size={24} />
+          </button>
+          <img
+            src={proofModalUrl}
+            alt="Delivery proof (full size)"
+            className="max-w-full max-h-[90vh] rounded-xl shadow-2xl object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
 
       {/* Invite Riders Modal */}
       <Dialog open={inviteModalOpen} onOpenChange={setInviteModalOpen}>

@@ -22,3 +22,6 @@ CREATE POLICY "Anyone can view delivery proof photos"
 ON storage.objects FOR SELECT
 TO authenticated
 USING (bucket_id = 'delivery_proofs');
+
+
+ALTER TABLE product_variants ALTER COLUMN id SET DEFAULT gen_random_uuid();

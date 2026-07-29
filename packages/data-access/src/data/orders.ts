@@ -8,7 +8,7 @@ type OrderStatus = Database["public"]["Enums"]["order_status"];
 type OrderStatusLogInsert = Database["public"]["Tables"]["order_status_log"]["Insert"];
 
 export interface CreateOrderInput
-  extends Omit<OrderInsert, "id" | "order_number" | "status" | "rider_earnings" | "created_at" | "updated_at"> {}
+  extends Omit<OrderInsert, "id" | "order_number" | "status" | "created_at" | "updated_at"> {}
 
 export interface CreateOrderItemInput extends Omit<OrderItemInsert, "id"> {}
 
@@ -130,11 +130,12 @@ export async function getOrdersByPendingRiders(supabase: TypedSupabaseClient, ri
   // Find orders where this rider has been invited (broadcast model)
   // Uses .filter with "cs" (contains) operator to check if riderId is in pending_riders array
   // pending_riders @> '["riderId"]'::jsonb
+  // Only show orders that are ready for pickup — prevents riders from seeing unready orders
   const { data } = await supabase
     .from("orders")
     .select("*, customer:profiles!orders_user_id_fkey(first_name, last_name, full_name, phone)")
     .filter("pending_riders", "cs", JSON.stringify([riderId]))
-    .in("status", ["ready_for_pickup"] as OrderStatus[])
+    .eq("status", "ready_for_pickup")
     .order("created_at", { ascending: false });
   return data || [];
 }

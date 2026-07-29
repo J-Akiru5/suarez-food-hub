@@ -44,7 +44,9 @@ export default function StaffInventoryPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [search, setSearch] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
-  const [filterLowStock, setFilterLowStock] = useState(false);
+  const [filterLowStock, setFilterLowStock] = useState(
+    typeof window !== "undefined" && window.location.search.includes("lowStock=true"),
+  );
   const [loading, setLoading] = useState(true);
   const [savingId, setSavingId] = useState<string | null>(null);
   const [qtyEdits, setQtyEdits] = useState<Record<string, string>>({});
@@ -142,15 +144,19 @@ export default function StaffInventoryPage() {
     setFormVariantType(product.variant_type || "none");
     // Load existing variants (key from Supabase select: product_variants)
     if (product.product_variants && product.product_variants.length > 0) {
-      setFormVariants(
-        product.product_variants
-          .filter((v: any) => v.is_active !== false)
-          .map((v: any) => ({
-            name: v.name,
-            price: String(v.price),
-            qty: String(v.quantity ?? 0),
-          })),
-      );
+      const loadedVariants = product.product_variants
+        .filter((v: any) => v.is_active !== false)
+        .map((v: any) => ({
+          name: v.name,
+          price: String(v.price),
+          qty: String(v.quantity ?? 0),
+        }));
+      // If all variants have 0 stock but product has main stock, put main stock in first variant
+      const allZeroVariantStock = loadedVariants.every((lv: any) => parseInt(lv.qty, 10) === 0);
+      if (allZeroVariantStock && (product.quantity ?? 0) > 0 && loadedVariants.length > 0) {
+        loadedVariants[0].qty = String(product.quantity);
+      }
+      setFormVariants(loadedVariants);
     } else {
       setFormVariants([]);
     }
@@ -222,8 +228,9 @@ export default function StaffInventoryPage() {
       if (editingProduct) {
         await supabase.from("product_variants").delete().eq("product_id", productId);
       }
-      // Insert new variants
+      // Insert new variants (generate UUID since table has no DEFAULT on id)
       const variantInserts = formVariants.map((v, i) => ({
+        id: crypto.randomUUID(),
         product_id: productId,
         name: v.name,
         price: parseFloat(v.price) || 0,
@@ -233,7 +240,17 @@ export default function StaffInventoryPage() {
       }));
       const { error: varError } = await supabase.from("product_variants").insert(variantInserts);
       if (varError) {
+        const msg = (varError as any)?.message || JSON.stringify(varError);
+        Swal.fire({
+          icon: "error",
+          title: "Variants failed to save",
+          text: `Product was saved but variants failed: ${msg}. Please edit the product to add variants.`,
+          footer: `<span style="font-size:11px;color:#94a3b8;">Check console for details</span>`,
+        });
         console.error("Failed to save variants:", varError);
+        fetchData();
+        setSaving(false);
+        return;
       }
     } else if (editingProduct && productId) {
       // If switching to no variants, delete existing ones
@@ -589,20 +606,20 @@ export default function StaffInventoryPage() {
                         // Pre-fill default variants based on type
                         if (val === "size")
                           setFormVariants([
-                            { name: "Small", price: "", qty: "0" },
-                            { name: "Medium", price: "", qty: "0" },
-                            { name: "Large", price: "", qty: "0" },
+                            { name: "Small", price: "", qty: "20" },
+                            { name: "Medium", price: "", qty: "15" },
+                            { name: "Large", price: "", qty: "10" },
                           ]);
                         else if (val === "sugar_level")
                           setFormVariants([
-                            { name: "Less Sugar", price: "", qty: "0" },
-                            { name: "Regular", price: "", qty: "0" },
-                            { name: "Extra Sweet", price: "", qty: "0" },
+                            { name: "Less Sugar", price: "", qty: "20" },
+                            { name: "Regular", price: "", qty: "20" },
+                            { name: "Extra Sweet", price: "", qty: "20" },
                           ]);
                         else if (val === "preparation")
                           setFormVariants([
-                            { name: "Steamed", price: "", qty: "0" },
-                            { name: "Fried", price: "", qty: "0" },
+                            { name: "Steamed", price: "", qty: "20" },
+                            { name: "Fried", price: "", qty: "20" },
                           ]);
                       }
                     }}
@@ -639,7 +656,7 @@ export default function StaffInventoryPage() {
                     <label className="text-sm font-medium text-gray-700 block">
                       <span className="inline-flex items-center gap-1">
                         <List className="h-4 w-4" />
-                        Variant Prices
+                        Variant Options
                       </span>
                     </label>
                     <button
@@ -652,7 +669,7 @@ export default function StaffInventoryPage() {
                   </div>
                   <div className="space-y-2">
                     {formVariants.map((v, idx) => (
-                      <div key={idx} className="flex items-center gap-2">
+                      <div key={idx} className="flex items-center gap-1.5">
                         <input
                           type="text"
                           value={v.name}
@@ -668,10 +685,10 @@ export default function StaffInventoryPage() {
                                 ? "e.g. Regular"
                                 : "e.g. Steamed"
                           }
-                          className="flex-1 h-9 px-3 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
+                          className="flex-[2] h-9 px-2.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500 min-w-0"
                         />
-                        <div className="relative w-24">
-                          <span className="absolute left-2 top-1/2 -translate-y-1/2 text-xs text-gray-400">₱</span>
+                        <div className="relative w-[70px] shrink-0">
+                          <span className="absolute left-1.5 top-1/2 -translate-y-1/2 text-[10px] text-gray-400">₱</span>
                           <input
                             type="number"
                             value={v.price}
@@ -680,12 +697,25 @@ export default function StaffInventoryPage() {
                               updated[idx] = { ...updated[idx], price: e.target.value };
                               setFormVariants(updated);
                             }}
-                            placeholder="0.00"
+                            placeholder="0"
                             min="0"
                             step="0.01"
-                            className="w-full h-9 pl-6 pr-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
+                            className="w-full h-9 pl-4 pr-1.5 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500"
                           />
                         </div>
+                        <input
+                          type="number"
+                          value={v.qty}
+                          onChange={(e) => {
+                            const updated = [...formVariants];
+                            updated[idx] = { ...updated[idx], qty: e.target.value };
+                            setFormVariants(updated);
+                          }}
+                          placeholder="Qty"
+                          min="0"
+                          className="w-14 h-9 px-1.5 rounded-lg border border-gray-200 text-xs text-center focus:outline-none focus:ring-1 focus:ring-brand-500 shrink-0"
+                          title="Stock quantity for this variant"
+                        />
                         <button
                           type="button"
                           onClick={() => {
@@ -693,7 +723,7 @@ export default function StaffInventoryPage() {
                             setFormVariants(formVariants.filter((_, i) => i !== idx));
                           }}
                           disabled={formVariants.length <= 1}
-                          className="h-8 w-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 disabled:opacity-30 bg-transparent border-none cursor-pointer"
+                          className="h-8 w-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-500 hover:bg-red-50 disabled:opacity-30 bg-transparent border-none cursor-pointer shrink-0"
                         >
                           <X className="h-4 w-4" />
                         </button>
@@ -703,28 +733,34 @@ export default function StaffInventoryPage() {
                 </div>
               )}
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-gray-700 block mb-1">Stock Quantity</label>
-                  <Input
-                    type="number"
-                    value={formQuantity}
-                    onChange={(e) => setFormQuantity(e.target.value)}
-                    placeholder="0"
-                    min="0"
-                  />
+              {formVariantType === "none" ? (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 block mb-1">Stock Quantity</label>
+                    <Input
+                      type="number"
+                      value={formQuantity}
+                      onChange={(e) => setFormQuantity(e.target.value)}
+                      placeholder="0"
+                      min="0"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 block mb-1">Low-stock Buffer</label>
+                    <Input
+                      type="number"
+                      value={formBuffer}
+                      onChange={(e) => setFormBuffer(e.target.value)}
+                      placeholder="5"
+                      min="0"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 block mb-1">Low-stock Buffer</label>
-                  <Input
-                    type="number"
-                    value={formBuffer}
-                    onChange={(e) => setFormBuffer(e.target.value)}
-                    placeholder="5"
-                    min="0"
-                  />
+              ) : (
+                <div className="text-xs text-gray-400 italic">
+                  Stock is managed per variant above. Total: {formVariants.reduce((sum, v) => sum + (parseInt(v.qty, 10) || 0), 0)} units
                 </div>
-              </div>
+              )}
               <div>
                 <label className="text-sm font-medium text-gray-700 block mb-1">Availability</label>
                 <Select value={formAvailability} onValueChange={setFormAvailability}>
@@ -758,7 +794,7 @@ export default function StaffInventoryPage() {
             </Button>
             <Button
               onClick={handleSave}
-              disabled={saving || !formName || !formPrice}
+              disabled={saving || !formName || (formVariantType === "none" ? !formPrice : formVariants.every((v) => !v.price))}
               className="bg-brand-500 hover:bg-brand-600 text-white"
             >
               {saving && <Loader2 className="h-4 w-4 animate-spin mr-2" />}

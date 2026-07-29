@@ -2,17 +2,11 @@
 
 import { createBrowserTypedClient } from "@repo/data-access/client";
 import { getOrdersWithProfiles } from "@repo/data-access/data/orders";
-import { getRiders } from "@repo/data-access/data/profiles";
 import type { Order, Profile } from "@repo/types";
 import {
   Button,
   Card,
   CardContent,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
   Tabs,
   TabsContent,
   TabsList,
@@ -61,7 +55,6 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<OrderWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
-  const [riders, setRiders] = useState<Profile[]>([]);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
   const [pendingStatus, setPendingStatus] = useState<Record<string, string>>({});
   const [pendingPayment, setPendingPayment] = useState<Record<string, string>>({});
@@ -74,15 +67,9 @@ export default function OrdersPage() {
     setLoading(false);
   }, [activeTab, supabase]);
 
-  const fetchRiders = useCallback(async () => {
-    const data = await getRiders(supabase);
-    setRiders((data as Profile[]) || []);
-  }, [supabase]);
-
   useEffect(() => {
     fetchOrders();
-    fetchRiders();
-  }, [fetchOrders, fetchRiders]);
+  }, [fetchOrders]);
 
   useEffect(() => {
     const channel = supabase
@@ -96,19 +83,6 @@ export default function OrdersPage() {
       supabase.removeChannel(channel);
     };
   }, [supabase, fetchOrders]);
-
-  async function assignRider(orderId: string, riderId: string) {
-    const { error } = await supabase
-      .from("orders")
-      .update({ rider_id: riderId, status: "confirmed" })
-      .eq("id", orderId);
-    if (error) {
-      toast({ title: "Error", description: "Failed to assign rider.", variant: "destructive" });
-    } else {
-      toast({ title: "Rider assigned", description: "Order has been assigned to rider." });
-    }
-    fetchOrders();
-  }
 
   async function updateStatus(orderId: string, status: string, orderNumber?: string) {
     setPendingStatus((p) => ({ ...p, [orderId]: status }));
@@ -279,73 +253,38 @@ export default function OrdersPage() {
                               <p className="text-sm">{order.delivery_address}</p>
                             </div>
 
-                            {/* Assign Rider */}
-                            {!order.rider_id && order.status !== "cancelled" && order.status !== "delivered" && (
-                              <div>
-                                <p className="text-xs font-medium text-gray-500 mb-1">Assign Rider</p>
-                                <Select onValueChange={(value) => assignRider(order.id, value)}>
-                                  <SelectTrigger className="w-full">
-                                    <SelectValue
-                                      placeholder={riders.length === 0 ? "No riders available" : "Select rider"}
-                                    />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {riders.length === 0 ? (
-                                      <SelectItem value="none" disabled>
-                                        No riders available
-                                      </SelectItem>
-                                    ) : (
-                                      riders.map((rider) => (
-                                        <SelectItem key={rider.id} value={rider.id}>
-                                          {rider.first_name || rider.full_name} {rider.last_name || ""}
-                                        </SelectItem>
-                                      ))
-                                    )}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            )}
-
                             {/* Status Actions */}
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                               <div>
                                 <p className="text-xs font-medium text-gray-500 mb-1">Payment Status</p>
-                                <Select
+                                <select
                                   value={pendingPayment[order.id] || order.payment_status}
-                                  onValueChange={(value) => updatePaymentStatus(order.id, value)}
+                                  onChange={(e) => updatePaymentStatus(order.id, e.target.value)}
+                                  className="w-full h-8 text-xs rounded-md border border-gray-200 bg-white px-2"
                                 >
-                                  <SelectTrigger className="w-full h-8 text-xs">
-                                    <SelectValue placeholder="Select payment status" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="pending">Pending</SelectItem>
-                                    <SelectItem value="verified">Verified</SelectItem>
-                                    <SelectItem value="rejected">Rejected</SelectItem>
-                                    <SelectItem value="refunded">Refunded</SelectItem>
-                                  </SelectContent>
-                                </Select>
+                                  <option value="pending">Pending</option>
+                                  <option value="verified">Verified</option>
+                                  <option value="rejected">Rejected</option>
+                                  <option value="refunded">Refunded</option>
+                                </select>
                               </div>
 
                               <div>
                                 <p className="text-xs font-medium text-gray-500 mb-1">Order Status</p>
-                                <Select
+                                <select
                                   value={pendingStatus[order.id] || order.status}
-                                  onValueChange={(value) => updateStatus(order.id, value, order.order_number)}
+                                  onChange={(e) => updateStatus(order.id, e.target.value, order.order_number)}
+                                  className="w-full h-8 text-xs rounded-md border border-gray-200 bg-white px-2"
                                 >
-                                  <SelectTrigger className="w-full h-8 text-xs">
-                                    <SelectValue placeholder="Select order status" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="pending">Pending</SelectItem>
-                                    <SelectItem value="confirmed">Confirm & Notify Staff</SelectItem>
-                                    <SelectItem value="preparing">Preparing</SelectItem>
-                                    <SelectItem value="out_for_delivery">Out for Delivery</SelectItem>
-                                    <SelectItem value="delivered">Delivered</SelectItem>
-                                    <SelectItem value="cancelled" className="text-red-600">
-                                      Cancelled
-                                    </SelectItem>
-                                  </SelectContent>
-                                </Select>
+                                  <option value="pending">Pending</option>
+                                  <option value="confirmed">Confirm & Notify Staff</option>
+                                  <option value="preparing">Preparing</option>
+                                  <option value="out_for_delivery">Out for Delivery</option>
+                                  <option value="delivered">Delivered</option>
+                                  <option value="cancelled" className="text-red-600">
+                                    Cancelled
+                                  </option>
+                                </select>
                               </div>
                             </div>
                           </div>

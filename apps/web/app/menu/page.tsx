@@ -110,21 +110,39 @@ export default function MenuPage() {
   }, []);
 
   useEffect(() => {
-    fetch("/api/products")
-      .then((r) => {
-        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    let cancelled = false;
+
+    Promise.all([
+      fetch("/api/products").then((r) => {
+        if (!r.ok) throw new Error(`Products HTTP ${r.status}`);
         return r.json();
-      })
-      .then((response) => {
-        const data = response.data || response;
-        if (Array.isArray(data)) {
-          setProducts(data);
-          const uniqueCats = Array.from(new Set(data.map((p: Product) => p.category)));
-          setCategories(["All", ...uniqueCats]);
+      }),
+      fetch("/api/categories").then((r) => {
+        if (!r.ok) throw new Error(`Categories HTTP ${r.status}`);
+        return r.json();
+      }),
+    ])
+      .then(([prodRes, catRes]) => {
+        if (cancelled) return;
+        const products = prodRes.data || prodRes;
+        const categories = catRes.data || catRes;
+
+        if (Array.isArray(products)) {
+          setProducts(products);
+        }
+        if (Array.isArray(categories)) {
+          const catNames = categories.map((c: any) => c.name);
+          setCategories(["All", ...catNames]);
         }
       })
       .catch(() => setFetchError("Failed to load menu. Please refresh the page."))
-      .finally(() => setLoading(false));
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Restore cart from localStorage
@@ -213,33 +231,6 @@ export default function MenuPage() {
     const firstInStock = product.variants.find((v) => v.quantity > 0);
     setSelectedVariant(firstInStock?.name || opts[0] || "");
     setQuantity(1);
-  };
-
-  // ─── Quick add (no-variant items) ────────────────────
-  const quickAdd = (product: Product) => {
-    if (!user) {
-      requireAuth();
-      return;
-    }
-    const price = getVariantPrice(product, "");
-    const cartItem: CartItem = {
-      id: product.id,
-      name: product.name,
-      image: product.image,
-      price,
-      quantity: 1,
-      variant: "",
-      variantId: undefined,
-    };
-    const existing = cart.findIndex((c) => c.id === product.id && c.variant === "");
-    let updated: CartItem[];
-    if (existing >= 0) {
-      updated = cart.map((c, i) => (i === existing ? { ...c, quantity: c.quantity + 1 } : c));
-    } else {
-      updated = [...cart, cartItem];
-    }
-    saveCart(updated);
-    showToast(`${product.name} added to basket`);
   };
 
   const addToCart = () => {
@@ -658,8 +649,9 @@ export default function MenuPage() {
                     const hasVar = hasVariants(item);
                     const isSoldOut =
                       item.availability === "sold_out" ||
-                      (!hasVar && item.quantity <= 0) ||
-                      (hasVar && item.variants.every((v) => v.quantity <= 0));
+                      (hasVar
+                        ? item.variants.every((v) => v.quantity <= 0) && item.quantity <= 0
+                        : item.quantity <= 0);
 
                     return (
                       <div
@@ -671,10 +663,7 @@ export default function MenuPage() {
                             : "cursor-pointer hover:shadow-xl hover:-translate-y-1 hover:border-white/80",
                         )}
                         onClick={() => {
-                          if (!isSoldOut) {
-                            if (hasVar) openModal(item);
-                            else quickAdd(item);
-                          }
+                          if (!isSoldOut) openModal(item);
                         }}
                       >
                         {/* Image */}
@@ -715,7 +704,7 @@ export default function MenuPage() {
                               {item.name}
                             </h3>
                             {item.description && (
-                              <p className="text-[11px] text-white/70 m-0 mt-0.5 leading-tight line-clamp-1">
+                              <p className="text-[11px] text-white/70 m-0 mt-0.5 leading-tight line-clamp-2">
                                 {item.description}
                               </p>
                             )}
@@ -736,18 +725,12 @@ export default function MenuPage() {
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
-                                if (hasVar) openModal(item);
-                                else quickAdd(item);
+                                openModal(item);
                               }}
-                              className={cn(
-                                "w-9 h-9 rounded-full flex items-center justify-center border-none cursor-pointer transition-all duration-200 shadow-sm",
-                                hasVar
-                                  ? "bg-brand-50 text-brand-500 hover:bg-brand-100"
-                                  : "bg-brand-500 text-white hover:bg-brand-600 active:scale-90",
-                              )}
-                              title={hasVar ? "Select options" : "Add to basket"}
+                              className="w-9 h-9 rounded-full flex items-center justify-center border-none cursor-pointer transition-all duration-200 shadow-sm bg-brand-50 text-brand-500 hover:bg-brand-100"
+                              title="Select options"
                             >
-                              {hasVar ? <span className="text-xs font-bold">+</span> : <Plus className="w-4 h-4" />}
+                              <span className="text-xs font-bold">+</span>
                             </button>
                           )}
                         </div>

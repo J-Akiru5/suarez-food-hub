@@ -199,7 +199,7 @@ export default function CheckoutPage() {
 
   if (!cartLoaded) {
     return (
-      <div style={{ minHeight: "100vh", background: "var(--color-cream)", fontFamily: "var(--plus-jakarta-sans)" }}>
+      <div style={{ minHeight: "100dvh", background: "var(--color-cream)", fontFamily: "var(--plus-jakarta-sans)" }}>
         <AuthNavbar />
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "120px 24px 60px" }}>
           <div style={{ background: "#fff", borderRadius: 28, padding: 32, boxShadow: "0 8px 32px rgba(0,0,0,0.04)" }}>
@@ -214,7 +214,7 @@ export default function CheckoutPage() {
 
   if (cart.length === 0 && !success) {
     return (
-      <div style={{ minHeight: "100vh", background: "var(--color-cream)", fontFamily: "var(--plus-jakarta-sans)" }}>
+      <div style={{ minHeight: "100dvh", background: "var(--color-cream)", fontFamily: "var(--plus-jakarta-sans)" }}>
         <AuthNavbar />
         <div style={{ maxWidth: 1200, margin: "0 auto", padding: "120px 24px 60px", textAlign: "center" }}>
           <div
@@ -265,7 +265,7 @@ export default function CheckoutPage() {
     return (
       <div
         style={{
-          minHeight: "100vh",
+          minHeight: "100dvh",
           background: "var(--color-cream)",
           display: "flex",
           flexDirection: "column",
@@ -334,7 +334,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div style={{ minHeight: "100vh", background: "var(--color-cream)", fontFamily: "var(--plus-jakarta-sans)" }}>
+    <div style={{ minHeight: "100dvh", background: "var(--color-cream)", fontFamily: "var(--plus-jakarta-sans)" }}>
       <AuthNavbar />
 
       <style>{`
