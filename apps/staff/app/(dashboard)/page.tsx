@@ -30,12 +30,18 @@ export default function StaffDashboard() {
         .gte("delivered_at", new Date(new Date().setHours(0, 0, 0, 0)).toISOString()),
       supabase
         .from("products")
-        .select("id, quantity, buffer_quantity", { count: "exact" })
+        .select("id, quantity, buffer_quantity, variant_type", { count: "exact" })
         .eq("availability", "available")
         .is("deleted_at", null),
     ]);
 
-    const lowStockItems = (lowStockRes.data || []).filter((p: any) => (p.quantity ?? 0) <= (p.buffer_quantity ?? 5));
+    // Exclude variant-type products (stock managed per-variant, main stock may be 0)
+    const lowStockItems = (lowStockRes.data || []).filter(
+      (p: any) =>
+        !p.variant_type || p.variant_type === "none"
+          ? (p.quantity ?? 0) <= (p.buffer_quantity ?? 5)
+          : false,
+    );
 
     setStats({
       pending: pendingRes.count || 0,

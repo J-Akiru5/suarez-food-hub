@@ -7,7 +7,7 @@ import { getCompletedOrdersCount, getOrdersCountForRider } from "@repo/data-acce
 import { getRiders, updateRiderStatus } from "@repo/data-access/data/profiles";
 import type { Profile } from "@repo/types";
 import { Button, Card, CardContent } from "@repo/ui";
-import { Bike, Calendar, Car, CheckCircle, Mail, Package, Phone, User, XCircle } from "lucide-react";
+import { Bike, Calendar, Car, CheckCircle, LogOut, Mail, Package, Phone, Trash2, User, XCircle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import Swal from "sweetalert2";
 
@@ -372,9 +372,7 @@ export default function RidersPage() {
                     <p className="text-xs text-green-600">Total Completed</p>
                   </div>
                 </div>
-              </div>
-
-              {/* Account Info */}
+              </div>                {/* Account Info */}
               <div className="space-y-3">
                 <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider">Account</h3>
                 <div className="flex items-center gap-3 text-sm">
@@ -400,6 +398,106 @@ export default function RidersPage() {
                 </div>
               </div>
             </div>
+
+            {/* Actions */}
+            {selectedRider.is_active && (selectedRider.rider_status as string) !== "resigned" && (
+              <div className="border-t border-gray-100 pt-4 mt-4">
+                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-3">Actions</h3>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    className="text-amber-600 border-amber-200 hover:bg-amber-50 gap-2"
+                    onClick={async () => {
+                      const result = await Swal.fire({
+                        title: "Mark as Resigned?",
+                        text: `${selectedRider.first_name} ${selectedRider.last_name} will no longer receive delivery assignments.`,
+                        icon: "warning",
+                        showCancelButton: true,
+                        confirmButtonColor: "#d97706",
+                        cancelButtonColor: "#6b7280",
+                        confirmButtonText: "Yes, mark as resigned",
+                      });
+                      if (!result.isConfirmed) return;
+                      const { error } = await supabase
+                        .from("profiles")
+                        .update({ rider_status: "resigned" as any, is_active: false, updated_at: new Date().toISOString() })
+                        .eq("id", selectedRider.id);
+                      if (error) {
+                        Swal.fire({ icon: "error", title: "Error", text: error.message });
+                      } else {
+                        Swal.fire({ icon: "success", title: "Resigned", text: "Rider marked as resigned.", timer: 1500, showConfirmButton: false });
+                        fetchRiders();
+                      }
+                    }}
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Mark as Resigned
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="text-red-600 border-red-200 hover:bg-red-50 gap-2"
+                    onClick={async () => {
+                      const result = await Swal.fire({
+                        title: "Delete Rider?",
+                        text: `${selectedRider.first_name} ${selectedRider.last_name} will be permanently removed. This cannot be undone.`,
+                        icon: "warning",
+                        showCancelButton: true,
+                        confirmButtonColor: "#dc2626",
+                        cancelButtonColor: "#6b7280",
+                        confirmButtonText: "Yes, delete permanently",
+                      });
+                      if (!result.isConfirmed) return;
+                      const { error } = await supabase.from("profiles").delete().eq("id", selectedRider.id);
+                      if (error) {
+                        Swal.fire({ icon: "error", title: "Error", text: error.message });
+                      } else {
+                        Swal.fire({ icon: "success", title: "Deleted", text: "Rider deleted permanently.", timer: 1500, showConfirmButton: false });
+                        setSelectedRider(null);
+                        fetchRiders();
+                      }
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Delete Rider
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Resigned rider — delete only */}
+            {(selectedRider.rider_status as string) === "resigned" && (
+              <div className="border-t border-gray-100 pt-4 mt-4">
+                <h3 className="text-sm font-semibold text-gray-700 uppercase tracking-wider mb-3">Resigned Rider</h3>
+                <p className="text-xs text-gray-500 mb-3">This rider has resigned. You can delete their account permanently.</p>
+                <Button
+                  variant="outline"
+                  className="text-red-600 border-red-200 hover:bg-red-50 gap-2"
+                  onClick={async () => {
+                    const result = await Swal.fire({
+                      title: "Delete Rider?",
+                      text: `${selectedRider.first_name} ${selectedRider.last_name} will be permanently removed.`,
+                      icon: "warning",
+                      showCancelButton: true,
+                      confirmButtonColor: "#dc2626",
+                      cancelButtonColor: "#6b7280",
+                      confirmButtonText: "Yes, delete permanently",
+                    });
+                    if (!result.isConfirmed) return;
+                    const { error } = await supabase.from("profiles").delete().eq("id", selectedRider.id);
+                    if (error) {
+                      Swal.fire({ icon: "error", title: "Error", text: error.message });
+                    } else {
+                      Swal.fire({ icon: "success", title: "Deleted", text: "Rider deleted permanently.", timer: 1500, showConfirmButton: false });
+                      setSelectedRider(null);
+                      fetchRiders();
+                    }
+                  }}
+                >
+                  <Trash2 className="h-4 w-4" />
+                  Delete Rider
+                </Button>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}

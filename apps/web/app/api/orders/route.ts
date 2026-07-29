@@ -1,10 +1,8 @@
 import type { Database } from "@repo/data-access";
 import { getUser } from "@repo/data-access/auth";
 import { createAuthClient, createServiceClient } from "@repo/data-access/client";
-import { createNotifications } from "@repo/data-access/data/notifications";
 import { createOrder, createOrderItems, deleteOrder, getOrdersByUser } from "@repo/data-access/data/orders";
-import { deductStock, deductVariantStock, markLowStockAlerted } from "@repo/data-access/data/products";
-import { getAdminIds, getProfileById, upsertProfile } from "@repo/data-access/data/profiles";
+import { getProfileById, upsertProfile } from "@repo/data-access/data/profiles";
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -40,6 +38,7 @@ export async function POST(req: NextRequest) {
     if (!["cod", "gcash"].includes(payment_method)) {
       return NextResponse.json({ success: false, error: "Invalid payment method" }, { status: 400 });
     }
+
 
     const stockErrors: string[] = [];
     for (const item of cart) {
@@ -140,41 +139,8 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ success: false, error: `Item error: ${itemError.message}` }, { status: 500 });
       }
 
-      // Deduct from variant stock if applicable, otherwise deduct from product stock
-      const result = item.variantId
-        ? await deductVariantStock(serviceSupabase, item.variantId, item.quantity)
-        : await deductStock(serviceSupabase, item.id, item.quantity);
-
-      if (result.error || result.newQuantity == null) {
-        await deleteOrder(serviceSupabase, order.id);
-        return NextResponse.json(
-          { success: false, error: `Stock error: ${result.error?.message || "Unknown error"}` },
-          { status: 500 },
-        );
-      }
-
-      // Only check low stock alerts for non-variant products
-      if (!item.variantId && "bufferQuantity" in result) {
-        const stockResult = result as { newQuantity: number; bufferQuantity: number; name: string };
-        if (stockResult.newQuantity <= (stockResult.bufferQuantity ?? 5) && stockResult.newQuantity >= 0) {
-          const admins = await getAdminIds(serviceSupabase);
-          if (admins && admins.length > 0) {
-            const { error: notifError } = await createNotifications(
-              serviceSupabase,
-              admins.map((a) => ({
-                id: crypto.randomUUID(),
-                user_id: a.id,
-                type: "low_stock",
-                title: "Low Stock Alert",
-                message: `"${stockResult.name}" is running low \u2014 only ${stockResult.newQuantity} left (buffer: ${stockResult.bufferQuantity ?? 5}).`,
-                data: { product_id: item.id, remaining: stockResult.newQuantity },
-              })),
-            );
-            if (notifError) console.error("Notif error:", notifError);
-            await markLowStockAlerted(serviceSupabase, item.id);
-          }
-        }
-      }
+      // ⚠️ Stock is NOT deducted on order placement.
+      // Stock deduction happens when staff confirms the order (see apps/staff/app/api/orders/route.ts).
     }
 
     return NextResponse.json({ success: true, data: { orderId: order.id } });

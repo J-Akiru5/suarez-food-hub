@@ -144,50 +144,43 @@ export default function SettingsPage() {
   async function handleSave() {
     setSaving(true);
     const payload = {
+      ...(config.id ? { id: config.id } : {}),
       name: config.name,
       address: config.address,
       phone: config.phone,
       email: config.email,
       gcash_qr_url: config.gcash_qr_url,
-
       delivery_fee: config.delivery_fee,
       free_delivery_min: config.free_delivery_min,
       delivery_provinces: config.delivery_provinces || null,
-      updated_at: new Date().toISOString(),
     };
 
-    if (config.id) {
-      const { error } = await updateBusinessConfig(supabase, config.id, payload);
-      if (error) {
-        Swal.fire({ icon: "error", title: "Update failed", text: error.message });
-        console.error("Update error:", error);
-      } else {
-        Swal.fire({
-          icon: "success",
-          title: "Success",
-          text: "Settings saved successfully!",
-          timer: 1500,
-          showConfirmButton: false,
-        });
+    try {
+      const res = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const response = await res.json();
+
+      if (!response.success) {
+        Swal.fire({ icon: "error", title: "Save failed", text: response.error || "Unknown error" });
+        return;
       }
-    } else {
-      const newId = crypto.randomUUID();
-      const insertPayload = { ...payload, id: newId };
-      const { data, error } = await supabase.from("business").insert(insertPayload).select().single();
-      if (error) {
-        Swal.fire({ icon: "error", title: "Insert failed", text: error.message });
-        console.error("Insert error:", error);
+
+      if (response.data) {
+        setConfig((prev) => ({ ...prev, id: response.data.id }));
       }
-      if (data) {
-        setConfig((prev) => ({ ...prev, id: data.id }));
-        Swal.fire({
-          icon: "success",
-          title: "Success",
-          text: "Settings saved successfully!",
-          timer: 1500,
-          showConfirmButton: false,
-        });
-      }
+
+      Swal.fire({
+        icon: "success",
+        title: "Success",
+        text: "Settings saved successfully!",
+        timer: 1500,
+        showConfirmButton: false,
+      });
+    } catch (err: any) {
+      Swal.fire({ icon: "error", title: "Save failed", text: err.message || "Network error" });
     }
     setSaving(false);
   }

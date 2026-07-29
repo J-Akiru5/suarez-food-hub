@@ -292,9 +292,44 @@ export default function MenuPage() {
   const totalItems = cart.reduce((s, c) => s + c.quantity, 0);
   const totalPrice = cart.reduce((s, c) => s + c.price * c.quantity, 0);
 
+  // ─── Fuzzy search with typo tolerance ────────────────
   const searchFiltered = searchQuery.trim()
-    ? products.filter((p) => p.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    ? products.filter((p) => {
+        const query = searchQuery.toLowerCase().trim();
+        const name = p.name.toLowerCase();
+        // Exact substring match (catches most cases)
+        if (name.includes(query)) return true;
+        // Word-level match: check if each search word appears somewhere
+        const queryWords = query.split(/\s+/).filter(Boolean);
+        const nameWords = name.split(/\s+/);
+        if (queryWords.every((qw) => nameWords.some((nw) => nw.startsWith(qw) || nw.includes(qw)))) return true;
+        // Levenshtein fallback for short queries (catches typos like "siomai" vs "siomay")
+        if (query.length <= 8) {
+          const threshold = Math.max(1, Math.floor(query.length * 0.3));
+          return nameWords.some((nw) => {
+            const dist = levenshtein(query, nw);
+            return dist <= threshold;
+          });
+        }
+        return false;
+      })
     : products;
+
+  // Simple Levenshtein distance for typo tolerance
+  function levenshtein(a: string, b: string): number {
+    const m = a.length, n = b.length;
+    const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+    for (let i = 0; i <= m; i++) dp[i][0] = i;
+    for (let j = 0; j <= n; j++) dp[0][j] = j;
+    for (let i = 1; i <= m; i++) {
+      for (let j = 1; j <= n; j++) {
+        dp[i][j] = a[i - 1] === b[j - 1]
+          ? dp[i - 1][j - 1]
+          : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1]);
+      }
+    }
+    return dp[m][n];
+  }
   const filtered =
     activeCategory === "All" ? searchFiltered : searchFiltered.filter((p) => p.category === activeCategory);
 
