@@ -30,15 +30,26 @@ export default function StaffDashboard() {
         .gte("delivered_at", new Date(new Date().setHours(0, 0, 0, 0)).toISOString()),
       supabase
         .from("products")
-        .select("id, quantity, buffer_quantity, variant_type", { count: "exact" })
+        .select("id, quantity, buffer_quantity, variant_type, product_variants(quantity, is_active)", {
+          count: "exact",
+        })
         .eq("availability", "available")
         .is("deleted_at", null),
     ]);
 
-    // Exclude variant-type products (stock managed per-variant, main stock may be 0)
-    const lowStockItems = (lowStockRes.data || []).filter((p: any) =>
-      !p.variant_type || p.variant_type === "none" ? (p.quantity ?? 0) <= (p.buffer_quantity ?? 5) : false,
-    );
+    // Low stock = total available units (sum of active variant quantities for
+    // variant products, else main quantity) at or below the buffer.
+    // This matches the inventory page's low-stock filter exactly.
+    const lowStockItems = (lowStockRes.data || []).filter((p: any) => {
+      const buffer = p.buffer_quantity ?? 5;
+      if (p.variant_type && p.variant_type !== "none") {
+        const totalVariantStock = (p.product_variants || [])
+          .filter((v: any) => v.is_active !== false)
+          .reduce((sum: number, v: any) => sum + (v.quantity ?? 0), 0);
+        return totalVariantStock <= buffer;
+      }
+      return (p.quantity ?? 0) <= buffer;
+    });
 
     setStats({
       pending: pendingRes.count || 0,

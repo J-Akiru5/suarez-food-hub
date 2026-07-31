@@ -1,4 +1,5 @@
 @import "@repo/ui/globals.css";
+@import "sweetalert2/dist/sweetalert2.min.css";
 
 @keyframes pulse {
   0%,

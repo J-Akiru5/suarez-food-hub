@@ -1,4 +1,5 @@
 @import "../../../packages/ui/src/globals.css";
+@import "sweetalert2/dist/sweetalert2.min.css";
 
 @tailwind base;
 @tailwind components;

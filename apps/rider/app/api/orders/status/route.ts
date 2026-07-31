@@ -148,13 +148,23 @@ export async function POST(request: NextRequest) {
     const { error: updateError } = await updateOrderStatus(supabase, order_id, status, extraFields);
     if (updateError) return NextResponse.json({ success: false, error: updateError.message }, { status: 500 });
 
-    // Create earning when delivered
+    // Create earning when delivered — idempotent so a duplicate "delivered"
+    // request (double-tap / retry) can never pay the rider twice.
     if (status === "delivered" && (order as any).rider_id) {
       const riderId = order.rider_id || user.id;
       const earningAmount = Number((order as any).rider_earnings) || 40;
-      const { error: earnError } = await createRiderEarning(supabase, riderId, order.id, earningAmount);
-      if (earnError) {
-        console.error("Failed to create rider earning:", earnError);
+
+      const { data: existingEarning } = await supabase
+        .from("rider_earnings")
+        .select("id")
+        .eq("order_id", order.id)
+        .maybeSingle();
+
+      if (!existingEarning) {
+        const { error: earnError } = await createRiderEarning(supabase, riderId, order.id, earningAmount);
+        if (earnError) {
+          console.error("Failed to create rider earning:", earnError);
+        }
       }
 
       // Notify customer

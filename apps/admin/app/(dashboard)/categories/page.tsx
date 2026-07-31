@@ -49,7 +49,8 @@ export default function CategoriesPage() {
         const { count } = await supabase
           .from("products")
           .select("id", { count: "exact", head: true })
-          .eq("category_id", cat.id);
+          .eq("category_id", cat.id)
+          .is("deleted_at", null);
         return { ...cat, productCount: count || 0 };
       }),
     );
@@ -127,7 +128,7 @@ export default function CategoriesPage() {
   async function handleDeleteCategory(id: string, categoryName: string) {
     const result = await Swal.fire({
       title: "Delete Category?",
-      text: `Are you sure you want to delete "${categoryName}"? This cannot be undone.`,
+      text: `Delete "${categoryName}"? Its products will also be removed from the menu.`,
       icon: "warning",
       showCancelButton: true,
       confirmButtonColor: "#dc2626",

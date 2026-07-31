@@ -31,13 +31,25 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
     }
 
-    if (body.status === "cancelled" && order.status !== "pending") {
+    // Customers may ONLY cancel their own pending COD orders.
+    // Stock is only deducted when staff confirms an order, so a pending order has
+    // no stock to restore — never touch stock here (prevents stock inflation).
+    if (body.status !== "cancelled") {
+      return NextResponse.json({ success: false, error: "Customers can only cancel orders" }, { status: 400 });
+    }
+    if (order.status !== "pending") {
       return NextResponse.json({ success: false, error: "Only pending orders can be cancelled" }, { status: 400 });
+    }
+    if (order.payment_method !== "cod") {
+      return NextResponse.json(
+        { success: false, error: "Only Cash on Delivery orders can be cancelled" },
+        { status: 400 },
+      );
     }
 
     const { data: updated, error: updateError } = await serviceSupabase
       .from("orders")
-      .update({ status: body.status })
+      .update({ status: "cancelled", cancelled_at: new Date().toISOString() })
       .eq("id", id)
       .select()
       .single();
@@ -46,21 +58,18 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       return NextResponse.json({ success: false, error: updateError.message }, { status: 500 });
     }
 
-    if (body.status === "cancelled" && order.order_items) {
-      for (const item of order.order_items) {
-        const { data: product } = await serviceSupabase
-          .from("products")
-          .select("quantity")
-          .eq("id", item.product_id)
-          .single();
-
-        if (product) {
-          await serviceSupabase
-            .from("products")
-            .update({ quantity: product.quantity + item.quantity, availability: "available" })
-            .eq("id", item.product_id);
-        }
-      }
+    // Notify staff/admin so the kitchen knows the customer cancelled
+    const { data: staffProfiles } = await serviceSupabase.from("profiles").select("id").in("role", ["admin", "staff"]);
+    if (staffProfiles && staffProfiles.length > 0) {
+      await serviceSupabase.from("notifications").insert(
+        staffProfiles.map((s) => ({
+          user_id: s.id,
+          type: "order_cancelled",
+          title: "Order Cancelled by Customer",
+          message: `Customer cancelled order #${id.slice(0, 8)}.`,
+          data: { order_id: id },
+        })),
+      );
     }
 
     return NextResponse.json({ success: true, data: updated });

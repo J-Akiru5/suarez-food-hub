@@ -43,7 +43,8 @@ export default function StaffCategoriesPage() {
         const { count } = await supabase
           .from("products")
           .select("id", { count: "exact", head: true })
-          .eq("category_id", cat.id);
+          .eq("category_id", cat.id)
+          .is("deleted_at", null);
         return { ...cat, productCount: count || 0 };
       }),
     );

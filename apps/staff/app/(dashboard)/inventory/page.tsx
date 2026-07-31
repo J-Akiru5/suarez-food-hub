@@ -1,7 +1,7 @@
 "use client";
 
 import { createBrowserTypedClient } from "@repo/data-access/client";
-import { createProduct, deleteProduct, updateProduct } from "@repo/data-access/data/products";
+import { createProduct, deleteProduct, generateUniqueSlug, updateProduct } from "@repo/data-access/data/products";
 import type { Category } from "@repo/types";
 import {
   Badge,
@@ -79,7 +79,7 @@ export default function StaffInventoryPage() {
         .select("*, category:categories(*), product_variants(*)")
         .is("deleted_at", null)
         .order("created_at", { ascending: false }),
-      supabase.from("categories").select("id, name, slug").order("name"),
+      supabase.from("categories").select("id, name, slug").is("deleted_at", null).order("name"),
     ]);
     setProducts(prodRes.data || []);
     setCategories((catRes.data as Category[]) || []);
@@ -187,9 +187,13 @@ export default function StaffInventoryPage() {
 
   async function handleSave() {
     setSaving(true);
+    // Generate a unique slug so re-creating a product with the same name as a
+    // soft-deleted one doesn't hit the "duplicate key violates unique constraint" error.
+    const baseSlug = formSlug || formName.toLowerCase().replace(/\s+/g, "-");
+    const slug = await generateUniqueSlug(supabase, baseSlug, editingProduct?.id);
     const productData: any = {
       name: formName,
-      slug: formSlug || formName.toLowerCase().replace(/\s+/g, "-"),
+      slug,
       description: formDescription || null,
       base_price: parseFloat(formPrice) || 0,
       category_id: formCategoryId,
@@ -222,25 +226,76 @@ export default function StaffInventoryPage() {
       return;
     }
 
-    // Save variants if variant type is selected
-    if (formVariantType !== "none" && productId && formVariants.length > 0) {
-      // Delete existing variants first (when editing)
-      if (editingProduct) {
-        await supabase.from("product_variants").delete().eq("product_id", productId);
+    // Save variants if variant type is selected.
+    // NOTE: staff cannot hard-delete product_variants (RLS), so instead of
+    // delete-all-then-reinsert (which silently failed and left duplicates on the
+    // customer menu), we upsert by name and soft-deactivate removed variants.
+    if (formVariantType !== "none" && productId) {
+      const { data: existingVariants } = await supabase
+        .from("product_variants")
+        .select("id, name")
+        .eq("product_id", productId);
+      // Group existing variant ids by name (there may be duplicate rows left over from
+      // the old delete-then-reinsert bug). We keep only one id per name and deactivate
+      // the rest so duplicates never linger on the customer menu.
+      const existingByName = new Map<string, string[]>();
+      for (const v of existingVariants || []) {
+        const list = existingByName.get(v.name) || [];
+        list.push(v.id);
+        existingByName.set(v.name, list);
       }
-      // Insert new variants (generate UUID since table has no DEFAULT on id)
-      const variantInserts = formVariants.map((v, i) => ({
-        id: crypto.randomUUID(),
-        product_id: productId,
-        name: v.name,
-        price: parseFloat(v.price) || 0,
-        quantity: parseInt(v.qty, 10) || 0,
-        sort_order: i,
-        is_active: true,
-      }));
-      const { error: varError } = await supabase.from("product_variants").insert(variantInserts);
+      const newNames = new Set(formVariants.map((v) => v.name.trim()).filter(Boolean));
+
+      // Soft-deactivate every existing row whose name was removed from the form
+      let varError: { message?: string } | null = null;
+      for (const [name, ids] of existingByName) {
+        if (!newNames.has(name)) {
+          const { error: removeError } = await supabase
+            .from("product_variants")
+            .update({ is_active: false })
+            .in("id", ids);
+          if (removeError) varError = removeError;
+        }
+      }
+
+      // Upsert the current form variants (dedupe repeated names within the form)
+      const seenNames = new Set<string>();
+      for (let i = 0; i < formVariants.length; i++) {
+        const v = formVariants[i];
+        const name = v.name.trim();
+        if (!name || seenNames.has(name)) continue;
+        seenNames.add(name);
+        const payload = {
+          name,
+          price: parseFloat(v.price) || 0,
+          quantity: parseInt(v.qty, 10) || 0,
+          sort_order: i,
+          is_active: true,
+        };
+        const existingIds = existingByName.get(name) || [];
+        if (existingIds.length > 0) {
+          // Keep the first existing row, deactivate any duplicate rows
+          const { error: updateError } = await supabase
+            .from("product_variants")
+            .update(payload)
+            .eq("id", existingIds[0]);
+          if (updateError) varError = updateError;
+          if (existingIds.length > 1) {
+            const { error: dupError } = await supabase
+              .from("product_variants")
+              .update({ is_active: false })
+              .in("id", existingIds.slice(1));
+            if (dupError) varError = dupError;
+          }
+        } else {
+          const { error } = await supabase
+            .from("product_variants")
+            .insert({ id: crypto.randomUUID(), product_id: productId, ...payload });
+          if (error) varError = error;
+        }
+      }
       if (varError) {
-        const msg = (varError as any)?.message || JSON.stringify(varError);
+        const msg = varError?.message || JSON.stringify(varError);
         Swal.fire({
           icon: "error",
           title: "Variants failed to save",
@@ -253,8 +308,8 @@ export default function StaffInventoryPage() {
         return;
       }
     } else if (editingProduct && productId) {
-      // If switching to no variants, delete existing ones
-      await supabase.from("product_variants").delete().eq("product_id", productId);
+      // If switching to no variants, soft-deactivate existing ones (staff can't hard-delete)
+      await supabase.from("product_variants").update({ is_active: false }).eq("product_id", productId);
     }
 
     Swal.fire({ title: "Success", text: `Product ${editingProduct ? "updated" : "created"}!`, icon: "success" });
@@ -283,11 +338,27 @@ export default function StaffInventoryPage() {
     }
   }
 
+  // Low stock = total available units (sum of active variant quantities for
+  // variant products, else main quantity) at or below the buffer.
+  // Matches the staff dashboard's low-stock count exactly.
+  const isLowStock = (p: any) => {
+    const buffer = p.buffer_quantity ?? 5;
+    if (p.variant_type && p.variant_type !== "none") {
+      const totalVariantStock = (p.product_variants || [])
+        .filter((v: any) => v.is_active !== false)
+        .reduce((sum: number, v: any) => sum + (v.quantity ?? 0), 0);
+      return totalVariantStock <= buffer;
+    }
+    return (p.quantity ?? 0) <= buffer;
+  };
+
   const filtered = products.filter((p) => {
     const matchesSearch = !search || p.name.toLowerCase().includes(search.toLowerCase());
     const matchesCategory = filterCategory === "all" || p.category_id === filterCategory;
-    const isLow = (p.quantity ?? 0) <= (p.buffer_quantity ?? 5);
-    const matchesLowStock = !filterLowStock || isLow;
+    // Only "available" products are counted on the staff dashboard banner,
+    // so the low-stock filter must match that exactly (sold-out products are
+    // already known to be out — they don't belong in the "needs restocking" list).
+    const matchesLowStock = !filterLowStock || (p.availability === "available" && isLowStock(p));
     return matchesSearch && matchesCategory && matchesLowStock;
   });
 
@@ -384,7 +455,7 @@ export default function StaffInventoryPage() {
                 </thead>
                 <tbody className="divide-y divide-gray-200">
                   {filtered.map((product) => {
-                    const isLow = (product.quantity ?? 0) <= (product.buffer_quantity ?? 5);
+                    const isLow = isLowStock(product);
                     const currentEdit = qtyEdits[product.id];
                     return (
                       <tr key={product.id} className="hover:bg-gray-50">
@@ -520,7 +591,7 @@ export default function StaffInventoryPage() {
           {/* Mobile Cards — lg:hidden, no desktop impact */}
           <div className="lg:hidden space-y-3">
             {filtered.map((product) => {
-              const isLow = (product.quantity ?? 0) <= (product.buffer_quantity ?? 5);
+              const isLow = isLowStock(product);
               const currentEdit = qtyEdits[product.id];
               return (
                 <Card key={product.id}>

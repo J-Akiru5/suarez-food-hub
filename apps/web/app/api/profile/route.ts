@@ -21,24 +21,80 @@ export async function GET() {
   }
 }
 
+// Only these roles may be self-registered. Admin/staff are created by an admin,
+// so a public endpoint must never be able to grant them.
+const ALLOWED_SELF_ROLES = ["customer", "rider"] as const;
+
+// Fields a caller is allowed to set when creating their own profile.
+const ALLOWED_PROFILE_FIELDS = [
+  "email",
+  "first_name",
+  "last_name",
+  "username",
+  "full_name",
+  "phone",
+  "role",
+  "is_active",
+  "created_at",
+  "updated_at",
+  "rider_status",
+  "vehicle_type",
+  "plate_number",
+  "license_number",
+  "valid_id_url",
+] as const;
+
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { user_id, profile_data } = body;
 
-    if (!user_id || !profile_data) {
+    if (!user_id || !profile_data || typeof profile_data !== "object") {
       return NextResponse.json({ success: false, error: "Missing user_id or profile_data" }, { status: 400 });
+    }
+
+    // If a session exists, the caller may only create their OWN profile.
+    const cookieStore = await cookies();
+    const authClient = createAuthClient(cookieStore);
+    const {
+      data: { user },
+    } = await authClient.auth.getUser();
+    if (user && user.id !== user_id) {
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+    }
+
+    // Sanitize to allowed fields so callers can't inject role escalation or
+    // arbitrary columns (e.g. role: "admin").
+    const sanitized: Record<string, unknown> = { id: user_id };
+    for (const key of ALLOWED_PROFILE_FIELDS) {
+      if ((profile_data as Record<string, unknown>)[key] !== undefined) {
+        sanitized[key] = (profile_data as Record<string, unknown>)[key];
+      }
+    }
+
+    // Enforce the role whitelist — self-registration can never be admin/staff.
+    // A missing role defaults to customer so the is_active forcing below always runs.
+    const role = sanitized["role"] ?? "customer";
+    if (!ALLOWED_SELF_ROLES.includes(role as (typeof ALLOWED_SELF_ROLES)[number])) {
+      return NextResponse.json({ success: false, error: "Invalid role" }, { status: 400 });
+    }
+    sanitized["role"] = role;
+
+    // Force is_active from the role server-side instead of trusting the payload:
+    // customers are active immediately, rider applications start inactive until
+    // admin approval. A caller can never self-activate a rider profile.
+    if (role === "rider") {
+      sanitized["is_active"] = false;
+      if (!sanitized["rider_status"]) sanitized["rider_status"] = "pending_approval";
+    } else if (role === "customer") {
+      sanitized["is_active"] = true;
     }
 
     // Use service role client to bypass RLS — needed because after signUp the
     // auth session may not be fully established (e.g. email confirmation enabled),
     // which would cause RLS policy (auth.uid() = id) to reject the insert.
     const serviceSupabase = createServiceClient();
-    const { data, error } = await serviceSupabase
-      .from("profiles")
-      .upsert({ id: user_id, ...profile_data })
-      .select()
-      .single();
+    const { data, error } = await serviceSupabase.from("profiles").upsert(sanitized).select().single();
 
     if (error) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });

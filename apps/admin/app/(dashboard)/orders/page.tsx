@@ -77,27 +77,30 @@ export default function OrdersPage() {
     };
   }, [supabase, fetchOrders]);
 
-  async function updateStatus(orderId: string, status: string, orderNumber?: string) {
+  async function updateStatus(orderId: string, status: string) {
     setPendingStatus((p) => ({ ...p, [orderId]: status }));
-    const { error } = await supabase.from("orders").update({ status }).eq("id", orderId);
-    if (error) {
-      toast({ title: "Error", description: "Failed to update status.", variant: "destructive" });
-      setPendingStatus((p) => {
-        const copy = { ...p };
-        delete copy[orderId];
-        return copy;
+    try {
+      // Route through the server API so stock is deducted/restored correctly and
+      // staff are notified on confirm — a direct client-side write would bypass it.
+      const res = await fetch("/api/orders", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: orderId, status }),
       });
-    } else {
-      toast({ title: "Status updated", description: `Order status changed to ${status.replace(/_/g, " ")}.` });
-      // Notify staff when admin confirms the order
-      if (status === "confirmed") {
-        fetch("/api/orders/notify-staff", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ order_id: orderId, order_number: orderNumber || orderId }),
-        }).catch(() => {});
+      const data = await res.json();
+      if (!data.success) {
+        toast({ title: "Error", description: data.error || "Failed to update status.", variant: "destructive" });
+      } else {
+        toast({ title: "Status updated", description: `Order status changed to ${status.replace(/_/g, " ")}.` });
       }
+    } catch {
+      toast({ title: "Error", description: "Failed to update status.", variant: "destructive" });
     }
+    setPendingStatus((p) => {
+      const copy = { ...p };
+      delete copy[orderId];
+      return copy;
+    });
     fetchOrders();
   }
 
@@ -269,7 +272,7 @@ export default function OrdersPage() {
                                 <p className="text-xs font-medium text-gray-500 mb-1">Order Status</p>
                                 <select
                                   value={pendingStatus[order.id] || order.status}
-                                  onChange={(e) => updateStatus(order.id, e.target.value, order.order_number)}
+                                  onChange={(e) => updateStatus(order.id, e.target.value)}
                                   className="w-full h-8 text-xs rounded-md border border-gray-200 bg-white px-2"
                                 >
                                   <option value="pending">Pending</option>

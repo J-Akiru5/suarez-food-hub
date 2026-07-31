@@ -1,7 +1,7 @@
 import { getUser, requireAdmin } from "@repo/data-access/auth";
 import { createServiceClient } from "@repo/data-access/client";
 import { createCategory, getCategories, getCategoryByName } from "@repo/data-access/data/categories";
-import { createProduct, getProducts } from "@repo/data-access/data/products";
+import { createProduct, generateUniqueSlug, getProducts } from "@repo/data-access/data/products";
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -116,9 +116,11 @@ export async function POST(req: NextRequest) {
     }
 
     const availability = quantity > 0 ? "available" : "sold_out";
+    const baseSlug = name.toLowerCase().replace(/\s+/g, "-");
+    const slug = await generateUniqueSlug(supabase, baseSlug);
     const { data, error } = await createProduct(supabase, {
       name,
-      slug: name.toLowerCase().replace(/\s+/g, "-"),
+      slug,
       category_id: categoryId,
       base_price: price,
       image_url: imageUrl,
