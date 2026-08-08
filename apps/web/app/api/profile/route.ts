@@ -1,6 +1,6 @@
 import { getUser } from "@repo/data-access/auth";
 import { createAuthClient, createServiceClient } from "@repo/data-access/client";
-import { getProfileById, updateProfile } from "@repo/data-access/data/profiles";
+import { getProfileById, isUsernameTaken, updateProfile, upsertProfile } from "@repo/data-access/data/profiles";
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -139,13 +139,70 @@ export async function PATCH(req: NextRequest) {
     if (province_id !== undefined) updateData.province_id = province_id;
     if (town_id !== undefined) updateData.town_id = town_id;
     if (barangay_id !== undefined) updateData.barangay_id = barangay_id;
-    if (zip_code !== undefined) updateData.zip_code = zip_code;
+    // zip_code is NOT NULL in the DB — an empty/omitted value must be "" not null,
+    // otherwise the save fails with a raw constraint error.
+    if (zip_code !== undefined) updateData.zip_code = zip_code ?? "";
     if (address !== undefined) updateData.address = address;
 
     const serviceSupabase = createServiceClient();
-    const { data, error } = await updateProfile(serviceSupabase, user.id, updateData);
-    if (error) return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-    return NextResponse.json({ success: true, data });
+
+    // Location fields must never be silently wiped. The client sends null when
+    // its location selectors are empty (e.g. a customer who only edits their
+    // phone), which would destroy the saved town/province/barangay and break
+    // checkout's delivery-area check. Keep the existing value unless a
+    // non-empty replacement is actually provided.
+    const LOCATION_FIELDS = ["region_id", "province_id", "town_id", "barangay_id"] as const;
+    if (LOCATION_FIELDS.some((f) => body[f] === null || body[f] === "")) {
+      const existing = await getProfileById(serviceSupabase, user.id);
+      if (existing) {
+        const existingRow = existing as unknown as Record<string, unknown>;
+        for (const f of LOCATION_FIELDS) {
+          const incoming = body[f] as string | null | undefined;
+          const saved = existingRow[f] as string | null | undefined;
+          // Only preserve when the incoming value is empty AND a saved value exists.
+          if ((incoming === null || incoming === "") && saved) {
+            updateData[f] = saved;
+          }
+        }
+      }
+    }
+
+    let result = await updateProfile(serviceSupabase, user.id, updateData);
+
+    // Old accounts may not have a profile row — an UPDATE affects 0 rows, so fall
+    // back to creating a complete profile (previously this silently failed).
+    if (result.error || !result.data) {
+      const now = new Date().toISOString();
+      const baseUsername =
+        (user.email?.split("@")[0] || "customer").replace(/[^a-zA-Z0-9_]/g, "").slice(0, 20) || "customer";
+      let username = baseUsername;
+      let suffix = 1;
+      while (await isUsernameTaken(serviceSupabase, username)) {
+        username = `${baseUsername.slice(0, 17)}${suffix}`;
+        suffix += 1;
+      }
+      const fullName =
+        (full_name as string) ||
+        `${(first_name as string) || ""} ${(last_name as string) || ""}`.trim() ||
+        user.email?.split("@")[0] ||
+        "Customer";
+      result = await upsertProfile(serviceSupabase, {
+        id: user.id,
+        email: user.email,
+        username,
+        full_name: fullName,
+        first_name: (first_name as string) || null,
+        last_name: (last_name as string) || null,
+        role: "customer",
+        is_active: true,
+        created_at: now,
+        updated_at: now,
+        ...updateData,
+      } as never);
+    }
+
+    if (result.error) return NextResponse.json({ success: false, error: result.error.message }, { status: 500 });
+    return NextResponse.json({ success: true, data: result.data });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Internal server error";
     return NextResponse.json({ success: false, error: message }, { status: 500 });

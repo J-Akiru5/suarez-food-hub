@@ -1,6 +1,13 @@
 export type UserRole = "customer" | "admin" | "staff" | "rider";
 
-export type RiderStatus = "pending_approval" | "available" | "vacant" | "occupied" | "rejected" | "offline";
+export type RiderStatus =
+  | "pending_approval"
+  | "available"
+  | "vacant"
+  | "occupied"
+  | "rejected"
+  | "offline"
+  | "resigned";
 
 export type OrderStatus =
   | "pending"
@@ -202,6 +209,7 @@ export interface BusinessConfig {
   delivery_fee: number;
   free_delivery_min: number;
   delivery_provinces: string | null;
+  delivery_areas: string | null;
   created_at: string;
   updated_at: string;
 }

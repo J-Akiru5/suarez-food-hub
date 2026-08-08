@@ -99,7 +99,7 @@ export default function HomePage() {
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 md:gap-8">
               {popularFoods.map((item) => (
-                <Link key={item.id} href="/menu" className="group">
+                <Link key={item.id} href={`/menu?product=${item.id}`} className="group">
                   <div className="w-full aspect-square rounded-2xl overflow-hidden bg-[var(--primary-color)]/5 mb-4 shadow-sm group-hover:shadow-md transition-shadow duration-300">
                     <img
                       src={getImageSrc(item.image)}

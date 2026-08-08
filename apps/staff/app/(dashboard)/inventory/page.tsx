@@ -90,6 +90,19 @@ export default function StaffInventoryPage() {
     fetchData();
   }, [fetchData]);
 
+  // Realtime — stock updates appear live (e.g. after confirming an order)
+  useEffect(() => {
+    const channel = supabase
+      .channel("staff-inventory-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "products" }, () => fetchData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "product_variants" }, () => fetchData())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase, fetchData]);
+
   async function saveQuantity(productId: string) {
     const newQty = parseInt(qtyEdits[productId] ?? "", 10);
     if (Number.isNaN(newQty) || newQty < 0) return;

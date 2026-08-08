@@ -43,8 +43,7 @@ export async function PATCH(req: NextRequest) {
       "delivery_fee",
       "free_delivery_min",
       "delivery_provinces",
-      "base_lat",
-      "base_lng",
+      "delivery_areas",
     ];
     const updateData: Record<string, unknown> = {};
     for (const key of allowedFields) {

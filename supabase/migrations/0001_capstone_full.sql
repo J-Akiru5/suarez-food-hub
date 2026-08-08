@@ -447,10 +447,27 @@ CREATE POLICY "riders update own location" ON rider_locations FOR UPDATE USING (
 -- 14. ENABLE REALTIME
 -- ===========================
 -- (You may also need to enable these in Supabase Dashboard > Database > Replication)
-ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS orders;
-ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS notifications;
-ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS order_status_log;
-ALTER PUBLICATION supabase_realtime ADD TABLE IF NOT EXISTS profiles;
+-- (ALTER PUBLICATION ... ADD TABLE has no IF NOT EXISTS, so guard each table)
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'orders') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.orders;
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'notifications') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'order_status_log') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.order_status_log;
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND schemaname = 'public' AND tablename = 'profiles') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE public.profiles;
+  END IF;
+END $$;
 
 -- ===========================
 -- 14. TRIGGER: log order status changes

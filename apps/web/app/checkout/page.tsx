@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import AddressSetupForm from "../../components/AddressSetupForm";
 import AuthNavbar from "../../components/AuthNavbar";
 import { useAuth } from "../../components/auth-provider";
 
@@ -32,6 +33,7 @@ interface Business {
   delivery_fee: number;
   free_delivery_min: number;
   delivery_provinces?: string | null;
+  delivery_areas?: string | null;
 }
 
 const PH_REGEX = /^(?:\+63|0)9\d{9}$/;
@@ -41,7 +43,7 @@ type PaymentMethod = "cod" | "gcash";
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { user, profile } = useAuth();
+  const { user, profile, refreshProfile } = useAuth();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartLoaded, setCartLoaded] = useState(false);
   const [address, setAddress] = useState("");
@@ -57,6 +59,7 @@ export default function CheckoutPage() {
   const [qrModalUrl, setQrModalUrl] = useState<string | null>(null);
   const [position, _setPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [step, setStep] = useState(1);
+  const [showAddressForm, setShowAddressForm] = useState(false);
   const addressRef = useRef<HTMLTextAreaElement>(null);
   const initialProfileLoaded = useRef(false);
 
@@ -88,15 +91,22 @@ export default function CheckoutPage() {
       .catch(() => {});
   }, []);
 
+  // Town/city-level delivery restriction (Iloilo City + selected towns), with
+  // province-level fallback for backwards compatibility.
+  const deliveryAreaList = business?.delivery_areas ? business.delivery_areas.split(",").filter(Boolean) : null;
   const deliveryProvinceList = business?.delivery_provinces
     ? business.delivery_provinces.split(",").filter(Boolean)
     : null;
+  // No saved address at all — block ordering and ask the customer to set one up.
+  const needsAddressSetup = !!profile && !(profile as any).town_id;
   const isAreaRestricted =
-    deliveryProvinceList &&
-    deliveryProvinceList.length > 0 &&
-    profile &&
-    (profile as any).province_id &&
-    !deliveryProvinceList.includes((profile as any).province_id);
+    !!profile &&
+    !needsAddressSetup &&
+    (deliveryAreaList && deliveryAreaList.length > 0
+      ? !deliveryAreaList.includes((profile as any).town_id)
+      : deliveryProvinceList && deliveryProvinceList.length > 0
+        ? !deliveryProvinceList.includes((profile as any).province_id)
+        : false);
 
   const deliveryFee = business?.delivery_fee ?? 40;
   const freeDeliveryMin = business?.free_delivery_min ?? 200;
@@ -550,8 +560,8 @@ export default function CheckoutPage() {
                 fontWeight: 500,
               }}
             >
-              <strong>Delivery not available</strong> — We currently only deliver within select provinces. Please update
-              your profile address or choose a different service.
+              <strong>Delivery not available</strong> — We currently only deliver within Iloilo City and selected towns
+              in Iloilo. Please update your profile address to a covered area.
             </div>
           )}
           {error && (
@@ -569,8 +579,79 @@ export default function CheckoutPage() {
               {error}
             </div>
           )}
+          {/* Address not set up yet — block ordering and offer setup options */}
+          {step === 1 && needsAddressSetup && (
+            <div
+              className="animate-in fade-in slide-in-from-right-8 duration-300"
+              style={{ background: "#fff", borderRadius: 28, padding: 32, boxShadow: "0 8px 32px rgba(0,0,0,0.04)" }}
+            >
+              <h3
+                style={{
+                  margin: "0 0 12px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  color: "var(--secondary-color)",
+                  fontSize: 24,
+                  fontFamily: "var(--playfair-display)",
+                }}
+              >
+                <MapPin size={24} color="var(--primary-color)" /> Set Up Your Delivery Address
+              </h3>
+              <p style={{ margin: "0 0 20px", fontSize: 15, color: "#64748b", lineHeight: 1.6 }}>
+                You need to add your delivery address before you can place an order. We currently deliver within{" "}
+                <strong>Iloilo City</strong> and selected towns in Iloilo.
+              </p>
+
+              <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 8 }}>
+                <button
+                  onClick={() => router.push("/profile")}
+                  style={{
+                    padding: "14px 28px",
+                    borderRadius: 14,
+                    border: "none",
+                    background: "var(--primary-color)",
+                    color: "#fff",
+                    fontWeight: 700,
+                    fontSize: 15,
+                    cursor: "pointer",
+                    boxShadow: "0 8px 24px rgba(177,69,74,0.25)",
+                  }}
+                >
+                  Go to My Profile
+                </button>
+                <button
+                  onClick={() => setShowAddressForm((v) => !v)}
+                  style={{
+                    padding: "14px 28px",
+                    borderRadius: 14,
+                    border: "2px solid var(--primary-color)",
+                    background: "#fff",
+                    color: "var(--primary-color)",
+                    fontWeight: 700,
+                    fontSize: 15,
+                    cursor: "pointer",
+                  }}
+                >
+                  {showAddressForm ? "Hide Form" : "Enter Address Here"}
+                </button>
+              </div>
+
+              {showAddressForm && (
+                <div style={{ marginTop: 20, paddingTop: 20, borderTop: "1px solid #f1f5f9" }}>
+                  <AddressSetupForm
+                    onSaved={async (fullAddress: string) => {
+                      setAddress(fullAddress);
+                      setShowAddressForm(false);
+                      await refreshProfile();
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+          )}
           {/* Step 1: Delivery */}
-          {step === 1 && (
+          {step === 1 && !needsAddressSetup && (
             <div
               className="animate-in fade-in slide-in-from-right-8 duration-300"
               style={{ background: "#fff", borderRadius: 28, padding: 32, boxShadow: "0 8px 32px rgba(0,0,0,0.04)" }}

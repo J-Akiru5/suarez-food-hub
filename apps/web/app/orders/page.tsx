@@ -49,6 +49,7 @@ interface Order {
   created_at: string;
   order_items: OrderItem[];
   rider_id: string | null;
+  rider?: { first_name: string; last_name: string; phone?: string | null } | null;
   delivery_lat: number | null;
   delivery_lng: number | null;
   delivery_proof_url: string | null;
@@ -803,28 +804,47 @@ function OrdersPageInner() {
                     )}
                   </div>
 
-                  {/* Rider Info */}
-                  {order.rider_id && riderProfiles[order.rider_id] && (
-                    <div
-                      className="order-section-rider"
-                      style={{
-                        padding: "12px 28px",
-                        background: "#f8fafc",
-                        borderTop: "1px solid #f1f5f9",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 10,
-                      }}
-                    >
-                      <Bike size={16} color="var(--primary-color)" />
-                      <span style={{ fontSize: 13, color: "#64748b" }}>
-                        Delivery Rider:{" "}
-                        <strong style={{ color: "var(--secondary-color)" }}>
-                          {riderProfiles[order.rider_id].name}
-                        </strong>
-                      </span>
-                    </div>
-                  )}
+                  {/* Rider Info — shows who is delivering this order */}
+                  {order.rider_id &&
+                    (() => {
+                      const rider = order.rider;
+                      const riderName = rider
+                        ? `${rider.first_name || ""} ${rider.last_name || ""}`.trim()
+                        : riderProfiles[order.rider_id]?.name;
+                      if (!riderName) return null;
+                      return (
+                        <div
+                          className="order-section-rider"
+                          style={{
+                            padding: "12px 28px",
+                            background: "#f8fafc",
+                            borderTop: "1px solid #f1f5f9",
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 10,
+                          }}
+                        >
+                          <Bike size={16} color="var(--primary-color)" />
+                          <span style={{ fontSize: 13, color: "#64748b" }}>
+                            Delivery Rider: <strong style={{ color: "var(--secondary-color)" }}>{riderName}</strong>
+                          </span>
+                          {rider?.phone && (
+                            <a
+                              href={`tel:${rider.phone}`}
+                              style={{
+                                marginLeft: "auto",
+                                fontSize: 13,
+                                fontWeight: 700,
+                                color: "var(--primary-color)",
+                                textDecoration: "none",
+                              }}
+                            >
+                              Call Rider
+                            </a>
+                          )}
+                        </div>
+                      );
+                    })()}
 
                   {/* Proof of Delivery Photo */}
                   {order.delivery_proof_url && (

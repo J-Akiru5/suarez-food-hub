@@ -78,6 +78,24 @@ async function addFirstAvailableProduct(page: import("@playwright/test").Page) {
 }
 
 async function completeCheckout(page: import("@playwright/test").Page, creds: ReturnType<typeof makeUser>) {
+  // Wait for checkout to settle: fresh accounts see the "Set Up Your Delivery
+  // Address" panel (profile has no address), accounts with a saved address see
+  // the delivery form directly. Checking too early races the profile fetch.
+  const enterHere = page.getByRole("button", { name: /Enter Address Here/ });
+  const addressField = page.getByPlaceholder("House #, Street, Barangay, City");
+  await expect(addressField.or(enterHere).first()).toBeVisible({ timeout: 15000 });
+  if (await enterHere.isVisible().catch(() => false)) {
+    await enterHere.click();
+    await page.getByPlaceholder("123 Rizal Street").fill("E2E Test Street");
+    await page.getByText("Select Town / City").click();
+    await page.getByRole("option", { name: "City of Iloilo" }).click();
+    await page.getByText("Select Barangay").click();
+    await page.getByRole("option", { name: "San Jose" }).first().click();
+    await page.getByPlaceholder("5000").fill("5000");
+    await page.getByRole("button", { name: /Save Address & Continue/ }).click();
+    // Panel closes → the normal delivery form appears with the address pre-filled
+    await expect(page.getByPlaceholder("House #, Street, Barangay, City")).toBeVisible({ timeout: 10000 });
+  }
   await page.getByPlaceholder("House #, Street, Barangay, City").fill(creds.address);
   await page.getByPlaceholder("09XX XXX XXXX").fill(creds.phone);
   await page.getByRole("button", { name: /Continue to Payment/ }).click();
@@ -140,10 +158,10 @@ test.describe("desktop customer journey (1280x720)", () => {
 
     if (target) {
       const typo = target.word.slice(0, -1) + (target.word.endsWith("a") ? "o" : "a");
-      await page.getByPlaceholder("Search menu...").fill(typo);
+      await page.getByPlaceholder("Search the menu...").fill(typo);
       // The product card (h3 with the full name) should still appear
       await expect(page.getByText(target.name, { exact: true }).first()).toBeVisible({ timeout: 5000 });
-      await page.getByPlaceholder("Search menu...").fill("");
+      await page.getByPlaceholder("Search the menu...").fill("");
     }
 
     // Click a category pill and confirm the grid still renders without crashing.
@@ -162,7 +180,7 @@ test.describe("desktop customer journey (1280x720)", () => {
       .isVisible()
       .catch(() => false);
     expect(gridHasProducts || emptyState).toBe(true);
-    await expect(page.getByPlaceholder("Search menu...")).toBeVisible();
+    await expect(page.getByPlaceholder("Search the menu...")).toBeVisible();
     expect(errors).toHaveLength(0);
   });
 
@@ -175,10 +193,14 @@ test.describe("desktop customer journey (1280x720)", () => {
     await ensureLoggedIn(page, creds);
     await addFirstAvailableProduct(page);
 
-    // Desktop persistent cart panel shows the item
-    await expect(page.getByRole("link", { name: /Proceed to Checkout/ })).toBeVisible({ timeout: 10000 });
+    // Desktop persistent cart panel shows the item. NOTE: the mobile drawer is
+    // always mounted off-screen, so scope to the persistent panel (first in DOM).
+    await expect(page.getByRole("link", { name: /Proceed to Checkout/ }).first()).toBeVisible({ timeout: 10000 });
 
-    await page.getByRole("link", { name: /Proceed to Checkout/ }).click();
+    await page
+      .getByRole("link", { name: /Proceed to Checkout/ })
+      .first()
+      .click();
     await page.waitForURL(/\/checkout/);
     await completeCheckout(page, creds);
 
@@ -255,9 +277,11 @@ test.describe("mobile customer journey (390x844)", () => {
     await expect(viewBasket).toBeVisible({ timeout: 10000 });
     await viewBasket.click();
 
-    // Cart slide-over opens with checkout CTA
-    await expect(page.getByRole("link", { name: /Proceed to Checkout/ })).toBeVisible({ timeout: 10000 });
-    await page.getByRole("link", { name: /Proceed to Checkout/ }).click();
+    // Cart slide-over opens with checkout CTA. Below lg the persistent panel is
+    // display:none (excluded from role queries), so only the drawer link matches.
+    const drawerCheckout = page.getByRole("link", { name: /Proceed to Checkout/ }).first();
+    await expect(drawerCheckout).toBeVisible({ timeout: 10000 });
+    await drawerCheckout.click();
     await page.waitForURL(/\/checkout/);
 
     // Complete checkout on mobile

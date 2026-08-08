@@ -233,6 +233,19 @@ export default function MenuPage() {
     setQuantity(1);
   };
 
+  // Deep-link: opening /menu?product=<id> (e.g. from a featured card on the
+  // home page) auto-opens that product's modal instead of dropping the user on
+  // the bare menu. The URL is cleaned so refresh/back don't reopen it.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const productId = params.get("product");
+    if (!productId || loading || products.length === 0) return;
+    const target = products.find((p) => p.id === productId);
+    if (target) openModal(target);
+    history.replaceState(null, "", window.location.pathname);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, products]);
+
   const addToCart = () => {
     if (!modalProduct) return;
     if (!user) {
@@ -289,7 +302,8 @@ export default function MenuPage() {
     saveCart(cart.filter((c) => !(c.id === id && c.variant === variant)));
   };
 
-  const totalItems = cart.reduce((s, c) => s + c.quantity, 0);
+  // Cart count = number of distinct line items (not total quantity)
+  const totalItems = cart.length;
   const totalPrice = cart.reduce((s, c) => s + c.price * c.quantity, 0);
 
   // ─── Fuzzy search with typo tolerance ────────────────
@@ -576,22 +590,47 @@ export default function MenuPage() {
       )}
 
       {/* ── Top Bar (kiosk mode) ── */}
-      <AuthNavbar
-        kioskMode
-        showCartIcon
-        cartItemCount={totalItems}
-        onCartClick={() => {
-          if (window.innerWidth < 1024) setShowCart(true);
-        }}
-      />
+      <AuthNavbar kioskMode showCartIcon cartItemCount={totalItems} onCartClick={() => setShowCart(true)} />
 
       {/* ── Main Split View ── */}
       <div className="flex-1 flex overflow-hidden pt-[72px]">
         {/* ── Left: Products ── */}
         <div className="flex-1 flex flex-col min-w-0">
-          {/* Category Pills + Search */}
+          {/* Search Bar (on top) + Category Pills */}
           <div className="sticky top-0 z-10 bg-cream/95 backdrop-blur-xl border-b border-black/5">
-            <div className="flex items-center gap-2 px-4 md:px-6 py-3 overflow-x-auto hide-scrollbar">
+            {/* Search bar on top — always visible */}
+            <div className="px-4 md:px-6 pt-3">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="Search the menu..."
+                  className="w-full h-11 pl-11 pr-4 rounded-full bg-white border border-gray-200 text-sm focus:outline-none focus:border-brand-400 focus:ring-2 focus:ring-brand-500/20 focus:bg-white transition-all shadow-sm"
+                />
+                <svg
+                  aria-label="Search"
+                  className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery("")}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-6 h-6 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 hover:text-gray-600 border-none cursor-pointer"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+            </div>
+            {/* Category pills */}
+            <div className="flex items-center gap-2 px-4 md:px-6 py-2.5 overflow-x-auto hide-scrollbar">
               {loading
                 ? Array(5)
                     .fill(0)
@@ -616,26 +655,6 @@ export default function MenuPage() {
                       {cat}
                     </button>
                   ))}
-              {/* Search input */}
-              <div className="relative flex-1 min-w-[160px] max-w-[280px] ml-auto">
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search menu..."
-                  className="w-full h-9 pl-9 pr-3 rounded-full bg-white/80 border border-gray-200 text-xs focus:outline-none focus:border-brand-400 focus:bg-white transition-all"
-                />
-                <svg
-                  aria-label="Search"
-                  className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                  strokeWidth={2}
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
             </div>
           </div>
 
@@ -833,20 +852,17 @@ export default function MenuPage() {
         </div>
       )}
 
-      {/* ── Mobile Cart Overlay ── */}
-      <div className="hidden lg:block" />
-      <div className="lg:hidden">
-        <CartSidebar
-          showCart={showCart}
-          setShowCart={setShowCart}
-          cart={cart}
-          updateCartQty={updateCartQty}
-          removeFromCart={removeFromCart}
-          totalPrice={totalPrice}
-          receiptNumber={receiptNumber}
-          user={user}
-        />
-      </div>
+      {/* ── Cart Drawer (all screen sizes — cart icon always opens it) ── */}
+      <CartSidebar
+        showCart={showCart}
+        setShowCart={setShowCart}
+        cart={cart}
+        updateCartQty={updateCartQty}
+        removeFromCart={removeFromCart}
+        totalPrice={totalPrice}
+        receiptNumber={receiptNumber}
+        user={user}
+      />
 
       <style
         dangerouslySetInnerHTML={{

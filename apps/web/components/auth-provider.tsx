@@ -30,6 +30,7 @@ interface AuthContextValue {
   profile: Profile | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue>({
@@ -37,6 +38,7 @@ const AuthContext = createContext<AuthContextValue>({
   profile: null,
   loading: true,
   signOut: async () => {},
+  refreshProfile: async () => {},
 });
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -45,6 +47,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<any | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const fetchProfileRef = useRef<((userId: string) => Promise<void>) | null>(null);
 
   if (!supabaseRef.current && typeof window !== "undefined") {
     supabaseRef.current = createBrowserTypedClient();
@@ -55,9 +58,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!supabase) return;
 
     const fetchProfile = async (userId: string) => {
+      // Prefer the server route: it returns every column (region/town/barangay
+      // included) and avoids the browser client's CORS failure when the
+      // Supabase project only allows the wildcard origin (credentials-mode
+      // requests are blocked, so the direct REST call silently returns null).
+      try {
+        const res = await fetch("/api/profile");
+        if (res.ok) {
+          const json = await res.json();
+          if (json.data) {
+            setProfile(json.data as Profile);
+            return;
+          }
+        }
+      } catch {
+        // fall through to the browser client
+      }
       const profile = await getProfile(supabase, userId);
       if (profile) setProfile(profile as Profile);
     };
+    fetchProfileRef.current = fetchProfile;
 
     supabase.auth.getUser().then(({ data: { user } }) => {
       setUser(user);
@@ -89,7 +109,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     router.refresh();
   };
 
-  return <AuthContext.Provider value={{ user, profile, loading, signOut }}>{children}</AuthContext.Provider>;
+  // Re-fetch the profile after an in-page update (e.g. saving the delivery
+  // address at checkout) so the UI reflects the saved values immediately.
+  const refreshProfile = async () => {
+    const supabase = supabaseRef.current;
+    const fetchProfile = fetchProfileRef.current;
+    if (!supabase || !user || !fetchProfile) return;
+    await fetchProfile(user.id);
+  };
+
+  return (
+    <AuthContext.Provider value={{ user, profile, loading, signOut, refreshProfile }}>{children}</AuthContext.Provider>
+  );
 }
 
 export const useAuth = () => useContext(AuthContext);

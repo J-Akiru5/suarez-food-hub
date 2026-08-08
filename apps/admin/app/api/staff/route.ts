@@ -137,13 +137,19 @@ export async function DELETE(request: NextRequest) {
     auth: { autoRefreshToken: false, persistSession: false },
   });
 
-  // Delete the auth user first, then the profile
+  // Delete the auth user first, then the profile. The profiles FK does NOT
+  // cascade from auth.users, so without the explicit profile delete the row is
+  // orphaned and the staff list keeps showing the deleted account.
   const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(id);
 
   if (authError) {
     return NextResponse.json({ success: false, error: authError.message }, { status: 500 });
   }
 
-  // Profile is deleted by CASCADE from auth user deletion
+  const { error: profileError } = await supabaseAdmin.from("profiles").delete().eq("id", id);
+  if (profileError) {
+    return NextResponse.json({ success: false, error: profileError.message }, { status: 500 });
+  }
+
   return NextResponse.json({ success: true });
 }

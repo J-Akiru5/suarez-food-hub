@@ -8,37 +8,29 @@ import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Swal from "sweetalert2";
 
-// Fetch all Philippine provinces from the public PSGC API (no key needed)
-async function fetchAllProvinces(): Promise<{ id: string; name: string }[]> {
+// Fetch all cities/municipalities (towns) of Iloilo province from the public PSGC API
+// (no key needed). Delivery is restricted to Iloilo City + selected towns.
+async function fetchIloiloTowns(): Promise<{ id: string; name: string }[]> {
   try {
     const regionsRes = await fetch("https://psgc.gitlab.io/api/regions");
     const regions: { code: string; name: string }[] = await regionsRes.json();
+    const region =
+      regions.find((r) => r.name.toUpperCase().includes("WESTERN VISAYAS")) || regions.find((r) => r.code === "06");
+    if (!region) return [];
 
-    const results = await Promise.allSettled(
-      regions.map((r) => fetch(`https://psgc.gitlab.io/api/regions/${r.code}/provinces`).then((res) => res.json())),
-    );
+    const provincesRes = await fetch(`https://psgc.gitlab.io/api/regions/${region.code}/provinces`);
+    const provinces: { code: string; name: string }[] = await provincesRes.json();
+    const iloilo = provinces.find((p) => p.name.toUpperCase() === "ILOILO");
+    if (!iloilo) return [];
 
-    const allProvinces: { id: string; name: string }[] = [];
-    for (const result of results) {
-      if (result.status === "fulfilled" && Array.isArray(result.value)) {
-        for (const p of result.value) {
-          if (p.code && p.name) {
-            allProvinces.push({ id: p.code, name: p.name });
-          }
-        }
-      }
-    }
-
-    const seen = new Set<string>();
-    return allProvinces
-      .filter((p) => {
-        if (seen.has(p.id)) return false;
-        seen.add(p.id);
-        return true;
-      })
+    const townsRes = await fetch(`https://psgc.gitlab.io/api/provinces/${iloilo.code}/cities-municipalities`);
+    const towns: { code: string; name: string }[] = await townsRes.json();
+    return (towns || [])
+      .filter((t) => t.code && t.name)
+      .map((t) => ({ id: t.code, name: t.name }))
       .sort((a, b) => a.name.localeCompare(b.name));
   } catch (err) {
-    console.error("Failed to fetch provinces from PSGC API:", err);
+    console.error("Failed to fetch Iloilo towns from PSGC API:", err);
     return [];
   }
 }
@@ -52,7 +44,7 @@ interface BusinessConfig {
   gcash_qr_url: string;
   delivery_fee: number;
   free_delivery_min: number;
-  delivery_provinces: string;
+  delivery_areas: string;
 }
 
 export default function SettingsPage() {
@@ -60,9 +52,9 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingGcash, setUploadingGcash] = useState(false);
-  const [provinces, setProvinces] = useState<{ id: string; name: string }[]>([]);
+  const [towns, setTowns] = useState<{ id: string; name: string }[]>([]);
   const gcashRef = useRef<HTMLInputElement>(null);
-  const [searchProvince, setSearchProvince] = useState("");
+  const [searchTown, setSearchTown] = useState("");
 
   const [config, setConfig] = useState<BusinessConfig>({
     name: "Suarez Food Hub",
@@ -72,7 +64,7 @@ export default function SettingsPage() {
     gcash_qr_url: "",
     delivery_fee: 40,
     free_delivery_min: 200,
-    delivery_provinces: "",
+    delivery_areas: "",
   });
 
   const fetchConfig = useCallback(async () => {
@@ -88,7 +80,7 @@ export default function SettingsPage() {
 
         delivery_fee: Number(data.delivery_fee) || 40,
         free_delivery_min: Number(data.free_delivery_min) || 200,
-        delivery_provinces: data.delivery_provinces || "",
+        delivery_areas: data.delivery_areas || "",
       });
     }
     setLoading(false);
@@ -98,10 +90,10 @@ export default function SettingsPage() {
     fetchConfig();
   }, [fetchConfig]);
 
-  // Fetch all Philippine provinces from the PSGC API
+  // Fetch Iloilo cities/municipalities from the PSGC API
   useEffect(() => {
-    fetchAllProvinces().then((list) => {
-      setProvinces(list);
+    fetchIloiloTowns().then((list) => {
+      setTowns(list);
     });
   }, []);
 
@@ -152,7 +144,8 @@ export default function SettingsPage() {
       gcash_qr_url: config.gcash_qr_url,
       delivery_fee: config.delivery_fee,
       free_delivery_min: config.free_delivery_min,
-      delivery_provinces: config.delivery_provinces || null,
+      // Default to Iloilo City only when no towns are selected.
+      delivery_areas: config.delivery_areas || "063022000",
     };
 
     try {
@@ -165,6 +158,7 @@ export default function SettingsPage() {
 
       if (!response.success) {
         Swal.fire({ icon: "error", title: "Save failed", text: response.error || "Unknown error" });
+        setSaving(false);
         return;
       }
 
@@ -283,34 +277,35 @@ export default function SettingsPage() {
 
               {/* Delivery Area Restriction */}
               <div className="mt-4 pt-4 border-t border-gray-100">
-                <label className="text-sm font-medium text-gray-700 block mb-2">Allowed Delivery Provinces</label>
+                <label className="text-sm font-medium text-gray-700 block mb-2">Allowed Delivery Towns (Iloilo)</label>
                 <p className="text-xs text-muted-foreground mb-3">
-                  Select provinces where delivery is available. Leave empty for nationwide delivery. This is scalable
-                  for multi-branch setups — add provinces as your business grows.
+                  Delivery is limited to <strong>Iloilo City</strong> and the towns you select below. Customers outside
+                  these towns cannot place an order. If no towns are selected, delivery defaults to{" "}
+                  <strong>Iloilo City only</strong>.
                 </p>
 
-                {/* Selected provinces as chips */}
+                {/* Selected towns as chips */}
                 <div className="flex flex-wrap gap-1.5 mb-3 min-h-[28px]">
-                  {config.delivery_provinces
-                    ? config.delivery_provinces
+                  {config.delivery_areas
+                    ? config.delivery_areas
                         .split(",")
                         .filter(Boolean)
-                        .map((pid) => {
-                          const p = provinces.find((x) => x.id === pid);
+                        .map((tid) => {
+                          const t = towns.find((x) => x.id === tid);
                           return (
                             <span
-                              key={pid}
+                              key={tid}
                               className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-brand-100 text-brand-800 text-xs font-medium"
                             >
-                              {p?.name || pid}
+                              {t?.name || tid}
                               <button
                                 type="button"
                                 onClick={() => {
-                                  const updated = config.delivery_provinces
+                                  const updated = config.delivery_areas
                                     .split(",")
-                                    .filter((x) => x !== pid)
+                                    .filter((x) => x !== tid)
                                     .join(",");
-                                  setConfig((prev) => ({ ...prev, delivery_provinces: updated }));
+                                  setConfig((prev) => ({ ...prev, delivery_areas: updated }));
                                 }}
                                 className="hover:text-red-600 focus:outline-none"
                               >
@@ -320,53 +315,53 @@ export default function SettingsPage() {
                           );
                         })
                     : null}
-                  {!config.delivery_provinces && (
-                    <span className="text-xs text-gray-400 italic">All provinces — no restriction</span>
+                  {!config.delivery_areas && (
+                    <span className="text-xs text-gray-400 italic">Iloilo City only (default)</span>
                   )}
                 </div>
 
-                {/* Search & add provinces */}
+                {/* Search & add towns */}
                 <div className="relative">
                   <input
                     type="text"
-                    placeholder="Search provinces..."
-                    value={searchProvince}
-                    onChange={(e) => setSearchProvince(e.target.value)}
+                    placeholder="Search towns (e.g. Iloilo City, Passi, Janiuay)..."
+                    value={searchTown}
+                    onChange={(e) => setSearchTown(e.target.value)}
                     className="w-full h-9 pl-3 pr-3 rounded-md border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500 mb-2"
                   />
                   <div className="max-h-40 overflow-y-auto space-y-0.5 border border-gray-100 rounded-md p-1 bg-white">
-                    {provinces
+                    {towns
                       .filter(
-                        (p) =>
-                          p.name.toLowerCase().includes(searchProvince.toLowerCase()) &&
-                          !config.delivery_provinces.split(",").includes(p.id),
+                        (t) =>
+                          t.name.toLowerCase().includes(searchTown.toLowerCase()) &&
+                          !config.delivery_areas.split(",").includes(t.id),
                       )
                       .slice(0, 20)
-                      .map((p) => (
+                      .map((t) => (
                         <button
-                          key={p.id}
+                          key={t.id}
                           type="button"
                           onClick={() => {
-                            const existing = config.delivery_provinces
-                              ? config.delivery_provinces.split(",").filter(Boolean)
+                            const existing = config.delivery_areas
+                              ? config.delivery_areas.split(",").filter(Boolean)
                               : [];
-                            existing.push(p.id);
-                            setConfig((prev) => ({ ...prev, delivery_provinces: existing.join(",") }));
-                            setSearchProvince("");
+                            existing.push(t.id);
+                            setConfig((prev) => ({ ...prev, delivery_areas: existing.join(",") }));
+                            setSearchTown("");
                           }}
                           className="w-full text-left px-3 py-1.5 text-sm rounded hover:bg-gray-100 transition-colors flex items-center gap-2"
                         >
                           <Check size={14} className="text-gray-300" />
-                          {p.name}
+                          {t.name}
                         </button>
                       ))}
-                    {provinces.filter(
-                      (p) =>
-                        p.name.toLowerCase().includes(searchProvince.toLowerCase()) &&
-                        !config.delivery_provinces.split(",").includes(p.id),
+                    {towns.filter(
+                      (t) =>
+                        t.name.toLowerCase().includes(searchTown.toLowerCase()) &&
+                        !config.delivery_areas.split(",").includes(t.id),
                     ).length === 0 && (
                       <p className="text-xs text-gray-400 text-center py-2">
-                        {searchProvince ? "No provinces found" : "All provinces already selected"}
+                        {searchTown ? "No towns found" : "All towns already selected"}
                       </p>
                     )}
                   </div>

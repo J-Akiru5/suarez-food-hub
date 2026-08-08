@@ -2,7 +2,7 @@ import type { Database } from "@repo/data-access";
 import { getUser } from "@repo/data-access/auth";
 import { createAuthClient, createServiceClient } from "@repo/data-access/client";
 import { createOrder, createOrderItems, deleteOrder, getOrdersByUser } from "@repo/data-access/data/orders";
-import { getProfileById, upsertProfile } from "@repo/data-access/data/profiles";
+import { getProfileById, isUsernameTaken, upsertProfile } from "@repo/data-access/data/profiles";
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -42,18 +42,28 @@ export async function POST(req: NextRequest) {
     const stockErrors: string[] = [];
     for (const item of cart) {
       if (item.variantId) {
-        // Check variant stock
+        // Check variant stock + verify the parent product still exists
+        // (prevents an FK error on order_items insert when a product was hard-deleted)
         const { data: variant } = await serviceSupabase
           .from("product_variants")
-          .select("name, quantity")
+          .select("name, quantity, product_id")
           .eq("id", item.variantId)
           .single();
         if (!variant) {
           stockErrors.push(`"${item.name}" variant not found`);
-        } else if (variant.quantity < item.quantity) {
-          stockErrors.push(
-            `"${item.name} (${variant.name})" only has ${variant.quantity} left, you ordered ${item.quantity}`,
-          );
+        } else {
+          const { data: variantProduct } = await serviceSupabase
+            .from("products")
+            .select("id")
+            .eq("id", variant.product_id)
+            .maybeSingle();
+          if (!variantProduct) {
+            stockErrors.push(`"${item.name}" is no longer available`);
+          } else if (variant.quantity < item.quantity) {
+            stockErrors.push(
+              `"${item.name} (${variant.name})" only has ${variant.quantity} left, you ordered ${item.quantity}`,
+            );
+          }
         }
       } else {
         // Check product stock (no variant)
@@ -76,21 +86,98 @@ export async function POST(req: NextRequest) {
 
     const existingProfile = await getProfileById(serviceSupabase, user.id);
     if (!existingProfile) {
-      await upsertProfile(serviceSupabase, {
+      // Auto-create a missing profile. Must send a COMPLETE payload — the live
+      // profiles table has NOT NULL created_at/updated_at, so the old partial
+      // upsert failed silently and the order insert then violated the
+      // orders_user_id_fkey constraint.
+      const now = new Date().toISOString();
+      const firstName = user.user_metadata?.first_name || "";
+      const lastName = user.user_metadata?.last_name || "";
+      const fullName =
+        user.user_metadata?.full_name || `${firstName} ${lastName}`.trim() || user.email?.split("@")[0] || "Customer";
+
+      // username is unique — derive one from the email prefix and disambiguate if taken
+      const baseUsername =
+        (user.email?.split("@")[0] || "customer").replace(/[^a-zA-Z0-9_]/g, "").slice(0, 20) || "customer";
+      let username = baseUsername;
+      let suffix = 1;
+      while (await isUsernameTaken(serviceSupabase, username)) {
+        username = `${baseUsername.slice(0, 17)}${suffix}`;
+        suffix += 1;
+      }
+
+      const { error: profileError } = await upsertProfile(serviceSupabase, {
         id: user.id,
-        full_name: user.user_metadata?.full_name || user.email?.split("@")[0] || "Customer",
+        email: user.email,
+        username,
+        full_name: fullName,
+        first_name: firstName || null,
+        last_name: lastName || null,
         phone: delivery_contact,
         address: delivery_address,
         role: "customer",
+        is_active: true,
+        created_at: now,
+        updated_at: now,
       });
+      if (profileError) {
+        return NextResponse.json(
+          { success: false, error: `Failed to create your profile: ${profileError.message}` },
+          { status: 500 },
+        );
+      }
     }
 
-    // Check delivery area restriction
-    const { data: business } = await serviceSupabase.from("business").select("delivery_provinces").limit(1).single();
+    // Check delivery area restriction — town/city level (Iloilo City + selected towns),
+    // with province-level fallback for backwards compatibility.
+    const { data: business } = await serviceSupabase
+      .from("business")
+      .select("delivery_provinces, delivery_areas")
+      .limit(1)
+      .single();
 
-    if (business?.delivery_provinces) {
+    const profile = existingProfile || (await getProfileById(serviceSupabase, user.id));
+
+    // Block deleted/deactivated accounts from placing orders (session may still be valid)
+    if (profile && profile.is_active === false) {
+      return NextResponse.json({ success: false, error: "Your account has been deactivated." }, { status: 403 });
+    }
+
+    if (business?.delivery_areas) {
+      const allowedAreas = business.delivery_areas.split(",").filter(Boolean);
+      if (allowedAreas.length > 0) {
+        // No saved address at all — the customer must set one up first.
+        if (!profile?.town_id) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: "Please set up your delivery address in My Profile before placing an order.",
+            },
+            { status: 403 },
+          );
+        }
+        if (!allowedAreas.includes(profile.town_id)) {
+          return NextResponse.json(
+            {
+              success: false,
+              error:
+                "Delivery is not available in your area. We currently only deliver within Iloilo City and selected towns in Iloilo.",
+            },
+            { status: 403 },
+          );
+        }
+      }
+    } else if (business?.delivery_provinces) {
       const allowedProvinces = business.delivery_provinces.split(",").filter(Boolean);
-      const profile = existingProfile || (await getProfileById(serviceSupabase, user.id));
+      if (allowedProvinces.length > 0 && !profile?.province_id) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: "Please set up your delivery address in My Profile before placing an order.",
+          },
+          { status: 403 },
+        );
+      }
       if (profile?.province_id && !allowedProvinces.includes(profile.province_id)) {
         return NextResponse.json(
           {

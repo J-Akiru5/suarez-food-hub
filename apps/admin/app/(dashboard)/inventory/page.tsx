@@ -34,6 +34,19 @@ export default function InventoryPage() {
     fetchData();
   }, [fetchData]);
 
+  // Realtime — stock updates appear live (e.g. after staff confirms an order)
+  useEffect(() => {
+    const channel = supabase
+      .channel("inventory-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "products" }, () => fetchData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "product_variants" }, () => fetchData())
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [supabase, fetchData]);
+
   const filteredProducts = products.filter((p) => {
     const matchesSearch =
       !search ||

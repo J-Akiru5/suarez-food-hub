@@ -22,7 +22,15 @@ export interface Database {
           zip_code: string;
           avatar_url: string | null;
           valid_id_url: string | null;
-          rider_status: "pending_approval" | "available" | "vacant" | "occupied" | "rejected" | null;
+          rider_status:
+            | "pending_approval"
+            | "available"
+            | "vacant"
+            | "occupied"
+            | "rejected"
+            | "offline"
+            | "resigned"
+            | null;
           vehicle_type: string | null;
           plate_number: string | null;
           license_number: string | null;
@@ -48,7 +56,15 @@ export interface Database {
           zip_code?: string;
           avatar_url?: string | null;
           valid_id_url?: string | null;
-          rider_status?: "pending_approval" | "available" | "vacant" | "occupied" | "rejected" | null;
+          rider_status?:
+            | "pending_approval"
+            | "available"
+            | "vacant"
+            | "occupied"
+            | "rejected"
+            | "offline"
+            | "resigned"
+            | null;
           vehicle_type?: string | null;
           plate_number?: string | null;
           license_number?: string | null;
@@ -74,7 +90,15 @@ export interface Database {
           zip_code?: string;
           avatar_url?: string | null;
           valid_id_url?: string | null;
-          rider_status?: "pending_approval" | "available" | "vacant" | "occupied" | "rejected" | null;
+          rider_status?:
+            | "pending_approval"
+            | "available"
+            | "vacant"
+            | "occupied"
+            | "rejected"
+            | "offline"
+            | "resigned"
+            | null;
           vehicle_type?: string | null;
           plate_number?: string | null;
           license_number?: string | null;
@@ -372,6 +396,7 @@ export interface Database {
           delivery_fee: number;
           free_delivery_min: number;
           delivery_provinces: string | null;
+          delivery_areas: string | null;
           created_at: string;
           updated_at: string;
         };
@@ -387,6 +412,7 @@ export interface Database {
           delivery_fee?: number;
           free_delivery_min?: number;
           delivery_provinces?: string | null;
+          delivery_areas?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -402,6 +428,7 @@ export interface Database {
           delivery_fee?: number;
           free_delivery_min?: number;
           delivery_provinces?: string | null;
+          delivery_areas?: string | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -638,7 +665,7 @@ export interface Database {
     };
     Enums: {
       user_role: "customer" | "admin" | "staff" | "rider";
-      rider_status: "pending_approval" | "available" | "vacant" | "occupied" | "rejected";
+      rider_status: "pending_approval" | "available" | "vacant" | "occupied" | "rejected" | "offline" | "resigned";
       order_status:
         | "pending"
         | "confirmed"

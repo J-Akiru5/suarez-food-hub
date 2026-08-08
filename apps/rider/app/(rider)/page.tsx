@@ -2,11 +2,7 @@
 
 import { createBrowserTypedClient } from "@repo/data-access/client";
 import { getTodayEarnings } from "@repo/data-access/data/earnings";
-import {
-  getActiveOrderForRider,
-  getOrdersByPendingRiders,
-  getPendingOrdersForRider,
-} from "@repo/data-access/data/orders";
+import { getActiveOrderForRider, getPendingOrdersForRider } from "@repo/data-access/data/orders";
 import { eachDayOfInterval, endOfWeek, format, startOfWeek } from "date-fns";
 import {
   BarChart3,
@@ -80,6 +76,7 @@ export default function RiderDashboard() {
   const [_onTimeRate, setOnTimeRate] = useState(0);
   const [weeklyEarnings, setWeeklyEarnings] = useState<{ day: string; amount: number }[]>([]);
   const [restaurantOrigin, setRestaurantOrigin] = useState("10.9501875,122.5065625");
+  const [justApproved, setJustApproved] = useState(false);
   const riderIdRef = useRef<string | null>(null);
   const watchIdRef = useRef<number | null>(null);
   const mainRef = useRef<HTMLDivElement | null>(null);
@@ -98,7 +95,10 @@ export default function RiderDashboard() {
     const now = new Date();
     const weekStart = startOfWeek(now, { weekStartsOn: 1 });
 
-    // Run ALL independent DB queries in parallel for maximum speed
+    // Run ALL independent DB queries in parallel for maximum speed.
+    // NOTE: available orders are fetched server-side via /api/orders/available
+    // (service client) because RLS hides invited-only orders (rider_id is NULL
+    // until acceptance) from the rider's own client.
     const [
       activeOrderResult,
       pendingResult,
@@ -110,7 +110,10 @@ export default function RiderDashboard() {
     ] = await Promise.all([
       getActiveOrderForRider(supabase, user.id),
       getPendingOrdersForRider(supabase, user.id),
-      getOrdersByPendingRiders(supabase, user.id!),
+      fetch("/api/orders/available")
+        .then((res) => res.json())
+        .then((json) => (json.success ? (json.data as Order[]) : []))
+        .catch(() => []),
       getTodayEarnings(supabase, user.id),
       supabase
         .from("rider_earnings")
@@ -239,6 +242,50 @@ export default function RiderDashboard() {
       el.removeEventListener("touchend", handleTouchEnd);
     };
   }, [fetchRiderData]);
+
+  // Realtime — reflect admin approval / status changes without re-logging in
+  const profileChannelRef = useRef<ReturnType<typeof supabase.channel> | null>(null);
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user || cancelled) return;
+      const ch = supabase
+        .channel(`rider-profile-${user.id}`)
+        .on(
+          "postgres_changes",
+          {
+            event: "UPDATE",
+            schema: "public",
+            table: "profiles",
+            filter: `id=eq.${user.id}`,
+          },
+          (payload) => {
+            const updated = payload.new as any;
+            const prev = payload.old as any;
+            if (prev?.rider_status === "pending_approval" && updated.rider_status === "available") {
+              setJustApproved(true);
+              fetchRiderData();
+            }
+          },
+        )
+        .subscribe();
+      if (cancelled) {
+        supabase.removeChannel(ch);
+      } else {
+        profileChannelRef.current = ch;
+      }
+    })();
+    return () => {
+      cancelled = true;
+      if (profileChannelRef.current) {
+        supabase.removeChannel(profileChannelRef.current);
+        profileChannelRef.current = null;
+      }
+    };
+  }, [supabase, fetchRiderData]);
 
   useEffect(() => {
     fetchRiderData();
@@ -439,6 +486,22 @@ export default function RiderDashboard() {
         <div className="flex items-center justify-center gap-2 py-2 text-brand-600 text-sm animate-pulse">
           <RefreshCw size={16} className="animate-spin" />
           Refreshing...
+        </div>
+      )}
+
+      {justApproved && (
+        <div className="bg-green-600 text-white p-4 rounded-xl flex items-center gap-3">
+          <CheckCircle size={24} />
+          <div className="flex-1">
+            <p className="font-semibold">You&apos;re approved! 🎉</p>
+            <p className="text-sm text-green-100">You can now accept deliveries.</p>
+          </div>
+          <button
+            onClick={() => setJustApproved(false)}
+            className="text-xs font-semibold bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg border-none cursor-pointer transition"
+          >
+            OK
+          </button>
         </div>
       )}
 

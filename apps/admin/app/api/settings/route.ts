@@ -52,7 +52,17 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ success: true, data: newConfig });
     }
 
-    const { data, error } = await updateBusinessConfig(supabase, id, updates);
+    let { data, error } = await updateBusinessConfig(supabase, id, updates);
+
+    // Resilience: migration 0018 adds business.delivery_areas, but if it hasn't
+    // been applied to this DB yet, Supabase rejects the whole update with a schema
+    // error. Retry without that field so saving other settings still works. Once
+    // 0018 is applied, delivery_areas saves normally.
+    if (error && "delivery_areas" in updates && error.message.toLowerCase().includes("delivery_areas")) {
+      const { delivery_areas: _drop, ...rest } = updates;
+      ({ data, error } = await updateBusinessConfig(supabase, id, rest));
+    }
+
     if (error) return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     return NextResponse.json({ success: true, data });
   } catch (err: unknown) {

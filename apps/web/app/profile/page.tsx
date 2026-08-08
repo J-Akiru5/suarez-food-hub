@@ -2,9 +2,10 @@
 
 import { createBrowserTypedClient } from "@repo/data-access/client";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@repo/ui";
-import { ArrowLeft, CheckCircle, Eye, EyeOff, Loader2, Lock, Phone, Save, User } from "lucide-react";
+import { ArrowLeft, CheckCircle, Eye, EyeOff, Loader2, Lock, MapPin, Phone, Save, Trash2, User } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import Swal from "sweetalert2";
 import AuthNavbar from "../../components/AuthNavbar";
 import { useAuth } from "../../components/auth-provider";
 
@@ -14,21 +15,22 @@ interface Location {
   type: string;
 }
 
+// The business only operates in Iloilo (Western Visayas), so region and
+// province are always fixed — no dropdowns needed.
+const WESTERN_VISAYAS_ID = "060000000";
+const ILOILO_ID = "063000000";
+
 export default function ProfilePage() {
   const router = useRouter();
-  const { user, profile, loading: authLoading } = useAuth();
+  const { user, profile, loading: authLoading, signOut } = useAuth();
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
   const [phone, setPhone] = useState("");
   const [streetAddress, setStreetAddress] = useState("");
-  const [regionId, setRegionId] = useState("");
-  const [provinceId, setProvinceId] = useState("");
   const [townId, setTownId] = useState("");
   const [barangayId, setBarangayId] = useState("");
   const [zipCode, setZipCode] = useState("");
 
-  const [regions, setRegions] = useState<Location[]>([]);
-  const [provinces, setProvinces] = useState<Location[]>([]);
   const [towns, setTowns] = useState<Location[]>([]);
   const [barangays, setBarangays] = useState<Location[]>([]);
 
@@ -48,57 +50,36 @@ export default function ProfilePage() {
   const [showNewPw, setShowNewPw] = useState(false);
   const supabase = createBrowserTypedClient();
 
+  // Basic fields pre-fill as soon as the profile arrives.
   useEffect(() => {
     if (profile) {
       setFirstName(profile.first_name || "");
       setLastName(profile.last_name || "");
       setPhone(profile.phone || "");
-      setRegionId((profile as any).region_id || "");
-      setProvinceId((profile as any).province_id || "");
-      setTownId((profile as any).town_id || "");
-      setBarangayId((profile as any).barangay_id || "");
       setZipCode((profile as any).zip_code || "");
       setStreetAddress((profile as any).street_address || profile.address || "");
     }
   }, [profile]);
 
   useEffect(() => {
-    fetch("/api/locations?type=region")
-      .then((r) => r.json())
-      .then((response) => {
-        const data = response.data || response;
-        if (Array.isArray(data)) setRegions(data);
-      })
-      .catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    if (!regionId) {
-      setProvinces([]);
-      return;
-    }
-    fetch(`/api/locations?type=province&parent=${regionId}`)
-      .then((r) => r.json())
-      .then((response) => {
-        const data = response.data || response;
-        if (Array.isArray(data)) setProvinces(data);
-      })
-      .catch(() => {});
-  }, [regionId]);
-
-  useEffect(() => {
-    if (!provinceId) {
-      setTowns([]);
-      return;
-    }
-    fetch(`/api/locations?type=city&parent=${provinceId}`)
+    fetch(`/api/locations?type=city&parent=${ILOILO_ID}`)
       .then((r) => r.json())
       .then((response) => {
         const data = response.data || response;
         if (Array.isArray(data)) setTowns(data);
       })
       .catch(() => {});
-  }, [provinceId]);
+  }, []);
+
+  // Town/barangay pre-fill only once the option list for that level has loaded.
+  // Setting the Select's controlled value before its items exist leaves Radix
+  // showing the placeholder (it has no matching item to render), so gate on the
+  // list being present to make the saved location actually visible.
+  useEffect(() => {
+    if (profile && towns.length > 0) {
+      setTownId((profile as any).town_id || "");
+    }
+  }, [profile, towns]);
 
   useEffect(() => {
     if (!townId) {
@@ -114,6 +95,15 @@ export default function ProfilePage() {
       .catch(() => {});
   }, [townId]);
 
+  useEffect(() => {
+    // Pre-fill only while the selected town still matches the saved one — once
+    // the user changes town, don't clobber their barangay pick with the saved
+    // barangay (which belongs to the old town).
+    if (profile && barangays.length > 0 && townId === (profile as any).town_id) {
+      setBarangayId((profile as any).barangay_id || "");
+    }
+  }, [profile, barangays, townId]);
+
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
@@ -128,8 +118,8 @@ export default function ProfilePage() {
 
     setSaving(true);
     try {
-      const regionName = regions.find((r) => r.id === regionId)?.name || "";
-      const provinceName = provinces.find((p) => p.id === provinceId)?.name || "";
+      const regionName = "Western Visayas";
+      const provinceName = "Iloilo";
       const townName = towns.find((t) => t.id === townId)?.name || "";
       const barangayName = barangays.find((b) => b.id === barangayId)?.name || "";
 
@@ -145,8 +135,8 @@ export default function ProfilePage() {
           full_name: `${firstName.trim()} ${lastName.trim()}`,
           phone: phone.trim(),
           street_address: streetAddress.trim(),
-          region_id: regionId || null,
-          province_id: provinceId || null,
+          region_id: WESTERN_VISAYAS_ID,
+          province_id: ILOILO_ID,
           town_id: townId || null,
           barangay_id: barangayId || null,
           zip_code: zipCode.trim() || null,
@@ -161,6 +151,51 @@ export default function ProfilePage() {
       setTimeout(() => setSaved(false), 3000);
     } catch (err: any) {
       setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    const result = await Swal.fire({
+      title: "Delete your account?",
+      text: "Your account will be deactivated and your personal information removed. This cannot be undone.",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#dc2626",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes, continue",
+    });
+    if (!result.isConfirmed) return;
+
+    const typingResult = await Swal.fire({
+      title: "Type DELETE to confirm",
+      input: "text",
+      inputPlaceholder: "Type DELETE",
+      inputValidator: (value) => (value !== "DELETE" ? "Please type DELETE to confirm" : undefined),
+      showCancelButton: true,
+      confirmButtonColor: "#dc2626",
+      confirmButtonText: "Delete permanently",
+    });
+    if (!typingResult.isConfirmed) return;
+
+    setSaving(true);
+    try {
+      const res = await fetch("/api/account", { method: "DELETE" });
+      const data = await res.json();
+      if (!res.ok || !data.success) {
+        throw new Error(data.error || "Failed to delete account");
+      }
+      await signOut();
+      Swal.fire({
+        icon: "success",
+        title: "Account deleted",
+        text: "Your account has been deleted. Thank you for using Suarez Food Hub.",
+        timer: 2000,
+        showConfirmButton: false,
+      }).then(() => router.push("/"));
+    } catch (err: any) {
+      Swal.fire({ icon: "error", title: "Error", text: err.message });
     } finally {
       setSaving(false);
     }
@@ -348,62 +383,32 @@ export default function ProfilePage() {
                 />
               </div>
 
-              <div>
-                <label className={labelClass}>Region</label>
-                <Select value={regionId || "none"} onValueChange={(v) => setRegionId(v === "none" ? "" : v)}>
-                  <SelectTrigger className={inputClass}>
-                    <SelectValue placeholder="Select Region" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="none" className="text-slate-400 italic">
-                      Select Region
-                    </SelectItem>
-                    {regions.map((r) => (
-                      <SelectItem key={r.id} value={r.id}>
-                        {r.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div>
+                  <label className={labelClass}>Region</label>
+                  <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 bg-slate-100/70 text-slate-500 text-sm shadow-sm">
+                    <MapPin size={18} color="#94a3b8" />
+                    Western Visayas
+                  </div>
+                </div>
+                <div>
+                  <label className={labelClass}>Province</label>
+                  <div className="flex items-center gap-3 px-4 py-3 rounded-xl border border-slate-200 bg-slate-100/70 text-slate-500 text-sm shadow-sm">
+                    <MapPin size={18} color="#94a3b8" />
+                    Iloilo
+                  </div>
+                </div>
               </div>
+              <p className="text-xs text-slate-400 -mt-3">Fixed — the business only delivers within Iloilo</p>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div>
-                  <label className={labelClass}>Province</label>
-                  <Select
-                    value={provinceId || "none"}
-                    onValueChange={(v) => setProvinceId(v === "none" ? "" : v)}
-                    disabled={!regionId}
-                  >
-                    <SelectTrigger className={inputClass}>
-                      <SelectValue placeholder="Select Province" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none" className="text-slate-400 italic">
-                        Select Province
-                      </SelectItem>
-                      {provinces.map((p) => (
-                        <SelectItem key={p.id} value={p.id}>
-                          {p.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
                   <label className={labelClass}>Town / City</label>
-                  <Select
-                    value={townId || "none"}
-                    onValueChange={(v) => setTownId(v === "none" ? "" : v)}
-                    disabled={!provinceId}
-                  >
+                  <Select value={townId} onValueChange={setTownId}>
                     <SelectTrigger className={inputClass}>
-                      <SelectValue placeholder="Select Town" />
+                      <SelectValue placeholder="Select Town / City" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none" className="text-slate-400 italic">
-                        Select Town / City
-                      </SelectItem>
                       {towns.map((t) => (
                         <SelectItem key={t.id} value={t.id}>
                           {t.name}
@@ -412,23 +417,13 @@ export default function ProfilePage() {
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
                 <div>
                   <label className={labelClass}>Barangay</label>
-                  <Select
-                    value={barangayId || "none"}
-                    onValueChange={(v) => setBarangayId(v === "none" ? "" : v)}
-                    disabled={!townId}
-                  >
+                  <Select value={barangayId} onValueChange={setBarangayId} disabled={!townId}>
                     <SelectTrigger className={inputClass}>
                       <SelectValue placeholder="Select Barangay" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="none" className="text-slate-400 italic">
-                        Select Barangay
-                      </SelectItem>
                       {barangays.map((b) => (
                         <SelectItem key={b.id} value={b.id}>
                           {b.name}
@@ -437,16 +432,17 @@ export default function ProfilePage() {
                     </SelectContent>
                   </Select>
                 </div>
-                <div>
-                  <label className={labelClass}>Zip Code</label>
-                  <input
-                    type="text"
-                    value={zipCode}
-                    onChange={(e) => setZipCode(e.target.value)}
-                    placeholder="5000"
-                    className={inputClass}
-                  />
-                </div>
+              </div>
+
+              <div>
+                <label className={labelClass}>Zip Code</label>
+                <input
+                  type="text"
+                  value={zipCode}
+                  onChange={(e) => setZipCode(e.target.value)}
+                  placeholder="5000"
+                  className={inputClass}
+                />
               </div>
             </div>
           </div>
@@ -587,6 +583,27 @@ export default function ProfilePage() {
               </button>
             </form>
           )}
+        </div>
+
+        {/* Delete Account Section */}
+        <div className="mt-10 bg-white/90 backdrop-blur-xl rounded-[28px] p-8 shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-red-100">
+          <div className="flex items-center justify-between gap-4 flex-wrap">
+            <div>
+              <h2 className="text-xl font-bold text-red-600">Delete Account</h2>
+              <p className="text-sm text-slate-500 mt-1">
+                Permanently deactivate your account and remove your personal information. This cannot be undone.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleDeleteAccount}
+              disabled={saving}
+              className="px-5 py-2.5 rounded-xl font-bold text-sm transition-all flex items-center gap-2 border border-red-200 text-red-600 hover:bg-red-50 disabled:opacity-50"
+            >
+              {saving ? <Loader2 size={16} className="animate-spin" /> : <Trash2 size={16} />}
+              Delete Account
+            </button>
+          </div>
         </div>
       </div>
     </div>

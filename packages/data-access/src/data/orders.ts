@@ -34,7 +34,8 @@ export async function deleteOrder(supabase: TypedSupabaseClient, orderId: string
 export async function getOrdersByUser(supabase: TypedSupabaseClient, userId: string, status?: OrderStatus) {
   let query = supabase
     .from("orders")
-    .select("*, order_items(*)")
+    // Include the assigned rider so customers can see who is delivering their order
+    .select("*, order_items(*), rider:profiles!orders_rider_id_fkey(first_name, last_name, phone)")
     .eq("user_id", userId)
     .order("created_at", { ascending: false });
   if (status) query = query.eq("status", status);

@@ -54,6 +54,24 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(url);
   }
 
+  // Block signed-in users whose account was deleted/deactivated
+  if (user && isProtected) {
+    const { data: profile } = await supabase.from("profiles").select("is_active").eq("id", user.id).maybeSingle();
+    if (profile && profile.is_active === false) {
+      await supabase.auth.signOut();
+      // signOut() cleared the session cookies on supabaseResponse — carry them
+      // onto the redirect or the deleted account keeps its valid session cookie
+      // (stays signed in on public pages and bounce-loops on protected ones).
+      const url = request.nextUrl.clone();
+      url.pathname = "/login";
+      const redirect = NextResponse.redirect(url);
+      for (const cookie of supabaseResponse.cookies.getAll()) {
+        redirect.cookies.set(cookie.name, cookie.value, cookie);
+      }
+      return redirect;
+    }
+  }
+
   return supabaseResponse;
 }
 
