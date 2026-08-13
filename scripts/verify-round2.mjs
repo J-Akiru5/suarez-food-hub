@@ -1,7 +1,8 @@
 // Live verification of the Client Round 2 fixes.
 // Exercises the real HTTP routes with real sessions (cookie-based SSR auth).
-import { createClient } from "@supabase/supabase-js";
+
 import { readFileSync } from "node:fs";
+import { createClient } from "@supabase/supabase-js";
 
 const env = Object.fromEntries(
   readFileSync("apps/web/.env", "utf8")
@@ -43,14 +44,17 @@ async function signIn(email, password) {
     body: JSON.stringify({ email, password }),
   });
   const json = await res.json();
-  if (!json.access_token) throw new Error(`sign-in failed for ${email}: ${json.error_description || json.msg || res.status}`);
-  const cookie = encodeURIComponent(JSON.stringify({
-    access_token: json.access_token,
-    refresh_token: json.refresh_token,
-    expires_at: Math.floor(Date.now() / 1000) + 3600,
-    expires_in: 3600,
-    token_type: "bearer",
-  }));
+  if (!json.access_token)
+    throw new Error(`sign-in failed for ${email}: ${json.error_description || json.msg || res.status}`);
+  const cookie = encodeURIComponent(
+    JSON.stringify({
+      access_token: json.access_token,
+      refresh_token: json.refresh_token,
+      expires_at: Math.floor(Date.now() / 1000) + 3600,
+      expires_in: 3600,
+      token_type: "bearer",
+    }),
+  );
   return { cookie: `${COOKIE_NAME}=${cookie}`, userId: json.user.id };
 }
 
@@ -64,7 +68,9 @@ async function api(base, path, cookie, method = "GET", body) {
     body: body ? JSON.stringify(body) : undefined,
   });
   let json = null;
-  try { json = await res.json(); } catch {}
+  try {
+    json = await res.json();
+  } catch {}
   return { status: res.status, json };
 }
 
@@ -83,23 +89,26 @@ async function main() {
   if (cErr) throw new Error(cErr.message);
   const custId = created.user.id;
   const now = new Date().toISOString();
-  await SVC.from("profiles").upsert({
-    id: custId,
-    email: customerEmail,
-    full_name: "Verify Tester",
-    first_name: "Verify",
-    last_name: "Tester",
-    role: "customer",
-    is_active: true,
-    username: `verify${rand}`,
-    town_id: "063022000", // City of Iloilo
-    province_id: "063000000", // Iloilo
-    region_id: "0600000000", // Western Visayas
-    zip_code: "5000",
-    address: "42 Jaro Street, City of Iloilo",
-    created_at: now,
-    updated_at: now,
-  }, { onConflict: "id" });
+  await SVC.from("profiles").upsert(
+    {
+      id: custId,
+      email: customerEmail,
+      full_name: "Verify Tester",
+      first_name: "Verify",
+      last_name: "Tester",
+      role: "customer",
+      is_active: true,
+      username: `verify${rand}`,
+      town_id: "063022000", // City of Iloilo
+      province_id: "063000000", // Iloilo
+      region_id: "0600000000", // Western Visayas
+      zip_code: "5000",
+      address: "42 Jaro Street, City of Iloilo",
+      created_at: now,
+      updated_at: now,
+    },
+    { onConflict: "id" },
+  );
 
   const cust = await signIn(customerEmail, "password123");
   const staff = await signIn("staff@seed.local", "password123");
@@ -113,8 +122,9 @@ async function main() {
     .gt("quantity", 10)
     .limit(1)
     .single();
-  if (!product) { console.log("  ⚠️ no product with stock > 10, skipping"); }
-  else {
+  if (!product) {
+    console.log("  ⚠️ no product with stock > 10, skipping");
+  } else {
     const qty = 2;
     const stockBefore = product.quantity;
     const orderRes = await api(WEB, "/api/orders", cust.cookie, "POST", {
@@ -126,16 +136,28 @@ async function main() {
       delivery_fee: 0,
       total: 200,
     });
-    ok("order placed (cod, no address gate hit)", orderRes.status === 200 && orderRes.json?.success, JSON.stringify(orderRes.json));
+    ok(
+      "order placed (cod, no address gate hit)",
+      orderRes.status === 200 && orderRes.json?.success,
+      JSON.stringify(orderRes.json),
+    );
     const orderId = orderRes.json?.data?.orderId;
     if (orderId) {
       const { data: p1 } = await SVC.from("products").select("quantity").eq("id", product.id).single();
-      ok("stock NOT deducted at order placement", p1.quantity === stockBefore, `before=${stockBefore} after=${p1.quantity}`);
+      ok(
+        "stock NOT deducted at order placement",
+        p1.quantity === stockBefore,
+        `before=${stockBefore} after=${p1.quantity}`,
+      );
 
       const conf = await api(STAFF, "/api/orders", staff.cookie, "PATCH", { order_id: orderId, status: "confirmed" });
       ok("staff confirm accepted", conf.status === 200, JSON.stringify(conf.json));
       const { data: p2 } = await SVC.from("products").select("quantity").eq("id", product.id).single();
-      ok("stock DECREMENTED after staff confirm", p2.quantity === stockBefore - qty, `before=${stockBefore} after=${p2.quantity}`);
+      ok(
+        "stock DECREMENTED after staff confirm",
+        p2.quantity === stockBefore - qty,
+        `before=${stockBefore} after=${p2.quantity}`,
+      );
       const { data: orderRow } = await SVC.from("orders").select("confirmed_at").eq("id", orderId).single();
       ok("confirmed_at stamped", !!orderRow?.confirmed_at);
 
@@ -157,8 +179,9 @@ async function main() {
     .gt("quantity", 10)
     .limit(1)
     .single();
-  if (!product2) { console.log("  ⚠️ no product with stock > 10, skipping"); }
-  else {
+  if (!product2) {
+    console.log("  ⚠️ no product with stock > 10, skipping");
+  } else {
     const qty = 1;
     const price = 250;
     const stockBefore = product2.quantity;
@@ -175,23 +198,51 @@ async function main() {
     const orderId = orderRes.json?.data?.orderId;
     if (orderId) {
       // broadcast to rider (pending_riders)
-      await SVC.from("orders").update({ pending_riders: [rider.userId] }).eq("id", orderId);
-      const acc = await api(RIDER, "/api/orders/status", rider.cookie, "POST", { order_id: orderId, status: "claimed_by_rider" });
+      await SVC.from("orders")
+        .update({ pending_riders: [rider.userId] })
+        .eq("id", orderId);
+      const acc = await api(RIDER, "/api/orders/status", rider.cookie, "POST", {
+        order_id: orderId,
+        status: "claimed_by_rider",
+      });
       ok("rider accept accepted", acc.status === 200, JSON.stringify(acc.json));
       const { data: p1 } = await SVC.from("products").select("quantity").eq("id", product2.id).single();
-      ok("stock DECREMENTED on rider accept (pending → claimed)", p1.quantity === stockBefore - qty, `before=${stockBefore} after=${p1.quantity}`);
+      ok(
+        "stock DECREMENTED on rider accept (pending → claimed)",
+        p1.quantity === stockBefore - qty,
+        `before=${stockBefore} after=${p1.quantity}`,
+      );
 
       // deliver
-      const del = await api(RIDER, "/api/orders/status", rider.cookie, "POST", { order_id: orderId, status: "out_for_delivery" });
-      const del2 = await api(RIDER, "/api/orders/status", rider.cookie, "POST", { order_id: orderId, status: "near_customer" });
-      const del3 = await api(RIDER, "/api/orders/status", rider.cookie, "POST", { order_id: orderId, status: "delivered" });
-      ok("delivery flow completed", del.status === 200 && del2.status === 200 && del3.status === 200,
-        `${del.status}/${del2.status}/${del3.status} ${JSON.stringify(del3.json)}`);
-      const { data: earn } = await SVC.from("rider_earnings").select("amount, order_id").eq("order_id", orderId).maybeSingle();
+      const del = await api(RIDER, "/api/orders/status", rider.cookie, "POST", {
+        order_id: orderId,
+        status: "out_for_delivery",
+      });
+      const del2 = await api(RIDER, "/api/orders/status", rider.cookie, "POST", {
+        order_id: orderId,
+        status: "near_customer",
+      });
+      const del3 = await api(RIDER, "/api/orders/status", rider.cookie, "POST", {
+        order_id: orderId,
+        status: "delivered",
+      });
+      ok(
+        "delivery flow completed",
+        del.status === 200 && del2.status === 200 && del3.status === 200,
+        `${del.status}/${del2.status}/${del3.status} ${JSON.stringify(del3.json)}`,
+      );
+      const { data: earn } = await SVC.from("rider_earnings")
+        .select("amount, order_id")
+        .eq("order_id", orderId)
+        .maybeSingle();
       ok("rider earning created", !!earn, JSON.stringify(earn));
       ok("earning = product price (250), not delivery fee", earn?.amount === price, `amount=${earn?.amount}`);
       const { data: orderRow } = await SVC.from("orders").select("status, rider_id").eq("id", orderId).single();
-      ok("order delivered with rider assigned", orderRow?.status === "delivered" && orderRow?.rider_id === rider.userId, JSON.stringify(orderRow));
+      ok(
+        "order delivered with rider assigned",
+        orderRow?.status === "delivered" && orderRow?.rider_id === rider.userId,
+        JSON.stringify(orderRow),
+      );
 
       // cleanup
       await SVC.from("rider_earnings").delete().eq("order_id", orderId);
@@ -204,19 +255,46 @@ async function main() {
   console.log("\n── Test 3: admin mark-as-resigned (server-side) ──");
   const riderEmail = `verifyrider${rand}@example.com`;
   const { data: rc } = await SVC.auth.admin.createUser({
-    email: riderEmail, password: "password123", email_confirm: true,
-    user_metadata: { role: "rider", first_name: "Verify", last_name: "Rider", rider_status: "available", is_active: true },
+    email: riderEmail,
+    password: "password123",
+    email_confirm: true,
+    user_metadata: {
+      role: "rider",
+      first_name: "Verify",
+      last_name: "Rider",
+      rider_status: "available",
+      is_active: true,
+    },
   });
-  await SVC.from("profiles").upsert({
-    id: rc.user.id, email: riderEmail, full_name: "Verify Rider", first_name: "Verify", last_name: "Rider",
-    role: "rider", is_active: true, username: `verifyr${rand}`, rider_status: "available",
-    created_at: now, updated_at: now,
-  }, { onConflict: "id" });
+  await SVC.from("profiles").upsert(
+    {
+      id: rc.user.id,
+      email: riderEmail,
+      full_name: "Verify Rider",
+      first_name: "Verify",
+      last_name: "Rider",
+      role: "rider",
+      is_active: true,
+      username: `verifyr${rand}`,
+      rider_status: "available",
+      created_at: now,
+      updated_at: now,
+    },
+    { onConflict: "id" },
+  );
 
-  const resign = await api(ADMIN, "/api/riders", admin.cookie, "PATCH", { id: rc.user.id, rider_status: "resigned", is_active: false });
+  const resign = await api(ADMIN, "/api/riders", admin.cookie, "PATCH", {
+    id: rc.user.id,
+    rider_status: "resigned",
+    is_active: false,
+  });
   ok("resign API accepted", resign.status === 200, JSON.stringify(resign.json));
   const { data: rp } = await SVC.from("profiles").select("rider_status, is_active").eq("id", rc.user.id).single();
-  ok("rider marked resigned + inactive in DB", rp?.rider_status === "resigned" && rp?.is_active === false, JSON.stringify(rp));
+  ok(
+    "rider marked resigned + inactive in DB",
+    rp?.rider_status === "resigned" && rp?.is_active === false,
+    JSON.stringify(rp),
+  );
 
   // cleanup rider
   await SVC.auth.admin.deleteUser(rc.user.id);
@@ -250,9 +328,16 @@ async function main() {
     const oid = ores.json?.data?.orderId;
     ok("order placed without delivery fee", ores.status === 200 && !!oid, JSON.stringify(ores.json));
     if (oid) {
-      const { data: row } = await SVC.from("orders").select("delivery_fee, total, rider_earnings").eq("id", oid).single();
+      const { data: row } = await SVC.from("orders")
+        .select("delivery_fee, total, rider_earnings")
+        .eq("id", oid)
+        .single();
       ok("delivery_fee stored as 0", Number(row?.delivery_fee) === 0, `fee=${row?.delivery_fee}`);
-      ok("rider_earnings = subtotal (product price)", Number(row?.rider_earnings) === 120, `earnings=${row?.rider_earnings}`);
+      ok(
+        "rider_earnings = subtotal (product price)",
+        Number(row?.rider_earnings) === 120,
+        `earnings=${row?.rider_earnings}`,
+      );
       await SVC.from("order_items").delete().eq("order_id", oid);
       await SVC.from("orders").delete().eq("id", oid);
     }
@@ -266,8 +351,11 @@ async function main() {
   const towns = loc.json?.data || [];
   ok("locations API returns towns", towns.length > 0, `count=${towns.length}`);
   const allowed = towns.filter((t) => areas.includes(t.code || t.id));
-  ok(`town list filtered to admin delivery areas (${areas.length} areas)`, allowed.length === areas.length,
-    `areas=${areas.length} allowed=${allowed.length} totalTowns=${towns.length}`);
+  ok(
+    `town list filtered to admin delivery areas (${areas.length} areas)`,
+    allowed.length === areas.length,
+    `areas=${areas.length} allowed=${allowed.length} totalTowns=${towns.length}`,
+  );
   ok("Iloilo City included in areas", areas.includes("063022000"), JSON.stringify(areas));
 
   // ---- cleanup customer ----
@@ -280,4 +368,7 @@ async function main() {
   process.exit(fail > 0 ? 1 : 0);
 }
 
-main().catch((e) => { console.error("FATAL:", e.message); process.exit(1); });
+main().catch((e) => {
+  console.error("FATAL:", e.message);
+  process.exit(1);
+});

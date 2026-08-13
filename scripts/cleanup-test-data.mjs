@@ -7,11 +7,7 @@ const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 const supabase = createClient(url, key);
 
-const likePatterns = [
-  "verify%@example.com",
-  "e2e%@example.com",
-  "%@test.local",
-];
+const likePatterns = ["verify%@example.com", "e2e%@example.com", "%@test.local"];
 
 const { data: profiles, error } = await supabase
   .from("profiles")
@@ -29,10 +25,7 @@ if (!profiles?.length) process.exit(0);
 const ids = profiles.map((p) => p.id);
 
 // Delete related rows first (order matters for FKs)
-const { data: orders } = await supabase
-  .from("orders")
-  .select("id")
-  .in("user_id", ids);
+const { data: orders } = await supabase.from("orders").select("id").in("user_id", ids);
 const orderIds = (orders || []).map((o) => o.id);
 console.log(`  ${orderIds.length} test orders`);
 
@@ -65,9 +58,7 @@ for (const bucket of ["payment_proofs", "delivery_proofs"]) {
   for (const id of ids) {
     const { data: objs } = await supabase.storage.from(bucket).list(id);
     if (objs?.length) {
-      await supabase.storage
-        .from(bucket)
-        .remove(objs.map((o) => `${id}/${o.name}`));
+      await supabase.storage.from(bucket).remove(objs.map((o) => `${id}/${o.name}`));
       console.log(`  removed ${objs.length} object(s) from ${bucket}/${id.slice(0, 8)}`);
     }
   }
