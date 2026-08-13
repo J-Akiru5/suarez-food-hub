@@ -1,13 +1,7 @@
 import { createAuthClient, createServiceClient } from "@repo/data-access/client";
 import { createNotifications } from "@repo/data-access/data/notifications";
 import { getOrdersWithProfiles, updateOrderStatus } from "@repo/data-access/data/orders";
-import {
-  deductStock,
-  deductVariantStock,
-  markLowStockAlerted,
-  restoreStock,
-  restoreVariantStock,
-} from "@repo/data-access/data/products";
+import { deductStockForOrderIfNeeded, restoreStock, restoreVariantStock } from "@repo/data-access/data/products";
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -74,7 +68,8 @@ export async function PATCH(request: NextRequest) {
     const extraFields: Record<string, any> = {};
     if (rider_id !== undefined) extraFields.rider_id = rider_id;
     if (status) {
-      if (status === "confirmed") extraFields.confirmed_at = new Date().toISOString();
+      // NOTE: confirmed_at is NOT stamped here for "confirmed" — the stock
+      // helper stamps it as the "stock deducted" marker (see below).
       if (status === "cancelled") {
         extraFields.cancelled_at = new Date().toISOString();
         // Stock is restored on cancel, so a future re-confirm must deduct again.
@@ -87,56 +82,28 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     }
 
-    // Deduct stock ONLY when entering "confirmed" and stock hasn't been deducted
-    // yet (no confirmed_at). Handles pending→confirmed, cancelled→confirmed, and
-    // any pending→preparing→confirmed jump, while never double-deducting.
-    const shouldDeductStock = status === "confirmed" && !existingOrder.confirmed_at;
+    // Deduct stock when entering ANY fulfillment status (confirmed, preparing,
+    // ready_for_pickup, ...) and stock hasn't been deducted yet. The shared
+    // helper is keyed on confirmed_at so it never double-deducts, and it works
+    // even when admin sets "delivered" directly on an order staff never
+    // confirmed (the case the client reported: stock not dropping on delivery).
+    const shouldDeductStock =
+      [
+        "confirmed",
+        "preparing",
+        "ready_for_pickup",
+        "claimed_by_rider",
+        "out_for_delivery",
+        "near_customer",
+        "delivered",
+      ].includes(status) && !existingOrder.confirmed_at;
     if (shouldDeductStock) {
-      const { data: items } = await serviceSupabase
-        .from("order_items")
-        .select("*, product:products!order_items_product_id_fkey(name, buffer_quantity)")
-        .eq("order_id", id);
-
-      if (items && items.length > 0) {
-        for (const item of items) {
-          if (item.variant_name) {
-            const { data: variants } = await serviceSupabase
-              .from("product_variants")
-              .select("id, name, quantity")
-              .eq("product_id", item.product_id);
-            const match = (variants || []).find((v: { name: string; id: string }) => v.name === item.variant_name);
-            if (match) {
-              await deductVariantStock(serviceSupabase, match.id, item.quantity);
-            }
-          } else {
-            const result = await deductStock(serviceSupabase, item.product_id, item.quantity);
-            if (result && !result.error && result.newQuantity != null) {
-              const productInfo = item.product as { buffer_quantity?: number; name?: string } | null;
-              const bufferQty = productInfo?.buffer_quantity ?? 5;
-              const productName = productInfo?.name || "Product";
-              if (result.newQuantity <= bufferQty && result.newQuantity >= 0) {
-                const { data: staffProfiles } = await serviceSupabase
-                  .from("profiles")
-                  .select("id")
-                  .in("role", ["admin", "staff"]);
-                if (staffProfiles && staffProfiles.length > 0) {
-                  await createNotifications(
-                    serviceSupabase,
-                    staffProfiles.map((a: { id: string }) => ({
-                      id: crypto.randomUUID(),
-                      user_id: a.id,
-                      type: "low_stock",
-                      title: "Low Stock Alert",
-                      message: `"${productName}" is running low — only ${result.newQuantity} left (buffer: ${bufferQty}).`,
-                      data: { product_id: item.product_id, remaining: result.newQuantity },
-                    })),
-                  );
-                  await markLowStockAlerted(serviceSupabase, item.product_id);
-                }
-              }
-            }
-          }
-        }
+      const { error: deductError } = await deductStockForOrderIfNeeded(serviceSupabase, id);
+      if (deductError) {
+        return NextResponse.json(
+          { success: false, error: deductError.message || "Failed to deduct stock" },
+          { status: 500 },
+        );
       }
 
       // Notify staff that the order was confirmed (admin-confirm flow)

@@ -61,15 +61,39 @@ export default function ProfilePage() {
     }
   }, [profile]);
 
+  // Only show the towns the ADMIN has enabled in Settings (delivery_areas) —
+  // the client's requirement: the customer's Town/City options must match what
+  // the admin made available. The saved town is always included so pre-fill
+  // still works even if the admin later removes a town.
   useEffect(() => {
-    fetch(`/api/locations?type=city&parent=${ILOILO_ID}`)
-      .then((r) => r.json())
-      .then((response) => {
-        const data = response.data || response;
-        if (Array.isArray(data)) setTowns(data);
-      })
-      .catch(() => {});
-  }, []);
+    let cancelled = false;
+    (async () => {
+      const [locationsRes, businessRes] = await Promise.all([
+        fetch(`/api/locations?type=city&parent=${ILOILO_ID}`),
+        fetch("/api/business"),
+      ]);
+      const [locations, business] = await Promise.all([locationsRes.json(), businessRes.json().catch(() => ({}))]);
+      if (cancelled) return;
+      const allTowns = Array.isArray(locations.data || locations) ? locations.data || locations : [];
+      const deliveryAreas = business?.data?.delivery_areas
+        ? String(business.data.delivery_areas)
+            .split(",")
+            .map((s: string) => s.trim())
+            .filter(Boolean)
+        : null;
+      const savedTownId = (profile as any)?.town_id;
+      const filtered =
+        deliveryAreas && deliveryAreas.length > 0
+          ? allTowns.filter(
+              (t: { id: string }) => deliveryAreas.includes(t.id) || (savedTownId && t.id === savedTownId),
+            )
+          : allTowns;
+      setTowns(filtered);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [profile]);
 
   // Town/barangay pre-fill only once the option list for that level has loaded.
   // Setting the Select's controlled value before its items exist leaves Radix

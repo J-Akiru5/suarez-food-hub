@@ -52,3 +52,47 @@ export async function DELETE(request: NextRequest) {
 
   return NextResponse.json({ success: true });
 }
+
+// PATCH /api/riders — update a rider's status (resign / offline / reactivate).
+// Routed through the server so the update works even when RLS on profiles is
+// missing/stale in the live DB (the previous client-side update silently no-opped).
+export async function PATCH(request: NextRequest) {
+  const auth = await requireAdmin();
+  if ("error" in auth) return auth.error;
+
+  const body = await request.json().catch(() => ({}));
+  const { id, rider_status, is_active } = body;
+
+  if (!id) {
+    return NextResponse.json({ success: false, error: "Missing user ID" }, { status: 400 });
+  }
+
+  const validStatuses = ["available", "vacant", "occupied", "offline", "resigned", "rejected", "pending_approval"];
+  if (rider_status && !validStatuses.includes(rider_status)) {
+    return NextResponse.json({ success: false, error: "Invalid rider status" }, { status: 400 });
+  }
+
+  const supabaseAdmin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  // Confirm the target is actually a rider before updating.
+  const { data: profileRow } = await supabaseAdmin.from("profiles").select("id, role").eq("id", id).maybeSingle();
+  if (profileRow && profileRow.role !== "rider") {
+    return NextResponse.json({ success: false, error: "Only rider accounts can be updated here" }, { status: 403 });
+  }
+  if (!profileRow) {
+    return NextResponse.json({ success: false, error: "Rider not found" }, { status: 404 });
+  }
+
+  const updates: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (rider_status) updates.rider_status = rider_status;
+  if (typeof is_active === "boolean") updates.is_active = is_active;
+
+  const { error: updateError } = await supabaseAdmin.from("profiles").update(updates).eq("id", id);
+  if (updateError) {
+    return NextResponse.json({ success: false, error: updateError.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ success: true });
+}

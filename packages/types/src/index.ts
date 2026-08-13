@@ -56,6 +56,7 @@ export interface Profile {
   vehicle_type: string | null;
   plate_number: string | null;
   license_number: string | null;
+  gcash_number: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -87,6 +88,7 @@ export interface Product {
   low_stock_alerted_at: string | null;
   availability: ProductAvailability;
   is_featured: boolean;
+  sort_order: number;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;

@@ -1,6 +1,7 @@
 "use client";
 
 import { createBrowserTypedClient } from "@repo/data-access/client";
+import { parseServerDate } from "@repo/utils";
 import { format } from "date-fns";
 import { MessageSquare, Package, Search, Star, ThumbsUp, User } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -230,7 +231,7 @@ function RiderReviewsTab({ supabase }: { supabase: any }) {
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-xs text-muted-foreground">
-                      {format(new Date(review.created_at), "MMM d, yyyy")}
+                      {format(parseServerDate(review.created_at), "MMM d, yyyy")}
                     </p>
                   </div>
                 </div>
@@ -399,7 +400,7 @@ function ProductReviewsTab({ supabase }: { supabase: any }) {
                   </div>
                   <div className="text-right shrink-0">
                     <p className="text-xs text-muted-foreground">
-                      {format(new Date(review.created_at), "MMM d, yyyy")}
+                      {format(parseServerDate(review.created_at), "MMM d, yyyy")}
                     </p>
                   </div>
                 </div>

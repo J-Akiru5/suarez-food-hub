@@ -1,7 +1,13 @@
 "use client";
 
 import { createBrowserTypedClient } from "@repo/data-access/client";
-import { createProduct, deleteProduct, generateUniqueSlug, updateProduct } from "@repo/data-access/data/products";
+import {
+  createProduct,
+  deleteProduct,
+  generateUniqueSlug,
+  moveProduct,
+  updateProduct,
+} from "@repo/data-access/data/products";
 import type { Category } from "@repo/types";
 import {
   Badge,
@@ -23,6 +29,8 @@ import {
 import { formatCurrency } from "@repo/utils";
 import {
   AlertTriangle,
+  ArrowDown,
+  ArrowUp,
   Image as ImageIcon,
   List,
   Loader2,
@@ -78,7 +86,20 @@ export default function StaffInventoryPage() {
         .from("products")
         .select("*, category:categories(*), product_variants(*)")
         .is("deleted_at", null)
-        .order("created_at", { ascending: false }),
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: false })
+        .then(async (res) => {
+          // sort_order added in migration 0020 — live DB may not have it yet.
+          if (res.error) {
+            const fallback = await supabase
+              .from("products")
+              .select("*, category:categories(*), product_variants(*)")
+              .is("deleted_at", null)
+              .order("created_at", { ascending: false });
+            return fallback;
+          }
+          return res;
+        }),
       supabase.from("categories").select("id, name, slug").is("deleted_at", null).order("name"),
     ]);
     setProducts(prodRes.data || []);
@@ -123,6 +144,15 @@ export default function StaffInventoryPage() {
     } finally {
       setSavingId(null);
     }
+  }
+
+  async function handleMoveProduct(productId: string, direction: "up" | "down") {
+    const { error } = await moveProduct(supabase, productId, direction, products as any);
+    if (error) {
+      Swal.fire({ title: "Error", text: error.message || "Failed to reorder product.", icon: "error" });
+      return;
+    }
+    fetchData();
   }
 
   function openCreateDialog() {
@@ -493,6 +523,24 @@ export default function StaffInventoryPage() {
                                 </Badge>
                               )}
                             </div>
+                          </div>
+                          <div className="flex items-center gap-0.5 mt-1.5">
+                            <button
+                              type="button"
+                              onClick={() => handleMoveProduct(product.id, "up")}
+                              className="p-1 hover:bg-gray-100 rounded disabled:opacity-30"
+                              title="Move up"
+                            >
+                              <ArrowUp className="h-3 w-3 text-gray-500" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleMoveProduct(product.id, "down")}
+                              className="p-1 hover:bg-gray-100 rounded disabled:opacity-30"
+                              title="Move down"
+                            >
+                              <ArrowDown className="h-3 w-3 text-gray-500" />
+                            </button>
                           </div>
                         </td>
                         <td className="px-4 py-3 hidden sm:table-cell">

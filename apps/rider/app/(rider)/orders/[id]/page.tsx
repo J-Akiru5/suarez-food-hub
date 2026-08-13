@@ -3,6 +3,7 @@
 import { createBrowserTypedClient } from "@repo/data-access/client";
 import { getOrderById } from "@repo/data-access/data/orders";
 import type { Order, Profile } from "@repo/types";
+import { parseServerDate } from "@repo/utils";
 import {
   ArrowLeft,
   CheckCircle,
@@ -194,7 +195,7 @@ export default function RiderOrderDetailPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-lg font-bold text-gray-900">Order #{orderId.slice(0, 8).toUpperCase()}</h1>
-          <p className="text-xs text-gray-500">{new Date(order.created_at).toLocaleString()}</p>
+          <p className="text-xs text-gray-500">{parseServerDate(order.created_at).toLocaleString()}</p>
         </div>
         <div className="flex items-center gap-2">
           <span

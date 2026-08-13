@@ -2,10 +2,11 @@
 
 import { createBrowserTypedClient } from "@repo/data-access/client";
 import { getCategories } from "@repo/data-access/data/categories";
+import { moveProduct } from "@repo/data-access/data/products";
 import type { Category, Product } from "@repo/types";
 import { Badge, Card, CardContent, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@repo/ui";
 import { formatCurrency } from "@repo/utils";
-import { Image as ImageIcon, Package, Search } from "lucide-react";
+import { ArrowDown, ArrowUp, Image as ImageIcon, Package, Search } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 
 export default function InventoryPage() {
@@ -22,7 +23,20 @@ export default function InventoryPage() {
         .from("products")
         .select("*, category:categories(*)")
         .is("deleted_at", null)
-        .order("created_at", { ascending: false }),
+        .order("sort_order", { ascending: true })
+        .order("created_at", { ascending: false })
+        .then(async (res) => {
+          // sort_order added in migration 0020 — live DB may not have it yet.
+          if (res.error) {
+            const fallback = await supabase
+              .from("products")
+              .select("*, category:categories(*)")
+              .is("deleted_at", null)
+              .order("created_at", { ascending: false });
+            return fallback;
+          }
+          return res;
+        }),
       getCategories(supabase),
     ]);
     setProducts((prodRes.data as (Product & { category?: Category })[]) || []);
@@ -46,6 +60,11 @@ export default function InventoryPage() {
       supabase.removeChannel(channel);
     };
   }, [supabase, fetchData]);
+
+  async function handleMoveProduct(productId: string, direction: "up" | "down") {
+    await moveProduct(supabase, productId, direction, products as any);
+    fetchData();
+  }
 
   const filteredProducts = products.filter((p) => {
     const matchesSearch =
@@ -150,6 +169,24 @@ export default function InventoryPage() {
                               </Badge>
                             )}
                           </div>
+                        </div>
+                        <div className="flex items-center gap-0.5 mt-1.5">
+                          <button
+                            type="button"
+                            onClick={() => handleMoveProduct(product.id, "up")}
+                            className="p-1 hover:bg-gray-100 rounded disabled:opacity-30"
+                            title="Move up"
+                          >
+                            <ArrowUp className="h-3 w-3 text-gray-500" />
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleMoveProduct(product.id, "down")}
+                            className="p-1 hover:bg-gray-100 rounded disabled:opacity-30"
+                            title="Move down"
+                          >
+                            <ArrowDown className="h-3 w-3 text-gray-500" />
+                          </button>
                         </div>
                       </td>
                       <td className="px-4 py-3 hidden sm:table-cell">

@@ -3,7 +3,7 @@
 import { createBrowserTypedClient } from "@repo/data-access/client";
 import { getCashouts, updateCashout } from "@repo/data-access/data/earnings";
 import { Badge, Button, Card, CardContent, Input } from "@repo/ui";
-import { formatCurrency } from "@repo/utils";
+import { formatCurrency, parseServerDate } from "@repo/utils";
 import { Banknote, CheckCircle, Loader2, XCircle } from "lucide-react";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "@/lib/use-toast";
@@ -139,7 +139,7 @@ export default function CashoutsPage() {
                       </div>
                       <p className="text-2xl font-bold text-crimson-700">{formatCurrency(c.amount)}</p>
                       <p className="text-xs text-gray-500 mt-1">
-                        Requested {new Date(c.requested_at).toLocaleDateString()}
+                        Requested {parseServerDate(c.requested_at).toLocaleDateString()}
                       </p>
                       {c.gcash_number && (
                         <p className="text-xs text-gray-500 mt-0.5">

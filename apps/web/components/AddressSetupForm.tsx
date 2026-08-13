@@ -26,14 +26,34 @@ export default function AddressSetupForm({ onSaved }: { onSaved: (fullAddress: s
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  // Only show the towns the ADMIN has enabled in Settings (delivery_areas).
+  // The client's requirement: the customer's Town/City dropdown must match
+  // exactly what the admin made available for delivery.
   useEffect(() => {
-    fetch(`/api/locations?type=city&parent=${ILOILO_ID}`)
-      .then((r) => r.json())
-      .then((response) => {
-        const data = response.data || response;
-        if (Array.isArray(data)) setTowns(data);
-      })
-      .catch(() => {});
+    let cancelled = false;
+    (async () => {
+      const [locationsRes, businessRes] = await Promise.all([
+        fetch(`/api/locations?type=city&parent=${ILOILO_ID}`),
+        fetch("/api/business"),
+      ]);
+      const [locations, business] = await Promise.all([locationsRes.json(), businessRes.json().catch(() => ({}))]);
+      if (cancelled) return;
+      const allTowns = Array.isArray(locations.data || locations) ? locations.data || locations : [];
+      const deliveryAreas = business?.data?.delivery_areas
+        ? String(business.data.delivery_areas)
+            .split(",")
+            .map((s: string) => s.trim())
+            .filter(Boolean)
+        : null;
+      const filtered =
+        deliveryAreas && deliveryAreas.length > 0
+          ? allTowns.filter((t: { id: string }) => deliveryAreas.includes(t.id))
+          : allTowns;
+      setTowns(filtered);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {

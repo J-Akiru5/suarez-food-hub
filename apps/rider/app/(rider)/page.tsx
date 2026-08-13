@@ -3,6 +3,7 @@
 import { createBrowserTypedClient } from "@repo/data-access/client";
 import { getTodayEarnings } from "@repo/data-access/data/earnings";
 import { getActiveOrderForRider, getPendingOrdersForRider } from "@repo/data-access/data/orders";
+import { parseServerDate } from "@repo/utils";
 import { eachDayOfInterval, endOfWeek, format, startOfWeek } from "date-fns";
 import {
   BarChart3,
@@ -158,7 +159,7 @@ export default function RiderDashboard() {
     const dailyTotals = weekDays.map((day) => {
       const dayStr = format(day, "yyyy-MM-dd");
       const amount = (weekEarningsRaw as any[])
-        .filter((e: any) => format(new Date(e.earned_at), "yyyy-MM-dd") === dayStr)
+        .filter((e: any) => format(parseServerDate(e.earned_at), "yyyy-MM-dd") === dayStr)
         .reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
       return { day: format(day, "EEE"), amount };
     });

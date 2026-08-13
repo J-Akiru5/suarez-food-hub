@@ -2,6 +2,7 @@
 
 import { createBrowserTypedClient } from "@repo/data-access/client";
 import { getCashouts, getRiderEarnings } from "@repo/data-access/data/earnings";
+import { parseServerDate } from "@repo/utils";
 import { eachDayOfInterval, endOfWeek, format, startOfMonth, startOfWeek, subMonths } from "date-fns";
 import { Banknote, Download, Loader2, Plus } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -47,6 +48,7 @@ export default function EarningsPage() {
   const [cashouting, setCashouting] = useState(false);
   const [periodFilter, setPeriodFilter] = useState<string>("today");
   const [_showStats, _setShowStats] = useState(false);
+  const [riderGcash, setRiderGcash] = useState("");
 
   useEffect(() => {
     const fetchEarnings = async () => {
@@ -62,10 +64,14 @@ export default function EarningsPage() {
       const monthStart = startOfMonth(now);
       const _quarterStart = subMonths(now, 3);
 
-      const [allRiderEarnings, cashoutData] = await Promise.all([
+      const [allRiderEarnings, cashoutData, profileData] = await Promise.all([
         getRiderEarnings(supabase, user.id),
         getCashouts(supabase),
+        supabase.from("profiles").select("gcash_number").eq("id", user.id).maybeSingle(),
       ]);
+      // Client requirement: the GCash number comes from the rider's own
+      // profile (set in Rider Profile), not typed again at cashout time.
+      setRiderGcash((profileData as any)?.data?.gcash_number || "");
 
       const riderCashouts = ((cashoutData as any[]) || []).filter((c: any) => c.rider_id === user.id);
       const allEarnings = allRiderEarnings;
@@ -127,7 +133,7 @@ export default function EarningsPage() {
         id: c.id,
         amount: c.amount || 0,
         status: c.status || "requested",
-        date: c.requested_at ? format(new Date(c.requested_at), "MMM d, yyyy") : "—",
+        date: c.requested_at ? format(parseServerDate(c.requested_at), "MMM d, yyyy") : "—",
         notes: c.notes || null,
       }));
 
@@ -150,6 +156,21 @@ export default function EarningsPage() {
   }, [supabase]);
 
   async function handleCashout() {
+    // Client requirement: the GCash number is taken from the rider's personal
+    // profile (set in Rider Profile), NOT typed at cashout time.
+    if (!riderGcash) {
+      Swal.fire({
+        icon: "warning",
+        title: "GCash Number Missing",
+        text: "Please add your GCash number in your Rider Profile first so admin can send your cashout.",
+        confirmButtonText: "Go to Profile",
+        confirmButtonColor: "#F08013",
+      }).then((r) => {
+        if (r.isConfirmed) window.location.href = "/profile";
+      });
+      return;
+    }
+    const gcash_number = riderGcash;
     const result = await Swal.fire({
       title: "Request Cashout",
       html: `
@@ -163,17 +184,10 @@ export default function EarningsPage() {
           min="50"
           max="${earnings.available}"
           placeholder="Amount (min ₱50)"
-          style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 16px; outline: none; box-sizing: border-box; margin-bottom: 8px;"
-        />
-        <input
-          id="cashout-gcash"
-          type="text"
-          inputmode="numeric"
-          placeholder="GCash number (e.g. 09123456789)"
           style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 16px; outline: none; box-sizing: border-box;"
         />
         <p style="color: #94a3b8; font-size: 11px; margin-top: 8px; text-align: left;">
-          Provide your GCash number so admin can send the payment.
+          GCash number (from your profile): <strong>${gcash_number}</strong>
         </p>
       `,
       showCancelButton: true,
@@ -183,9 +197,7 @@ export default function EarningsPage() {
       cancelButtonColor: "#6b7280",
       preConfirm: () => {
         const amountInput = document.getElementById("cashout-amount") as HTMLInputElement;
-        const gcashInput = document.getElementById("cashout-gcash") as HTMLInputElement;
         const val = parseFloat(amountInput?.value || "0");
-        const gcash = gcashInput?.value?.trim() || "";
 
         if (!val || val < 50) {
           Swal.showValidationMessage("Minimum cashout is ₱50");
@@ -195,20 +207,12 @@ export default function EarningsPage() {
           Swal.showValidationMessage("Amount exceeds available balance");
           return false;
         }
-        if (!gcash) {
-          Swal.showValidationMessage("Please enter your GCash number");
-          return false;
-        }
-        if (!/^09\d{9}$/.test(gcash.replace(/\s/g, ""))) {
-          Swal.showValidationMessage("Enter a valid 11-digit GCash number (e.g. 09123456789)");
-          return false;
-        }
-        return { amount: val, gcash_number: gcash };
+        return { amount: val, gcash_number };
       },
     });
 
     if (!result.value) return;
-    const { amount, gcash_number } = result.value;
+    const { amount, gcash_number: gcashNumber } = result.value;
 
     setCashouting(true);
     const {
@@ -220,7 +224,7 @@ export default function EarningsPage() {
       id: crypto.randomUUID(),
       rider_id: user.id,
       amount,
-      gcash_number,
+      gcash_number: gcashNumber,
       status: "requested",
     });
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { parseServerDate } from "@repo/utils";
 import { format } from "date-fns";
 import { ExternalLink, Loader2, MessageCircle, Search, Trash2, User } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -13,6 +14,12 @@ interface FeedbackEntry {
   message: string;
   page_url: string | null;
   created_at: string;
+  sender?: {
+    first_name: string | null;
+    last_name: string | null;
+    email: string | null;
+    username: string | null;
+  } | null;
 }
 
 export default function AdminFeedbackPage() {
@@ -49,10 +56,14 @@ export default function AdminFeedbackPage() {
   const filtered = useMemo(() => {
     if (!search.trim()) return feedback;
     const q = search.toLowerCase();
-    return feedback.filter(
-      (f) =>
-        f.message.toLowerCase().includes(q) || f.name.toLowerCase().includes(q) || f.email.toLowerCase().includes(q),
-    );
+    return feedback.filter((f) => {
+      const sender = f.sender;
+      const senderName = sender
+        ? `${sender.first_name || ""} ${sender.last_name || ""}`.trim() || sender.username || ""
+        : "";
+      const haystack = [f.message, f.name, f.email, senderName, sender?.email || ""].join(" ").toLowerCase();
+      return haystack.includes(q);
+    });
   }, [feedback, search]);
 
   const handleDelete = (entry: FeedbackEntry) => {
@@ -163,17 +174,29 @@ export default function AdminFeedbackPage() {
                   <div className="flex-1 min-w-0">
                     <p className="text-sm text-gray-900 leading-relaxed whitespace-pre-wrap">{entry.message}</p>
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-xs text-muted-foreground">
-                      {(entry.name || entry.email) && (
-                        <span className="inline-flex items-center gap-1">
-                          <User className="h-3 w-3" />
-                          {entry.name && <span className="font-medium">{entry.name}</span>}
-                          {entry.email && (
-                            <a href={`mailto:${entry.email}`} className="text-brand-500 hover:underline">
-                              {entry.email}
-                            </a>
-                          )}
-                        </span>
-                      )}
+                      {(() => {
+                        // Prefer the joined profile (shows WHO sent it) — the
+                        // client's requirement: admin must see which user sent
+                        // the feedback. Falls back to the optional name/email.
+                        const sender = entry.sender;
+                        const senderName = sender
+                          ? `${sender.first_name || ""} ${sender.last_name || ""}`.trim() || sender.username || ""
+                          : "";
+                        const displayName = senderName || entry.name;
+                        const displayEmail = sender?.email || entry.email || "";
+                        if (!displayName && !displayEmail) return null;
+                        return (
+                          <span className="inline-flex items-center gap-1">
+                            <User className="h-3 w-3" />
+                            {displayName && <span className="font-medium">{displayName}</span>}
+                            {displayEmail && (
+                              <a href={`mailto:${displayEmail}`} className="text-brand-500 hover:underline">
+                                {displayEmail}
+                              </a>
+                            )}
+                          </span>
+                        );
+                      })()}
                       {entry.page_url && (
                         <a
                           href={entry.page_url}
@@ -188,8 +211,12 @@ export default function AdminFeedbackPage() {
                     </div>
                   </div>
                   <div className="text-right shrink-0 flex flex-col items-end gap-2">
-                    <p className="text-xs text-muted-foreground">{format(new Date(entry.created_at), "MMM d, yyyy")}</p>
-                    <p className="text-[11px] text-muted-foreground">{format(new Date(entry.created_at), "h:mm a")}</p>
+                    <p className="text-xs text-muted-foreground">
+                      {format(parseServerDate(entry.created_at), "MMM d, yyyy")}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {format(parseServerDate(entry.created_at), "h:mm a")}
+                    </p>
                     <button
                       type="button"
                       onClick={() => handleDelete(entry)}

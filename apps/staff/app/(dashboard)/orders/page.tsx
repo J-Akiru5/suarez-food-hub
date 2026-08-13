@@ -24,7 +24,7 @@ import {
   TabsList,
   TabsTrigger,
 } from "@repo/ui";
-import { formatCurrency } from "@repo/utils";
+import { formatCurrency, parseServerDate } from "@repo/utils";
 import { CheckCircle2, ChevronDown, ChevronUp, Clock, Eye, RefreshCw, Send, UserPlus } from "lucide-react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
@@ -280,7 +280,7 @@ function OrdersPageContent() {
                             {order.profile ? `${order.profile.first_name} ${order.profile.last_name}` : "Customer"}
                           </p>
                           <p className="text-xs text-muted-foreground mt-0.5">
-                            {new Date(order.created_at).toLocaleString()}
+                            {parseServerDate(order.created_at).toLocaleString()}
                           </p>
                         </div>
 

@@ -20,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@repo/ui";
-import { formatCurrency } from "@repo/utils";
+import { formatCurrency, parseServerDate } from "@repo/utils";
 import {
   ArrowLeft,
   CheckCircle2,
@@ -215,7 +215,9 @@ export default function OrderDetailPage() {
           </Button>
           <div>
             <h1 className="text-2xl font-bold text-gray-900 font-display">{order.order_number}</h1>
-            <p className="text-sm text-muted-foreground">Placed on {new Date(order.created_at).toLocaleString()}</p>
+            <p className="text-sm text-muted-foreground">
+              Placed on {parseServerDate(order.created_at).toLocaleString()}
+            </p>
           </div>
           <div className="ml-auto flex items-center gap-2">
             <Button variant="outline" size="sm" onClick={() => window.print()} className="gap-2 print:hidden">
@@ -643,7 +645,7 @@ export default function OrderDetailPage() {
         <div className="text-center mb-6 border-b-2 border-dashed border-black pb-4">
           <h1 className="font-bold text-2xl uppercase m-0">Suarez Food Hub</h1>
           <p className="text-sm mt-1">RECEIPT # {order.order_number}</p>
-          <p className="text-xs">{new Date(order.created_at).toLocaleString()}</p>
+          <p className="text-xs">{parseServerDate(order.created_at).toLocaleString()}</p>
         </div>
 
         <div className="space-y-2 mb-6 text-sm">

@@ -13,6 +13,42 @@ export function formatCurrency(amount: number): string {
   }).format(amount);
 }
 
+/**
+ * Parse a Supabase timestamp string into a Date.
+ *
+ * `orders.created_at` is stored as `timestamp without time zone` (Prisma's
+ * default mapping) while the app writes UTC ISO strings — so a value like
+ * `2026-08-12T07:25:52.488` is actually UTC wall-clock time with no timezone
+ * marker. `new Date(str)` treats it as LOCAL time, which shifts every
+ * displayed order time by the UTC offset (8h for PHT users — the client
+ * reported "customer ordered 7:54 AM but dashboards show a different time").
+ *
+ * This parser normalizes naive strings to UTC before converting, so all
+ * dashboards (admin/staff/rider/web) display the same correct local time.
+ *
+ * Migration 0020 converts the column to `timestamptz` (values then carry
+ * `+00:00`), and this parser handles both shapes.
+ */
+export function parseServerDate(value: string | Date | null | undefined): Date {
+  if (!value) return new Date(NaN);
+  if (value instanceof Date) return new Date(value.getTime());
+  const normalized =
+    /(?:Z|[+-]\d{2}:\d{2})$/.test(value.trim()) || value.includes("T") === false ? value : `${value.trim()}Z`;
+  return new Date(normalized);
+}
+
+export function formatDateTime(value: string | Date | null | undefined): string {
+  const d = parseServerDate(value);
+  if (Number.isNaN(d.getTime())) return "";
+  return d.toLocaleString("en-PH", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+}
+
 export function formatDate(date: Date | string): string {
   const d = typeof date === "string" ? new Date(date) : date;
   return new Intl.DateTimeFormat("en-PH", {

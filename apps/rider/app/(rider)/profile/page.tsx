@@ -48,6 +48,7 @@ export default function ProfilePage() {
   const [formVehicle, setFormVehicle] = useState("");
   const [formPlate, setFormPlate] = useState("");
   const [formLicense, setFormLicense] = useState("");
+  const [formGcash, setFormGcash] = useState("");
 
   // Load preferences from localStorage
   useEffect(() => {
@@ -138,6 +139,7 @@ export default function ProfilePage() {
     setFormVehicle(data?.vehicle_type || "motorcycle");
     setFormPlate(data?.plate_number || "");
     setFormLicense(data?.license_number || "");
+    setFormGcash(data?.gcash_number || "");
 
     setLoading(false);
   }, [supabase]);
@@ -221,6 +223,7 @@ export default function ProfilePage() {
       vehicle_type: formVehicle,
       plate_number: formPlate,
       license_number: formLicense,
+      gcash_number: formGcash.trim() || null,
     });
 
     if (error) {
@@ -363,6 +366,18 @@ export default function ProfilePage() {
               type="tel"
               value={formPhone}
               onChange={(e) => setFormPhone(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white text-gray-900"
+            />
+          </div>
+          <div>
+            <label className="text-[11px] font-semibold text-gray-500 block mb-1">
+              GCash Number <span className="text-gray-400 font-normal">(for cashouts)</span>
+            </label>
+            <input
+              type="tel"
+              value={formGcash}
+              onChange={(e) => setFormGcash(e.target.value)}
+              placeholder="09123456789"
               className="w-full px-3 py-2 rounded-lg border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500 bg-white text-gray-900"
             />
           </div>

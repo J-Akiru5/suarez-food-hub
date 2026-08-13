@@ -51,6 +51,9 @@ export default function CheckoutPage() {
   const [phoneError, setPhoneError] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cod");
   const [refNumber, setRefNumber] = useState("");
+  const [proofUrl, setProofUrl] = useState<string | null>(null);
+  const [uploadingProof, setUploadingProof] = useState(false);
+  const proofInputRef = useRef<HTMLInputElement>(null);
   const [business, setBusiness] = useState<Business | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -108,11 +111,12 @@ export default function CheckoutPage() {
         ? !deliveryProvinceList.includes((profile as any).province_id)
         : false);
 
-  const deliveryFee = business?.delivery_fee ?? 40;
-  const freeDeliveryMin = business?.free_delivery_min ?? 200;
   const subtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
-  const fee = subtotal >= freeDeliveryMin ? 0 : deliveryFee;
-  const total = subtotal + fee;
+  // Client requirement: the delivery fee is NOT shown to / charged to the
+  // customer anymore — it stays admin-side only. Customers pay the product
+  // price; riders earn the product price (set in the orders API).
+  const fee = 0;
+  const total = subtotal;
 
   const validatePhone = (val: string) => {
     if (!val.trim()) return "Phone number is required";
@@ -136,11 +140,43 @@ export default function CheckoutPage() {
     setStep(2);
   };
 
+  const handleProofUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) {
+      setError("Please upload an image file (screenshot of your GCash payment).");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setError("Image is too large — please upload a screenshot under 5MB.");
+      return;
+    }
+    setUploadingProof(true);
+    setError("");
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/upload-proof", { method: "POST", body: form });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Upload failed");
+      setProofUrl(data.data.url);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to upload payment proof.");
+    } finally {
+      setUploadingProof(false);
+      if (proofInputRef.current) proofInputRef.current.value = "";
+    }
+  };
+
   const handleNextStep2 = () => {
     setError("");
     if (paymentMethod !== "cod") {
       if (!REF_REGEX.test(refNumber.trim())) {
         setError("Enter a valid GCash reference number (5-20 alphanumeric characters)");
+        return;
+      }
+      if (!proofUrl) {
+        setError("Please upload a screenshot of your GCash payment as proof.");
         return;
       }
     }
@@ -170,6 +206,7 @@ export default function CheckoutPage() {
           delivery_contact: phone.trim(),
           payment_method: paymentMethod,
           gcash_reference: paymentMethod === "gcash" ? refNumber.trim() : null,
+          payment_proof_url: paymentMethod === "gcash" ? proofUrl : null,
 
           subtotal,
           delivery_fee: fee,
@@ -984,6 +1021,64 @@ export default function CheckoutPage() {
                         onFocus={(e) => (e.target.style.borderColor = "var(--primary-color)")}
                         onBlur={(e) => (e.target.style.borderColor = "#e2e8f0")}
                       />
+
+                      {/* Payment Proof Upload */}
+                      <label
+                        style={{
+                          fontSize: 14,
+                          fontWeight: 700,
+                          color: "var(--secondary-color)",
+                          marginBottom: 8,
+                          marginTop: 20,
+                          display: "block",
+                        }}
+                      >
+                        Payment Proof (Screenshot)
+                      </label>
+                      <input
+                        ref={proofInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleProofUpload}
+                        disabled={uploadingProof}
+                        style={{
+                          width: "100%",
+                          padding: "14px 18px",
+                          borderRadius: 16,
+                          border: "1px dashed #e2e8f0",
+                          background: "#fff",
+                          fontSize: 14,
+                          cursor: uploadingProof ? "wait" : "pointer",
+                          boxSizing: "border-box",
+                        }}
+                      />
+                      <p style={{ margin: "8px 0 0", fontSize: 12, color: "#94a3b8" }}>
+                        Upload a screenshot of your GCash payment so staff can verify your order.
+                      </p>
+                      {uploadingProof && (
+                        <p style={{ margin: "8px 0 0", fontSize: 13, color: "var(--primary-color)", fontWeight: 600 }}>
+                          Uploading…
+                        </p>
+                      )}
+                      {proofUrl && !uploadingProof && (
+                        <div
+                          style={{
+                            marginTop: 12,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 12,
+                            padding: "10px 14px",
+                            borderRadius: 12,
+                            background: "#f0fdf4",
+                            border: "1px solid #bbf7d0",
+                          }}
+                        >
+                          <CheckCircle size={18} color="#16a34a" />
+                          <span style={{ fontSize: 13, fontWeight: 600, color: "#15803d" }}>
+                            Proof uploaded — staff will verify it.
+                          </span>
+                        </div>
+                      )}
                     </div>
                   ) : (
                     <div
@@ -1346,20 +1441,6 @@ export default function CheckoutPage() {
               >
                 <span>Subtotal</span>
                 <span style={{ fontWeight: 600, color: "var(--secondary-color)" }}>₱{subtotal}</span>
-              </div>
-              <div
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  fontSize: 15,
-                  color: "#64748b",
-                  marginBottom: 20,
-                }}
-              >
-                <span>Delivery Fee</span>
-                <span style={{ fontWeight: 600, color: "var(--secondary-color)" }}>
-                  {fee === 0 ? "Free" : `₱${fee}`}
-                </span>
               </div>
               <div
                 style={{

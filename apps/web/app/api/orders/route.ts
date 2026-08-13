@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
       delivery_contact,
       payment_method,
       gcash_reference,
+      payment_proof_url,
       subtotal,
       delivery_fee,
       total,
@@ -193,6 +194,7 @@ export async function POST(req: NextRequest) {
       user_id: user.id,
       payment_method: payment_method,
       gcash_reference_no: payment_method === "gcash" ? gcash_reference || null : null,
+      payment_proof_url: payment_method === "gcash" ? payment_proof_url || null : null,
       delivery_address,
       delivery_lat,
       delivery_lng,
@@ -200,7 +202,10 @@ export async function POST(req: NextRequest) {
       subtotal,
       delivery_fee,
       total,
-      rider_earnings: delivery_fee, // Rider earnings = delivery fee (auto-set from business config)
+      // Rider earnings = the product price the customer paid (the client's
+      // requirement: riders are paid based on the product price, not the
+      // delivery fee, which stays admin-side only).
+      rider_earnings: subtotal,
     });
 
     if (orderError) {

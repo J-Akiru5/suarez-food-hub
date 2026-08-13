@@ -78,23 +78,41 @@ async function addFirstAvailableProduct(page: import("@playwright/test").Page) {
 }
 
 async function completeCheckout(page: import("@playwright/test").Page, creds: ReturnType<typeof makeUser>) {
-  // Wait for checkout to settle: fresh accounts see the "Set Up Your Delivery
-  // Address" panel (profile has no address), accounts with a saved address see
-  // the delivery form directly. Checking too early races the profile fetch.
+  // Wait for the checkout UI to settle: the initial render shows the delivery
+  // form with an EMPTY address field until the profile fetch completes. Once the
+  // profile loads, either the "Set Up Your Delivery Address" panel appears (no
+  // saved address) or the address field gets pre-filled from the profile. The
+  // branch check below must not run before that settle or it races the fetch.
+  await page.waitForFunction(
+    () => {
+      const panel = Array.from(document.querySelectorAll("h3")).some((h) =>
+        h.textContent?.includes("Set Up Your Delivery Address"),
+      );
+      const field = document.querySelector('textarea[placeholder="House #, Street, Barangay, City"]');
+      return panel || (!!field && (field as HTMLTextAreaElement).value.trim().length > 0);
+    },
+    undefined,
+    { timeout: 15000 },
+  );
   const enterHere = page.getByRole("button", { name: /Enter Address Here/ });
   const addressField = page.getByPlaceholder("House #, Street, Barangay, City");
-  await expect(addressField.or(enterHere).first()).toBeVisible({ timeout: 15000 });
   if (await enterHere.isVisible().catch(() => false)) {
     await enterHere.click();
     await page.getByPlaceholder("123 Rizal Street").fill("E2E Test Street");
-    await page.getByText("Select Town / City").click();
+    // Town — the Barangay select below stays disabled until a town is chosen
+    // (and its barangays finish loading from the PSGC API), so wait for enable.
+    await page.getByRole("combobox").filter({ hasText: "Select Town / City" }).click();
     await page.getByRole("option", { name: "City of Iloilo" }).click();
-    await page.getByText("Select Barangay").click();
-    await page.getByRole("option", { name: "San Jose" }).first().click();
+    const barangayBox = page.getByRole("combobox").filter({ hasText: "Select Barangay" });
+    await expect(barangayBox).toBeEnabled({ timeout: 15000 });
+    await barangayBox.click();
+    // Radix portal dropdowns can overlap options while animating; the option is
+    // correct so a force click (skips stability/intersection checks) is fine.
+    await page.getByRole("option", { name: "San Jose" }).first().click({ force: true });
     await page.getByPlaceholder("5000").fill("5000");
     await page.getByRole("button", { name: /Save Address & Continue/ }).click();
     // Panel closes → the normal delivery form appears with the address pre-filled
-    await expect(page.getByPlaceholder("House #, Street, Barangay, City")).toBeVisible({ timeout: 10000 });
+    await expect(page.getByPlaceholder("House #, Street, Barangay, City")).toBeVisible({ timeout: 15000 });
   }
   await page.getByPlaceholder("House #, Street, Barangay, City").fill(creds.address);
   await page.getByPlaceholder("09XX XXX XXXX").fill(creds.phone);
@@ -106,6 +124,10 @@ async function completeCheckout(page: import("@playwright/test").Page, creds: Re
 
 test.describe("desktop customer journey (1280x720)", () => {
   test.use({ viewport: { width: 1280, height: 720 } });
+  // The full journey (register → address setup → checkout → place order) is
+  // longer than the 30s global timeout, especially with concurrent workers
+  // and dev servers mid-recompile. Give it room.
+  test.setTimeout(90000);
 
   test("guest clicking a product shows the sign-in modal", async ({ page }) => {
     const errors: string[] = [];
@@ -265,6 +287,9 @@ test.describe("rider application", () => {
 
 test.describe("mobile customer journey (390x844)", () => {
   test.use({ viewport: { width: 390, height: 844 } });
+  // Same reasoning as the desktop journey: the full flow with address setup
+  // needs more than the 30s global timeout on loaded dev servers.
+  test.setTimeout(90000);
 
   test("mobile: bottom cart bar shows View Basket and checkout works", async ({ page }) => {
     const creds = makeUser(); // another brand-new account, no collision with desktop test

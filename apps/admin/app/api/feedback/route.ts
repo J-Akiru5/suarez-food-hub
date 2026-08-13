@@ -21,9 +21,11 @@ export async function GET() {
       return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
     }
 
+    // Join the sender's profile so admin can see WHICH user sent the message
+    // (the feedback name/email fields are often empty for logged-in users).
     const { data, error } = await supabase
       .from("feedback")
-      .select("*")
+      .select("*, sender:profiles!feedback_user_id_fkey(first_name, last_name, email, username)")
       .order("created_at", { ascending: false })
       .limit(100);
 

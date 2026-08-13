@@ -6,6 +6,7 @@ import { createNotification } from "@repo/data-access/data/notifications";
 import { getCompletedOrdersCount, getOrdersCountForRider, getOrdersForRider } from "@repo/data-access/data/orders";
 import { getRiders, updateRiderStatus } from "@repo/data-access/data/profiles";
 import type { Profile } from "@repo/types";
+import { parseServerDate } from "@repo/utils";
 import { Button, Card, CardContent, Dialog, DialogContent, DialogHeader, DialogTitle } from "@repo/ui";
 import {
   Bike,
@@ -214,16 +215,17 @@ export default function RidersPage() {
       confirmButtonText: "Yes, mark as resigned",
     });
     if (!result.isConfirmed) return;
-    const { error } = await supabase
-      .from("profiles")
-      .update({
-        rider_status: "resigned" as never,
-        is_active: false,
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", rider.id);
-    if (error) {
-      Swal.fire({ icon: "error", title: "Error", text: error.message });
+    // Route through the server API (service role) so the resign always applies
+    // — the previous direct client-side update could silently no-op if RLS on
+    // profiles was missing/stale in the live DB.
+    const res = await fetch("/api/riders", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ id: rider.id, rider_status: "resigned", is_active: false }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data.success) {
+      Swal.fire({ icon: "error", title: "Error", text: data.error || "Failed to mark rider as resigned" });
     } else {
       Swal.fire({
         icon: "success",
@@ -522,7 +524,7 @@ export default function RidersPage() {
                     <span>
                       Member since{" "}
                       {rider.created_at
-                        ? new Date(rider.created_at).toLocaleDateString("en-PH", {
+                        ? parseServerDate(rider.created_at).toLocaleDateString("en-PH", {
                             year: "numeric",
                             month: "long",
                             day: "numeric",

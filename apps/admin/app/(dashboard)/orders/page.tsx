@@ -4,7 +4,7 @@ import { createBrowserTypedClient } from "@repo/data-access/client";
 import { getOrdersWithProfiles } from "@repo/data-access/data/orders";
 import type { Order, Profile } from "@repo/types";
 import { Button, Card, CardContent, Tabs, TabsContent, TabsList, TabsTrigger } from "@repo/ui";
-import { formatCurrency } from "@repo/utils";
+import { formatCurrency, parseServerDate } from "@repo/utils";
 import { ChevronDown, ChevronUp, Eye, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
@@ -193,7 +193,7 @@ export default function OrdersPage() {
                             {order.profile ? `${order.profile.first_name} ${order.profile.last_name}` : "Customer"}
                           </p>
                           <p className="text-xs text-muted-foreground mt-0.5">
-                            {new Date(order.created_at).toLocaleString()}
+                            {parseServerDate(order.created_at).toLocaleString()}
                           </p>
                         </div>
 

@@ -2,6 +2,7 @@
 
 import { createBrowserTypedClient } from "@repo/data-access/client";
 import { getOrdersForRider } from "@repo/data-access/data/orders";
+import { parseServerDate } from "@repo/utils";
 import { format } from "date-fns";
 import { ChevronRight, List, Map as MapIcon, MapPin, Package, Search, X } from "lucide-react";
 import Link from "next/link";
@@ -13,6 +14,7 @@ interface Delivery {
   delivery_address: string;
   total: number;
   delivery_fee: number;
+  rider_earnings: number;
   status: string;
   delivered_at: string;
   created_at: string;
@@ -139,7 +141,7 @@ export default function DeliveriesPage() {
       active: allOrders.filter((o) => ACTIVE_STATUSES.includes(o.status)).length,
       pending: allOrders.filter((o) => PENDING_STATUSES.includes(o.status)).length,
       completed: allOrders.filter((o) => o.status === "delivered").length,
-      earnings: allOrders.filter((o) => o.status === "delivered").reduce((sum, d) => sum + (d.delivery_fee || 0), 0),
+      earnings: allOrders.filter((o) => o.status === "delivered").reduce((sum, d) => sum + (d.rider_earnings || 0), 0),
     }),
     [allOrders],
   );
@@ -331,11 +333,13 @@ export default function DeliveriesPage() {
                 <div className="flex items-center justify-between text-xs text-gray-400">
                   <span>
                     {order.updated_at
-                      ? format(new Date(order.updated_at), "MMM d, h:mm a")
-                      : format(new Date(order.created_at), "MMM d, h:mm a")}
+                      ? format(parseServerDate(order.updated_at), "MMM d, h:mm a")
+                      : format(parseServerDate(order.created_at), "MMM d, h:mm a")}
                   </span>
-                  {order.status !== "cancelled" && order.delivery_fee > 0 && (
-                    <span className="font-medium text-green-600">+₱{Number(order.delivery_fee).toFixed(2)}</span>
+                  {order.status !== "cancelled" && (order.rider_earnings ?? order.delivery_fee) > 0 && (
+                    <span className="font-medium text-green-600">
+                      +₱{Number(order.rider_earnings ?? order.delivery_fee).toFixed(2)}
+                    </span>
                   )}
                 </div>
               </Link>

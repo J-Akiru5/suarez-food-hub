@@ -2,6 +2,7 @@ import { createAuthClient, createServiceClient } from "@repo/data-access/client"
 import { createRiderEarning } from "@repo/data-access/data/earnings";
 import { createNotification } from "@repo/data-access/data/notifications";
 import { getOrderById, updateOrderStatus } from "@repo/data-access/data/orders";
+import { deductStockForOrderIfNeeded } from "@repo/data-access/data/products";
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 
@@ -109,6 +110,13 @@ export async function POST(request: NextRequest) {
         .eq("id", order_id);
       if (acceptError) return NextResponse.json({ success: false, error: acceptError.message }, { status: 500 });
 
+      // 🔁 Deduct stock on acceptance. Riders may accept an order straight from
+      // "pending" (broadcast model), which skips staff confirm entirely — the
+      // client reported stock never decreasing even after delivery for exactly
+      // this path. The helper is keyed on confirmed_at so it's a no-op if staff
+      // already confirmed (stock already deducted).
+      await deductStockForOrderIfNeeded(supabase, order_id, { notifyLowStock: true });
+
       // Notify other pending riders that the order was taken
       const otherRiderIds = pendingRiders.filter((id: string) => id !== user.id);
       if (otherRiderIds.length > 0) {
@@ -147,6 +155,13 @@ export async function POST(request: NextRequest) {
 
     const { error: updateError } = await updateOrderStatus(supabase, order_id, status, extraFields);
     if (updateError) return NextResponse.json({ success: false, error: updateError.message }, { status: 500 });
+
+    // 🔁 Safety net: if the order somehow reached "delivered" without stock
+    // ever being deducted (e.g. status was set directly by staff/admin to
+    // delivered), deduct now. Idempotent via confirmed_at.
+    if (status === "delivered") {
+      await deductStockForOrderIfNeeded(supabase, order_id, { notifyLowStock: true });
+    }
 
     // Create earning when delivered — idempotent so a duplicate "delivered"
     // request (double-tap / retry) can never pay the rider twice.

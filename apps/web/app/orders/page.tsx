@@ -1,6 +1,7 @@
 "use client";
 
 import { createBrowserTypedClient } from "@repo/data-access/client";
+import { parseServerDate } from "@repo/utils";
 import {
   ArrowRight,
   Bike,
@@ -284,7 +285,9 @@ function OrdersPageInner() {
   });
 
   const formatDate = (dateStr: string) => {
-    const d = new Date(dateStr);
+    // orders.created_at is stored as UTC wall-clock without a timezone marker;
+    // parse it as UTC so every dashboard shows the same local order time.
+    const d = parseServerDate(dateStr);
     return d.toLocaleDateString("en-PH", {
       month: "short",
       day: "numeric",
@@ -793,12 +796,6 @@ function OrdersPageInner() {
                         >
                           <span>Subtotal</span>
                           <span>₱{order.subtotal}</span>
-                        </div>
-                        <div
-                          style={{ display: "flex", justifyContent: "space-between", fontSize: 13, color: "#64748b" }}
-                        >
-                          <span>Delivery Fee</span>
-                          <span>₱{order.delivery_fee}</span>
                         </div>
                       </div>
                     )}
@@ -1502,7 +1499,7 @@ function OrdersPageInner() {
                     RECEIPT # {receiptOrder.id.slice(0, 8).toUpperCase()}
                   </p>
                   <p className="text-[10px] text-gray-400 mt-1 mb-0" style={{ fontFamily: "monospace" }}>
-                    {new Date(receiptOrder.created_at).toLocaleString()}
+                    {parseServerDate(receiptOrder.created_at).toLocaleString()}
                   </p>
                 </div>
               </div>
@@ -1548,17 +1545,6 @@ function OrdersPageInner() {
                     </span>
                     <span className="text-[10px] font-bold text-gray-400" style={{ fontFamily: "monospace" }}>
                       ₱{receiptOrder.subtotal}
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center mb-3">
-                    <span
-                      className="text-[10px] font-bold text-gray-400 uppercase tracking-wider"
-                      style={{ fontFamily: "monospace" }}
-                    >
-                      Delivery Fee
-                    </span>
-                    <span className="text-[10px] font-bold text-gray-400" style={{ fontFamily: "monospace" }}>
-                      ₱{receiptOrder.delivery_fee}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
