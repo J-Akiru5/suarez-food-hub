@@ -22,6 +22,7 @@ import {
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Swal from "sweetalert2";
+import { getBusinessOrigin } from "@/lib/business-origin";
 
 interface OrderDetail extends Order {
   profile?: Profile | null;
@@ -39,8 +40,6 @@ const STATUS_FLOW = [
 ];
 
 // Rider actions mapped to status
-// Suarez Siomai Food Hub origin (Janiuay, Iloilo)
-const JANIUAY_ORIGIN = "10.9501875,122.5065625";
 
 const RIDER_ACTIONS: Record<string, { label: string; nextStatus: string; icon: any; color: string }[]> = {
   ready_for_pickup: [
@@ -62,6 +61,7 @@ export default function RiderOrderDetailPage() {
   const [accessDenied, setAccessDenied] = useState(false);
   const [realtimeStatus, setRealtimeStatus] = useState<string>("connecting");
   const [proofModalUrl, setProofModalUrl] = useState<string | null>(null);
+  const [restaurantOrigin, setRestaurantOrigin] = useState("10.9501875,122.5065625");
 
   const orderId = params.id as string;
 
@@ -70,6 +70,9 @@ export default function RiderOrderDetailPage() {
       data: { user },
     } = await supabaseRef.current.auth.getUser();
     if (!user) return;
+
+    // Restaurant origin for Google Maps navigation (coords → address → fallback)
+    getBusinessOrigin(supabaseRef.current).then(setRestaurantOrigin);
 
     const data = await getOrderById(supabaseRef.current, orderId);
     if (!data || data.rider_id !== user.id) {
@@ -385,8 +388,8 @@ export default function RiderOrderDetailPage() {
           <a
             href={
               order.delivery_lat && order.delivery_lng
-                ? `https://www.google.com/maps/dir/?api=1&origin=${JANIUAY_ORIGIN}&destination=${order.delivery_lat},${order.delivery_lng}`
-                : `https://www.google.com/maps/dir/?api=1&origin=${JANIUAY_ORIGIN}&destination=${encodeURIComponent(order.delivery_address)}`
+                ? `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(restaurantOrigin)}&destination=${order.delivery_lat},${order.delivery_lng}`
+                : `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(restaurantOrigin)}&destination=${encodeURIComponent(order.delivery_address)}`
             }
             target="_blank"
             rel="noopener noreferrer"

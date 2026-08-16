@@ -24,14 +24,7 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" data-scroll-behavior="smooth">
-      <head>
-        <link
-          rel="stylesheet"
-          href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-          integrity="sha256-p4NxAoIhBjUbPj0nK1ypv6XSA7b83Y8n6l3O63O3Y="
-          crossOrigin=""
-        />
-      </head>
+      <head>{/* Leaflet CSS is imported in components/DeliveryMap.tsx (bundled) */}</head>
       <body className="bg-gray-50 min-h-screen">
         <Script
           id="register-sw"

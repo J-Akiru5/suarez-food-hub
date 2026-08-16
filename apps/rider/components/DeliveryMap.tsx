@@ -1,5 +1,10 @@
 "use client";
 
+// Import Leaflet CSS locally (bundled) instead of a CDN <link> — the CDN link
+// had a stale SRI integrity hash that the browser rejected, so the delivery map
+// rendered without Leaflet styles (broken-looking markers/controls) and logged
+// a console error on every rider dashboard load.
+import "leaflet/dist/leaflet.css";
 import L from "leaflet";
 import { useEffect, useState } from "react";
 import { MapContainer, Marker, Polyline, Popup, TileLayer, useMap } from "react-leaflet";

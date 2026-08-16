@@ -101,14 +101,16 @@ async function completeCheckout(page: import("@playwright/test").Page, creds: Re
     await page.getByPlaceholder("123 Rizal Street").fill("E2E Test Street");
     // Town — the Barangay select below stays disabled until a town is chosen
     // (and its barangays finish loading from the PSGC API), so wait for enable.
+    // Town list is filtered to the admin-configured delivery areas, so pick the
+    // first available town rather than hard-coding one the admin may remove.
     await page.getByRole("combobox").filter({ hasText: "Select Town / City" }).click();
-    await page.getByRole("option", { name: "City of Iloilo" }).click();
+    await page.getByRole("option").first().click();
     const barangayBox = page.getByRole("combobox").filter({ hasText: "Select Barangay" });
     await expect(barangayBox).toBeEnabled({ timeout: 15000 });
     await barangayBox.click();
     // Radix portal dropdowns can overlap options while animating; the option is
     // correct so a force click (skips stability/intersection checks) is fine.
-    await page.getByRole("option", { name: "San Jose" }).first().click({ force: true });
+    await page.getByRole("option").first().click({ force: true });
     await page.getByPlaceholder("5000").fill("5000");
     await page.getByRole("button", { name: /Save Address & Continue/ }).click();
     // Panel closes → the normal delivery form appears with the address pre-filled

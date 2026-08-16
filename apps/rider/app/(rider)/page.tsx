@@ -22,9 +22,10 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Swal from "sweetalert2";
+import { getBusinessOrigin } from "@/lib/business-origin";
 import { getCurrentPosition, watchPosition } from "@/lib/geolocation";
 
-// Restaurant origin — fetched from business_config on mount
+// Restaurant origin — fetched from the business table on mount
 
 const DeliveryMap = dynamic(() => import("@/components/DeliveryMap"), {
   ssr: false,
@@ -107,7 +108,6 @@ export default function RiderDashboard() {
       todayEarningsResult,
       weekEarningsResult,
       completedResult,
-      bizConfig,
     ] = await Promise.all([
       getActiveOrderForRider(supabase, user.id),
       getPendingOrdersForRider(supabase, user.id),
@@ -126,7 +126,6 @@ export default function RiderDashboard() {
         .select("created_at, delivered_at, confirmed_at, status")
         .eq("rider_id", user.id)
         .eq("status", "delivered"),
-      supabase.from("business_config").select("base_lat, base_lng").limit(1).maybeSingle(),
     ]);
 
     // Filter available orders to exclude ones this rider already has a pending relationship with
@@ -165,11 +164,10 @@ export default function RiderDashboard() {
     });
     setWeeklyEarnings(dailyTotals);
 
-    // Restaurant origin (merged into main fetch)
-    const bizData = (bizConfig as any)?.data;
-    if (bizData?.base_lat && bizData?.base_lng) {
-      setRestaurantOrigin(`${bizData.base_lat},${bizData.base_lng}`);
-    }
+    // Restaurant origin for Google Maps navigation: coords (0021) → address →
+    // fallback. Kept in one place so every directions link starts from the
+    // actual restaurant, not the old hardcoded Iloilo City coordinate.
+    getBusinessOrigin(supabase).then(setRestaurantOrigin);
 
     // Performance metrics from completed orders
     const completedOrders = (completedResult as any)?.data || [];
@@ -786,8 +784,8 @@ export default function RiderDashboard() {
             <a
               href={
                 activeOrder.delivery_lat && activeOrder.delivery_lng
-                  ? `https://www.google.com/maps/dir/?api=1&origin=${restaurantOrigin}&destination=${activeOrder.delivery_lat},${activeOrder.delivery_lng}`
-                  : `https://www.google.com/maps/dir/?api=1&origin=${restaurantOrigin}&destination=${encodeURIComponent(activeOrder.delivery_address)}`
+                  ? `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(restaurantOrigin)}&destination=${activeOrder.delivery_lat},${activeOrder.delivery_lng}`
+                  : `https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(restaurantOrigin)}&destination=${encodeURIComponent(activeOrder.delivery_address)}`
               }
               target="_blank"
               rel="noopener noreferrer"

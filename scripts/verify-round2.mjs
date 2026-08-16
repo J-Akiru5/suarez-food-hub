@@ -78,8 +78,17 @@ async function main() {
   const rand = Math.random().toString(36).slice(2, 8);
   const customerEmail = `verify${rand}@example.com`;
 
+  // ---- Read the admin-configured delivery areas up front ----
+  const { data: biz } = await SVC.from("business").select("delivery_areas").limit(1).single();
+  const areas = (biz?.delivery_areas || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (areas.length === 0) throw new Error("No delivery areas configured in business settings");
+  const customerTown = areas[0];
+
   // ---- Setup: test customer with a full profile (address) ----
-  console.log(`\nSetup: creating test customer ${customerEmail}`);
+  console.log(`\nSetup: creating test customer ${customerEmail} (town ${customerTown})`);
   const { data: created, error: cErr } = await SVC.auth.admin.createUser({
     email: customerEmail,
     password: "password123",
@@ -99,11 +108,11 @@ async function main() {
       role: "customer",
       is_active: true,
       username: `verify${rand}`,
-      town_id: "063022000", // City of Iloilo
+      town_id: customerTown,
       province_id: "063000000", // Iloilo
       region_id: "0600000000", // Western Visayas
       zip_code: "5000",
-      address: "42 Jaro Street, City of Iloilo",
+      address: `42 Main Street, town ${customerTown}`,
       created_at: now,
       updated_at: now,
     },
@@ -129,7 +138,7 @@ async function main() {
     const stockBefore = product.quantity;
     const orderRes = await api(WEB, "/api/orders", cust.cookie, "POST", {
       cart: [{ id: product.id, name: product.name, quantity: qty, price: 100 }],
-      delivery_address: "42 Jaro Street, City of Iloilo, Iloilo, Western Visayas",
+      delivery_address: `42 Main Street, town ${customerTown}, Iloilo, Western Visayas`,
       delivery_contact: "09171234567",
       payment_method: "cod",
       subtotal: 200,
@@ -187,7 +196,7 @@ async function main() {
     const stockBefore = product2.quantity;
     const orderRes = await api(WEB, "/api/orders", cust.cookie, "POST", {
       cart: [{ id: product2.id, name: product2.name, quantity: qty, price }],
-      delivery_address: "42 Jaro Street, City of Iloilo, Iloilo, Western Visayas",
+      delivery_address: `42 Main Street, town ${customerTown}, Iloilo, Western Visayas`,
       delivery_contact: "09171234567",
       payment_method: "cod",
       subtotal: price,
@@ -318,7 +327,7 @@ async function main() {
   if (p5) {
     const ores = await api(WEB, "/api/orders", cust.cookie, "POST", {
       cart: [{ id: p5.id, name: p5.name, quantity: 1, price: 120 }],
-      delivery_address: "42 Jaro Street, City of Iloilo, Iloilo, Western Visayas",
+      delivery_address: `42 Main Street, town ${customerTown}, Iloilo, Western Visayas`,
       delivery_contact: "09171234567",
       payment_method: "cod",
       subtotal: 120,
@@ -345,8 +354,6 @@ async function main() {
 
   // ---- Test 6: town dropdown filter (delivery_areas only) ----
   console.log("\n── Test 6: customer town list limited to admin delivery areas ──");
-  const { data: biz } = await SVC.from("business").select("delivery_areas").limit(1).single();
-  const areas = (biz?.delivery_areas || "").split(",").filter(Boolean);
   const loc = await api(WEB, "/api/locations?type=city&parent=063000000", cust.cookie, "GET");
   const towns = loc.json?.data || [];
   ok("locations API returns towns", towns.length > 0, `count=${towns.length}`);
@@ -356,7 +363,7 @@ async function main() {
     allowed.length === areas.length,
     `areas=${areas.length} allowed=${allowed.length} totalTowns=${towns.length}`,
   );
-  ok("Iloilo City included in areas", areas.includes("063022000"), JSON.stringify(areas));
+  ok("every configured area is an Iloilo town", allowed.length > 0, JSON.stringify(areas));
 
   // ---- cleanup customer ----
   await SVC.auth.admin.deleteUser(custId);

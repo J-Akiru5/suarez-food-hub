@@ -11,7 +11,7 @@ import { useCallback, useEffect, useState } from "react";
 
 export default function InventoryPage() {
   const supabase = createBrowserTypedClient();
-  const [products, setProducts] = useState<(Product & { category?: Category })[]>([]);
+  const [products, setProducts] = useState<(Product & { category?: Category; product_variants?: any[] })[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -21,7 +21,7 @@ export default function InventoryPage() {
     const [prodRes, catData] = await Promise.all([
       supabase
         .from("products")
-        .select("*, category:categories(*)")
+        .select("*, category:categories(*), product_variants(*)")
         .is("deleted_at", null)
         .order("sort_order", { ascending: true })
         .order("created_at", { ascending: false })
@@ -30,7 +30,7 @@ export default function InventoryPage() {
           if (res.error) {
             const fallback = await supabase
               .from("products")
-              .select("*, category:categories(*)")
+              .select("*, category:categories(*), product_variants(*)")
               .is("deleted_at", null)
               .order("created_at", { ascending: false });
             return fallback;
@@ -39,7 +39,7 @@ export default function InventoryPage() {
         }),
       getCategories(supabase),
     ]);
-    setProducts((prodRes.data as (Product & { category?: Category })[]) || []);
+    setProducts((prodRes.data as (Product & { category?: Category; product_variants?: any[] })[]) || []);
     setCategories((catData as Category[]) || []);
     setLoading(false);
   }, [supabase]);
@@ -74,6 +74,20 @@ export default function InventoryPage() {
     const matchesCategory = filterCategory === "all" || p.category_id === filterCategory;
     return matchesSearch && matchesCategory;
   });
+
+  // Total sellable stock: sum of active variant quantities when the product has
+  // variants (orders deduct VARIANT stock), else the main quantity. The table
+  // must show this — otherwise variant sales look like "stock never decreases",
+  // which is exactly the client-reported bug.
+  // biome-ignore lint/suspicious/noExplicitAny: product rows carry extra fields
+  const productStock = (p: any) => {
+    if (p.variant_type && p.variant_type !== "none" && (p.product_variants || []).length > 0) {
+      return (p.product_variants || [])
+        .filter((v: any) => v.is_active !== false)
+        .reduce((sum: number, v: any) => sum + (v.quantity ?? 0), 0);
+    }
+    return p.quantity ?? 0;
+  };
 
   return (
     <div className="space-y-6">
@@ -198,14 +212,24 @@ export default function InventoryPage() {
                       <td className="px-4 py-3 hidden sm:table-cell">
                         <div className="flex items-center gap-1">
                           <span
-                            className={`text-sm font-bold ${(product.quantity ?? 0) <= (product.buffer_quantity ?? 5) ? "text-red-600" : "text-gray-900"}`}
+                            className={`text-sm font-bold ${productStock(product) <= (product.buffer_quantity ?? 5) ? "text-red-600" : "text-gray-900"}`}
                           >
-                            {product.quantity ?? 0}
+                            {productStock(product)}
                           </span>
-                          {(product.quantity ?? 0) <= (product.buffer_quantity ?? 5) && (
+                          {productStock(product) <= (product.buffer_quantity ?? 5) && (
                             <Badge className="bg-red-100 text-red-700 text-[9px] border-0">Low</Badge>
                           )}
                         </div>
+                        {product.variant_type &&
+                          product.variant_type !== "none" &&
+                          (product.product_variants || []).length > 0 && (
+                            <span className="block text-[10px] text-gray-400 font-normal mt-0.5">
+                              {(product.product_variants || [])
+                                .filter((v: any) => v.is_active !== false)
+                                .map((v: any) => `${v.name}: ${v.quantity ?? 0}`)
+                                .join(" · ")}
+                            </span>
+                          )}
                       </td>
                       <td className="px-4 py-3">
                         <span
@@ -253,14 +277,24 @@ export default function InventoryPage() {
                         <span className="text-sm font-bold">{formatCurrency(product.base_price)}</span>
                         <div className="flex items-center gap-1">
                           <span
-                            className={`text-xs font-bold ${(product.quantity ?? 0) <= (product.buffer_quantity ?? 5) ? "text-red-600" : "text-gray-900"}`}
+                            className={`text-xs font-bold ${productStock(product) <= (product.buffer_quantity ?? 5) ? "text-red-600" : "text-gray-900"}`}
                           >
-                            Stock: {product.quantity ?? 0}
+                            Stock: {productStock(product)}
                           </span>
-                          {(product.quantity ?? 0) <= (product.buffer_quantity ?? 5) && (
+                          {productStock(product) <= (product.buffer_quantity ?? 5) && (
                             <Badge className="bg-red-100 text-red-700 text-[9px] border-0">Low</Badge>
                           )}
                         </div>
+                        {product.variant_type &&
+                          product.variant_type !== "none" &&
+                          (product.product_variants || []).length > 0 && (
+                            <span className="block text-[10px] text-gray-400 font-normal mt-0.5">
+                              {(product.product_variants || [])
+                                .filter((v: any) => v.is_active !== false)
+                                .map((v: any) => `${v.name}: ${v.quantity ?? 0}`)
+                                .join(" · ")}
+                            </span>
+                          )}
                       </div>
                     </div>
                   </div>

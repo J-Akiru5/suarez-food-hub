@@ -395,6 +395,19 @@ export default function StaffInventoryPage() {
     return (p.quantity ?? 0) <= buffer;
   };
 
+  // Total sellable stock: sum of active variant quantities when the product has
+  // variants (orders deduct VARIANT stock), else the main quantity. The table
+  // must show this — otherwise variant sales look like "stock never decreases",
+  // which is exactly the client-reported bug.
+  const productStock = (p: any) => {
+    if (p.variant_type && p.variant_type !== "none" && (p.product_variants || []).length > 0) {
+      return (p.product_variants || [])
+        .filter((v: any) => v.is_active !== false)
+        .reduce((sum: number, v: any) => sum + (v.quantity ?? 0), 0);
+    }
+    return p.quantity ?? 0;
+  };
+
   const filtered = products.filter((p) => {
     const matchesSearch = !search || p.name.toLowerCase().includes(search.toLowerCase());
     const matchesCategory = filterCategory === "all" || p.category_id === filterCategory;
@@ -552,7 +565,7 @@ export default function StaffInventoryPage() {
                         <td className="px-4 py-3 hidden sm:table-cell">
                           <div className="flex items-center gap-2">
                             <span className={`text-sm font-bold ${isLow ? "text-red-600" : "text-gray-900"}`}>
-                              {product.quantity ?? 0}
+                              {productStock(product)}
                             </span>
                             {isLow && (
                               <Badge className="bg-red-100 text-red-700 text-[9px] border-0">
@@ -560,6 +573,16 @@ export default function StaffInventoryPage() {
                               </Badge>
                             )}
                           </div>
+                          {product.variant_type &&
+                            product.variant_type !== "none" &&
+                            (product.product_variants || []).length > 0 && (
+                              <span className="block text-[10px] text-gray-400 font-normal mt-0.5">
+                                {(product.product_variants || [])
+                                  .filter((v: any) => v.is_active !== false)
+                                  .map((v: any) => `${v.name}: ${v.quantity ?? 0}`)
+                                  .join(" · ")}
+                              </span>
+                            )}
                         </td>
                         <td className="px-4 py-3">
                           <span
@@ -683,7 +706,7 @@ export default function StaffInventoryPage() {
                           <span className="text-sm font-bold">{formatCurrency(product.base_price)}</span>
                           <div className="flex items-center gap-1">
                             <span className={`text-xs font-bold ${isLow ? "text-red-600" : "text-gray-900"}`}>
-                              Stock: {product.quantity ?? 0}
+                              Stock: {productStock(product)}
                             </span>
                             {isLow && (
                               <Badge className="bg-red-100 text-red-700 text-[9px] border-0">
@@ -691,6 +714,16 @@ export default function StaffInventoryPage() {
                               </Badge>
                             )}
                           </div>
+                          {product.variant_type &&
+                            product.variant_type !== "none" &&
+                            (product.product_variants || []).length > 0 && (
+                              <span className="block text-[10px] text-gray-400 font-normal mt-0.5">
+                                {(product.product_variants || [])
+                                  .filter((v: any) => v.is_active !== false)
+                                  .map((v: any) => `${v.name}: ${v.quantity ?? 0}`)
+                                  .join(" · ")}
+                              </span>
+                            )}
                         </div>
                         {/* Actions row */}
                         <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">

@@ -94,9 +94,13 @@ export default function EarningsPage() {
         .filter((e: any) => e.status === "pending")
         .reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
 
-      // Calculate available (pending earnings that haven't been cashouted)
+      // Calculate available (pending earnings that haven't been cashouted).
+      // Requested cashouts count too — otherwise the balance doesn't drop after
+      // requesting and the rider can double-request (the client reported the
+      // cashout section behaving strangely). A rejected request frees the amount
+      // back up automatically since only non-rejected statuses are summed.
       const cashoutedAmt = riderCashouts
-        .filter((c: any) => c.status === "approved" || c.status === "paid")
+        .filter((c: any) => c.status === "requested" || c.status === "approved" || c.status === "paid")
         .reduce((sum: number, c: any) => sum + (c.amount || 0), 0);
       const available = Math.max(0, pendingAmt - cashoutedAmt);
 

@@ -376,6 +376,29 @@ export default function OrderDetailPage() {
                     <span className="text-sm font-mono bg-gray-50 px-2 py-0.5 rounded">{order.gcash_reference_no}</span>
                   </div>
                 )}
+                {order.payment_method === "gcash" && order.payment_proof_url && (
+                  <div className="mt-3">
+                    <span className="text-sm text-muted-foreground">Proof of Payment</span>
+                    {/* biome-ignore lint/a11y/useKeyWithClickEvents: Payment proof modal trigger */}
+                    {/* biome-ignore lint/a11y/noStaticElementInteractions: Payment proof modal trigger */}
+                    <div
+                      className="relative mt-1.5 cursor-pointer"
+                      onClick={() => setProofModalUrl(order.payment_proof_url)}
+                    >
+                      {/* biome-ignore lint/performance/noImgElement: External images may not be optimizable by next/image */}
+                      <img
+                        src={order.payment_proof_url}
+                        alt="GCash payment proof"
+                        className="w-full max-h-40 object-cover rounded-lg border border-gray-200"
+                      />
+                      <div className="absolute inset-0 flex items-center justify-center bg-black/20 rounded-lg">
+                        <div className="w-9 h-9 rounded-full bg-white/90 flex items-center justify-center backdrop-blur-sm shadow-lg">
+                          <Search size={16} className="text-gray-700" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 <div className="flex items-center justify-between mt-3 pt-3 border-t">
                   <span className="text-sm text-muted-foreground">Status</span>{" "}

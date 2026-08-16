@@ -7,6 +7,7 @@ import { format } from "date-fns";
 import { ChevronRight, List, Map as MapIcon, MapPin, Package, Search, X } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { getBusinessOrigin } from "@/lib/business-origin";
 
 interface Delivery {
   id: string;
@@ -71,18 +72,9 @@ export default function DeliveriesPage() {
   }, [supabase]);
 
   useEffect(() => {
-    fetchOrders();
-    // Fetch restaurant location from DB
-    (async () => {
-      const { data } = await supabaseRef.current
-        .from("business_config")
-        .select("base_lat, base_lng")
-        .limit(1)
-        .maybeSingle();
-      if (data?.base_lat && data?.base_lng) {
-        setRestaurantOrigin(`${data.base_lat},${data.base_lng}`);
-      }
-    })();
+    fetchOrders(); // Restaurant origin for Google Maps navigation: coords (0021) → address →
+    // fallback (see lib/business-origin.ts).
+    getBusinessOrigin(supabaseRef.current).then(setRestaurantOrigin);
   }, [fetchOrders]);
 
   // Realtime updates
@@ -249,7 +241,7 @@ export default function DeliveriesPage() {
                 {ordersWithCoords.slice(0, 5).map((o) => (
                   <a
                     key={o.id}
-                    href={`https://www.google.com/maps/dir/?api=1&origin=${restaurantOrigin}&destination=${o.delivery_lat},${o.delivery_lng}`}
+                    href={`https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(restaurantOrigin)}&destination=${o.delivery_lat},${o.delivery_lng}`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="flex items-center gap-2 text-xs text-blue-600 hover:text-blue-800"
