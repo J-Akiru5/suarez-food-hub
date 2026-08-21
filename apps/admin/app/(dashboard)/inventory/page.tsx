@@ -261,7 +261,27 @@ export default function InventoryPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-2">
-                        <p className="text-sm font-semibold truncate">{product.name}</p>
+                        <div className="flex items-center gap-1 min-w-0">
+                          <p className="text-sm font-semibold truncate">{product.name}</p>
+                          <div className="flex items-center gap-0.5 shrink-0">
+                            <button
+                              type="button"
+                              onClick={() => handleMoveProduct(product.id, "up")}
+                              className="p-1 hover:bg-gray-100 rounded"
+                              title="Move up"
+                            >
+                              <ArrowUp className="h-3 w-3 text-gray-400" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleMoveProduct(product.id, "down")}
+                              className="p-1 hover:bg-gray-100 rounded"
+                              title="Move down"
+                            >
+                              <ArrowDown className="h-3 w-3 text-gray-400" />
+                            </button>
+                          </div>
+                        </div>
                         <span
                           className={`shrink-0 text-xs font-medium px-2 py-0.5 rounded-full ${
                             product.availability === "available"

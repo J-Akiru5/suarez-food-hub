@@ -90,8 +90,10 @@ export async function getActiveOrderForRider(supabase: TypedSupabaseClient, ride
     .from("orders")
     .select("*, customer:profiles!orders_user_id_fkey(first_name, last_name, phone)")
     .eq("rider_id", riderId)
-    // Orders the rider can act on — includes ready_for_pickup so dashboard shows accept button
-    .in("status", ["ready_for_pickup", "claimed_by_rider", "out_for_delivery", "near_customer"] as OrderStatus[])
+    // Only the order the rider is actively delivering — not ready_for_pickup
+    // (which belongs in pending so newly-assigned orders stay visible even when
+    // the rider already has an active delivery).
+    .in("status", ["claimed_by_rider", "out_for_delivery", "near_customer"] as OrderStatus[])
     .order("created_at", { ascending: false })
     .limit(1)
     .maybeSingle();
@@ -103,8 +105,10 @@ export async function getPendingOrdersForRider(supabase: TypedSupabaseClient, ri
     .from("orders")
     .select("*, customer:profiles!orders_user_id_fkey(first_name, last_name, phone)")
     .eq("rider_id", riderId)
-    // Orders being prepared — not yet ready for rider to pick up
-    .in("status", ["confirmed", "preparing"] as OrderStatus[])
+    // All assigned orders waiting for rider action — includes ready_for_pickup
+    // so newly-assigned deliveries are visible even when rider has an active
+    // delivery (the client reported they couldn't see new assignments).
+    .in("status", ["confirmed", "preparing", "ready_for_pickup"] as OrderStatus[])
     .order("created_at", { ascending: false });
   return data || [];
 }

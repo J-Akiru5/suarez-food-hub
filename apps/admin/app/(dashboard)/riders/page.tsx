@@ -139,6 +139,8 @@ export default function RidersPage() {
   }
 
   async function approveRider(rider: RiderWithStats) {
+    setModalOpen(false);
+    await new Promise((r) => setTimeout(r, 150));
     const result = await Swal.fire({
       title: "Approve Rider?",
       text: `${rider.first_name} ${rider.last_name} will be able to accept deliveries.`,
@@ -172,6 +174,8 @@ export default function RidersPage() {
   }
 
   async function rejectRider(rider: RiderWithStats) {
+    setModalOpen(false);
+    await new Promise((r) => setTimeout(r, 150));
     const result = await Swal.fire({
       title: "Reject Rider?",
       text: `${rider.first_name} ${rider.last_name} will not be able to log in.`,
@@ -205,6 +209,12 @@ export default function RidersPage() {
   }
 
   async function markResigned(rider: RiderWithStats) {
+    // Close the Radix Dialog first — its z-50 overlay intercepts
+    // touch/click events that would otherwise reach the SweetAlert2
+    // confirm button on mobile browsers.
+    setModalOpen(false);
+    // Small delay so the Radix overlay fully unmounts before SweetAlert2 opens.
+    await new Promise((r) => setTimeout(r, 150));
     const result = await Swal.fire({
       title: "Mark as Resigned?",
       text: `${rider.first_name} ${rider.last_name} will no longer receive delivery assignments.`,
@@ -239,6 +249,8 @@ export default function RidersPage() {
   }
 
   async function deleteRider(rider: RiderWithStats) {
+    setModalOpen(false);
+    await new Promise((r) => setTimeout(r, 150));
     const result = await Swal.fire({
       title: "Delete Rider?",
       text: `${rider.first_name} ${rider.last_name} will be permanently removed. This cannot be undone.`,

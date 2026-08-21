@@ -160,21 +160,8 @@ export default function EarningsPage() {
   }, [supabase]);
 
   async function handleCashout() {
-    // Client requirement: the GCash number is taken from the rider's personal
-    // profile (set in Rider Profile), NOT typed at cashout time.
-    if (!riderGcash) {
-      Swal.fire({
-        icon: "warning",
-        title: "GCash Number Missing",
-        text: "Please add your GCash number in your Rider Profile first so admin can send your cashout.",
-        confirmButtonText: "Go to Profile",
-        confirmButtonColor: "#F08013",
-      }).then((r) => {
-        if (r.isConfirmed) window.location.href = "/profile";
-      });
-      return;
-    }
-    const gcash_number = riderGcash;
+    // Client requirement: cashout is paid personally (cash/over-the-counter),
+    // NOT via GCash. No GCash number needed for the cashout request.
     const result = await Swal.fire({
       title: "Request Cashout",
       html: `
@@ -191,7 +178,7 @@ export default function EarningsPage() {
           style="width: 100%; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 16px; outline: none; box-sizing: border-box;"
         />
         <p style="color: #94a3b8; font-size: 11px; margin-top: 8px; text-align: left;">
-          GCash number (from your profile): <strong>${gcash_number}</strong>
+          Payment will be sent to you personally by admin.
         </p>
       `,
       showCancelButton: true,
@@ -211,12 +198,12 @@ export default function EarningsPage() {
           Swal.showValidationMessage("Amount exceeds available balance");
           return false;
         }
-        return { amount: val, gcash_number };
+        return { amount: val };
       },
     });
 
     if (!result.value) return;
-    const { amount, gcash_number: gcashNumber } = result.value;
+    const { amount } = result.value;
 
     setCashouting(true);
     const {
@@ -228,7 +215,7 @@ export default function EarningsPage() {
       id: crypto.randomUUID(),
       rider_id: user.id,
       amount,
-      gcash_number: gcashNumber,
+      gcash_number: riderGcash || null,
       status: "requested",
     });
 
@@ -238,7 +225,7 @@ export default function EarningsPage() {
       Swal.fire({
         icon: "success",
         title: "Cashout Requested!",
-        text: `₱${Number(amount).toFixed(2)} — Admin will send to ${gcash_number}.`,
+        text: `₱${Number(amount).toFixed(2)} — Admin will process your cashout.`,
         timer: 3000,
         showConfirmButton: false,
       });

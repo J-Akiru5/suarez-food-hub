@@ -202,9 +202,8 @@ export async function POST(req: NextRequest) {
       subtotal,
       delivery_fee,
       total,
-      // Rider earnings = the product price the customer paid (the client's
-      // requirement: riders are paid based on the product price, not the
-      // delivery fee, which stays admin-side only).
+      // Rider earnings = the product price (subtotal). The customer pays
+      // the full product price and the rider earns that amount for delivery.
       rider_earnings: subtotal,
     });
 
