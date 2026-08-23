@@ -167,7 +167,10 @@ export async function POST(request: NextRequest) {
     // request (double-tap / retry) can never pay the rider twice.
     if (status === "delivered" && (order as any).rider_id) {
       const riderId = order.rider_id || user.id;
-      const earningAmount = Number((order as any).rider_earnings) || 40;
+      // Rider earns the delivery fee recorded on the order. ₱0 is a VALID
+      // earning (free-delivery orders), so only fall back to the default
+      // fee when the field is missing — never when it's zero.
+      const earningAmount = (order as any).rider_earnings != null ? Number((order as any).rider_earnings) : 40;
 
       const { data: existingEarning } = await supabase
         .from("rider_earnings")

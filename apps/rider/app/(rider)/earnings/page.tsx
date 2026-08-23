@@ -1,7 +1,7 @@
 "use client";
 
 import { createBrowserTypedClient } from "@repo/data-access/client";
-import { getCashouts, getRiderEarnings } from "@repo/data-access/data/earnings";
+import { getCashouts, getRiderEarnings, requestCashout } from "@repo/data-access/data/earnings";
 import { parseServerDate } from "@repo/utils";
 import { eachDayOfInterval, endOfWeek, format, startOfMonth, startOfWeek, subMonths } from "date-fns";
 import { Banknote, Download, Loader2, Plus } from "lucide-react";
@@ -48,7 +48,6 @@ export default function EarningsPage() {
   const [cashouting, setCashouting] = useState(false);
   const [periodFilter, setPeriodFilter] = useState<string>("today");
   const [_showStats, _setShowStats] = useState(false);
-  const [riderGcash, setRiderGcash] = useState("");
 
   useEffect(() => {
     const fetchEarnings = async () => {
@@ -64,14 +63,10 @@ export default function EarningsPage() {
       const monthStart = startOfMonth(now);
       const _quarterStart = subMonths(now, 3);
 
-      const [allRiderEarnings, cashoutData, profileData] = await Promise.all([
+      const [allRiderEarnings, cashoutData] = await Promise.all([
         getRiderEarnings(supabase, user.id),
         getCashouts(supabase),
-        supabase.from("profiles").select("gcash_number").eq("id", user.id).maybeSingle(),
       ]);
-      // Client requirement: the GCash number comes from the rider's own
-      // profile (set in Rider Profile), not typed again at cashout time.
-      setRiderGcash((profileData as any)?.data?.gcash_number || "");
 
       const riderCashouts = ((cashoutData as any[]) || []).filter((c: any) => c.rider_id === user.id);
       const allEarnings = allRiderEarnings;
@@ -87,22 +82,23 @@ export default function EarningsPage() {
         }));
 
       const totalAmt = allEarnings.reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
-      const paidAmt = allEarnings
-        .filter((e: any) => e.status === "paid")
-        .reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
-      const pendingAmt = allEarnings
-        .filter((e: any) => e.status === "pending")
-        .reduce((sum: number, e: any) => sum + (e.amount || 0), 0);
 
-      // Calculate available (pending earnings that haven't been cashouted).
-      // Requested cashouts count too — otherwise the balance doesn't drop after
-      // requesting and the rider can double-request (the client reported the
-      // cashout section behaving strangely). A rejected request frees the amount
-      // back up automatically since only non-rejected statuses are summed.
-      const cashoutedAmt = riderCashouts
-        .filter((c: any) => c.status === "requested" || c.status === "approved" || c.status === "paid")
+      // Balance model (mirrors the request_rider_cashout RPC — single source
+      // of truth is the database, these numbers are its read-only view):
+      //   paid     = cashouts already settled by admin
+      //   locked   = requested/approved cashouts (money reserved)
+      //   pending  = earned but not yet paid out
+      //   available= pending minus locked; a rejected request frees its amount.
+      // Earnings rows never change status themselves — cashout state lives
+      // entirely in rider_cashouts.
+      const paidAmt = riderCashouts
+        .filter((c: any) => c.status === "paid")
         .reduce((sum: number, c: any) => sum + (c.amount || 0), 0);
-      const available = Math.max(0, pendingAmt - cashoutedAmt);
+      const lockedAmt = riderCashouts
+        .filter((c: any) => c.status === "requested" || c.status === "approved")
+        .reduce((sum: number, c: any) => sum + (c.amount || 0), 0);
+      const pendingAmt = Math.max(0, totalAmt - paidAmt);
+      const available = Math.max(0, totalAmt - paidAmt - lockedAmt);
 
       // Filter earnings by different periods
       const todayEarningsFiltered = allEarnings.filter((e: any) => new Date(e.earned_at || e.created_at) >= todayStart);
@@ -206,21 +202,18 @@ export default function EarningsPage() {
     const { amount } = result.value;
 
     setCashouting(true);
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (!user) return;
 
-    const { error } = await supabase.from("rider_cashouts").insert({
-      id: crypto.randomUUID(),
-      rider_id: user.id,
-      amount,
-      gcash_number: riderGcash || null,
-      status: "requested",
-    });
+    // Validated and inserted server-side by request_rider_cashout — the
+    // ₱50 minimum and available balance are enforced in the database, so
+    // this can't be bypassed or double-submitted into an overdraw.
+    const { error } = await requestCashout(supabase, amount);
 
     if (error) {
-      Swal.fire({ icon: "error", title: "Failed", text: error.message || "Could not request cashout." });
+      Swal.fire({
+        icon: "error",
+        title: "Failed",
+        text: error.message || "Could not request cashout.",
+      });
     } else {
       Swal.fire({
         icon: "success",
@@ -354,7 +347,8 @@ export default function EarningsPage() {
           <span className="text-sm font-medium text-brand-100">Available for Cashout</span>
           <Banknote size={20} className="text-brand-200" />
         </div>
-        <p className="text-3xl font-bold mb-3">₱{earnings.available.toFixed(2)}</p>
+        <p className="text-3xl font-bold mb-0.5">₱{earnings.available.toFixed(2)}</p>
+        <p className="text-[11px] text-brand-200 mb-3">All-time delivery earnings not yet paid out</p>
         <button
           onClick={handleCashout}
           disabled={cashouting || earnings.available < 50}

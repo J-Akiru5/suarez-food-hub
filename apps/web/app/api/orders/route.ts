@@ -25,12 +25,13 @@ export async function POST(req: NextRequest) {
       payment_method,
       gcash_reference,
       payment_proof_url,
-      subtotal,
-      delivery_fee,
-      total,
       delivery_lat,
       delivery_lng,
     } = body;
+    // NOTE: subtotal / delivery_fee / total are deliberately NOT accepted
+    // from the client. They are recomputed below from DB prices and the
+    // business config so a tampered request can't change what a customer
+    // pays or what a rider earns.
 
     if (!cart?.length || !delivery_address || !delivery_contact) {
       return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
@@ -41,13 +42,17 @@ export async function POST(req: NextRequest) {
     }
 
     const stockErrors: string[] = [];
+    // Server-side price authority: the subtotal is built from DB prices,
+    // never from cart item prices sent by the browser.
+    let serverSubtotal = 0;
+    const dbPrices: number[] = [];
     for (const item of cart) {
       if (item.variantId) {
         // Check variant stock + verify the parent product still exists
         // (prevents an FK error on order_items insert when a product was hard-deleted)
         const { data: variant } = await serviceSupabase
           .from("product_variants")
-          .select("name, quantity, product_id")
+          .select("name, quantity, price, product_id")
           .eq("id", item.variantId)
           .single();
         if (!variant) {
@@ -64,19 +69,27 @@ export async function POST(req: NextRequest) {
             stockErrors.push(
               `"${item.name} (${variant.name})" only has ${variant.quantity} left, you ordered ${item.quantity}`,
             );
+          } else {
+            const price = Number(variant.price);
+            serverSubtotal += price * item.quantity;
+            dbPrices.push(price);
           }
         }
       } else {
         // Check product stock (no variant)
         const { data: product } = await serviceSupabase
           .from("products")
-          .select("name, quantity, buffer_quantity, availability")
+          .select("name, quantity, buffer_quantity, availability, base_price")
           .eq("id", item.id)
           .single();
         if (!product) {
           stockErrors.push(`"${item.name}" not found`);
         } else if (product.quantity < item.quantity) {
           stockErrors.push(`"${product.name}" only has ${product.quantity} left, you ordered ${item.quantity}`);
+        } else {
+          const price = Number(product.base_price);
+          serverSubtotal += price * item.quantity;
+          dbPrices.push(price);
         }
       }
     }
@@ -190,6 +203,22 @@ export async function POST(req: NextRequest) {
       }
     }
 
+    // Delivery fee from the business config: free once the subtotal reaches
+    // free_delivery_min, otherwise the configured flat fee. This restores
+    // what the original schema intended (business.delivery_fee, default ₱40,
+    // free_delivery_min default ₱200) before checkout hardcoded it to 0.
+    const { data: bizConfig } = await serviceSupabase
+      .from("business")
+      .select("delivery_fee, free_delivery_min")
+      .limit(1)
+      .maybeSingle();
+    const configFee = Number(bizConfig?.delivery_fee ?? 40);
+    const freeDeliveryMin = Number(bizConfig?.free_delivery_min ?? 200);
+
+    serverSubtotal = Math.round(serverSubtotal * 100) / 100;
+    const deliveryFee = serverSubtotal >= freeDeliveryMin ? 0 : Math.round(configFee * 100) / 100;
+    const totalAmount = Math.round((serverSubtotal + deliveryFee) * 100) / 100;
+
     const { data: order, error: orderError } = await createOrder(serviceSupabase, {
       user_id: user.id,
       payment_method: payment_method,
@@ -199,19 +228,24 @@ export async function POST(req: NextRequest) {
       delivery_lat,
       delivery_lng,
       delivery_contact,
-      subtotal,
-      delivery_fee,
-      total,
-      // Rider earnings = the product price (subtotal). The customer pays
-      // the full product price and the rider earns that amount for delivery.
-      rider_earnings: subtotal,
+      subtotal: serverSubtotal,
+      delivery_fee: deliveryFee,
+      total: totalAmount,
+      // Client requirement (from their docx): the rider earns ONLY the
+      // delivery fee. Admin keeps the food money — that's the whole point of
+      // charging the customer a delivery fee in the first place.
+      rider_earnings: deliveryFee,
     });
 
     if (orderError) {
       return NextResponse.json({ success: false, error: orderError.message }, { status: 500 });
     }
 
-    for (const item of cart) {
+    for (const [index, item] of cart.entries()) {
+      // unit_price comes from the DB (captured during stock validation),
+      // not from the client's cart — keeps line items consistent with the
+      // server-computed subtotal.
+      const itemPrice = dbPrices[index] ?? 0;
       const { error: itemError } = await createOrderItems(serviceSupabase, [
         {
           order_id: order.id,
@@ -219,8 +253,8 @@ export async function POST(req: NextRequest) {
           product_name: item.name,
           variant_name: item.variant || null,
           quantity: item.quantity,
-          unit_price: item.price,
-          total_price: item.price * item.quantity,
+          unit_price: itemPrice,
+          total_price: itemPrice * item.quantity,
         },
       ]);
 

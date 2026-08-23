@@ -112,11 +112,14 @@ export default function CheckoutPage() {
         : false);
 
   const subtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
-  // Client requirement: the delivery fee is NOT shown to / charged to the
-  // customer anymore — it stays admin-side only. Customers pay the product
-  // price; riders earn the product price (set in the orders API).
-  const fee = 0;
-  const total = subtotal;
+  // Delivery fee comes from the business config (same values the orders API
+  // enforces server-side): free once the subtotal reaches free_delivery_min,
+  // otherwise the configured flat fee. The rider earns this fee; the food
+  // money goes to admin.
+  const configFee = Number(business?.delivery_fee ?? 40);
+  const freeDeliveryMin = Number(business?.free_delivery_min ?? 200);
+  const fee = subtotal >= freeDeliveryMin ? 0 : configFee;
+  const total = subtotal + fee;
 
   const validatePhone = (val: string) => {
     if (!val.trim()) return "Phone number is required";
@@ -207,10 +210,7 @@ export default function CheckoutPage() {
           payment_method: paymentMethod,
           gcash_reference: paymentMethod === "gcash" ? refNumber.trim() : null,
           payment_proof_url: paymentMethod === "gcash" ? proofUrl : null,
-
-          subtotal,
-          delivery_fee: fee,
-          total,
+          // Totals are computed server-side from DB prices + business config.
         }),
       });
 
@@ -1441,6 +1441,20 @@ export default function CheckoutPage() {
               >
                 <span>Subtotal</span>
                 <span style={{ fontWeight: 600, color: "var(--secondary-color)" }}>₱{subtotal}</span>
+              </div>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  fontSize: 15,
+                  color: "#64748b",
+                  marginBottom: 12,
+                }}
+              >
+                <span>Delivery fee{fee === 0 && subtotal > 0 ? ` (free over ₱${freeDeliveryMin})` : ""}</span>
+                <span style={{ fontWeight: 600, color: "var(--secondary-color)" }}>
+                  {fee === 0 ? "FREE" : `₱${fee}`}
+                </span>
               </div>
               <div
                 style={{

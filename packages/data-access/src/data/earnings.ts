@@ -51,3 +51,13 @@ export async function updateCashout(supabase: TypedSupabaseClient, cashoutId: st
   const { error } = await supabase.from("rider_cashouts").update(updates).eq("id", cashoutId);
   return { error };
 }
+
+// Requests a cashout through the server-side RPC (0022), which enforces the
+// ₱50 minimum and the available balance inside the database (race-safe).
+// The RPC snapshots the rider's profile GCash number automatically.
+// error.message carries the DB validation text (e.g. "Amount exceeds
+// available balance (₱123)") for direct display to the rider.
+export async function requestCashout(supabase: TypedSupabaseClient, amount: number) {
+  const { data, error } = await (supabase as any).rpc("request_rider_cashout", { p_amount: amount });
+  return { data, error };
+}

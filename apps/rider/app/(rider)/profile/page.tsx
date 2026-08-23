@@ -110,8 +110,10 @@ export default function ProfilePage() {
       comment: r.comment,
       date: r.created_at,
     }));
+    // Same balance model as the earnings page and the cashout RPC: every
+    // non-rejected cashout (requested/approved/paid) reduces the balance.
     const cashouted = cashoutData
-      .filter((c: any) => c.status === "paid" || c.status === "approved")
+      .filter((c: any) => c.status !== "rejected")
       .reduce((sum: number, c: any) => sum + (c.amount || 0), 0);
 
     setProfile({

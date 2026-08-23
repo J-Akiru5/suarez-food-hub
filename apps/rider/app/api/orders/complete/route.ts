@@ -38,7 +38,10 @@ export async function POST(request: NextRequest) {
     if (updateError) return NextResponse.json({ success: false, error: updateError.message }, { status: 500 });
 
     if (order.rider_id) {
-      const earningAmount = Number(order.rider_earnings) || 40;
+      // Rider earns the delivery fee recorded on the order. ₱0 is a VALID
+      // earning (free-delivery orders), so only fall back to the default
+      // fee when the field is missing — never when it's zero.
+      const earningAmount = order.rider_earnings != null ? Number(order.rider_earnings) : 40;
       await createRiderEarning(supabase, order.rider_id, order.id, earningAmount);
     }
 
