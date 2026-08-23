@@ -3,13 +3,71 @@
 import { Mail, MapPin, Phone, Store } from "lucide-react";
 import * as React from "react";
 
+interface DaySchedule {
+  open: boolean;
+  open_time: string;
+  close_time: string;
+}
+
+interface OperatingHours {
+  monday: DaySchedule;
+  tuesday: DaySchedule;
+  wednesday: DaySchedule;
+  thursday: DaySchedule;
+  friday: DaySchedule;
+  saturday: DaySchedule;
+  sunday: DaySchedule;
+}
+
 interface BusinessInfo {
   name?: string;
   address?: string;
   phone?: string;
   email?: string;
-  /** Operating hours string, e.g. "Mon-Sat 10AM-9PM" — displayed as-is */
-  hours?: string;
+  operating_hours?: OperatingHours | null;
+}
+
+function formatTime(time: string): string {
+  const [hours, minutes] = time.split(":").map(Number);
+  const period = hours >= 12 ? "PM" : "AM";
+  const displayHours = hours % 12 || 12;
+  return `${displayHours}:${minutes.toString().padStart(2, "0")} ${period}`;
+}
+
+function formatHours(hours: OperatingHours | null | undefined): { openDays: string; closedDays: string } | null {
+  if (!hours) return null;
+
+  const dayOrder: (keyof OperatingHours)[] = [
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday",
+  ];
+  const openDays: (keyof OperatingHours)[] = [];
+  const closedDays: (keyof OperatingHours)[] = [];
+
+  for (const day of dayOrder) {
+    const schedule = hours[day];
+    if (schedule?.open) {
+      openDays.push(day);
+    } else {
+      closedDays.push(day);
+    }
+  }
+
+  return {
+    openDays:
+      openDays.length > 0
+        ? `${openDays[0].charAt(0).toUpperCase() + openDays[0].slice(1)} — ${openDays[openDays.length - 1].charAt(0).toUpperCase() + openDays[openDays.length - 1].slice(1)}: ${formatTime(hours[openDays[0]].open_time)} — ${formatTime(hours[openDays[openDays.length - 1]].close_time)}`
+        : "",
+    closedDays:
+      closedDays.length > 0
+        ? `${closedDays.map((d) => d.charAt(0).toUpperCase() + d.slice(1)).join(", ")}: Closed`
+        : "",
+  };
 }
 
 export interface FooterProps {
@@ -29,12 +87,11 @@ const Footer = React.forwardRef<HTMLElement, FooterProps>((_props, ref) => {
             address: res.data.address || "Janiuay, Iloilo",
             phone: res.data.phone || "+63 912 345 6789",
             email: res.data.email || "info@suarezfoodhub.com",
-            hours: res.data.operating_hours || undefined,
+            operating_hours: res.data.operating_hours || null,
           });
         }
       })
       .catch(() => {
-        // Fallback — keep static defaults
         setInfo({
           name: "Suarez Food Hub",
           address: "Janiuay, Iloilo",
@@ -94,16 +151,35 @@ const Footer = React.forwardRef<HTMLElement, FooterProps>((_props, ref) => {
 
           <div>
             <h4 className="text-xs font-semibold uppercase tracking-[0.12em] text-white/40 mb-4">Hours</h4>
-            {info?.hours ? (
-              <p className="text-sm text-white/60">{info.hours}</p>
-            ) : (
-              <ul className="space-y-2 text-sm text-white/60">
-                <li>Monday — Saturday</li>
-                <li className="font-medium text-white/80">10:00 AM — 9:00 PM</li>
-                <li className="pt-2">Sunday</li>
-                <li className="font-medium text-white/50">Closed</li>
-              </ul>
-            )}
+            {(() => {
+              const formatted = formatHours(info?.operating_hours);
+              if (formatted) {
+                return (
+                  <ul className="space-y-2 text-sm text-white/60">
+                    {formatted.openDays && (
+                      <>
+                        <li>{formatted.openDays.split(":")[0]}</li>
+                        <li className="font-medium text-white/80">{formatted.openDays.split(":")[1]?.trim()}</li>
+                      </>
+                    )}
+                    {formatted.closedDays && (
+                      <>
+                        <li className="pt-2">{formatted.closedDays.split(":")[0]}</li>
+                        <li className="font-medium text-white/50">{formatted.closedDays.split(":")[1]?.trim()}</li>
+                      </>
+                    )}
+                  </ul>
+                );
+              }
+              return (
+                <ul className="space-y-2 text-sm text-white/60">
+                  <li>Monday — Saturday</li>
+                  <li className="font-medium text-white/80">10:00 AM — 9:00 PM</li>
+                  <li className="pt-2">Sunday</li>
+                  <li className="font-medium text-white/50">Closed</li>
+                </ul>
+              );
+            })()}
           </div>
 
           <div>

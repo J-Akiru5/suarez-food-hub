@@ -1445,9 +1445,7 @@ export default function CheckoutPage() {
                 }}
               >
                 <span>Delivery fee</span>
-                <span style={{ fontWeight: 600, color: "var(--secondary-color)" }}>
-                  ₱{fee}
-                </span>
+                <span style={{ fontWeight: 600, color: "var(--secondary-color)" }}>₱{fee}</span>
               </div>
               <div
                 style={{

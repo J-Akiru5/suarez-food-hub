@@ -3,7 +3,7 @@
 import { createBrowserTypedClient } from "@repo/data-access/client";
 import { getBusinessConfig, updateBusinessConfig } from "@repo/data-access/data/business";
 import { Button, Card, CardContent, Input } from "@repo/ui";
-import { Check, Loader2, MapPin, QrCode, Save, Store, Trash2, Upload, X } from "lucide-react";
+import { Check, Clock, Loader2, MapPin, Plus, QrCode, Save, Store, Trash2, Upload, X } from "lucide-react";
 import Image from "next/image";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Swal from "sweetalert2";
@@ -35,6 +35,41 @@ async function fetchIloiloTowns(): Promise<{ id: string; name: string }[]> {
   }
 }
 
+interface DaySchedule {
+  open: boolean;
+  open_time: string;
+  close_time: string;
+}
+
+interface OperatingHours {
+  monday: DaySchedule;
+  tuesday: DaySchedule;
+  wednesday: DaySchedule;
+  thursday: DaySchedule;
+  friday: DaySchedule;
+  saturday: DaySchedule;
+  sunday: DaySchedule;
+}
+
+interface AboutValue {
+  title: string;
+  description: string;
+}
+
+interface AboutTimeline {
+  year: string;
+  title: string;
+  description: string;
+}
+
+interface AboutContent {
+  hero: { title: string; description: string };
+  mission: { title: string; description: string };
+  vision: { title: string; description: string };
+  values: AboutValue[];
+  timeline: AboutTimeline[];
+}
+
 interface BusinessConfig {
   id?: string;
   name: string;
@@ -44,7 +79,85 @@ interface BusinessConfig {
   gcash_qr_url: string;
   delivery_fee: number;
   delivery_areas: string;
+  operating_hours: OperatingHours | null;
+  about_content: AboutContent | null;
 }
+
+const DAYS: (keyof OperatingHours)[] = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+
+const DEFAULT_HOURS: OperatingHours = {
+  monday: { open: true, open_time: "10:00", close_time: "21:00" },
+  tuesday: { open: true, open_time: "10:00", close_time: "21:00" },
+  wednesday: { open: true, open_time: "10:00", close_time: "21:00" },
+  thursday: { open: true, open_time: "10:00", close_time: "21:00" },
+  friday: { open: true, open_time: "10:00", close_time: "21:00" },
+  saturday: { open: true, open_time: "10:00", close_time: "21:00" },
+  sunday: { open: false, open_time: "10:00", close_time: "21:00" },
+};
+
+const DEFAULT_ABOUT: AboutContent = {
+  hero: {
+    title: "About Suarez Food Hub",
+    description:
+      "We are a family-owned Filipino food business based in Janiuay, Iloilo, dedicated to bringing authentic home-cooked meals to your doorstep.",
+  },
+  mission: {
+    title: "Our Mission",
+    description:
+      "To provide delicious, home-cooked Filipino meals at affordable prices while supporting local suppliers and creating meaningful employment in our community.",
+  },
+  vision: {
+    title: "Our Vision",
+    description:
+      "To be the most trusted food delivery service in Iloilo, known for our commitment to quality, freshness, and genuine care for every customer we serve.",
+  },
+  values: [
+    {
+      title: "Home-Style Cooking",
+      description: "We cook exactly how we cook for our own family—no shortcuts, just honest, traditional methods.",
+    },
+    {
+      title: "Rooted in Janiuay",
+      description:
+        "Operating from our hometown in Iloilo, we rely on local suppliers and serve our immediate neighbors.",
+    },
+    {
+      title: "Market Fresh",
+      description:
+        "Our ingredients come straight from the local market each morning to ensure our food is always fresh.",
+    },
+    {
+      title: "Family Recipes",
+      description: "Our menu is built on generations of Suarez family recipes that have stood the test of time.",
+    },
+  ],
+  timeline: [
+    {
+      year: "2019",
+      title: "Starting Out",
+      description:
+        "We began as a small neighborhood kitchen, cooking our signature meals for friends and nearby families in Janiuay.",
+    },
+    {
+      year: "2020",
+      title: "Expanding Reach",
+      description:
+        "As demand grew through word of mouth, we expanded our daily menu and introduced a dedicated delivery service.",
+    },
+    {
+      year: "2022",
+      title: "Full Operations",
+      description:
+        "We officially structured our kitchen and logistics, allowing us to handle larger volumes and catering orders.",
+    },
+    {
+      year: "2024",
+      title: "Going Digital",
+      description:
+        "To streamline ordering, we launched our online food hub, giving our customers an easier way to browse and order.",
+    },
+  ],
+};
 
 export default function SettingsPage() {
   const supabase = createBrowserTypedClient();
@@ -63,6 +176,8 @@ export default function SettingsPage() {
     gcash_qr_url: "",
     delivery_fee: 40,
     delivery_areas: "",
+    operating_hours: null,
+    about_content: null,
   });
 
   const fetchConfig = useCallback(async () => {
@@ -75,9 +190,10 @@ export default function SettingsPage() {
         phone: data.phone || "",
         email: data.email || "",
         gcash_qr_url: data.gcash_qr_url || "",
-
         delivery_fee: Number(data.delivery_fee) || 40,
         delivery_areas: data.delivery_areas || "",
+        operating_hours: data.operating_hours || null,
+        about_content: data.about_content || null,
       });
     }
     setLoading(false);
@@ -140,8 +256,9 @@ export default function SettingsPage() {
       email: config.email,
       gcash_qr_url: config.gcash_qr_url,
       delivery_fee: config.delivery_fee,
-      // Default to Iloilo City only when no towns are selected.
       delivery_areas: config.delivery_areas || "063022000",
+      operating_hours: config.operating_hours,
+      about_content: config.about_content,
     };
 
     try {
@@ -434,6 +551,324 @@ export default function SettingsPage() {
           </Card>
         </div>
       </div>
+
+      {/* Operating Hours */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="h-10 w-10 rounded-lg bg-purple-100 flex items-center justify-center">
+              <Clock className="h-5 w-5 text-purple-600" />
+            </div>
+            <div>
+              <h2 className="font-bold text-lg font-display">Operating Hours</h2>
+              <p className="text-sm text-muted-foreground">Set your shop's opening days and times</p>
+            </div>
+          </div>
+          <div className="space-y-3">
+            {DAYS.map((day) => {
+              const schedule = config.operating_hours?.[day] || DEFAULT_HOURS[day];
+              return (
+                <div key={day} className="flex items-center gap-4 py-2 border-b border-gray-100 last:border-0">
+                  <div className="w-28">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={schedule.open}
+                        onChange={(e) => {
+                          const newHours = { ...(config.operating_hours || DEFAULT_HOURS) };
+                          newHours[day] = { ...schedule, open: e.target.checked };
+                          setConfig((p) => ({ ...p, operating_hours: newHours }));
+                        }}
+                        className="rounded border-gray-300 text-purple-600 focus:ring-purple-500"
+                      />
+                      <span className="text-sm font-medium text-gray-700 capitalize">{day}</span>
+                    </label>
+                  </div>
+                  {schedule.open ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="time"
+                        value={schedule.open_time}
+                        onChange={(e) => {
+                          const newHours = { ...(config.operating_hours || DEFAULT_HOURS) };
+                          newHours[day] = { ...schedule, open_time: e.target.value };
+                          setConfig((p) => ({ ...p, operating_hours: newHours }));
+                        }}
+                        className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      />
+                      <span className="text-sm text-gray-500">to</span>
+                      <input
+                        type="time"
+                        value={schedule.close_time}
+                        onChange={(e) => {
+                          const newHours = { ...(config.operating_hours || DEFAULT_HOURS) };
+                          newHours[day] = { ...schedule, close_time: e.target.value };
+                          setConfig((p) => ({ ...p, operating_hours: newHours }));
+                        }}
+                        className="rounded-lg border border-gray-200 px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      />
+                    </div>
+                  ) : (
+                    <span className="text-sm text-gray-400 italic">Closed</span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* About Us Content */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center gap-2 mb-6">
+            <div className="h-10 w-10 rounded-lg bg-blue-100 flex items-center justify-center">
+              <Store className="h-5 w-5 text-blue-600" />
+            </div>
+            <div>
+              <h2 className="font-bold text-lg font-display">About Us Content</h2>
+              <p className="text-sm text-muted-foreground">Customize the About Us page content</p>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {/* Hero Section */}
+            <div className="space-y-3">
+              <h3 className="font-semibold text-sm text-gray-700">Hero Section</h3>
+              <div>
+                <label className="text-sm font-medium text-gray-600 block mb-1">Title</label>
+                <Input
+                  value={config.about_content?.hero?.title || DEFAULT_ABOUT.hero.title}
+                  onChange={(e) => {
+                    const about = config.about_content || DEFAULT_ABOUT;
+                    setConfig((p) => ({
+                      ...p,
+                      about_content: { ...about, hero: { ...about.hero, title: e.target.value } },
+                    }));
+                  }}
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-600 block mb-1">Description</label>
+                <textarea
+                  value={config.about_content?.hero?.description || DEFAULT_ABOUT.hero.description}
+                  onChange={(e) => {
+                    const about = config.about_content || DEFAULT_ABOUT;
+                    setConfig((p) => ({
+                      ...p,
+                      about_content: { ...about, hero: { ...about.hero, description: e.target.value } },
+                    }));
+                  }}
+                  rows={2}
+                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+
+            {/* Mission & Vision */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-3">
+                <h3 className="font-semibold text-sm text-gray-700">Mission</h3>
+                <div>
+                  <label className="text-sm font-medium text-gray-600 block mb-1">Title</label>
+                  <Input
+                    value={config.about_content?.mission?.title || DEFAULT_ABOUT.mission.title}
+                    onChange={(e) => {
+                      const about = config.about_content || DEFAULT_ABOUT;
+                      setConfig((p) => ({
+                        ...p,
+                        about_content: { ...about, mission: { ...about.mission, title: e.target.value } },
+                      }));
+                    }}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600 block mb-1">Description</label>
+                  <textarea
+                    value={config.about_content?.mission?.description || DEFAULT_ABOUT.mission.description}
+                    onChange={(e) => {
+                      const about = config.about_content || DEFAULT_ABOUT;
+                      setConfig((p) => ({
+                        ...p,
+                        about_content: { ...about, mission: { ...about.mission, description: e.target.value } },
+                      }));
+                    }}
+                    rows={3}
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+              <div className="space-y-3">
+                <h3 className="font-semibold text-sm text-gray-700">Vision</h3>
+                <div>
+                  <label className="text-sm font-medium text-gray-600 block mb-1">Title</label>
+                  <Input
+                    value={config.about_content?.vision?.title || DEFAULT_ABOUT.vision.title}
+                    onChange={(e) => {
+                      const about = config.about_content || DEFAULT_ABOUT;
+                      setConfig((p) => ({
+                        ...p,
+                        about_content: { ...about, vision: { ...about.vision, title: e.target.value } },
+                      }));
+                    }}
+                  />
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-600 block mb-1">Description</label>
+                  <textarea
+                    value={config.about_content?.vision?.description || DEFAULT_ABOUT.vision.description}
+                    onChange={(e) => {
+                      const about = config.about_content || DEFAULT_ABOUT;
+                      setConfig((p) => ({
+                        ...p,
+                        about_content: { ...about, vision: { ...about.vision, description: e.target.value } },
+                      }));
+                    }}
+                    rows={3}
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Values */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-sm text-gray-700">Core Values</h3>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const about = config.about_content || DEFAULT_ABOUT;
+                    setConfig((p) => ({
+                      ...p,
+                      about_content: { ...about, values: [...about.values, { title: "", description: "" }] },
+                    }));
+                  }}
+                >
+                  <Plus className="h-3 w-3 mr-1" /> Add Value
+                </Button>
+              </div>
+              {(config.about_content?.values || DEFAULT_ABOUT.values).map((val, idx) => (
+                <div key={idx} className="grid grid-cols-1 md:grid-cols-[1fr_2fr_auto] gap-3 p-3 bg-gray-50 rounded-lg">
+                  <Input
+                    placeholder="Value title"
+                    value={val.title}
+                    onChange={(e) => {
+                      const about = config.about_content || DEFAULT_ABOUT;
+                      const newValues = [...about.values];
+                      newValues[idx] = { ...newValues[idx], title: e.target.value };
+                      setConfig((p) => ({ ...p, about_content: { ...about, values: newValues } }));
+                    }}
+                  />
+                  <Input
+                    placeholder="Value description"
+                    value={val.description}
+                    onChange={(e) => {
+                      const about = config.about_content || DEFAULT_ABOUT;
+                      const newValues = [...about.values];
+                      newValues[idx] = { ...newValues[idx], description: e.target.value };
+                      setConfig((p) => ({ ...p, about_content: { ...about, values: newValues } }));
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-500 hover:text-red-700"
+                    onClick={() => {
+                      const about = config.about_content || DEFAULT_ABOUT;
+                      setConfig((p) => ({
+                        ...p,
+                        about_content: { ...about, values: about.values.filter((_, i) => i !== idx) },
+                      }));
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+
+            {/* Timeline */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="font-semibold text-sm text-gray-700">Story Timeline</h3>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const about = config.about_content || DEFAULT_ABOUT;
+                    setConfig((p) => ({
+                      ...p,
+                      about_content: {
+                        ...about,
+                        timeline: [...about.timeline, { year: "", title: "", description: "" }],
+                      },
+                    }));
+                  }}
+                >
+                  <Plus className="h-3 w-3 mr-1" /> Add Entry
+                </Button>
+              </div>
+              {(config.about_content?.timeline || DEFAULT_ABOUT.timeline).map((entry, idx) => (
+                <div
+                  key={idx}
+                  className="grid grid-cols-1 md:grid-cols-[80px_1fr_2fr_auto] gap-3 p-3 bg-gray-50 rounded-lg"
+                >
+                  <Input
+                    placeholder="Year"
+                    value={entry.year}
+                    onChange={(e) => {
+                      const about = config.about_content || DEFAULT_ABOUT;
+                      const newTimeline = [...about.timeline];
+                      newTimeline[idx] = { ...newTimeline[idx], year: e.target.value };
+                      setConfig((p) => ({ ...p, about_content: { ...about, timeline: newTimeline } }));
+                    }}
+                  />
+                  <Input
+                    placeholder="Title"
+                    value={entry.title}
+                    onChange={(e) => {
+                      const about = config.about_content || DEFAULT_ABOUT;
+                      const newTimeline = [...about.timeline];
+                      newTimeline[idx] = { ...newTimeline[idx], title: e.target.value };
+                      setConfig((p) => ({ ...p, about_content: { ...about, timeline: newTimeline } }));
+                    }}
+                  />
+                  <Input
+                    placeholder="Description"
+                    value={entry.description}
+                    onChange={(e) => {
+                      const about = config.about_content || DEFAULT_ABOUT;
+                      const newTimeline = [...about.timeline];
+                      newTimeline[idx] = { ...newTimeline[idx], description: e.target.value };
+                      setConfig((p) => ({ ...p, about_content: { ...about, timeline: newTimeline } }));
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    className="text-red-500 hover:text-red-700"
+                    onClick={() => {
+                      const about = config.about_content || DEFAULT_ABOUT;
+                      setConfig((p) => ({
+                        ...p,
+                        about_content: { ...about, timeline: about.timeline.filter((_, i) => i !== idx) },
+                      }));
+                    }}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       <div className="flex justify-end">
         <Button

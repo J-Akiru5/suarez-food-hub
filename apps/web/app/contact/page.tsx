@@ -2,9 +2,10 @@
 
 import { Footer } from "@repo/ui";
 import { Camera, Clock, Globe, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
+import { useEffect, useState } from "react";
 import AuthNavbar from "../../components/AuthNavbar";
 
-const contactInfo = [
+const _defaultContactInfo = [
   {
     icon: Phone,
     title: "Phone",
@@ -23,13 +24,52 @@ const contactInfo = [
     details: ["Janiuay, Iloilo", "Philippines"],
     action: "https://maps.google.com/?q=10.950087,122.506551",
   },
-  {
-    icon: Clock,
-    title: "Business Hours",
-    details: ["Monday - Saturday: 10:00 AM - 9:00 PM", "Sunday: Closed"],
-    action: null,
-  },
 ];
+
+function formatTime(time: string): string {
+  const [hours, minutes] = time.split(":").map(Number);
+  const period = hours >= 12 ? "PM" : "AM";
+  const displayHours = hours % 12 || 12;
+  return `${displayHours}:${minutes.toString().padStart(2, "0")} ${period}`;
+}
+
+function formatOperatingHours(hours: any): { title: string; details: string[] } {
+  if (!hours) {
+    return {
+      title: "Business Hours",
+      details: ["Monday - Saturday: 10:00 AM - 9:00 PM", "Sunday: Closed"],
+    };
+  }
+
+  const dayOrder = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+  const openDays: string[] = [];
+  const closedDays: string[] = [];
+
+  for (const day of dayOrder) {
+    const schedule = hours[day];
+    if (schedule?.open) {
+      openDays.push(day);
+    } else {
+      closedDays.push(day);
+    }
+  }
+
+  const details: string[] = [];
+  if (openDays.length > 0) {
+    const first = openDays[0];
+    const last = openDays[openDays.length - 1];
+    const firstCap = first.charAt(0).toUpperCase() + first.slice(1);
+    const lastCap = last.charAt(0).toUpperCase() + last.slice(1);
+    details.push(
+      `${firstCap} - ${lastCap}: ${formatTime(hours[first].open_time)} - ${formatTime(hours[last].close_time)}`,
+    );
+  }
+  if (closedDays.length > 0) {
+    details.push(`${closedDays.map((d) => d.charAt(0).toUpperCase() + d.slice(1)).join(", ")}: Closed`);
+  }
+
+  return { title: "Business Hours", details };
+}
 
 const socialLinks = [
   {
@@ -53,6 +93,47 @@ const socialLinks = [
 ];
 
 export default function ContactPage() {
+  const [operatingHours, setOperatingHours] = useState<any>(null);
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.success && res.data?.operating_hours) {
+          setOperatingHours(res.data.operating_hours);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const hoursInfo = formatOperatingHours(operatingHours);
+  const contactInfo = [
+    {
+      icon: Phone,
+      title: "Phone",
+      details: ["+63 912 345 6789", "+63 917 123 4567"],
+      action: "tel:+639123456789",
+    },
+    {
+      icon: Mail,
+      title: "Email",
+      details: ["orders@suarezfoodhub.com", "info@suarezfoodhub.com"],
+      action: "mailto:orders@suarezfoodhub.com",
+    },
+    {
+      icon: MapPin,
+      title: "Location",
+      details: ["Janiuay, Iloilo", "Philippines"],
+      action: "https://maps.google.com/?q=10.950087,122.506551",
+    },
+    {
+      icon: Clock,
+      title: hoursInfo.title,
+      details: hoursInfo.details,
+      action: null,
+    },
+  ];
+
   return (
     <div className="min-h-screen" style={{ background: "color-mix(in srgb, var(--primary-color) 5%, white)" }}>
       <AuthNavbar showCartIcon={false} />
@@ -180,7 +261,9 @@ export default function ContactPage() {
                   <div>
                     <h4 className="text-sm font-semibold text-gray-900">What are your delivery hours?</h4>
                     <p className="mt-1 text-sm text-gray-500">
-                      We deliver from 10:00 AM to 9:00 PM, Monday through Saturday.
+                      {operatingHours
+                        ? `We deliver during our operating hours: ${hoursInfo.details.join("; ")}.`
+                        : "We deliver from 10:00 AM to 9:00 PM, Monday through Saturday."}
                     </p>
                   </div>
                   <div>

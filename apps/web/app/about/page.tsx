@@ -1,9 +1,14 @@
+"use client";
+
 import { Footer } from "@repo/ui";
 import { Award, ChevronRight, Heart, Leaf, Users } from "lucide-react";
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import AuthNavbar from "../../components/AuthNavbar";
 
-const values = [
+const iconMap = [Heart, Users, Leaf, Award];
+
+const defaultValues = [
   {
     icon: Heart,
     title: "Home-Style Cooking",
@@ -26,7 +31,7 @@ const values = [
   },
 ];
 
-const timeline = [
+const defaultTimeline = [
   {
     year: "2019",
     title: "Starting Out",
@@ -54,6 +59,39 @@ const timeline = [
 ];
 
 export default function AboutPage() {
+  const [about, setAbout] = useState<any>(null);
+
+  useEffect(() => {
+    fetch("/api/settings")
+      .then((r) => r.json())
+      .then((res) => {
+        if (res.success && res.data?.about_content) {
+          setAbout(res.data.about_content);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const hero = about?.hero || {
+    title: "About Suarez Food Hub",
+    description:
+      "We are a family-owned Filipino food business based in Janiuay, Iloilo, dedicated to bringing authentic home-cooked meals to your doorstep.",
+  };
+  const mission = about?.mission || {
+    title: "Our Mission",
+    description:
+      "To bring real, home-cooked Filipino food straight to our neighbors in Janiuay. We focus on consistent quality, fair prices, and food that actually tastes like it came from a family kitchen.",
+  };
+  const vision = about?.vision || {
+    title: "Our Vision",
+    description:
+      "To be the most reliable local food hub in Iloilo—the place people think of first when they want a good, hearty meal without having to cook it themselves.",
+  };
+  const values = about?.values?.length
+    ? about.values.map((v: any, i: number) => ({ ...v, icon: iconMap[i % iconMap.length] }))
+    : defaultValues;
+  const timeline = about?.timeline?.length ? about.timeline : defaultTimeline;
+
   return (
     <div className="min-h-screen" style={{ background: "var(--color-cream)" }}>
       <AuthNavbar showCartIcon={false} />
@@ -73,14 +111,13 @@ export default function AboutPage() {
               className="text-4xl font-bold sm:text-5xl"
               style={{ color: "var(--secondary-color)", fontFamily: "var(--playfair-display)" }}
             >
-              About Suarez Food Hub
+              {hero.title}
             </h1>
             <p
               className="mt-6 text-lg"
               style={{ color: "color-mix(in srgb, var(--secondary-color) 60%, transparent)" }}
             >
-              We are a family-owned Filipino food business based in Janiuay, Iloilo, dedicated to bringing authentic
-              home-cooked meals to your doorstep.
+              {hero.description}
             </p>
           </div>
         </div>
@@ -101,11 +138,10 @@ export default function AboutPage() {
                 <Heart className="h-6 w-6" />
               </div>
               <h2 className="mt-4 text-2xl font-bold" style={{ color: "var(--secondary-color)" }}>
-                Our Mission
+                {mission.title}
               </h2>
               <p className="mt-4" style={{ color: "color-mix(in srgb, var(--secondary-color) 60%, transparent)" }}>
-                To bring real, home-cooked Filipino food straight to our neighbors in Janiuay. We focus on consistent
-                quality, fair prices, and food that actually tastes like it came from a family kitchen.
+                {mission.description}
               </p>
             </div>
             <div className="glass-card p-8">
@@ -119,11 +155,10 @@ export default function AboutPage() {
                 <Award className="h-6 w-6" />
               </div>
               <h2 className="mt-4 text-2xl font-bold" style={{ color: "var(--secondary-color)" }}>
-                Our Vision
+                {vision.title}
               </h2>
               <p className="mt-4" style={{ color: "color-mix(in srgb, var(--secondary-color) 60%, transparent)" }}>
-                To be the most reliable local food hub in Iloilo—the place people think of first when they want a good,
-                hearty meal without having to cook it themselves.
+                {vision.description}
               </p>
             </div>
           </div>
@@ -145,7 +180,7 @@ export default function AboutPage() {
             </p>
           </div>
           <div className="mt-12 grid gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            {values.map((value) => (
+            {values.map((value: any) => (
               <div key={value.title} className="glass-card p-6 text-center">
                 <div
                   className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl"
@@ -187,7 +222,7 @@ export default function AboutPage() {
           </div>
           <div className="relative mt-12">
             <div className="space-y-8">
-              {timeline.map((item, index) => (
+              {timeline.map((item: any, index: number) => (
                 <div
                   key={item.year}
                   className={`relative flex flex-col sm:flex-row ${
