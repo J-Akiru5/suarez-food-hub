@@ -106,6 +106,7 @@ function OrdersPageContent() {
   const fetchOrders = useCallback(async () => {
     const data = await getOrdersWithProfiles(supabaseRef.current, {
       status: activeTab !== "all" ? activeTab : undefined,
+      hideUnverifiedGcash: true,
     });
     setOrders((data as OrderWithProfile[]) || []);
     setLoading(false);

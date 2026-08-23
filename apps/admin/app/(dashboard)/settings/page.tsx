@@ -243,9 +243,7 @@ export default function SettingsPage() {
                 </div>
                 <div>
                   <h2 className="font-bold text-lg font-display">Delivery & Location</h2>
-                  <p className="text-sm text-muted-foreground">
-                    Delivery fees and store coordinates
-                  </p>
+                  <p className="text-sm text-muted-foreground">Delivery fees and store coordinates</p>
                 </div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

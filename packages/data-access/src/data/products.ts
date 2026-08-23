@@ -112,12 +112,21 @@ export async function deleteProduct(supabase: TypedSupabaseClient, productId: st
 
 /**
  * Move a product up/down WITHIN ITS OWN CATEGORY (never crosses category
- * boundaries). After the move, every product in the list gets a fresh,
- * distinct sort_order equal to its display position — a plain value swap is
- * not enough because products start at sort_order = 0 (migration 0020
- * default), so swapping 0 <-> 0 would change nothing. Distinct values also
- * keep the customer menu order deterministic (ties were broken only by
- * created_at).
+ * boundaries). After the move, every product gets a fresh, distinct
+ * sort_order equal to its display position — a plain value swap is not
+ * enough because products start at sort_order = 0 (migration 0020 default),
+ * so swapping 0 <-> 0 would change nothing. Distinct values also keep the
+ * customer menu order deterministic (ties were broken only by created_at).
+ *
+ * Performance:
+ *  1. Fast path — move_product() RPC (migration 0023) does the neighbour
+ *     lookup, swap and resequencing atomically server-side: ONE round trip.
+ *     It also only writes rows whose sort_order actually changes, so the
+ *     realtime channel emits ~2 events instead of N.
+ *  2. Fallback (migration 0023 not applied yet on this DB) — same local
+ *     computation as before, but persisted via ONE batched upsert instead
+ *     of one UPDATE per product. The old sequential loop was O(N) network
+ *     round trips, which is what made reordering feel slow.
  */
 export async function moveProduct(
   supabase: TypedSupabaseClient,
@@ -125,6 +134,13 @@ export async function moveProduct(
   direction: "up" | "down",
   products: (Product & { category_id: string | null; sort_order: number })[] = [],
 ) {
+  const rpcResult = await (supabase as any).rpc("move_product", {
+    p_product_id: productId,
+    p_direction: direction,
+  });
+  if (!rpcResult.error) return { error: null };
+  // PGRST202 / 404 => function missing (migration pending); fall through.
+
   const idx = products.findIndex((p) => p.id === productId);
   if (idx === -1) return { error: new Error("Product not found") };
   const current = products[idx];
@@ -155,15 +171,13 @@ export async function moveProduct(
   const reordered = [...products];
   [reordered[idx], reordered[otherIdx]] = [reordered[otherIdx], reordered[idx]];
 
-  for (let pos = 0; pos < reordered.length; pos++) {
-    const { id } = reordered[pos];
-    const { error } = await supabase
-      .from("products")
-      .update({ sort_order: pos, updated_at: new Date().toISOString() })
-      .eq("id", id);
-    if (error) return { error };
-  }
-  return { error: null };
+  const rows = reordered.map((p, pos) => ({
+    id: p.id,
+    sort_order: pos,
+    updated_at: new Date().toISOString(),
+  }));
+  const { error } = await (supabase as any).from("products").upsert(rows, { onConflict: "id" });
+  return { error };
 }
 
 export async function generateUniqueSlug(supabase: TypedSupabaseClient, baseSlug: string, excludeId?: string) {

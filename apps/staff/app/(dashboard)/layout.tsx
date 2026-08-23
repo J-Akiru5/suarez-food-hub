@@ -124,6 +124,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     switch (type) {
       case "new_order":
         return { icon: ClipboardList, bg: "bg-blue-100", color: "text-blue-600" };
+      case "payment_verification":
+        return { icon: ClipboardList, bg: "bg-orange-100", color: "text-orange-600" };
       case "low_stock":
         return { icon: Package, bg: "bg-red-100", color: "text-red-600" };
       case "status_change":
@@ -146,7 +148,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   function getNotifLink(notif: any): string | undefined {
-    if (notif.type === "new_order" || notif.type === "status_change") {
+    if (notif.type === "new_order" || notif.type === "status_change" || notif.type === "payment_verification") {
       const orderId = notif.data?.order_id;
       if (orderId) return `/orders/${orderId}`;
     }
@@ -158,7 +160,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const fetchBadgeCounts = useCallback(async () => {
     const supabase = supabaseRef.current;
     if (!supabase) return;
-    const { count } = await supabase.from("orders").select("*", { count: "exact", head: true }).eq("status", "pending");
+    // Exclude GCash orders with unverified payment — staff should only see orders after admin verification
+    const { count } = await supabase
+      .from("orders")
+      .select("*", { count: "exact", head: true })
+      .eq("status", "pending")
+      .or("payment_method.eq.cod,and(payment_method.eq.gcash,payment_status.eq.verified)");
     setBadgeCounts({ "/orders": count || 0 });
   }, []);
 

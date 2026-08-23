@@ -113,13 +113,22 @@ export default function StaffInventoryPage() {
 
   // Realtime — stock updates appear live (e.g. after confirming an order)
   useEffect(() => {
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    // A reorder writes several rows back-to-back, firing one event per row.
+    // Debounce so we refetch ONCE after the burst settles instead of once
+    // per event — stacked full refetches made the page feel unresponsive.
+    const scheduleFetch = () => {
+      if (timer) clearTimeout(timer);
+      timer = setTimeout(() => fetchData(), 300);
+    };
     const channel = supabase
       .channel("staff-inventory-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "products" }, () => fetchData())
-      .on("postgres_changes", { event: "*", schema: "public", table: "product_variants" }, () => fetchData())
+      .on("postgres_changes", { event: "*", schema: "public", table: "products" }, scheduleFetch)
+      .on("postgres_changes", { event: "*", schema: "public", table: "product_variants" }, scheduleFetch)
       .subscribe();
 
     return () => {
+      if (timer) clearTimeout(timer);
       supabase.removeChannel(channel);
     };
   }, [supabase, fetchData]);

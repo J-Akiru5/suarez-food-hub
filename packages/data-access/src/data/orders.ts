@@ -46,7 +46,7 @@ export async function getOrdersByUser(supabase: TypedSupabaseClient, userId: str
 
 export async function getOrdersWithProfiles(
   supabase: TypedSupabaseClient,
-  options?: { status?: string; ascending?: boolean },
+  options?: { status?: string; ascending?: boolean; hideUnverifiedGcash?: boolean },
 ) {
   let query = supabase
     .from("orders")
@@ -56,6 +56,10 @@ export async function getOrdersWithProfiles(
     .order("created_at", { ascending: options?.ascending ?? false });
   if (options?.status && options.status !== "all") {
     query = query.eq("status", options.status as OrderStatus);
+  }
+  // Hide GCash orders with unverified payment (staff can't act on them until admin verifies)
+  if (options?.hideUnverifiedGcash) {
+    query = query.or("payment_method.eq.cod,and(payment_method.eq.gcash,payment_status.eq.verified)");
   }
   const { data, error } = await query;
   if (error) return [];
