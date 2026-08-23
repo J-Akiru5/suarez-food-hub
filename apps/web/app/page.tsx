@@ -5,6 +5,7 @@ import { ArrowRight, Utensils } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import AuthNavbar from "../components/AuthNavbar";
+import { useAuth } from "../components/auth-provider";
 
 interface Product {
   id: string;
@@ -24,6 +25,13 @@ export default function HomePage() {
   const [popularFoods, setPopularFoods] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [fetchError, setFetchError] = useState("");
+  const { user, loading: authLoading } = useAuth();
+
+  // Guests see "Continue as Guest"; signed-in users get "Order Now".
+  // While auth is still resolving the CTA stays hidden to avoid a flash
+  // of the wrong label for returning users.
+  const ctaText = authLoading ? "" : user ? "Order Now" : "Continue as Guest";
+  const ctaHref = "/menu";
 
   useEffect(() => {
     fetch("/api/products")
@@ -43,7 +51,7 @@ export default function HomePage() {
     <div className="min-h-screen bg-cream">
       <AuthNavbar showCartIcon={false} />
 
-      <HeroSection />
+      <HeroSection ctaText={ctaText} ctaHref={ctaHref} />
 
       <HowItWorks />
 

@@ -203,20 +203,11 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Delivery fee from the business config: free once the subtotal reaches
-    // free_delivery_min, otherwise the configured flat fee. This restores
-    // what the original schema intended (business.delivery_fee, default ₱40,
-    // free_delivery_min default ₱200) before checkout hardcoded it to 0.
-    const { data: bizConfig } = await serviceSupabase
-      .from("business")
-      .select("delivery_fee, free_delivery_min")
-      .limit(1)
-      .maybeSingle();
-    const configFee = Number(bizConfig?.delivery_fee ?? 40);
-    const freeDeliveryMin = Number(bizConfig?.free_delivery_min ?? 200);
+    // Delivery fee from the business config (flat fee, no free delivery threshold).
+    const { data: bizConfig } = await serviceSupabase.from("business").select("delivery_fee").limit(1).maybeSingle();
+    const deliveryFee = Number(bizConfig?.delivery_fee ?? 40);
 
     serverSubtotal = Math.round(serverSubtotal * 100) / 100;
-    const deliveryFee = serverSubtotal >= freeDeliveryMin ? 0 : Math.round(configFee * 100) / 100;
     const totalAmount = Math.round((serverSubtotal + deliveryFee) * 100) / 100;
 
     const { data: order, error: orderError } = await createOrder(serviceSupabase, {

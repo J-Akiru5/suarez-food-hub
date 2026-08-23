@@ -43,7 +43,6 @@ interface BusinessConfig {
   email: string;
   gcash_qr_url: string;
   delivery_fee: number;
-  free_delivery_min: number;
   delivery_areas: string;
 }
 
@@ -63,7 +62,6 @@ export default function SettingsPage() {
     email: "",
     gcash_qr_url: "",
     delivery_fee: 40,
-    free_delivery_min: 200,
     delivery_areas: "",
   });
 
@@ -79,7 +77,6 @@ export default function SettingsPage() {
         gcash_qr_url: data.gcash_qr_url || "",
 
         delivery_fee: Number(data.delivery_fee) || 40,
-        free_delivery_min: Number(data.free_delivery_min) || 200,
         delivery_areas: data.delivery_areas || "",
       });
     }
@@ -143,7 +140,6 @@ export default function SettingsPage() {
       email: config.email,
       gcash_qr_url: config.gcash_qr_url,
       delivery_fee: config.delivery_fee,
-      free_delivery_min: config.free_delivery_min,
       // Default to Iloilo City only when no towns are selected.
       delivery_areas: config.delivery_areas || "063022000",
     };
@@ -248,7 +244,7 @@ export default function SettingsPage() {
                 <div>
                   <h2 className="font-bold text-lg font-display">Delivery & Location</h2>
                   <p className="text-sm text-muted-foreground">
-                    Delivery fees, free delivery threshold, and store coordinates
+                    Delivery fees and store coordinates
                   </p>
                 </div>
               </div>
@@ -261,16 +257,6 @@ export default function SettingsPage() {
                     step="0.01"
                     value={config.delivery_fee}
                     onChange={(e) => setConfig((p) => ({ ...p, delivery_fee: parseFloat(e.target.value) || 0 }))}
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-gray-700 block mb-1">Free Delivery Min (₱)</label>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={config.free_delivery_min}
-                    onChange={(e) => setConfig((p) => ({ ...p, free_delivery_min: parseFloat(e.target.value) || 0 }))}
                   />
                 </div>
               </div>

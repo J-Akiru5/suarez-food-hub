@@ -402,7 +402,7 @@ export default function MenuPage() {
                 <ShoppingCart className="w-7 h-7 text-brand-500" />
               </div>
               <h2 className="text-2xl font-bold text-near-black m-0" style={{ fontFamily: "var(--playfair-display)" }}>
-                Sign in to Order
+                Log in to Order
               </h2>
               <p className="text-sm text-gray-500 mt-2 mb-0 leading-relaxed">
                 Create an account or sign in to start adding items to your basket.
@@ -418,7 +418,7 @@ export default function MenuPage() {
                 }}
                 className="w-full py-3.5 rounded-2xl bg-near-black text-white font-semibold text-sm border-none cursor-pointer hover:bg-near-black/90 transition-colors"
               >
-                Sign In
+                Log In
               </button>
               <button
                 type="button"

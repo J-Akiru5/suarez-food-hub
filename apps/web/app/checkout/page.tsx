@@ -31,7 +31,6 @@ interface CartItem {
 interface Business {
   gcash_qr_url: string | null;
   delivery_fee: number;
-  free_delivery_min: number;
   delivery_provinces?: string | null;
   delivery_areas?: string | null;
 }
@@ -112,13 +111,7 @@ export default function CheckoutPage() {
         : false);
 
   const subtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
-  // Delivery fee comes from the business config (same values the orders API
-  // enforces server-side): free once the subtotal reaches free_delivery_min,
-  // otherwise the configured flat fee. The rider earns this fee; the food
-  // money goes to admin.
-  const configFee = Number(business?.delivery_fee ?? 40);
-  const freeDeliveryMin = Number(business?.free_delivery_min ?? 200);
-  const fee = subtotal >= freeDeliveryMin ? 0 : configFee;
+  const fee = Number(business?.delivery_fee ?? 40);
   const total = subtotal + fee;
 
   const validatePhone = (val: string) => {
@@ -1451,7 +1444,7 @@ export default function CheckoutPage() {
                   marginBottom: 12,
                 }}
               >
-                <span>Delivery fee{fee === 0 && subtotal > 0 ? ` (free over ₱${freeDeliveryMin})` : ""}</span>
+                <span>Delivery fee</span>
                 <span style={{ fontWeight: 600, color: "var(--secondary-color)" }}>
                   {fee === 0 ? "FREE" : `₱${fee}`}
                 </span>

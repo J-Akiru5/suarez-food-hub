@@ -65,21 +65,18 @@ const HeroSection = React.forwardRef<HTMLDivElement, HeroSectionProps>(
             </p>
 
             <div className="flex items-center gap-4">
-              <a
-                href={ctaHref}
-                className="inline-flex items-center gap-2 px-7 py-3 rounded-full font-semibold text-sm text-white transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.97] shadow-lg shadow-[var(--primary-color)]/25"
-                style={{ background: "var(--primary-color)" }}
-              >
-                {ctaText}
-                <ArrowRight size={16} />
-              </a>
-              <a
-                href="/about"
-                className="inline-flex items-center gap-2 px-6 py-3 rounded-full text-sm font-semibold text-[var(--secondary-color)] transition-all duration-300 hover:-translate-y-0.5"
-                style={{ border: "1.5px solid var(--secondary-color)" }}
-              >
-                Our Story
-              </a>
+              {ctaText ? (
+                <a
+                  href={ctaHref}
+                  className="inline-flex items-center gap-2 px-7 py-3 rounded-full font-semibold text-sm text-white transition-all duration-300 hover:-translate-y-0.5 active:scale-[0.97] shadow-lg shadow-[var(--primary-color)]/25"
+                  style={{ background: "var(--primary-color)" }}
+                >
+                  {ctaText}
+                  <ArrowRight size={16} />
+                </a>
+              ) : (
+                <span className="inline-block h-[46px]" aria-hidden />
+              )}
             </div>
           </div>
         </div>

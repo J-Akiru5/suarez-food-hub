@@ -134,19 +134,6 @@ function LoginForm() {
         </button>
       </form>
 
-      <div className="flex items-center gap-3 my-6">
-        <div className="h-px bg-gray-200 flex-1"></div>
-        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">OR</span>
-        <div className="h-px bg-gray-200 flex-1"></div>
-      </div>
-
-      <Link
-        href="/menu"
-        className="w-full flex items-center justify-center py-3.5 rounded-xl border border-gray-200 bg-gray-50/50 text-gray-800 font-bold text-sm hover:bg-gray-100 transition-colors no-underline"
-      >
-        Continue as Guest
-      </Link>
-
       <p className="mt-6 text-xs text-gray-500 text-center">
         Don't have an account?{" "}
         <Link href="/register" className="text-[#F08013] font-bold no-underline hover:underline">
