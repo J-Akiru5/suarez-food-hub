@@ -82,6 +82,7 @@ export default function OrderDetailPage() {
   }, [fetchOrder, orderId, supabase]);
 
   const [selectedPaymentStatus, setSelectedPaymentStatus] = useState<string | null>(null);
+  const [selectedOrderStatus, setSelectedOrderStatus] = useState<string | null>(null);
   const [proofModalUrl, setProofModalUrl] = useState<string | null>(null);
 
   async function updatePaymentStatus(payment_status: string) {
@@ -93,6 +94,30 @@ export default function OrderDetailPage() {
       setSelectedPaymentStatus(null);
     } else {
       toast({ title: "Payment updated", description: `Payment status changed to ${payment_status}.` });
+    }
+    await fetchOrder();
+    setUpdating(false);
+  }
+
+  async function updateOrderStatus(status: string) {
+    setUpdating(true);
+    setSelectedOrderStatus(status);
+    try {
+      const res = await fetch("/api/orders", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id: orderId, status }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        toast({ title: "Error", description: data.error || "Failed to update status.", variant: "destructive" });
+        setSelectedOrderStatus(null);
+      } else {
+        toast({ title: "Status updated", description: `Order status changed to ${status.replace(/_/g, " ")}.` });
+      }
+    } catch {
+      toast({ title: "Error", description: "Failed to update status.", variant: "destructive" });
+      setSelectedOrderStatus(null);
     }
     await fetchOrder();
     setUpdating(false);
@@ -428,19 +453,30 @@ export default function OrderDetailPage() {
                 </div>
               </CardContent>
             </Card>
-            {/* Order Status — read-only for admin, staff handles kitchen flow */}
+            {/* Order Status — admin can change status, routes through PATCH /api/orders */}
             <Card>
               <CardContent className="p-4">
                 <h2 className="font-bold mb-2 font-display">Order Status</h2>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-muted-foreground">Current</span>
-                  <span
-                    className={`text-xs font-medium px-3 py-1 rounded-full ${
-                      statusColors[order.status] || "bg-gray-100 text-gray-800"
-                    }`}
+                  <Select
+                    value={selectedOrderStatus || order.status}
+                    onValueChange={updateOrderStatus}
+                    disabled={updating}
                   >
-                    {order.status.replace(/_/g, " ")}
-                  </span>
+                    <SelectTrigger className="w-[180px] h-8 text-xs font-medium">
+                      <SelectValue placeholder="Status" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pending">Pending</SelectItem>
+                      <SelectItem value="confirmed">Confirmed</SelectItem>
+                      <SelectItem value="preparing">Preparing</SelectItem>
+                      <SelectItem value="ready_for_pickup">Ready for Pickup</SelectItem>
+                      <SelectItem value="out_for_delivery">Out for Delivery</SelectItem>
+                      <SelectItem value="delivered">Delivered</SelectItem>
+                      <SelectItem value="cancelled">Cancelled</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
               </CardContent>
             </Card>
