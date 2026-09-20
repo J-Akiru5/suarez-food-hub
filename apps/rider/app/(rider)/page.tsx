@@ -2,8 +2,8 @@
 
 import { createBrowserTypedClient } from "@repo/data-access/client";
 import { getTodayEarnings } from "@repo/data-access/data/earnings";
-import { getActiveOrderForRider, getPendingOrdersForRider } from "@repo/data-access/data/orders";
 import { markNotificationRead } from "@repo/data-access/data/notifications";
+import { getActiveOrderForRider, getPendingOrdersForRider } from "@repo/data-access/data/orders";
 import { parseServerDate } from "@repo/utils";
 import { eachDayOfInterval, endOfWeek, format, startOfWeek } from "date-fns";
 import {
