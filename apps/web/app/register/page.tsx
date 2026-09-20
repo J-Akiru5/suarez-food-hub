@@ -4,7 +4,7 @@ import { createBrowserTypedClient } from "@repo/data-access/client";
 import { ArrowLeft, Bike, Eye, EyeOff, Image as ImageIcon, Loader2, Upload, User } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Swal from "sweetalert2";
 
 const PH_REGEX = /^(?:\+63|0)9\d{9}$/;
@@ -37,6 +37,14 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
 
   const supabase = createBrowserTypedClient();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("role") === "rider") {
+      setRole("rider");
+      setStep("form");
+    }
+  }, []);
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
