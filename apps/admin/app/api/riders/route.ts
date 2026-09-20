@@ -63,7 +63,7 @@ export async function DELETE(request: NextRequest) {
         success: false,
         error:
           "This rider has earnings, cashout history, or delivered orders. " +
-          "Use \"Mark as Resigned\" instead — deleting would permanently erase their payout records.",
+          'Use "Mark as Resigned" instead — deleting would permanently erase their payout records.',
       },
       { status: 409 },
     );

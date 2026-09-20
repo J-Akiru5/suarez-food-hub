@@ -52,7 +52,7 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ success: true, data: newConfig });
     }
 
-    let { data, error } = await updateBusinessConfig(supabase, id, updates);
+    const { data, error } = await updateBusinessConfig(supabase, id, updates);
 
     if (error) return NextResponse.json({ success: false, error: error.message }, { status: 500 });
     return NextResponse.json({ success: true, data });

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Admin Lane Report — Suarez Food Hub Sprint</title>
+<style>
+  :root{--bg:#0b1220;--card:#071226;--muted:#9aa4b2;--accent:#7c3aed;--cyan:#06b6d4;--green:#22c55e;--red:#ef4444;--orange:#f97316;--border:rgba(255,255,255,0.04)}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:'Inter',system-ui,-apple-system,sans-serif;color:#e6eef8;background:linear-gradient(180deg,#061427,#021019);min-height:100vh;line-height:1.6}
+  .container{max-width:1100px;margin:0 auto;padding:24px 20px}
+  h1{color:var(--accent);font-size:28px;margin-bottom:4px}
+  h2{color:#fff;font-size:20px;margin:24px 0 12px;display:flex;align-items:center;gap:8px}
+  h3{color:var(--cyan);font-size:16px;margin:16px 0 8px}
+  .tagline{color:var(--muted);font-size:14px;margin-bottom:24px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin:16px 0}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:8px 12px;border-bottom:1px solid var(--border);text-align:left}
+  th{color:var(--cyan);background:rgba(255,255,255,0.02);font-weight:600}
+  td{color:var(--muted)}
+  .ok{color:var(--green)}
+  .warn{color:var(--orange)}
+  .err{color:var(--red)}
+  code{font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,0.05);padding:2px 6px;border-radius:4px;font-size:12px}
+  .badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600}
+  .badge-green{background:rgba(34,197,94,0.15);color:var(--green)}
+  .badge-orange{background:rgba(249,115,22,0.15);color:var(--orange)}
+  .badge-red{background:rgba(239,68,68,0.15);color:var(--red)}
+  .badge-cyan{background:rgba(6,182,212,0.15);color:var(--cyan)}
+  pre{background:#0d1525;border:1px solid var(--border);border-radius:8px;padding:12px;overflow-x:auto;font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--muted)}
+  .tl;dr{font-size:15px;color:#e6eef8;line-height:1.7;margin-bottom:16px}
+  footer{margin-top:32px;padding-top:16px;border-top:1px solid var(--border);color:var(--muted);font-size:12px}
+  ul{margin-left:20px;color:var(--muted)}
+  li{margin-bottom:4px}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>Admin Lane Report</h1>
+<p class="tagline">Suarez Food Hub — TECHNICAL-SUGGESTIONS Sprint &bull; 2026-09-20 &bull; Agent 1 &bull; Branch: <code>fix/tsug-admin</code></p>
+
+<!-- TL;DR -->
+<div class="card">
+<h2>TL;DR</h2>
+<p class="tl;dr">
+Implemented six targeted fixes in <code>apps/admin</code>: (1) riders can now be deleted when rejected (not only resigned), with a server-side 409 guard preventing deletion of riders with payout history or delivered orders; (2) cashouts default to the "All" tab (first position) with requested items sorted first; (3) orders list Refresh button removed, 15s polling fallback added alongside Realtime, "Show details" expander removed and order-status control moved to <code>orders/[id]</code>; (4) rider approval dialog gains a clipboard-copy button and an SMS link for Philippine mobile numbers; (5) dead <code>delivery_areas</code> retry removed from settings API (migration 0018 confirmed live); (6) all checks pass: biome clean, typecheck 7/7, build clean.
+</p>
+</div>
+
+<!-- What Changed -->
+<div class="card">
+<h2>What Changed and Why</h2>
+<table>
+<thead><tr><th>Step</th><th>What</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>1.1</td><td>Show "Delete Rider" for <code>rejected</code> status; added 409 guard in DELETE /api/riders</td><td>Rejected riders had no actions block; deleting riders with payout history erases FK-cascaded records</td></tr>
+<tr><td>1.2</td><td>Cashouts default tab → "All" (first); sort requested first within All</td><td>Pending requests were buried at position 5 behind status-filtered tabs</td></tr>
+<tr><td>1.3</td><td>Removed orders Refresh button, added 15s polling, removed "Show details" expander, moved order-status control to <code>orders/[id]</code></td><td>Refresh was redundant with Realtime; expander was only place to change status; detail page had no status control</td></tr>
+<tr><td>1.4</td><td>Approval dialog: "Copy message" + "Text rider" (SMS link for PH mobile)</td><td>Pending rider can't sign in to see in-app notification; repo has no email/SMS provider (D4: zero infrastructure)</td></tr>
+<tr><td>1.5</td><td>Removed <code>delivery_areas</code> retry in api/settings/route.ts</td><td>Migration 0018 confirmed live; retry silently dropped delivery_areas yet returned success</td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- Files Touched -->
+<div class="card">
+<h2>Files Touched</h2>
+<table>
+<thead><tr><th>File</th><th>Action</th><th>Steps</th></tr></thead>
+<tbody>
+<tr><td><code>apps/admin/app/(dashboard)/riders/page.tsx</td><td><span class="badge badge-orange">Modified</span></td><td>1.1, 1.4</td></tr>
+<tr><td><code>apps/admin/app/api/riders/route.ts</td><td><span class="badge badge-orange">Modified</span></td><td>1.1</td></tr>
+<tr><td><code>apps/admin/app/(dashboard)/cashouts/page.tsx</td><td><span class="badge badge-orange">Modified</span></td><td>1.2</td></tr>
+<tr><td><code>apps/admin/app/(dashboard)/orders/page.tsx</td><td><span class="badge badge-orange">Modified</span></td><td>1.3</td></tr>
+<tr><td><code>apps/admin/app/(dashboard)/orders/[id]/page.tsx</td><td><span class="badge badge-orange">Modified</span></td><td>1.3</td></tr>
+<tr><td><code>apps/admin/app/api/settings/route.ts</td><td><span class="badge badge-orange">Modified</span></td><td>1.5</td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- Agent + Branch Strategy -->
+<div class="card">
+<h2>Agent + Branch Strategy</h2>
+<p style="color:var(--muted);margin-bottom:12px">Branch: <code>fix/tsug-admin</code> off <code>develop</code> (at <code>b86224b chore(db): phase 0 complete</code>). Worktree: <code>C:/dev/monorepo/sfh-wt-admin</code>. Agent 5 (Integrator) merges into develop; Agent 1 never merges or pushes.</p>
+</div>
+
+<!-- Decisions -->
+<div class="card">
+<h2>Decisions Asked / Answered</h2>
+<table>
+<thead><tr><th>Question</th><th>Answer</th></tr></thead>
+<tbody>
+<tr><td>Non-production Supabase for mutation tests?</td><td>Assumed no (per Foundation report: production only)</td></tr>
+<tr><td>Should rejected riders show "Mark as Resigned" or "Delete"?</td><td>Both: Delete for rejected+resigned; server blocks if payout history exists (409)</td></tr>
+<tr><td>Order status control: same PATCH endpoint?</td><td>Yes — <code>PATCH /api/orders {id,status}</code> handles stock deduct/restore + staff notification</td></tr>
+<tr><td>Approval notice: what infrastructure?</td><td>Zero infrastructure (D4): clipboard copy + <code>sms:</code> link only</td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- Verification Status -->
+<div class="card">
+<h2>Verification Status</h2>
+<table>
+<thead><tr><th>Claim</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td>Biome lint clean (admin files)</td><td><span class="badge badge-green">Verified</span> — 0 errors from changed files (88 pre-existing warnings in inventory/proxy)</td></tr>
+<tr><td>Typecheck passes</td><td><span class="badge badge-green">Verified</span> — 7/7 packages clean</td></tr>
+<tr><td>Build clean</td><td><span class="badge badge-green">Verified</span> — <code>pnpm --filter admin build</code> succeeds, all routes generated</td></tr>
+<tr><td>DELETE /api/riders 409 guard</td><td><span class="badge badge-cyan">Inference</span> — code trace: checks rider_earnings, rider_cashouts, delivered orders before delete</td></tr>
+<tr><td>FK cascade safety</td><td><span class="badge badge-green">Verified</span> — 0001 FKs from rider_earnings/rider_cashouts to profiles are ON DELETE CASCADE; guard prevents hard delete when rows exist</td></tr>
+<tr><td>Cashouts default tab</td><td><span class="badge badge-green">Verified</span> — state init changed from "requested" to "all"</td></tr>
+<tr><td>Orders polling</td><td><span class="badge badge-green">Verified</span> — matches staff pattern: setInterval 15s alongside Realtime</td></tr>
+<tr><td>Order status routes through /api/orders</td><td><span class="badge badge-green">Verified</span> — same PATCH endpoint as list page (removed from list)</td></tr>
+<tr><td>Approval SMS link format</td><td><span class="badge badge-green">Verified</span> — regex <code>/^(\+63|0)9\d{9}$/</code> matches PH mobile; <code>0</code> prefix converted to <code>+63</code></td></tr>
+<tr><td>Settings save path</td><td><span class="badge badge-cyan">Inference</span> — <code>handleSave</code> → PUT /api/settings → <code>updateBusinessConfig</code> → Supabase update; <code>about_content</code> in payload, column exists (0025 live)</td></tr>
+<tr><td>delivery_areas retry removed</td><td><span class="badge badge-green">Verified</span> — 0018 confirmed live in Foundation report; retry was dead code</td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- Commits -->
+<div class="card">
+<h2>Commits</h2>
+<table>
+<thead><tr><th>Hash</th><th>Message</th></tr></thead>
+<tbody>
+<tr><td><code>e731195</code></td><td><code>fix(admin): show Delete Rider for rejected status, add 409 guard for riders with payout history</code></td></tr>
+<tr><td><code>9be9e2d</code></td><td><code>fix(admin): cashouts default to All tab, sort requested first</code></td></tr>
+<tr><td><code>c227108</code></td><td><code>fix(admin): remove orders Refresh button, add 15s polling, move status control to detail page, remove expander</code></td></tr>
+<tr><td><code>2a24d52</code></td><td><code>fix(admin): add Copy message and SMS button to rider approval dialog</code></td></tr>
+<tr><td><code>7dfe8d4</code></td><td><code>fix(admin): remove delivery_areas retry (migration 0018 confirmed live)</code></td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- Requests to Other Roles -->
+<div class="card">
+<h2>Requests to Other Roles</h2>
+<ul>
+<li><strong>Agent 3 (Rider):</strong> The approval in-app notification (<code>rider_approved</code> type) is inserted on line 160-165 of riders/page.tsx, but a pending rider can't sign in to see it. If the rider app adds push notifications in the future, this notification could be surfaced there. No action needed now.</li>
+<li><strong>Agent 5 (Integrator):</strong> Merge <code>fix/tsug-admin</code> into <code>develop</code>. No conflicts expected — all changes are within <code>apps/admin</code> only.</li>
+</ul>
+</div>
+
+<!-- What's Next -->
+<div class="card">
+<h2>What's Next</h2>
+<ul>
+<li>Agent 5 merges <code>fix/tsug-admin</code> → <code>develop</code></li>
+<li>Jeff verifies mutation flows (DELETE /api/riders 409, PATCH /api/orders status change) against live data</li>
+<li>Future: if an email/SMS provider is added, the approval flow can be upgraded from clipboard+SMS link to automated delivery</li>
+</ul>
+</div>
+
+<footer>
+  Agent 1 &bull; Admin Lane &bull; TECHNICAL-SUGGESTIONS Sprint &bull; 2026-09-20 &bull; branch: <code>fix/tsug-admin</code>
+</footer>
+
+</div>
+</body>
+</html>
