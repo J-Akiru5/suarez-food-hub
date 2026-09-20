@@ -1,0 +1,219 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Integration Report — Suarez Food Hub Sprint</title>
+<style>
+  :root{--bg:#0b1220;--card:#071226;--muted:#9aa4b2;--accent:#7c3aed;--cyan:#06b6d4;--green:#22c55e;--red:#ef4444;--orange:#f97316;--border:rgba(255,255,255,0.04)}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:'Inter',system-ui,-apple-system,sans-serif;color:#e6eef8;background:linear-gradient(180deg,#061427,#021019);min-height:100vh;line-height:1.6}
+  .container{max-width:1100px;margin:0 auto;padding:24px 20px}
+  h1{color:var(--accent);font-size:28px;margin-bottom:4px}
+  h2{color:#fff;font-size:20px;margin:24px 0 12px;display:flex;align-items:center;gap:8px}
+  h3{color:var(--cyan);font-size:16px;margin:16px 0 8px}
+  .tagline{color:var(--muted);font-size:14px;margin-bottom:24px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin:16px 0}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:8px 12px;border-bottom:1px solid var(--border);text-align:left}
+  th{color:var(--cyan);background:rgba(255,255,255,0.02);font-weight:600}
+  td{color:var(--muted)}
+  .ok{color:var(--green)}
+  .warn{color:var(--orange)}
+  .err{color:var(--red)}
+  code{font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,0.05);padding:2px 6px;border-radius:4px;font-size:12px}
+  .badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600}
+  .badge-green{background:rgba(34,197,94,0.15);color:var(--green)}
+  .badge-orange{background:rgba(249,115,22,0.15);color:var(--orange)}
+  .badge-red{background:rgba(239,68,68,0.15);color:var(--red)}
+  .badge-cyan{background:rgba(6,182,212,0.15);color:var(--cyan)}
+  pre{background:#0d1525;border:1px solid var(--border);border-radius:8px;padding:12px;overflow-x:auto;font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--muted)}
+  .tldr{font-size:15px;color:#e6eef8;line-height:1.7;margin-bottom:16px}
+  footer{margin-top:32px;padding-top:16px;border-top:1px solid var(--border);color:var(--muted);font-size:12px}
+  ul{margin-left:20px;color:var(--muted)}
+  li{margin-bottom:4px}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>Integration Report</h1>
+<p class="tagline">Suarez Food Hub &mdash; TECHNICAL-SUGGESTIONS Sprint &bull; 2026-09-20 &bull; Agent 5 (Integrator)</p>
+
+<div class="card">
+<h2>TL;DR</h2>
+<p class="tldr">
+All four lane branches (web, rider, admin, staff) merged cleanly into <code>develop</code> with zero conflicts. The duplicated stock-restore loop in admin/staff <code>api/orders</code> routes was extracted into a shared <code>restoreStockForOrder()</code> in <code>packages/data-access</code>. Drift workarounds (dead <code>sort_order</code> fallbacks) were already cleaned by the staff lane. Root hygiene completed: deleted 6 junk files, repaired corrupted .gitignore NUL bytes, added dev-artifact ignore patterns. One locked-out rider identified (Cris Mique) &mdash; UPDATE held until rider fix is deployed. Pipeline passes: typecheck 7/7, build 4/4, tests 26/26.
+</p>
+</div>
+
+<div class="card">
+<h2>What Merged and Why</h2>
+<table>
+<thead><tr><th>Lane</th><th>Branch</th><th>Commits</th><th>Key Changes</th></tr></thead>
+<tbody>
+<tr><td>Web (Customer)</td><td><code>fix/tsug-web</code></td><td>2</td><td>Login switched to email-only; register reads <code>?role=rider</code> query param</td></tr>
+<tr><td>Rider</td><td><code>fix/tsug-rider</code></td><td>4</td><td>Lockout fix (rider_status instead of is_active); email-only login; create account link; payment method display; approval banner</td></tr>
+<tr><td>Admin</td><td><code>fix/tsug-admin</code></td><td>5</td><td>Delete rejected riders with 409 guard; cashouts default tab; orders polling + status on detail page; approval SMS link; delivery_areas retry removed</td></tr>
+<tr><td>Staff</td><td><code>fix/tsug-staff</code></td><td>5</td><td>moveProduct error surfacing; reorderProducts RPC; @dnd-kit drag-and-drop; sort_order fallbacks removed; orders card face with rider/kitchen controls; sticky actions column</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="card">
+<h2>Files Touched (Integration)</h2>
+<table>
+<thead><tr><th>File</th><th>Action</th><th>Step</th></tr></thead>
+<tbody>
+<tr><td><code>packages/data-access/src/data/products.ts</code></td><td><span class="badge badge-orange">Modified</span></td><td>5.3a &mdash; Added <code>restoreStockForOrder()</code></td></tr>
+<tr><td><code>apps/admin/app/api/orders/route.ts</code></td><td><span class="badge badge-orange">Modified</span></td><td>5.3a &mdash; Replaced inline restore loop</td></tr>
+<tr><td><code>apps/staff/app/api/orders/route.ts</code></td><td><span class="badge badge-orange">Modified</span></td><td>5.3a &mdash; Replaced inline restore loop</td></tr>
+<tr><td><code>.gitignore</code></td><td><span class="badge badge-orange">Modified</span></td><td>5.3c &mdash; Removed NUL bytes, added dev-artifact patterns</td></tr>
+<tr><td><code>knip.json</code></td><td><span class="badge badge-orange">Modified</span></td><td>5.3c &mdash; Removed <code>apps/rider/temp.css</code> ignore entry</td></tr>
+<tr><td><code>package-lock.json</code></td><td><span class="badge badge-red">Deleted</span></td><td>5.3c &mdash; Junk file (pnpm is used)</td></tr>
+<tr><td><code>biome_output.txt</code></td><td><span class="badge badge-red">Deleted</span></td><td>5.3c &mdash; Junk file</td></tr>
+<tr><td><code>biome_stdout.txt</code></td><td><span class="badge badge-red">Deleted</span></td><td>5.3c &mdash; Junk file</td></tr>
+<tr><td><code>apps/web/dev-errors.txt</code></td><td><span class="badge badge-red">Deleted</span></td><td>5.3c &mdash; Junk file</td></tr>
+<tr><td><code>apps/web/dev-output.txt</code></td><td><span class="badge badge-red">Deleted</span></td><td>5.3c &mdash; Junk file</td></tr>
+<tr><td><code>apps/rider/temp.css</code></td><td><span class="badge badge-red">Deleted</span></td><td>5.3c &mdash; Junk file</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="card">
+<h2>Agent + Branch Strategy</h2>
+<table>
+<thead><tr><th>Agent</th><th>Branch</th><th>Scope</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td>Agent 0 (Foundation)</td><td><code>develop</code></td><td>CLI migrations, Prisma removal</td><td><span class="badge badge-green">Merged</span></td></tr>
+<tr><td>Agent 1 (Admin)</td><td><code>fix/tsug-admin</code></td><td>apps/admin</td><td><span class="badge badge-green">Merged</span></td></tr>
+<tr><td>Agent 2 (Staff)</td><td><code>fix/tsug-staff</code></td><td>apps/staff + data-access</td><td><span class="badge badge-green">Merged</span></td></tr>
+<tr><td>Agent 3 (Rider)</td><td><code>fix/tsug-rider</code></td><td>apps/rider</td><td><span class="badge badge-green">Merged</span></td></tr>
+<tr><td>Agent 4 (Customer)</td><td><code>fix/tsug-web</code></td><td>apps/web</td><td><span class="badge badge-green">Merged</span></td></tr>
+<tr><td>Agent 5 (Integrator)</td><td><code>develop</code></td><td>Merges, dedupe, hygiene, report</td><td><span class="badge badge-green">Done</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="card">
+<h2>Pipeline After Merge</h2>
+<table>
+<thead><tr><th>Check</th><th>Result</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td>Typecheck</td><td><span class="badge badge-green">7/7 PASS</span></td><td>types, utils, data-access, rider, web, staff, admin</td></tr>
+<tr><td>Build</td><td><span class="badge badge-green">4/4 PASS</span></td><td>web, admin, rider, staff all compiled</td></tr>
+<tr><td>Tests</td><td><span class="badge badge-green">26/26 PASS</span></td><td>packages/utils (vitest)</td></tr>
+<tr><td>Biome</td><td><span class="badge badge-orange">28 errors</span></td><td>All pre-existing (inventory proxy, dashboard page a11y). Zero new errors from lanes.</td></tr>
+<tr><td>Knip</td><td><span class="badge badge-orange">Pre-existing</span></td><td><code>supabase/_legacy/apply-rls.ts</code> unused; <code>pg</code> config hint. No new issues.</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="card">
+<h2>Decisions Asked / Answered</h2>
+<table>
+<thead><tr><th>Question</th><th>Answer</th></tr></thead>
+<tbody>
+<tr><td>Merge order</td><td>Web &rarr; Rider &rarr; Admin &rarr; Staff (Jeff approved)</td></tr>
+<tr><td>Non-production Supabase for mutation tests?</td><td>No &mdash; production only (assumed per Foundation)</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="card">
+<h2>Cross-Lane Contracts</h2>
+<table>
+<thead><tr><th>Contract</th><th>Status</th><th>Evidence</th></tr></thead>
+<tbody>
+<tr><td>Rider login links to <code>/register?role=rider</code></td><td><span class="badge badge-green">Verified</span></td><td>Web register reads <code>searchParams.get("role")</code> via <code>useSearchParams</code></td></tr>
+<tr><td>Staff calls <code>reorder_products</code> RPC</td><td><span class="badge badge-green">Verified</span></td><td><code>reorderProducts()</code> calls <code>supabase.rpc("reorder_products", { p_ids })</code> &mdash; matches migration 0028</td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="card">
+<h2>Verified / Inference / Unverified</h2>
+<table>
+<thead><tr><th>Claim</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td>All 4 lane branches had &ldquo;chore(...): lane complete&rdquo; final commit</td><td><span class="badge badge-green">Verified</span></td></tr>
+<tr><td>No out-of-scope edits in any lane</td><td><span class="badge badge-green">Verified</span></td></tr>
+<tr><td>Merges completed with --no-ff</td><td><span class="badge badge-green">Verified</span></td></tr>
+<tr><td><code>restoreStockForOrder</code> is EXACT parity with inline loops</td><td><span class="badge badge-green">Verified</span></td></tr>
+<tr><td>sort_order fallbacks fully removed</td><td><span class="badge badge-green">Verified</span></td></tr>
+<tr><td>package-lock.json unreferenced before delete</td><td><span class="badge badge-green">Verified</span></td></tr>
+<tr><td>Develop pushed to origin</td><td><span class="badge badge-green">Verified</span></td></tr>
+<tr><td>Locked rider: Cris Mique (5269e28d) &mdash; is_active=false, rider_status=available</td><td><span class="badge badge-green">Verified</span></td></tr>
+<tr><td>restoreStockForOrder: non-atomic loop (flagged)</td><td><span class="badge badge-orange">Inference</span></td></tr>
+<tr><td>Admin sends {id}, staff sends {order_id} (flagged)</td><td><span class="badge badge-orange">Inference</span></td></tr>
+<tr><td>Live rider lockout count = 1</td><td><span class="badge badge-orange">Inference</span></td></tr>
+</tbody>
+</table>
+</div>
+
+<div class="card">
+<h2>Accepted Risks (D2)</h2>
+<ul>
+<li><strong><code>get_email_by_username</code> RPC</strong> &mdash; anon-callable, allows email lookup by username without auth. Pre-existing; not deleted per D2. Should be addressed as a separate hardening task (RLS policy or RPC deprecation).</li>
+<li><strong><code>lookupUsername</code> actions in admin/staff</strong> &mdash; server-side username-to-email lookup still present. Frontend no longer uses it (all login is email-only now), but the code remains.</li>
+</ul>
+</div>
+
+<div class="card">
+<h2>Known Limitations (flagged, not changed)</h2>
+<ul>
+<li><strong>Restore loop is non-atomic</strong> &mdash; concurrent cancellations could double-restore. Symmetric with <code>deductStockForOrderIfNeeded</code> which is also non-atomic. Would need a DB-level RPC to make atomic.</li>
+<li><strong>Request shape mismatch</strong> &mdash; admin PATCH sends <code>{id, status}</code>; staff PATCH sends <code>{order_id, status}</code>. Both work correctly but the inconsistency is a minor API ergonomics issue.</li>
+<li><strong>No test for <code>restoreStockForOrder</code></strong> &mdash; would need a stub Supabase client. Flagged for future unit test addition.</li>
+</ul>
+</div>
+
+<div class="card">
+<h2>Rider Data Repair</h2>
+<h3>SELECT Results (read-only)</h3>
+<table>
+<thead><tr><th>id</th><th>email</th><th>name</th><th>rider_status</th><th>is_active</th></tr></thead>
+<tbody>
+<tr><td><code>5269e28d-fb70-40d6-9420-3d6f6cb4bf28</code></td><td>crismique@gmail.com</td><td>Cris Mique</td><td>available</td><td>false</td></tr>
+</tbody>
+</table>
+<p style="color:var(--muted);font-size:13px;margin-top:8px"><strong>Status:</strong> UPDATE held. This rider&rsquo;s <code>is_active</code> was set to <code>false</code> by the old layout.tsx toggle code. They cannot log in. The UPDATE will set <code>is_active=true</code> for this rider &mdash; <strong>only after Jeff confirms the rider fix is deployed</strong> (otherwise they&rsquo;d lock out again immediately).</p>
+</div>
+
+<div class="card">
+<h2>What&rsquo;s Next</h2>
+<h3>Immediate (Jeff must do)</h3>
+<ol style="color:var(--muted);margin-left:20px">
+<li>Deploy <code>develop</code> to Vercel (all 4 apps)</li>
+<li>Run the rider data repair UPDATE: <code>UPDATE profiles SET is_active=true WHERE id = '5269e28d-fb70-40d6-9420-3d6f6cb4bf28' RETURNING id</code></li>
+<li>Set <code>NEXT_PUBLIC_WEB_URL</code> on rider Vercel project (for &ldquo;Back to website&rdquo; and &ldquo;Create an account&rdquo; links)</li>
+</ol>
+
+<h3>Live Verification Checklist (Jeff)</h3>
+<ul>
+<li><strong>Rider logout/re-login</strong> &mdash; toggle availability, log out, log back in. Should NOT be locked out.</li>
+<li><strong>Cashouts tab</strong> &mdash; should default to &ldquo;All&rdquo; with requested items sorted first.</li>
+<li><strong>Admin order status</strong> &mdash; change status from the detail page <code>/orders/[id]</code>. Stock should deduct/restore correctly.</li>
+<li><strong>Settings Save</strong> &mdash; admin settings page Save button should persist <code>about_content</code>.</li>
+<li><strong>Staff reorder</strong> &mdash; toggle Reorder mode, drag products, verify RPC call and optimistic UI.</li>
+<li><strong>Rider approval message</strong> &mdash; approve a pending rider, verify they see the &ldquo;Application received&rdquo; message and the justApproved banner on first login after approval.</li>
+</ul>
+
+<h3>Future (not this sprint)</h3>
+<ul>
+<li>Promotion: <code>develop</code> &rarr; staging &rarr; main (Jeff decides when; staging branch does not exist yet)</li>
+<li>Atomic stock RPC (replace non-atomic restore loop with DB function)</li>
+<li>Deprecate <code>get_email_by_username</code> RPC (D2 accepted risk)</li>
+<li>Add unit test for <code>restoreStockForOrder</code></li>
+<li>Dedupe MapComponent/LocationPicker (out of scope per D5)</li>
+</ul>
+</div>
+
+<footer>
+  Agent 5 (Integrator) &bull; TECHNICAL-SUGGESTIONS Sprint &bull; 2026-09-20 &bull; develop: <code>082eef2</code>
+</footer>
+
+</div>
+</body>
+</html>
