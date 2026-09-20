@@ -1,11 +1,15 @@
 "use client";
 
+import { closestCenter, DndContext, PointerSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { arrayMove, SortableContext, useSortable, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import { CSS } from "@dnd-kit/utilities";
 import { createBrowserTypedClient } from "@repo/data-access/client";
 import {
   createProduct,
   deleteProduct,
   generateUniqueSlug,
   moveProduct,
+  reorderProducts,
   updateProduct,
 } from "@repo/data-access/data/products";
 import type { Category } from "@repo/types";
@@ -31,20 +35,42 @@ import {
   AlertTriangle,
   ArrowDown,
   ArrowUp,
+  GripVertical,
   Image as ImageIcon,
   List,
   Loader2,
   Package,
   Pencil,
   Plus,
+  RefreshCw,
   Save,
   Search,
   Trash2,
   Upload,
   X,
 } from "lucide-react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Swal from "sweetalert2";
+
+function SortableItem({
+  id,
+  children,
+}: {
+  id: string;
+  children: (props: { listeners: ReturnType<typeof useSortable>["listeners"]; isDragging: boolean }) => React.ReactNode;
+}) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id });
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    opacity: isDragging ? 0.5 : 1,
+  };
+  return (
+    <div ref={setNodeRef} style={style} {...attributes}>
+      {children({ listeners, isDragging })}
+    </div>
+  );
+}
 
 export default function StaffInventoryPage() {
   const supabase = createBrowserTypedClient();
@@ -80,6 +106,47 @@ export default function StaffInventoryPage() {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Reorder mode state
+  const [reorderMode, setReorderMode] = useState(false);
+  const [reorderCategoryId, setReorderCategoryId] = useState<string>("all");
+
+  // dnd-kit sensors — press-and-hold before drag starts
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } }),
+  );
+
+  // Products filtered to the selected category for reorder mode
+  const reorderItems = useMemo(() => {
+    if (reorderCategoryId === "all") return [];
+    return products
+      .filter((p) => p.category_id === reorderCategoryId && !p.deleted_at)
+      .sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0) || (a.created_at > b.created_at ? -1 : 1));
+  }, [products, reorderCategoryId]);
+
+  async function handleReorderDrop(oldIndex: number, newIndex: number) {
+    if (oldIndex === newIndex) return;
+    const reordered = arrayMove(reorderItems, oldIndex, newIndex);
+    const ids = reordered.map((p) => p.id);
+
+    // Optimistic UI
+    setProducts((prev) => {
+      const updated = [...prev];
+      for (let i = 0; i < ids.length; i++) {
+        const idx = updated.findIndex((p) => p.id === ids[i]);
+        if (idx !== -1) updated[idx] = { ...updated[idx], sort_order: i };
+      }
+      return updated.sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+    });
+
+    const { error } = await reorderProducts(supabase, ids);
+    if (error) {
+      // Rollback on error
+      Swal.fire({ title: "Reorder failed", text: error.message, icon: "error" });
+      fetchData();
+    }
+  }
+
   const fetchData = useCallback(async () => {
     const [prodRes, catRes] = await Promise.all([
       supabase
@@ -87,19 +154,7 @@ export default function StaffInventoryPage() {
         .select("*, category:categories(*), product_variants(*)")
         .is("deleted_at", null)
         .order("sort_order", { ascending: true })
-        .order("created_at", { ascending: false })
-        .then(async (res) => {
-          // sort_order added in migration 0020 — live DB may not have it yet.
-          if (res.error) {
-            const fallback = await supabase
-              .from("products")
-              .select("*, category:categories(*), product_variants(*)")
-              .is("deleted_at", null)
-              .order("created_at", { ascending: false });
-            return fallback;
-          }
-          return res;
-        }),
+        .order("created_at", { ascending: false }),
       supabase.from("categories").select("id, name, slug").is("deleted_at", null).order("name"),
     ]);
     setProducts(prodRes.data || []);
@@ -475,6 +530,23 @@ export default function StaffInventoryPage() {
           <AlertTriangle className="h-4 w-4" />
           Low Stock Only
         </button>
+        <button
+          type="button"
+          onClick={() => {
+            setReorderMode(!reorderMode);
+            if (!reorderMode && categories.length > 0 && reorderCategoryId === "all") {
+              setReorderCategoryId(categories[0].id);
+            }
+          }}
+          className={`h-10 px-4 rounded-lg border text-sm font-medium transition-colors flex items-center gap-2 ${
+            reorderMode
+              ? "bg-violet-100 border-violet-300 text-violet-700"
+              : "bg-white border-gray-200 text-gray-600 hover:bg-gray-50"
+          }`}
+        >
+          <RefreshCw className={`h-4 w-4 ${reorderMode ? "animate-spin" : ""}`} />
+          Reorder
+        </button>
       </div>
 
       {loading ? (
@@ -482,6 +554,124 @@ export default function StaffInventoryPage() {
           {[1, 2, 3, 4].map((i) => (
             <div key={i} className="h-16 bg-gray-100 rounded-lg animate-pulse" />
           ))}
+        </div>
+      ) : reorderMode ? (
+        /* ─── Reorder Mode ─── */
+        <div className="space-y-4">
+          <div className="flex items-center gap-3">
+            <label className="text-sm font-medium text-gray-700">Category:</label>
+            <select
+              value={reorderCategoryId}
+              onChange={(e) => setReorderCategoryId(e.target.value)}
+              className="h-10 px-3 rounded-lg border border-gray-200 bg-white text-sm"
+            >
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <span className="text-xs text-gray-400">Drag to reorder within category</span>
+          </div>
+
+          {reorderCategoryId === "all" ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <p className="text-muted-foreground">Select a category to reorder products</p>
+              </CardContent>
+            </Card>
+          ) : reorderItems.length === 0 ? (
+            <Card>
+              <CardContent className="py-12 text-center">
+                <Package className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-muted-foreground">No products in this category</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCenter}
+              onDragEnd={(event) => {
+                const { active, over } = event;
+                if (over && active.id !== over.id) {
+                  const oldIndex = reorderItems.findIndex((p) => p.id === active.id);
+                  const newIndex = reorderItems.findIndex((p) => p.id === over.id);
+                  handleReorderDrop(oldIndex, newIndex);
+                }
+              }}
+            >
+              <SortableContext items={reorderItems.map((p) => p.id)} strategy={verticalListSortingStrategy}>
+                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-gray-200 bg-gray-50">
+                          <th className="w-10 px-3 py-3" />
+                          <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">
+                            Product
+                          </th>
+                          <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 hidden sm:table-cell">
+                            Price
+                          </th>
+                          <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 hidden sm:table-cell">
+                            Stock
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-200">
+                        {reorderItems.map((product) => (
+                          <SortableItem key={product.id} id={product.id}>
+                            {({ listeners }) => (
+                              <tr className="hover:bg-gray-50">
+                                <td className="px-3 py-3 text-center">
+                                  <button
+                                    type="button"
+                                    className="cursor-grab active:cursor-grabbing text-gray-400 hover:text-gray-600"
+                                    {...listeners}
+                                  >
+                                    <GripVertical className="h-4 w-4" />
+                                  </button>
+                                </td>
+                                <td className="px-4 py-3">
+                                  <div className="flex items-center gap-3">
+                                    <div className="h-10 w-10 rounded-lg bg-gray-100 flex items-center justify-center overflow-hidden shrink-0">
+                                      {product.image_url ? (
+                                        <img
+                                          src={product.image_url}
+                                          alt={product.name}
+                                          className="object-cover w-full h-full"
+                                        />
+                                      ) : (
+                                        <ImageIcon className="h-5 w-5 text-gray-400" />
+                                      )}
+                                    </div>
+                                    <div className="min-w-0">
+                                      <p className="text-sm font-medium truncate">{product.name}</p>
+                                      {product.is_featured && (
+                                        <Badge className="mt-0.5 bg-amber-100 text-amber-700 border-0 text-[10px]">
+                                          Featured
+                                        </Badge>
+                                      )}
+                                    </div>
+                                  </div>
+                                </td>
+                                <td className="px-4 py-3 hidden sm:table-cell">
+                                  <span className="text-sm font-bold">{formatCurrency(product.base_price)}</span>
+                                </td>
+                                <td className="px-4 py-3 hidden sm:table-cell">
+                                  <span className="text-sm">{productStock(product)}</span>
+                                </td>
+                              </tr>
+                            )}
+                          </SortableItem>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </SortableContext>
+            </DndContext>
+          )}
         </div>
       ) : filtered.length === 0 ? (
         <Card>
@@ -513,7 +703,7 @@ export default function StaffInventoryPage() {
                     <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">
                       Status
                     </th>
-                    <th className="text-right text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">
+                    <th className="text-right text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 sticky right-0 bg-gray-50 z-10">
                       Actions
                     </th>
                   </tr>
@@ -604,7 +794,7 @@ export default function StaffInventoryPage() {
                             {product.availability === "available" ? "In Stock" : "Sold Out"}
                           </span>
                         </td>
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3 sticky right-0 bg-white z-10">
                           <div className="flex items-center justify-end gap-1.5">
                             <Button
                               variant="outline"
