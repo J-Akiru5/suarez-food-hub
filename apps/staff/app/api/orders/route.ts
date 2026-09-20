@@ -1,6 +1,6 @@
 import { createAuthClient, createServiceClient } from "@repo/data-access/client";
 import { updateOrderStatus } from "@repo/data-access/data/orders";
-import { deductStockForOrderIfNeeded, restoreStock, restoreVariantStock } from "@repo/data-access/data/products";
+import { deductStockForOrderIfNeeded, restoreStockForOrder } from "@repo/data-access/data/products";
 import { getProfileRole } from "@repo/data-access/data/profiles";
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
@@ -93,29 +93,10 @@ export async function PATCH(request: NextRequest) {
     // its stock was consumed by the customer (UI prevents this, guard is for API).
     const wasStockDeducted = !!existingOrder.confirmed_at && prevStatus !== "delivered";
     if (status === "cancelled" && wasStockDeducted) {
-      const { data: items } = await serviceSupabase.from("order_items").select("*").eq("order_id", order_id);
-      let restoreError: { message?: string } | null = null;
-      if (items && items.length > 0) {
-        for (const item of items) {
-          if (item.variant_name) {
-            const { data: variants } = await serviceSupabase
-              .from("product_variants")
-              .select("id, name")
-              .eq("product_id", item.product_id);
-            const match = (variants || []).find((v: { name: string; id: string }) => v.name === item.variant_name);
-            if (match) {
-              const { error } = await restoreVariantStock(serviceSupabase, match.id, item.quantity);
-              if (error) restoreError = error;
-            }
-          } else {
-            const { error } = await restoreStock(serviceSupabase, item.product_id, item.quantity);
-            if (error) restoreError = error;
-          }
-        }
-      }
-      if (restoreError) {
+      const { error: restoreErr } = await restoreStockForOrder(serviceSupabase, order_id);
+      if (restoreErr) {
         return NextResponse.json(
-          { success: false, error: restoreError.message || "Failed to restore stock" },
+          { success: false, error: restoreErr.message || "Failed to restore stock" },
           { status: 500 },
         );
       }

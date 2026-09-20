@@ -300,3 +300,43 @@ export async function deductStockForOrderIfNeeded(
 
   return { skipped: false, error: deductError };
 }
+
+/**
+ * Restore stock for all items in an order that was cancelled after stock had
+ * been deducted. Symmetric with deductStockForOrderIfNeeded — keyed on the
+ * confirmed_at marker that deduct stamps.
+ *
+ * Call this ONLY when status === "cancelled" && confirmed_at was set before
+ * the status update AND prevStatus !== "delivered". The caller is responsible
+ * for that guard; this function unconditionally restores.
+ *
+ * EXACT parity with the inline loop previously duplicated in admin/staff
+ * api/orders routes: confirmed_at marker, variant match by name, non-atomic
+ * loop (last-writer-wins on concurrent restores).
+ */
+export async function restoreStockForOrder(
+  supabase: TypedSupabaseClient,
+  orderId: string,
+): Promise<{ error: Error | null }> {
+  const { data: items } = await supabase.from("order_items").select("*").eq("order_id", orderId);
+  let restoreError: { message?: string } | null = null;
+  if (items && items.length > 0) {
+    for (const item of items) {
+      if (item.variant_name) {
+        const { data: variants } = await supabase
+          .from("product_variants")
+          .select("id, name")
+          .eq("product_id", item.product_id);
+        const match = (variants || []).find((v: { name: string; id: string }) => v.name === item.variant_name);
+        if (match) {
+          const { error } = await restoreVariantStock(supabase, match.id, item.quantity);
+          if (error) restoreError = error;
+        }
+      } else {
+        const { error } = await restoreStock(supabase, item.product_id, item.quantity);
+        if (error) restoreError = error;
+      }
+    }
+  }
+  return { error: restoreError ? new Error(restoreError.message || "Failed to restore stock") : null };
+}
