@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Foundation Report — Suarez Food Hub Sprint</title>
+<style>
+  :root{--bg:#0b1220;--card:#071226;--muted:#9aa4b2;--accent:#7c3aed;--cyan:#06b6d4;--green:#22c55e;--red:#ef4444;--orange:#f97316;--border:rgba(255,255,255,0.04)}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:'Inter',system-ui,-apple-system,sans-serif;color:#e6eef8;background:linear-gradient(180deg,#061427,#021019);min-height:100vh;line-height:1.6}
+  .container{max-width:1100px;margin:0 auto;padding:24px 20px}
+  h1{color:var(--accent);font-size:28px;margin-bottom:4px}
+  h2{color:#fff;font-size:20px;margin:24px 0 12px;display:flex;align-items:center;gap:8px}
+  h3{color:var(--cyan);font-size:16px;margin:16px 0 8px}
+  .tagline{color:var(--muted);font-size:14px;margin-bottom:24px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin:16px 0}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:8px 12px;border-bottom:1px solid var(--border);text-align:left}
+  th{color:var(--cyan);background:rgba(255,255,255,0.02);font-weight:600}
+  td{color:var(--muted)}
+  .ok{color:var(--green)}
+  .warn{color:var(--orange)}
+  .err{color:var(--red)}
+  code{font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,0.05);padding:2px 6px;border-radius:4px;font-size:12px}
+  .badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600}
+  .badge-green{background:rgba(34,197,94,0.15);color:var(--green)}
+  .badge-orange{background:rgba(249,115,22,0.15);color:var(--orange)}
+  .badge-red{background:rgba(239,68,68,0.15);color:var(--red)}
+  .badge-cyan{background:rgba(6,182,212,0.15);color:var(--cyan)}
+  pre{background:#0d1525;border:1px solid var(--border);border-radius:8px;padding:12px;overflow-x:auto;font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--muted)}
+  .tl;dr{font-size:15px;color:#e6eef8;line-height:1.7;margin-bottom:16px}
+  footer{margin-top:32px;padding-top:16px;border-top:1px solid var(--border);color:var(--muted);font-size:12px}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>Foundation Report</h1>
+<p class="tagline">Suarez Food Hub — Phase 0 Complete &bull; 2026-09-20 &bull; Agent 0</p>
+
+<!-- TL;DR -->
+<div class="card">
+<h2>TL;DR</h2>
+<p class="tl;dr">
+Fast-forwarded <code>develop</code> to <code>main</code> (+35 commits). Initialized Supabase CLI, baselined all 27 existing migrations against the live production database (3 were missing and are now applied). Created a new <code>reorder_products</code> RPC migration. Removed Prisma entirely — Supabase CLI migrations are now the single source of truth. Updated all documentation. Created 4 parallel worktrees for the lane agents. Pipeline passes clean.
+</p>
+</div>
+
+<!-- What Changed -->
+<div class="card">
+<h2>What Changed and Why</h2>
+<table>
+<thead><tr><th>Step</th><th>What</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>0.1</td><td>Fast-forwarded develop to main</td><td>develop was 35 commits behind; needed latest code as baseline</td></tr>
+<tr><td>0.2</td><td>Installed Supabase CLI (via npx), verified DB connectivity</td><td>CLI needed for migration management; DB connection verified (PostgreSQL 17.6)</td></tr>
+<tr><td>0.3</td><td>Created supabase/config.toml</td><td>CLI requires project config; never used before</td></tr>
+<tr><td>0.4</td><td>Renumbered duplicate migrations (0011→0026, 0012→0027)</td><td>Duplicate version numbers prevented CLI tracking</td></tr>
+<tr><td>0.5</td><td>Baselined 24 migrations, pushed 3 missing (0021, 0024, 0025)</td><td>Live DB had objects from manual SQL; CLI history was empty</td></tr>
+<tr><td>0.6</td><td>Created reorder_products() RPC (migration 0028)</td><td>Agent 2 (admin lane) depends on this for bulk product reordering</td></tr>
+<tr><td>0.7</td><td>Moved legacy SQL to supabase/_legacy/</td><td>Docker unavailable for db pull; legacy files kept for historical reference</td></tr>
+<tr><td>0.8</td><td>Removed Prisma (schema, seed, deps, scripts, docs)</td><td>Supabase CLI is now the single source of truth</td></tr>
+<tr><td>0.9</td><td>Added develop branch to CI triggers</td><td>Lanes branch off develop; CI must validate PRs</td></tr>
+<tr><td>0.10</td><td>Created 4 worktrees with env files</td><td>Parallel lane development without conflicts</td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- Files Touched -->
+<div class="card">
+<h2>Files Touched</h2>
+<table>
+<thead><tr><th>File</th><th>Action</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td><code>supabase/config.toml</code></td><td><span class="badge badge-green">Created</span></td><td>CLI project config</td></tr>
+<tr><td><code>supabase/.gitignore</code></td><td><span class="badge badge-green">Created</span></td><td>Excludes .temp/</td></tr>
+<tr><td><code>supabase/migrations/0026_customer_notification_triggers.sql</code></td><td><span class="badge badge-cyan">Renamed</span></td><td>From 0011 (duplicate)</td></tr>
+<tr><td><code>supabase/migrations/0027_rider_resigned.sql</code></td><td><span class="badge badge-cyan">Renamed</span></td><td>From 0012 (duplicate)</td></tr>
+<tr><td><code>supabase/migrations/20260920040108_reorder_products.sql</code></td><td><span class="badge badge-green">Created</span></td><td>reorder_products() RPC</td></tr>
+<tr><td><code>supabase/_legacy/*</code></td><td><span class="badge badge-orange">Moved</span></td><td>infra.sql, fix-rls*.sql, apply-rls.ts, audit.sql</td></tr>
+<tr><td><code>supabase/migrations/README.md</code></td><td><span class="badge badge-orange">Rewritten</span></td><td>CLI workflow docs</td></tr>
+<tr><td><code>prisma/schema.prisma</code></td><td><span class="badge badge-red">Deleted</span></td><td>Prisma removed</td></tr>
+<tr><td><code>prisma/seed.ts</code></td><td><span class="badge badge-red">Deleted</span></td><td>Prisma removed</td></tr>
+<tr><td><code>package.json</code></td><td><span class="badge badge-orange">Modified</span></td><td>Removed prisma/pg deps, db:* scripts, added db:new</td></tr>
+<tr><td><code>turbo.json</code></td><td><span class="badge badge-orange">Modified</span></td><td>Removed DATABASE_URL from globalEnv</td></tr>
+<tr><td><code>.env.example</code></td><td><span class="badge badge-orange">Modified</span></td><td>Re-commented DATABASE_URL, fixed app URLs</td></tr>
+<tr><td><code>README.md</code></td><td><span class="badge badge-orange">Modified</span></td><td>Next 16, CLI workflow</td></tr>
+<tr><td><code>.github/workflows/ci.yml</code></td><td><span class="badge badge-orange">Modified</span></td><td>Added develop to triggers</td></tr>
+<tr><td><code>docs/*.html</code></td><td><span class="badge badge-orange">Modified</span></td><td>Removed Prisma references (4 files)</td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- Migration Baseline -->
+<div class="card">
+<h2>Migration Baseline</h2>
+<table>
+<thead><tr><th>Version</th><th>Name</th><th>Applied Live?</th><th>Evidence</th><th>Action Taken</th></tr></thead>
+<tbody>
+<tr><td>0001</td><td>capstone_full</td><td><span class="badge badge-green">Yes</span></td><td>profiles table + is_admin() exist</td><td>Marked applied</td></tr>
+<tr><td>0002</td><td>psgc_seed</td><td><span class="badge badge-green">Yes</span></td><td>locations table exists (0 rows — cleared)</td><td>Marked applied</td></tr>
+<tr><td>0003</td><td>demo_seed</td><td><span class="badge badge-green">Yes</span></td><td>73 products in table</td><td>Marked applied</td></tr>
+<tr><td>0004</td><td>username_field</td><td><span class="badge badge-green">Yes</span></td><td>profiles.username column exists</td><td>Marked applied</td></tr>
+<tr><td>0005</td><td>get_email_by_username</td><td><span class="badge badge-green">Yes</span></td><td>function exists</td><td>Marked applied</td></tr>
+<tr><td>0006</td><td>rider_reviews</td><td><span class="badge badge-green">Yes</span></td><td>table exists</td><td>Marked applied</td></tr>
+<tr><td>0007</td><td>admin_reviews_policy</td><td><span class="badge badge-green">Yes</span></td><td>policy exists on rider_reviews</td><td>Marked applied</td></tr>
+<tr><td>0008</td><td>feedback_table</td><td><span class="badge badge-green">Yes</span></td><td>table exists</td><td>Marked applied</td></tr>
+<tr><td>0009</td><td>cashout_gcash_number</td><td><span class="badge badge-green">Yes</span></td><td>gcash_number column exists</td><td>Marked applied</td></tr>
+<tr><td>0010</td><td>notification_triggers</td><td><span class="badge badge-green">Yes</span></td><td>notify_new_order() exists</td><td>Marked applied</td></tr>
+<tr><td>0011</td><td>add_deleted_at_to_products</td><td><span class="badge badge-green">Yes</span></td><td>deleted_at column exists</td><td>Marked applied</td></tr>
+<tr><td>0012</td><td>add_delivery_provinces</td><td><span class="badge badge-green">Yes</span></td><td>delivery_provinces column exists</td><td>Marked applied</td></tr>
+<tr><td>0013</td><td>product_reviews</td><td><span class="badge badge-green">Yes</span></td><td>table exists</td><td>Marked applied</td></tr>
+<tr><td>0014</td><td>add_valid_id_url</td><td><span class="badge badge-green">Yes</span></td><td>valid_id_url column exists</td><td>Marked applied</td></tr>
+<tr><td>0015</td><td>add_pending_riders</td><td><span class="badge badge-green">Yes</span></td><td>pending_riders column exists</td><td>Marked applied</td></tr>
+<tr><td>0016</td><td>add_delivery_proof</td><td><span class="badge badge-green">Yes</span></td><td>delivery_proof_url column exists</td><td>Marked applied</td></tr>
+<tr><td>0017</td><td>category_soft_delete</td><td><span class="badge badge-green">Yes</span></td><td>categories.deleted_at exists</td><td>Marked applied</td></tr>
+<tr><td>0018</td><td>fix_client_issues</td><td><span class="badge badge-green">Yes</span></td><td>delivery_areas column exists</td><td>Marked applied</td></tr>
+<tr><td>0019</td><td>rider_read_invited_orders</td><td><span class="badge badge-green">Yes</span></td><td>policy exists on orders</td><td>Marked applied</td></tr>
+<tr><td>0020</td><td>client_round2</td><td><span class="badge badge-green">Yes</span></td><td>sort_order column exists</td><td>Marked applied</td></tr>
+<tr><td>0021</td><td>business_location</td><td><span class="badge badge-red">No</span></td><td>base_lat column missing</td><td><span class="badge badge-green">Pushed</span></td></tr>
+<tr><td>0022</td><td>client_round3</td><td><span class="badge badge-green">Yes</span></td><td>gcash_reference_no exists</td><td>Marked applied</td></tr>
+<tr><td>0023</td><td>product_reorder_performance</td><td><span class="badge badge-green">Yes</span></td><td>move_product() exists</td><td>Marked applied</td></tr>
+<tr><td>0024</td><td>staff_notification_after_verification</td><td><span class="badge badge-red">No</span></td><td>get_admin_only_ids() missing</td><td><span class="badge badge-green">Pushed</span></td></tr>
+<tr><td>0025</td><td>business_hours_about</td><td><span class="badge badge-red">No</span></td><td>about_content column missing</td><td><span class="badge badge-green">Pushed</span></td></tr>
+<tr><td>0026</td><td>customer_notification_triggers</td><td><span class="badge badge-green">Yes</span></td><td>delete policy on notifications exists</td><td>Marked applied</td></tr>
+<tr><td>0027</td><td>rider_resigned</td><td><span class="badge badge-green">Yes</span></td><td>resigned enum value exists</td><td>Marked applied</td></tr>
+<tr><td>0028</td><td>reorder_products</td><td><span class="badge badge-green">Yes</span></td><td>Created and pushed this sprint</td><td>Applied via db push</td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- Agent + Branch Strategy -->
+<div class="card">
+<h2>Agent + Branch Strategy</h2>
+<p style="color:var(--muted);margin-bottom:12px">One line each:</p>
+<table>
+<thead><tr><th>Agent</th><th>Branch</th><th>Worktree</th><th>Scope</th></tr></thead>
+<tbody>
+<tr><td>Agent 1 (Admin)</td><td><code>fix/tsug-admin</code></td><td><code>C:\dev\monorepo\sfh-wt-admin</code></td><td>apps/admin</td></tr>
+<tr><td>Agent 2 (Staff)</td><td><code>fix/tsug-staff</code></td><td><code>C:\dev\monorepo\sfh-wt-staff</code></td><td>apps/staff</td></tr>
+<tr><td>Agent 3 (Rider)</td><td><code>fix/tsug-rider</code></td><td><code>C:\dev\monorepo\sfh-wt-rider</code></td><td>apps/rider</td></tr>
+<tr><td>Agent 4 (Customer)</td><td><code>fix/tsug-web</code></td><td><code>C:\dev\monorepo\sfh-wt-web</code></td><td>apps/web</td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- Decisions -->
+<div class="card">
+<h2>Decisions Asked / Answered</h2>
+<table>
+<thead><tr><th>Question</th><th>Answer</th></tr></thead>
+<tbody>
+<tr><td>Root-only or per-app .env.local?</td><td>Both (Jeff's choice)</td></tr>
+<tr><td>Non-production Supabase for tests?</td><td>No — production only. Dry-run then real push.</td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- Verification Status -->
+<div class="card">
+<h2>Verification Status</h2>
+<table>
+<thead><tr><th>Claim</th><th>Status</th></tr></thead>
+<tbody>
+<tr><td>develop fast-forwarded to main</td><td><span class="badge badge-green">Verified</span> — git log confirms</td></tr>
+<tr><td>DB connectivity (session pooler)</td><td><span class="badge badge-green">Verified</span> — PostgreSQL 17.6</td></tr>
+<tr><td>Project ref safety check</td><td><span class="badge badge-green">Verified</span> — rirhgolmtanamuvtgspx matches</td></tr>
+<tr><td>27 migrations tracked in CLI</td><td><span class="badge badge-green">Verified</span> — local = remote for all</td></tr>
+<tr><td>3 missing migrations applied</td><td><span class="badge badge-green">Verified</span> — columns/functions exist</td></tr>
+<tr><td>reorder_products() tested</td><td><span class="badge badge-green">Verified</span> — reorder correct, duplicates rejected, ROLLBACK</td></tr>
+<tr><td>Prisma fully removed</td><td><span class="badge badge-green">Verified</span> — no prisma deps, no schema, no scripts</td></tr>
+<tr><td>Pipeline passes</td><td><span class="badge badge-green">Verified</span> — biome 0 errors, typecheck 7/7, build 4/4, tests 26/26</td></tr>
+<tr><td>Drift capture</td><td><span class="badge badge-orange">Pending</span> — Docker unavailable; legacy files preserved</td></tr>
+<tr><td>Live DB objects from legacy SQL</td><td><span class="badge badge-cyan">Inference</span> — all probed objects matched migration objects; no live-only drift detected via probes</td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- What's Next -->
+<div class="card">
+<h2>What's Next</h2>
+<ul style="color:var(--muted);margin-left:20px">
+<li>Agents 1-4 can now start parallel work in their worktrees</li>
+<li>Each lane: create feature branch off <code>fix/tsug-*</code>, implement, test, PR to <code>develop</code></li>
+<li>Drift capture: run <code>supabase db pull --db-url &lt;url&gt;</code> when Docker is available to reconcile any live-only objects</li>
+<li>Agent 5 (Integrator) merges lane PRs and resolves conflicts</li>
+</ul>
+</div>
+
+<footer>
+  Agent 0 &bull; Foundation Sprint &bull; 2026-09-20 &bull; commit: <code>e7a5f6c</code> on <code>develop</code>
+</footer>
+
+</div>
+</body>
+</html>

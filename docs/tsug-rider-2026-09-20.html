@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Rider Lane Report — Suarez Food Hub TECHNICAL-SUGGESTIONS Sprint</title>
+<style>
+  :root{--bg:#0b1220;--card:#071226;--muted:#9aa4b2;--accent:#7c3aed;--cyan:#06b6d4;--green:#22c55e;--red:#ef4444;--orange:#f97316;--border:rgba(255,255,255,0.04)}
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:'Inter',system-ui,-apple-system,sans-serif;color:#e6eef8;background:linear-gradient(180deg,#061427,#021019);min-height:100vh;line-height:1.6}
+  .container{max-width:1100px;margin:0 auto;padding:24px 20px}
+  h1{color:var(--accent);font-size:28px;margin-bottom:4px}
+  h2{color:#fff;font-size:20px;margin:24px 0 12px;display:flex;align-items:center;gap:8px}
+  h3{color:var(--cyan);font-size:16px;margin:16px 0 8px}
+  .tagline{color:var(--muted);font-size:14px;margin-bottom:24px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin:16px 0}
+  table{width:100%;border-collapse:collapse;font-size:13px}
+  th,td{padding:8px 12px;border-bottom:1px solid var(--border);text-align:left}
+  th{color:var(--cyan);background:rgba(255,255,255,0.02);font-weight:600}
+  td{color:var(--muted)}
+  .ok{color:var(--green)}
+  .warn{color:var(--orange)}
+  .err{color:var(--red)}
+  code{font-family:'JetBrains Mono',monospace;background:rgba(255,255,255,0.05);padding:2px 6px;border-radius:4px;font-size:12px}
+  .badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600}
+  .badge-green{background:rgba(34,197,94,0.15);color:var(--green)}
+  .badge-orange{background:rgba(249,115,22,0.15);color:var(--orange)}
+  .badge-red{background:rgba(239,68,68,0.15);color:var(--red)}
+  .badge-cyan{background:rgba(6,182,212,0.15);color:var(--cyan)}
+  pre{background:#0d1525;border:1px solid var(--border);border-radius:8px;padding:12px;overflow-x:auto;font-size:12px;font-family:'JetBrains Mono',monospace;color:var(--muted)}
+  .tldr{font-size:15px;color:#e6eef8;line-height:1.7;margin-bottom:16px}
+  footer{margin-top:32px;padding-top:16px;border-top:1px solid var(--border);color:var(--muted);font-size:12px}
+  .section-list{list-style:none;padding:0}
+  .section-list li{padding:6px 0;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:baseline}
+  .section-list li:last-child{border-bottom:none}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>Rider Lane Report</h1>
+<p class="tagline">Suarez Food Hub — TECHNICAL-SUGGESTIONS Sprint &bull; 2026-09-20 &bull; Agent 3 &bull; <code>fix/tsug-rider</code></p>
+
+<!-- TL;DR -->
+<div class="card">
+<h2>TL;DR</h2>
+<p class="tldr">
+Fixed the rider lockout bug where toggling availability and logging out wrote <code>is_active=false</code>, which the login/proxy gate treated as "account disabled" — preventing the rider from signing in again. The rider app now exclusively writes <code>rider_status</code> (<code>available</code>/<code>offline</code>) and never touches <code>is_active</code>. Also switched login to email-only (frontend), added "Create an account" and improved "Back to website" links with safe production-env handling, improved the pending-approval login message, added a post-login approval banner via unread notification check, and added payment method display on Available Deliveries cards and the deliveries history page.
+</p>
+</div>
+
+<!-- What Changed -->
+<div class="card">
+<h2>What Changed and Why</h2>
+<table>
+<thead><tr><th>Step</th><th>What</th><th>Why</th></tr></thead>
+<tbody>
+<tr><td>3.1</td><td>Login switched to email-only: label "Email", type="email", removed <code>lookupUsername</code> import/branch, error copy "Invalid email or password"</td><td>D2 binding decision: email-only frontend login. Removes username lookup friction and the anon-callable email lookup RPC exposure from the UI.</td></tr>
+<tr><td>3.2</td><td>Lockout fix: <code>layout.tsx</code> reads <code>rider_status</code> (not <code>wi_active</code>) for online state; <code>toggleAvailability</code> writes <code>rider_status: "available"|"offline"</code>; <code>handleLogout</code> writes <code>rider_status: "offline"</code></td><td>Root cause of "rider logs out and can't sign in again": writing <code>is_active=false</code> triggers the login/proxy gate that blocks the session. <code>is_active</code> is admin-only (enable/disable account).</td></tr>
+<tr><td>3.3</td><td>"Back to website" link hidden in production when <code>NEXT_PUBLIC_WEB_URL</code> is unset; localhost fallback only when <code>NODE_ENV !== 'production'</code></td><td>Prevents dead/broken link in production if env var is missing.</td></tr>
+<tr><td>3.4</td><td>"New rider? Create an account" link → <code>/register?role=rider</code> with same env handling as 3.3</td><td>Promotes rider signup from the login screen (contract with Agent 4).</td></tr>
+<tr><td>3.5</td><td>Improved pending message: "Application received — you can sign in once an admin approves it." Added post-login approval banner: checks for unread <code>rider_approved</code> notification on dashboard mount, marks it read, shows justApproved banner.</td><td>Pending riders can't sign in, so they never receive the realtime approval event. The notification check bridges this gap — first login after approval shows the banner.</td></tr>
+<tr><td>3.6</td><td>Payment method on Available Deliveries cards: COD → "Cash on Delivery — collect ₱{total}"; GCash → "GCash ({status})". Added to deliveries history page as badge (COD/GCash). Explicit mapping, no ternary copy.</td><td>Riders need payment context before accepting. Data already returned by <code>getOrdersByPendingRiders</code> (select "*") and <code>getOrdersForRider</code> (select "*").</td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- Files Touched -->
+<div class="card">
+<h2>Files Touched</h2>
+<table>
+<thead><tr><th>File</th><th>Action</th><th>Notes</th></tr></thead>
+<tbody>
+<tr><td><code>apps/rider/app/(auth)/login/page.tsx</code></td><td><span class="badge badge-orange">Modified</span></td><td>Email-only login, improved pending message, create account link, back-to-website env handling</td></tr>
+<tr><td><code>apps/rider/app/(rider)/layout.tsx</code></td><td><span class="badge badge-orange">Modified</span></td><td>Lockout fix: read/write rider_status, never is_active</td></tr>
+<tr><td><code>apps/rider/app/(rider)/page.tsx</code></td><td><span class="badge badge-orange">Modified</span></td><td>Post-login approval notification check, payment method on available delivery cards</td></tr>
+<tr><td><code>apps/rider/app/(rider)/deliveries/page.tsx</code></td><td><span class="badge badge-orange">Modified</span></td><td>Added payment_method/payment_status to Delivery interface, COD/GCash badge in list</td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- Agent + Branch Strategy -->
+<div class="card">
+<h2>Agent + Branch Strategy</h2>
+<table>
+<thead><tr><th>Item</th><th>Value</th></tr></thead>
+<tbody>
+<tr><td>Agent</td><td>3 — RIDER lane</td></tr>
+<tr><td>Branch</td><td><code>fix/tsug-rider</code></td></tr>
+<tr><td>Base</td><td><code>origin/develop</code> (tip: <code>chore(db): phase 0 complete</code>)</td></tr>
+<tr><td>Worktree</td><td><code>C:/dev/monorepo/sfh-wt-rider</code></td></tr>
+<tr><td>Full clone</td><td>Yes (<code>--is-shallow-repository</code> = false)</td></tr>
+<tr><td>Commits</td><td>Local only — no push, no PR, no merge. Agent 5 merges.</td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- Decisions -->
+<div class="card">
+<h2>Decisions Asked / Answered</h2>
+<p style="color:var(--muted);font-size:13px;">No questions were asked during this session. All decisions were pre-defined in the task spec (D2, D4, contracts with Agent 4).</p>
+</div>
+
+<!-- Verification -->
+<div class="card">
+<h2>Verification Status</h2>
+<table>
+<thead><tr><th>Claim</th><th>Status</th><th>Evidence</th></tr></thead>
+<tbody>
+<tr><td>Lockout root cause: layout.tsx writes <code>is_active=false</code></td><td><span class="badge badge-green">Verified</span></td><td>Read layout.tsx L100, L112, L119 — all wrote <code>is_active</code></td></tr>
+<tr><td>profile/page.tsx uses rider_status correctly</td><td><span class="badge badge-green">Verified</span></td><td>Read profile/page.tsx L97, L157, L268 — all write <code>rider_status</code></td></tr>
+<tr><td>proxy.ts gate: <code>is_active===false</code> kills session</td><td><span class="badge badge-green">Verified</span></td><td>Read proxy.ts L58</td></tr>
+<tr><td>login gate: <code>is_active===false</code> blocks login</td><td><span class="badge badge-green">Verified</span></td><td>Read login/page.tsx L63 (original)</td></tr>
+<tr><td>No rider app code writes <code>is_active</code> after fix</td><td><span class="badge badge-green">Verified</span></td><td>Grep for <code>is_active</code> in apps/rider — only reads remain in proxy.ts and login/page.tsx</td></tr>
+<tr><td><code>updateRiderStatus</code> in profiles.ts writes both fields</td><td><span class="badge badge-green">Verified</span></td><td>Read profiles.ts L77-88 — used by admin, not by rider app</td></tr>
+<tr><td>Available deliveries data includes <code>payment_method</code></td><td><span class="badge badge-green">Verified</span></td><td><code>getOrdersByPendingRiders</code> uses <code>select("*")</code> — orders.ts L145</td></tr>
+<tr><td>Deliveries history query returns <code>payment_method</code></td><td><span class="badge badge-green">Verified</span></td><td><code>getOrdersForRider</code> uses <code>select("*")</code> — orders.ts L123</td></tr>
+<tr><td>NEXT_PUBLIC_WEB_URL may be unset on rider Vercel</td><td><span class="badge badge-orange">Inference</span></td><td>Not checked live; env handling added defensively per spec</td></tr>
+<tr><td>DB enum payment_method still contains 'maya'</td><td><span class="badge badge-orange">Inference</span></td><td>Not checked; spec states this. Code handles via mapping.</td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- Lockout Fix Trace -->
+<div class="card">
+<h2>Lockout Fix — Full Trace</h2>
+<p style="color:var(--muted);font-size:13px;margin-bottom:12px;">Every write to <code>is_active</code> or <code>rider_status</code> in the rider app was traced. After the fix:</p>
+<table>
+<thead><tr><th>Location</th><th>Before</th><th>After</th></tr></thead>
+<tbody>
+<tr><td><code>layout.tsx:100</code> (mount)</td><td><code>setOnline(data.is_active ?? false)</code></td><td><code>setOnline(data.rider_status === "available" || data.rider_status === "vacant")</code></td></tr>
+<tr><td><code>layout.tsx:112</code> (toggle)</td><td><code>updateProfile(supabase, userId, { is_active: next })</code></td><td><code>updateProfile(supabase, userId, { rider_status: (next ? "available" : "offline") })</code></td></tr>
+<tr><td><code>layout.tsx:119</code> (logout)</td><td><code>updateProfile(supabase, userId, { is_active: false })</code></td><td><code>updateProfile(supabase, userId, { rider_status: "offline" })</code></td></tr>
+<tr><td><code>profile/page.tsx</code> (all 3 writes)</td><td>Already uses <code>rider_status</code></td><td>No change needed</td></tr>
+</tbody>
+</table>
+<h3>Locked-rider recovery query (for Agent 5)</h3>
+<pre>SELECT id, email, first_name, last_name, rider_status, is_active
+FROM profiles
+WHERE role = 'rider'
+  AND is_active = false
+  AND rider_status NOT IN ('pending_approval', 'rejected', 'resigned');
+-- These riders were locked out by the old toggle code and need is_active set back to true.</pre>
+</div>
+
+<!-- Accepted Risk -->
+<div class="card">
+<h2>Accepted Risk (D2)</h2>
+<p style="color:var(--muted);font-size:13px;">
+The <code>lookupUsername</code> RPC in <code>packages/data-access/src/data/profiles.ts:108</code> remains callable by anonymous users via the Supabase service client. This was a pre-existing condition — the RPC allows email lookup by username without authentication. The frontend no longer uses it, but it is not deleted per D2. This should be addressed as a separate hardening task (RLS policy or RPC deprecation).
+</p>
+</div>
+
+<!-- Requests to Other Roles -->
+<div class="card">
+<h2>Requests to Other Roles</h2>
+<table>
+<thead><tr><th>Request</th><th>Target</th><th>Details</th></tr></thead>
+<tbody>
+<tr><td>Set <code>NEXT_PUBLIC_WEB_URL</code> on rider Vercel project</td><td>Jeff / DevOps</td><td>Variable: <code>NEXT_PUBLIC_WEB_URL</code>, value pattern: <code>https://rider.suarezfoodhub.com</code> (or actual rider domain). Without this, "Back to website" and "Create an account" links are hidden in production.</td></tr>
+<tr><td>Recover locked-out riders</td><td>Agent 5 (Integrator)</td><td>Run the locked-rider recovery query above. Set <code>is_active = true</code> for affected riders. These riders had their <code>is_active</code> toggled to false by the old layout.tsx code.</td></tr>
+<tr><td>Agent 4 — register page role preselection</td><td>Agent 4 (Customer)</td><td>Rider login now links to <code>/register?role=rider</code>. Agent 4 should make the register page read this query param to preselect the rider role and jump to the form.</td></tr>
+</tbody>
+</table>
+</div>
+
+<!-- What's Next -->
+<div class="card">
+<h2>What's Next</h2>
+<ul class="section-list">
+<li><span class="ok">&#10003;</span> Rider app builds clean: <code>pnpm --filter rider build</code> passes</li>
+<li><span class="ok">&#10003;</span> Typecheck passes: <code>pnpm run --filter rider typecheck</code></li>
+<li><span class="warn">!</span> Biome check has 3 pre-existing a11y warnings (noLabelWithoutControl on login labels) and 163 warnings in earnings/page.tsx — none from this lane's changes</li>
+<li><span class="warn">!</span> Jeff needs to set <code>NEXT_PUBLIC_WEB_URL</code> on the rider Vercel project for production link visibility</li>
+<li><span class="warn">!</span> Agent 5 must run the locked-rider recovery query after Jeff's go signal</li>
+</ul>
+</div>
+
+<footer>
+  Generated 2026-09-20 &bull; Agent 3 &bull; RIDER lane &bull; <code>fix/tsug-rider</code> &bull; Suarez Food Hub TECHNICAL-SUGGESTIONS Sprint
+</footer>
+
+</div>
+</body>
+</html>

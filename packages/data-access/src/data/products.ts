@@ -12,18 +12,7 @@ export async function getProducts(supabase: TypedSupabaseClient) {
     .is("deleted_at", null)
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: false });
-  // sort_order was added by migration 0020 — the live DB may not have it yet
-  // (the client applies migrations manually). Fall back to created_at ordering
-  // so the menu/inventory never break in the meantime.
-  if (error) {
-    const { data: fallback, error: err2 } = await supabase
-      .from("products")
-      .select("*")
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false });
-    if (err2) return [];
-    return fallback || [];
-  }
+  if (error) return [];
   return data || [];
 }
 
@@ -34,17 +23,7 @@ export async function getProductsWithCategories(supabase: TypedSupabaseClient) {
     .is("deleted_at", null)
     .order("sort_order", { ascending: true })
     .order("created_at", { ascending: false });
-  // Fall back to created_at if sort_order doesn't exist yet (migration 0020 pending).
-  let productList = products;
-  if (error) {
-    const { data: fallback, error: err2 } = await supabase
-      .from("products")
-      .select("*")
-      .is("deleted_at", null)
-      .order("created_at", { ascending: false });
-    if (err2) return [];
-    productList = fallback;
-  }
+  const productList = error ? [] : products;
 
   const { data: categories } = await supabase.from("categories").select("*").is("deleted_at", null);
   const categoryMap = new Map<string, string>();
@@ -112,72 +91,41 @@ export async function deleteProduct(supabase: TypedSupabaseClient, productId: st
 
 /**
  * Move a product up/down WITHIN ITS OWN CATEGORY (never crosses category
- * boundaries). After the move, every product gets a fresh, distinct
- * sort_order equal to its display position — a plain value swap is not
- * enough because products start at sort_order = 0 (migration 0020 default),
- * so swapping 0 <-> 0 would change nothing. Distinct values also keep the
- * customer menu order deterministic (ties were broken only by created_at).
- *
- * Performance:
- *  1. Fast path — move_product() RPC (migration 0023) does the neighbour
- *     lookup, swap and resequencing atomically server-side: ONE round trip.
- *     It also only writes rows whose sort_order actually changes, so the
- *     realtime channel emits ~2 events instead of N.
- *  2. Fallback (migration 0023 not applied yet on this DB) — same local
- *     computation as before, but persisted via ONE batched upsert instead
- *     of one UPDATE per product. The old sequential loop was O(N) network
- *     round trips, which is what made reordering feel slow.
+ * boundaries). Uses the move_product() RPC (migration 0023) which handles
+ * the neighbour lookup, swap and resequencing atomically server-side.
  */
 export async function moveProduct(
   supabase: TypedSupabaseClient,
   productId: string,
   direction: "up" | "down",
-  products: (Product & { category_id: string | null; sort_order: number })[] = [],
+  _products: (Product & { category_id: string | null; sort_order: number })[] = [],
 ) {
   const rpcResult = await (supabase as any).rpc("move_product", {
     p_product_id: productId,
     p_direction: direction,
   });
   if (!rpcResult.error) return { error: null };
-  // PGRST202 / 404 => function missing (migration pending); fall through.
 
-  const idx = products.findIndex((p) => p.id === productId);
-  if (idx === -1) return { error: new Error("Product not found") };
-  const current = products[idx];
+  // Surface the RPC error directly instead of silently falling through
+  // to a broken client-side upsert fallback.
+  const msg = rpcResult.error?.message || "Failed to reorder product";
+  return { error: new Error(msg) };
+}
 
-  // The inventory list is flat (ordered by sort_order/created_at), so the
-  // nearest product of the SAME category is not necessarily the row directly
-  // above/below — scan for it and skip products from other categories.
-  let otherIdx = -1;
-  if (direction === "up") {
-    for (let i = idx - 1; i >= 0; i--) {
-      if (products[i].category_id === current.category_id) {
-        otherIdx = i;
-        break;
-      }
-    }
-  } else {
-    for (let i = idx + 1; i < products.length; i++) {
-      if (products[i].category_id === current.category_id) {
-        otherIdx = i;
-        break;
-      }
-    }
-  }
-  if (otherIdx === -1) return { error: null }; // already first/last in its category
-
-  // Swap the two display positions, then reassign sort_order = display index
-  // for the whole list so every product gets a distinct value.
-  const reordered = [...products];
-  [reordered[idx], reordered[otherIdx]] = [reordered[otherIdx], reordered[idx]];
-
-  const rows = reordered.map((p, pos) => ({
-    id: p.id,
-    sort_order: pos,
-    updated_at: new Date().toISOString(),
-  }));
-  const { error } = await (supabase as any).from("products").upsert(rows, { onConflict: "id" });
-  return { error };
+/**
+ * Bulk reorder products within a category via the reorder_products() RPC
+ * (migration 0028). p_ids is the desired top-to-bottom order of product
+ * UUIDs for the selected category.
+ */
+export async function reorderProducts(
+  supabase: TypedSupabaseClient,
+  productIds: string[],
+): Promise<{ error: Error | null }> {
+  const { error } = await (supabase as any).rpc("reorder_products", {
+    p_ids: productIds,
+  });
+  if (error) return { error: new Error(error.message) };
+  return { error: null };
 }
 
 export async function generateUniqueSlug(supabase: TypedSupabaseClient, baseSlug: string, excludeId?: string) {
@@ -351,4 +299,44 @@ export async function deductStockForOrderIfNeeded(
   }
 
   return { skipped: false, error: deductError };
+}
+
+/**
+ * Restore stock for all items in an order that was cancelled after stock had
+ * been deducted. Symmetric with deductStockForOrderIfNeeded — keyed on the
+ * confirmed_at marker that deduct stamps.
+ *
+ * Call this ONLY when status === "cancelled" && confirmed_at was set before
+ * the status update AND prevStatus !== "delivered". The caller is responsible
+ * for that guard; this function unconditionally restores.
+ *
+ * EXACT parity with the inline loop previously duplicated in admin/staff
+ * api/orders routes: confirmed_at marker, variant match by name, non-atomic
+ * loop (last-writer-wins on concurrent restores).
+ */
+export async function restoreStockForOrder(
+  supabase: TypedSupabaseClient,
+  orderId: string,
+): Promise<{ error: Error | null }> {
+  const { data: items } = await supabase.from("order_items").select("*").eq("order_id", orderId);
+  let restoreError: { message?: string } | null = null;
+  if (items && items.length > 0) {
+    for (const item of items) {
+      if (item.variant_name) {
+        const { data: variants } = await supabase
+          .from("product_variants")
+          .select("id, name")
+          .eq("product_id", item.product_id);
+        const match = (variants || []).find((v: { name: string; id: string }) => v.name === item.variant_name);
+        if (match) {
+          const { error } = await restoreVariantStock(supabase, match.id, item.quantity);
+          if (error) restoreError = error;
+        }
+      } else {
+        const { error } = await restoreStock(supabase, item.product_id, item.quantity);
+        if (error) restoreError = error;
+      }
+    }
+  }
+  return { error: restoreError ? new Error(restoreError.message || "Failed to restore stock") : null };
 }

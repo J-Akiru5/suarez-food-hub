@@ -21,8 +21,7 @@
     "apps/*/components/MapComponent.tsx",
     "apps/web/components/Navbar.tsx",
     "apps/web/components/AuthNavbar.tsx",
-    "apps/rider/public/sw.js",
-    "apps/rider/temp.css"
+    "apps/rider/public/sw.js"
   ],
   "ignoreDependencies": ["@repo/supabase", "@types/leaflet", "pg", "turbo-ignore"],
   "ignoreBinaries": ["trufflehog"]

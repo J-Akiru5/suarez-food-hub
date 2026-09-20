@@ -30,7 +30,7 @@
 
     <section class="card">
       <h2 style="margin:0 0 8px">Quick summary</h2>
-      <p style="margin:0;color:var(--muted)">Multiple Next.js apps (web, admin, rider, staff), shared workspace packages, Prisma + Postgres, Supabase integrations, and Vercel deployment.</p>
+      <p style="margin:0;color:var(--muted)">Multiple Next.js apps (web, admin, rider, staff), shared workspace packages, Supabase CLI migrations, Supabase integrations, and Vercel deployment.</p>
     </section>
 
     <section class="card">
@@ -53,13 +53,13 @@
             <tr><td>UI</td><td>React</td><td>UI library</td><td>Builds interactive frontend</td></tr>
             <tr><td>Types</td><td>TypeScript</td><td>Static typing</td><td>Type safety and tooling</td></tr>
             <tr><td>Styling</td><td>Tailwind CSS</td><td>Utility CSS</td><td>Rapid component styling</td></tr>
-            <tr><td>DB / ORM</td><td>Prisma, @prisma/client, pg</td><td>DB schema & client</td><td>Schema, migrations and typed Postgres client</td></tr>
+            <tr><td>DB / ORM</td><td>Supabase CLI</td><td>Database migration tool</td><td>Manages schema migrations and database workflows</td></tr>
             <tr><td>Auth / DB SDK</td><td>@supabase/supabase-js, @supabase/ssr</td><td>Supabase SDK</td><td>Client and SSR helpers for Supabase (DB & auth)</td></tr>
             <tr><td>UI primitives</td><td>@radix-ui, lucide-react</td><td>UI components</td><td>Accessible primitives and icons</td></tr>
             <tr><td>Maps</td><td>Leaflet, react-leaflet</td><td>Mapping</td><td>Delivery maps and geolocation</td></tr>
             <tr><td>Charts</td><td>recharts</td><td>Charts</td><td>Admin dashboard visualizations</td></tr>
             <tr><td>Testing</td><td>vitest, @playwright/test</td><td>Unit & E2E</td><td>Unit tests and browser E2E tests</td></tr>
-            <tr><td>Dev tools</td><td>tsx, prisma CLI</td><td>Dev helpers</td><td>Run TS scripts; manage DB migrations & seed</td></tr>
+            <tr><td>Dev tools</td><td>tsx</td><td>Dev helpers</td><td>Run TS scripts; manage DB migrations & seed</td></tr>
             <tr><td>Lint / Format</td><td>biome, prettier</td><td>Formatting & lint</td><td>Code style and static checks</td></tr>
             <tr><td>Git hooks / audit</td><td>lefthook, knip</td><td>Pre-commit / audit</td><td>Run hooks and find unused deps</td></tr>
             <tr><td>PDF</td><td>@react-pdf/renderer</td><td>PDF generation</td><td>Generate PDF reports/invoices</td></tr>
@@ -75,7 +75,7 @@
       <ul>
         <li>Deploy target: Vercel — apps include `vercel.json` and Next configs.</li>
         <li>Local dev: run <code>pnpm dev</code> at repo root to start Turbo-powered dev.</li>
-        <li>Database: Prisma is configured at <code>prisma/schema.prisma</code>. Use <code>pnpm db:migrate</code> / <code>pnpm db:seed</code>.</li>
+        <li>Database: Supabase CLI manages migrations via <code>supabase db push</code> and <code>supabase db reset</code>. Use <code>pnpm db:migrate</code> / <code>pnpm db:seed</code>.</li>
       </ul>
     </section>
 

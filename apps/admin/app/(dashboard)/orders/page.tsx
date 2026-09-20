@@ -5,10 +5,9 @@ import { getOrdersWithProfiles } from "@repo/data-access/data/orders";
 import type { Order, Profile } from "@repo/types";
 import { Button, Card, CardContent, Tabs, TabsContent, TabsList, TabsTrigger } from "@repo/ui";
 import { formatCurrency, parseServerDate } from "@repo/utils";
-import { ChevronDown, ChevronUp, Eye, RefreshCw } from "lucide-react";
+import { Eye } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
-import { toast } from "@/lib/use-toast";
 
 const statusTabs = [
   { value: "all", label: "All" },
@@ -48,9 +47,6 @@ export default function OrdersPage() {
   const [orders, setOrders] = useState<OrderWithProfile[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("all");
-  const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
-  const [pendingStatus, setPendingStatus] = useState<Record<string, string>>({});
-  const [pendingPayment, setPendingPayment] = useState<Record<string, string>>({});
 
   const fetchOrders = useCallback(async () => {
     const data = await getOrdersWithProfiles(supabase, {
@@ -72,53 +68,15 @@ export default function OrdersPage() {
       })
       .subscribe();
 
+    const pollInterval = setInterval(() => {
+      fetchOrders();
+    }, 15000);
+
     return () => {
       supabase.removeChannel(channel);
+      clearInterval(pollInterval);
     };
   }, [supabase, fetchOrders]);
-
-  async function updateStatus(orderId: string, status: string) {
-    setPendingStatus((p) => ({ ...p, [orderId]: status }));
-    try {
-      // Route through the server API so stock is deducted/restored correctly and
-      // staff are notified on confirm — a direct client-side write would bypass it.
-      const res = await fetch("/api/orders", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ id: orderId, status }),
-      });
-      const data = await res.json();
-      if (!data.success) {
-        toast({ title: "Error", description: data.error || "Failed to update status.", variant: "destructive" });
-      } else {
-        toast({ title: "Status updated", description: `Order status changed to ${status.replace(/_/g, " ")}.` });
-      }
-    } catch {
-      toast({ title: "Error", description: "Failed to update status.", variant: "destructive" });
-    }
-    setPendingStatus((p) => {
-      const copy = { ...p };
-      delete copy[orderId];
-      return copy;
-    });
-    fetchOrders();
-  }
-
-  async function updatePaymentStatus(orderId: string, payment_status: string) {
-    setPendingPayment((p) => ({ ...p, [orderId]: payment_status }));
-    const { error } = await supabase.from("orders").update({ payment_status }).eq("id", orderId);
-    if (error) {
-      toast({ title: "Error", description: "Failed to update payment status.", variant: "destructive" });
-      setPendingPayment((p) => {
-        const copy = { ...p };
-        delete copy[orderId];
-        return copy;
-      });
-    } else {
-      toast({ title: "Payment updated", description: `Payment status changed to ${payment_status}.` });
-    }
-    fetchOrders();
-  }
 
   function needsAttention(order: OrderWithProfile) {
     return (
@@ -135,10 +93,6 @@ export default function OrdersPage() {
           <h1 className="text-2xl font-bold text-gray-900 font-display">Orders</h1>
           <p className="text-sm text-muted-foreground">Manage and track all orders</p>
         </div>
-        <Button variant="outline" onClick={() => fetchOrders()} className="gap-2">
-          <RefreshCw className="h-4 w-4" />
-          Refresh
-        </Button>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
@@ -208,86 +162,6 @@ export default function OrdersPage() {
                             </Link>
                           </div>
                         </div>
-                      </div>
-
-                      {/* Expandable Details */}
-                      <div className="mt-3">
-                        <button
-                          type="button"
-                          onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}
-                          className="flex items-center gap-1 text-xs text-crimson-600 font-medium hover:text-crimson-700"
-                        >
-                          {expandedOrder === order.id ? (
-                            <ChevronUp className="h-3 w-3" />
-                          ) : (
-                            <ChevronDown className="h-3 w-3" />
-                          )}
-                          {expandedOrder === order.id ? "Hide" : "Show"} details
-                        </button>
-
-                        {expandedOrder === order.id && (
-                          <div className="mt-3 p-3 bg-gray-50 rounded-lg space-y-3">
-                            {/* Order Items */}
-                            <div>
-                              <p className="text-xs font-medium text-gray-500 mb-1">Items</p>
-                              {/* biome-ignore lint/suspicious/noExplicitAny: Order items shape */}
-                              {order.items?.map((item: any, idx: number) => (
-                                // biome-ignore lint/suspicious/noArrayIndexKey: order item index is stable
-                                <div key={idx} className="flex justify-between text-sm">
-                                  <span>
-                                    {item.product?.name || "Product"} x{item.quantity}
-                                  </span>
-                                  <span>{formatCurrency(item.unit_price * item.quantity)}</span>
-                                </div>
-                              ))}
-                              <div className="flex justify-between text-sm font-bold mt-1 pt-1 border-t">
-                                <span>Total</span>
-                                <span>{formatCurrency(order.total)}</span>
-                              </div>
-                            </div>
-
-                            {/* Delivery Address */}
-                            <div>
-                              <p className="text-xs font-medium text-gray-500">Delivery Address</p>
-                              <p className="text-sm">{order.delivery_address}</p>
-                            </div>
-
-                            {/* Status Actions */}
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                              <div>
-                                <p className="text-xs font-medium text-gray-500 mb-1">Payment Status</p>
-                                <select
-                                  value={pendingPayment[order.id] || order.payment_status}
-                                  onChange={(e) => updatePaymentStatus(order.id, e.target.value)}
-                                  className="w-full h-8 text-xs rounded-md border border-gray-200 bg-white px-2"
-                                >
-                                  <option value="pending">Pending</option>
-                                  <option value="verified">Verified</option>
-                                  <option value="rejected">Rejected</option>
-                                  <option value="refunded">Refunded</option>
-                                </select>
-                              </div>
-
-                              <div>
-                                <p className="text-xs font-medium text-gray-500 mb-1">Order Status</p>
-                                <select
-                                  value={pendingStatus[order.id] || order.status}
-                                  onChange={(e) => updateStatus(order.id, e.target.value)}
-                                  className="w-full h-8 text-xs rounded-md border border-gray-200 bg-white px-2"
-                                >
-                                  <option value="pending">Pending</option>
-                                  <option value="confirmed">Confirm & Notify Staff</option>
-                                  <option value="preparing">Preparing</option>
-                                  <option value="out_for_delivery">Out for Delivery</option>
-                                  <option value="delivered">Delivered</option>
-                                  <option value="cancelled" className="text-red-600">
-                                    Cancelled
-                                  </option>
-                                </select>
-                              </div>
-                            </div>
-                          </div>
-                        )}
                       </div>
                     </CardContent>
                   </Card>

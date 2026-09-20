@@ -16,6 +16,8 @@ interface Delivery {
   total: number;
   delivery_fee: number;
   rider_earnings: number;
+  payment_method: string;
+  payment_status: string;
   status: string;
   delivered_at: string;
   created_at: string;
@@ -328,11 +330,24 @@ export default function DeliveriesPage() {
                       ? format(parseServerDate(order.updated_at), "MMM d, h:mm a")
                       : format(parseServerDate(order.created_at), "MMM d, h:mm a")}
                   </span>
-                  {order.status !== "cancelled" && (order.rider_earnings ?? order.delivery_fee) > 0 && (
-                    <span className="font-medium text-green-600">
-                      +₱{Number(order.rider_earnings ?? order.delivery_fee).toFixed(2)}
-                    </span>
-                  )}
+                  <div className="flex items-center gap-2">
+                    {order.status !== "cancelled" && (
+                      <span
+                        className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                          order.payment_method === "cod"
+                            ? "bg-amber-50 text-amber-700"
+                            : "bg-blue-50 text-blue-700"
+                        }`}
+                      >
+                        {order.payment_method === "cod" ? "COD" : "GCash"}
+                      </span>
+                    )}
+                    {order.status !== "cancelled" && (order.rider_earnings ?? order.delivery_fee) > 0 && (
+                      <span className="font-medium text-green-600">
+                        +₱{Number(order.rider_earnings ?? order.delivery_fee).toFixed(2)}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </Link>
             );
