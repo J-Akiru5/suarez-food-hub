@@ -3,6 +3,7 @@
 import { createBrowserTypedClient } from "@repo/data-access/client";
 import { getTodayEarnings } from "@repo/data-access/data/earnings";
 import { getActiveOrderForRider, getPendingOrdersForRider } from "@repo/data-access/data/orders";
+import { markNotificationRead } from "@repo/data-access/data/notifications";
 import { parseServerDate } from "@repo/utils";
 import { eachDayOfInterval, endOfWeek, format, startOfWeek } from "date-fns";
 import {
@@ -168,6 +169,20 @@ export default function RiderDashboard() {
     // fallback. Kept in one place so every directions link starts from the
     // actual restaurant, not the old hardcoded Iloilo City coordinate.
     getBusinessOrigin(supabase).then(setRestaurantOrigin);
+
+    // Check for unread rider_approved notification — fires on first login
+    // after approval (pending riders can't receive the realtime event).
+    const { data: notifs } = await supabase
+      .from("notifications")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("type", "rider_approved")
+      .eq("read", false)
+      .limit(1);
+    if (notifs && notifs.length > 0) {
+      setJustApproved(true);
+      await markNotificationRead(supabase, notifs[0].id);
+    }
 
     // Performance metrics from completed orders
     const completedOrders = (completedResult as any)?.data || [];
@@ -611,6 +626,24 @@ export default function RiderDashboard() {
                 <div className="flex items-start gap-2">
                   <MapPin size={14} className="text-gray-400 mt-0.5 shrink-0" />
                   <p className="text-xs text-gray-600">{order.delivery_address}</p>
+                </div>
+                <div className="flex items-center gap-1.5 text-xs">
+                  {order.payment_method === "cod" ? (
+                    <span className="text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full font-medium">
+                      Cash on Delivery — collect ₱{Number(order.total).toFixed(2)}
+                    </span>
+                  ) : (
+                    <span className="text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full font-medium">
+                      GCash
+                      <span
+                        className={`ml-1 capitalize ${
+                          order.payment_status === "verified" ? "text-green-600" : "text-amber-600"
+                        }`}
+                      >
+                        ({order.payment_status})
+                      </span>
+                    </span>
+                  )}
                 </div>
                 <div className="grid grid-cols-2 gap-2 pt-1">
                   <button
