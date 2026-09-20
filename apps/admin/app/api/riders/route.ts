@@ -40,6 +40,35 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ success: false, error: "Only rider accounts can be deleted here" }, { status: 403 });
   }
 
+  // Guard: refuse hard-delete when the rider has payout history or completed
+  // deliveries — the FKs from rider_earnings/rider_cashouts to profiles are
+  // ON DELETE CASCADE (0001, never changed), so a delete erases that history.
+  // Return 409 so the UI can tell the admin to use "Mark as Resigned" instead.
+  const [earningsCheck, cashoutsCheck, deliveredCheck] = await Promise.all([
+    supabaseAdmin.from("rider_earnings").select("id", { count: "exact", head: true }).eq("rider_id", id),
+    supabaseAdmin.from("rider_cashouts").select("id", { count: "exact", head: true }).eq("rider_id", id),
+    supabaseAdmin
+      .from("orders")
+      .select("id", { count: "exact", head: true })
+      .eq("rider_id", id)
+      .eq("status", "delivered"),
+  ]);
+
+  const hasHistory =
+    (earningsCheck.count ?? 0) > 0 || (cashoutsCheck.count ?? 0) > 0 || (deliveredCheck.count ?? 0) > 0;
+
+  if (hasHistory) {
+    return NextResponse.json(
+      {
+        success: false,
+        error:
+          "This rider has earnings, cashout history, or delivered orders. " +
+          "Use \"Mark as Resigned\" instead — deleting would permanently erase their payout records.",
+      },
+      { status: 409 },
+    );
+  }
+
   const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(id);
   if (authError) {
     return NextResponse.json({ success: false, error: authError.message }, { status: 500 });

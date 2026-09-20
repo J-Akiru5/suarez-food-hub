@@ -301,6 +301,8 @@ export default function RidersPage() {
 
   const rider = selectedRider;
   const isResigned = rider?.rider_status === "resigned";
+  const isRejected = rider?.rider_status === "rejected";
+  const canDelete = isResigned || isRejected;
 
   return (
     <div className="space-y-6">
@@ -445,10 +447,10 @@ export default function RidersPage() {
                     </div>
                   </div>
                 </div>
-                {isResigned && (
+                {canDelete && (
                   <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-red-50 text-red-600 text-xs font-bold border border-red-100">
                     <ShieldAlert className="h-3.5 w-3.5" />
-                    Resigned
+                    {isResigned ? "Resigned" : "Rejected"}
                   </span>
                 )}
               </div>
@@ -604,7 +606,7 @@ export default function RidersPage() {
                       </Button>
                     </>
                   )}
-                  {!isResigned && rider.rider_status !== "pending_approval" && rider.rider_status !== "rejected" && (
+                  {!isResigned && !isRejected && rider.rider_status !== "pending_approval" && (
                     <Button
                       variant="outline"
                       className="text-amber-600 border-amber-200 hover:bg-amber-50 gap-2"
@@ -614,7 +616,7 @@ export default function RidersPage() {
                       Mark as Resigned
                     </Button>
                   )}
-                  {isResigned && (
+                  {canDelete && (
                     <Button
                       variant="outline"
                       className="text-red-600 border-red-200 hover:bg-red-50 gap-2"
@@ -625,10 +627,11 @@ export default function RidersPage() {
                     </Button>
                   )}
                 </div>
-                {isResigned && (
+                {canDelete && (
                   <p className="text-xs text-gray-500 mt-3">
-                    This rider has resigned. You can delete their account permanently — the rider will no longer be able
-                    to log in or appear in assignment lists.
+                    {isResigned
+                      ? "This rider has resigned. You can delete their account permanently — they will no longer be able to log in or appear in assignment lists."
+                      : "This rider was rejected. You can delete their account permanently — they will no longer be able to log in."}
                   </p>
                 )}
               </div>
