@@ -97,7 +97,7 @@ export default function RiderLayout({ children }: { children: React.ReactNode })
         const data = await getProfileById(supabase, user.id);
         if (data) {
           setRiderName(data.first_name || data.last_name || "Rider");
-          setOnline(data.is_active ?? false);
+          setOnline(data.rider_status === "available" || data.rider_status === "vacant");
         }
       }
     };
@@ -109,14 +109,16 @@ export default function RiderLayout({ children }: { children: React.ReactNode })
     if (!supabase || !userId) return;
     const next = !online;
     setOnline(next);
-    await updateProfile(supabase, userId, { is_active: next });
+    await updateProfile(supabase, userId, {
+      rider_status: (next ? "available" : "offline") as any,
+    });
   }, [online, userId]);
 
   const handleLogout = async () => {
     if (online) {
       const supabase = supabaseRef.current;
       if (supabase && userId) {
-        await updateProfile(supabase, userId, { is_active: false });
+        await updateProfile(supabase, userId, { rider_status: "offline" as any });
       }
     }
     const supabase = supabaseRef.current;

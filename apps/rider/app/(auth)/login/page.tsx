@@ -3,12 +3,12 @@
 import { createBrowserTypedClient } from "@repo/data-access/client";
 import { getProfileRole } from "@repo/data-access/data/profiles";
 import { Eye, EyeOff, Truck } from "lucide-react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { lookupUsername } from "../../actions/auth";
 
 export default function LoginPage() {
-  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -21,18 +21,7 @@ export default function LoginPage() {
     setLoading(true);
     setError("");
 
-    let loginEmail = username.trim();
-
-    // If input contains @, treat it as an email directly
-    if (!loginEmail.includes("@")) {
-      const email = await lookupUsername(loginEmail);
-      if (!email) {
-        setError("Invalid username or email");
-        setLoading(false);
-        return;
-      }
-      loginEmail = email;
-    }
+    const loginEmail = email.trim();
 
     const { data, error: authError } = await supabase.auth.signInWithPassword({
       email: loginEmail,
@@ -40,7 +29,7 @@ export default function LoginPage() {
     });
 
     if (authError) {
-      setError(authError.message);
+      setError("Invalid email or password");
       setLoading(false);
       return;
     }
@@ -60,7 +49,13 @@ export default function LoginPage() {
         setLoading(false);
         return;
       }
-      if (profile.is_active === false || profile.rider_status === "pending_approval") {
+      if (profile.is_active === false && profile.rider_status === "pending_approval") {
+        setError("Application received — you can sign in once an admin approves it.");
+        await supabase.auth.signOut();
+        setLoading(false);
+        return;
+      }
+      if (profile.is_active === false) {
         setError("Your account is pending admin approval. Please wait for confirmation.");
         await supabase.auth.signOut();
         setLoading(false);
@@ -92,15 +87,16 @@ export default function LoginPage() {
 
           <div>
             <label suppressHydrationWarning className="block text-sm font-medium text-gray-700 mb-1">
-              Username or Email
+              Email
             </label>
             <input
-              type="text"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
               required
+              autoComplete="email"
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-brand-500 focus:border-brand-500 outline-none transition"
-              placeholder="Enter username or email"
+              placeholder="Enter your email"
             />
           </div>
 
@@ -138,12 +134,36 @@ export default function LoginPage() {
 
         <div className="text-center mt-6 space-y-2">
           <p className="text-brand-100 text-sm">Delivery Rider Portal</p>
-          <a
-            href={process.env.NEXT_PUBLIC_WEB_URL || "http://localhost:3000"}
-            className="inline-block text-brand-200 text-xs underline hover:text-white transition-colors"
-          >
-            &larr; Back to website
-          </a>
+          <p className="text-brand-100 text-xs">
+            New rider?{" "}
+            <Link
+              href={
+                process.env.NEXT_PUBLIC_WEB_URL
+                  ? `${process.env.NEXT_PUBLIC_WEB_URL}/register?role=rider`
+                  : process.env.NODE_ENV !== "production"
+                    ? "http://localhost:3000/register?role=rider"
+                    : "#"
+              }
+              className={`underline transition-colors ${
+                process.env.NEXT_PUBLIC_WEB_URL || process.env.NODE_ENV !== "production"
+                  ? "text-brand-200 hover:text-white"
+                  : "text-brand-300 cursor-default"
+              }`}
+            >
+              Create an account
+            </Link>
+          </p>
+          {process.env.NEXT_PUBLIC_WEB_URL || process.env.NODE_ENV !== "production" ? (
+            <a
+              href={
+                process.env.NEXT_PUBLIC_WEB_URL ||
+                "http://localhost:3000"
+              }
+              className="inline-block text-brand-200 text-xs underline hover:text-white transition-colors"
+            >
+              &larr; Back to website
+            </a>
+          ) : null}
         </div>
       </div>
     </div>
