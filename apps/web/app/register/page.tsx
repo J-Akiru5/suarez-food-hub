@@ -3,8 +3,8 @@
 import { createBrowserTypedClient } from "@repo/data-access/client";
 import { ArrowLeft, Bike, Eye, EyeOff, Image as ImageIcon, Loader2, Upload, User } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useRef, useState } from "react";
 import Swal from "sweetalert2";
 
 const PH_REGEX = /^(?:\+63|0)9\d{9}$/;
@@ -12,9 +12,35 @@ const PH_REGEX = /^(?:\+63|0)9\d{9}$/;
 type Role = "customer" | "rider";
 
 export default function Register() {
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen flex items-center justify-center">
+          <Loader2 size={32} className="animate-spin text-[#F08013]" />
+        </div>
+      }
+    >
+      <RegisterForm />
+    </Suspense>
+  );
+}
+
+function RegisterForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [step, setStep] = useState<"role" | "form">("role");
   const [role, setRole] = useState<Role>("customer");
+
+  useEffect(() => {
+    const roleParam = searchParams.get("role");
+    if (roleParam === "rider") {
+      setRole("rider");
+      setStep("form");
+    } else if (roleParam === "customer") {
+      setRole("customer");
+      setStep("form");
+    }
+  }, [searchParams]);
 
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
