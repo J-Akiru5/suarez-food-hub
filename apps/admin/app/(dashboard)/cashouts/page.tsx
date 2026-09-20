@@ -28,14 +28,24 @@ export default function CashoutsPage() {
   const [cashouts, setCashouts] = useState<Cashout[]>([]);
   const [loading, setLoading] = useState(true);
   const [processingId, setProcessingId] = useState<string | null>(null);
-  const [filter, setFilter] = useState<CashoutStatus | "all">("requested");
+  const [filter, setFilter] = useState<CashoutStatus | "all">("all");
   const [gcashRefInput, setGcashRefInput] = useState<Record<string, string>>({});
   const [notesInput, setNotesInput] = useState<Record<string, string>>({});
 
   const fetchCashouts = useCallback(async () => {
     const data = await getCashouts(supabase);
-    const filtered = filter !== "all" ? (data as Cashout[]).filter((c) => c.status === filter) : (data as Cashout[]);
-    setCashouts(filtered || []);
+    let result = filter !== "all" ? (data as Cashout[]).filter((c) => c.status === filter) : (data as Cashout[]);
+    // Within "All", sort requested first so pending requests are never buried
+    if (filter === "all") {
+      const statusOrder: Record<CashoutStatus, number> = {
+        requested: 0,
+        approved: 1,
+        paid: 2,
+        rejected: 3,
+      };
+      result = [...result].sort((a, b) => (statusOrder[a.status] ?? 9) - (statusOrder[b.status] ?? 9));
+    }
+    setCashouts(result || []);
     setLoading(false);
   }, [filter, supabase]);
 
@@ -79,11 +89,11 @@ export default function CashoutsPage() {
   }
 
   const tabs: { value: CashoutStatus | "all"; label: string }[] = [
+    { value: "all", label: "All" },
     { value: "requested", label: "Requested" },
     { value: "approved", label: "Approved" },
     { value: "paid", label: "Paid" },
     { value: "rejected", label: "Rejected" },
-    { value: "all", label: "All" },
   ];
 
   return (
