@@ -155,10 +155,7 @@ export default function LoginPage() {
           </p>
           {process.env.NEXT_PUBLIC_WEB_URL || process.env.NODE_ENV !== "production" ? (
             <a
-              href={
-                process.env.NEXT_PUBLIC_WEB_URL ||
-                "http://localhost:3000"
-              }
+              href={process.env.NEXT_PUBLIC_WEB_URL || "http://localhost:3000"}
               className="inline-block text-brand-200 text-xs underline hover:text-white transition-colors"
             >
               &larr; Back to website

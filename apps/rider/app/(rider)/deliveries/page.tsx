@@ -334,9 +334,7 @@ export default function DeliveriesPage() {
                     {order.status !== "cancelled" && (
                       <span
                         className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
-                          order.payment_method === "cod"
-                            ? "bg-amber-50 text-amber-700"
-                            : "bg-blue-50 text-blue-700"
+                          order.payment_method === "cod" ? "bg-amber-50 text-amber-700" : "bg-blue-50 text-blue-700"
                         }`}
                       >
                         {order.payment_method === "cod" ? "COD" : "GCash"}

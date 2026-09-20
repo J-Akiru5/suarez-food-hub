@@ -151,6 +151,10 @@ export async function POST(request: NextRequest) {
     if (status === "delivered") {
       extraFields.delivered_at = new Date().toISOString();
       if (delivery_proof_url) extraFields.delivery_proof_url = delivery_proof_url;
+      // COD orders: rider collects cash on delivery — auto-verify payment
+      if ((order as any).payment_method === "cod") {
+        extraFields.payment_status = "verified";
+      }
     }
 
     const { error: updateError } = await updateOrderStatus(supabase, order_id, status, extraFields);
