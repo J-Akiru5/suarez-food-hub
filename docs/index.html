@@ -17,7 +17,7 @@
   <main class="container">
     <section class="card">
       <h2>Quick summary</h2>
-      <p>This monorepo contains multiple Next.js apps (web, admin, rider, staff), shared packages, Prisma for Postgres, and is deployed to Vercel.</p>
+      <p>This monorepo contains multiple Next.js apps (web, admin, rider, staff), shared packages, Supabase CLI migrations, and is deployed to Vercel.</p>
     </section>
 
     <section class="card">
@@ -77,9 +77,9 @@
             </tr>
             <tr>
               <td>Database / ORM</td>
-              <td>Prisma, @prisma/client, pg</td>
-              <td>DB schema & client</td>
-              <td>Defines schema, migrations, and typed DB client for Postgres</td>
+              <td>Supabase CLI</td>
+              <td>Database migration tool</td>
+              <td>Manages schema migrations and database workflows</td>
             </tr>
             <tr>
               <td>Auth / DB SDK</td>
@@ -113,7 +113,7 @@
             </tr>
             <tr>
               <td>Dev tooling</td>
-              <td>tsx, prisma CLI</td>
+              <td>tsx</td>
               <td>Dev helpers</td>
               <td>Run TS scripts and DB migrations/seeds</td>
             </tr>
@@ -157,7 +157,7 @@
       <ul>
         <li>Deploy target: Vercel — apps contain `vercel.json` and Next configs.</li>
         <li>Local dev: run `pnpm dev` from repo root to start Turbo-powered dev for all apps.</li>
-        <li>Database: Prisma is configured at `prisma/schema.prisma`. Use `pnpm db:migrate` / `pnpm db:seed`.</li>
+        <li>Database: Supabase CLI manages migrations via `supabase db push` and `supabase db reset`. Use `pnpm db:migrate` / `pnpm db:seed`.</li>
       </ul>
     </section>
 

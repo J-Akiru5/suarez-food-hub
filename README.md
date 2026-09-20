@@ -1,6 +1,6 @@
 # Suarez Food Hub (SFH) — Capstone Project
 
-A full-stack food ordering platform for Suarez Food Hub, a Filipino siomai and food business in Janiuay, Iloilo. Built with Next.js 15, Supabase, and Tailwind CSS in a Turborepo monorepo.
+A full-stack food ordering platform for Suarez Food Hub, a Filipino siomai and food business in Janiuay, Iloilo. Built with Next.js 16, Supabase, and Tailwind CSS in a Turborepo monorepo.
 
 ## Architecture — 4 Apps
 
@@ -50,9 +50,18 @@ Copy `.env.example` to each app's root:
 
 ### Database Setup
 
-1. Run `supabase/migrations/0001_capstone_full.sql` in Supabase SQL Editor — creates all tables, enums, RLS policies, triggers, storage buckets.
-2. Run `supabase/migrations/0002_psgc_seed.sql` — seeds Philippine regions, Iloilo province/cities/barangays.
-3. Run `supabase/migrations/0003_demo_seed.sql` — inserts demo categories and products.
+Migrations are managed via the Supabase CLI. See `supabase/migrations/README.md` for the full workflow.
+
+```bash
+# Apply all pending migrations
+npx supabase db push --db-url "$DATABASE_URL"
+
+# Check migration status
+npx supabase migration list --db-url "$DATABASE_URL"
+
+# Create a new migration
+pnpm db:new <migration_name>
+```
 
 ### Development
 

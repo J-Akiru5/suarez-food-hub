@@ -16,23 +16,16 @@
     "pipeline": "biome check . && turbo typecheck && turbo build && pnpm --filter @repo/utils test",
     "smoke": "pnpm --filter e2e test",
     "knip": "knip",
-    "db:migrate": "prisma migrate dev",
-    "db:push": "prisma db push",
-    "db:seed": "prisma db seed",
-    "db:studio": "prisma studio",
-    "db:generate": "prisma generate",
+    "db:new": "supabase migration new",
     "prepare": "husky",
     "seed:users": "tsx scripts/seed-users.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.16",
-    "@prisma/client": "^5.20.0",
     "@vitest/coverage-v8": "^4.1.9",
     "husky": "^9.1.7",
     "knip": "^6.15.0",
     "lefthook": "^2.1.9",
-    "pg": "^8.22.0",
-    "prisma": "^5.20.0",
     "tsx": "^4.19.0",
     "turbo": "^2.10.4",
     "turbo-ignore": "^2.10.4",
@@ -42,14 +35,9 @@
   "pnpm": {
     "overrides": {},
     "onlyBuiltDependencies": [
-      "prisma",
-      "@prisma/engines",
       "esbuild",
       "lefthook"
     ]
-  },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
     "next": "^16.2.10",

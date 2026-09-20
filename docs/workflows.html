@@ -830,11 +830,9 @@ npx lefthook run pre-commit</pre>
         <table>
           <thead><tr><th>Command</th><th>What it runs</th><th>Description</th></tr></thead>
           <tbody>
-            <tr><td><code>pnpm db:migrate</code></td><td><code>prisma migrate dev</code></td><td>Create and apply dev migrations</td></tr>
-            <tr><td><code>pnpm db:push</code></td><td><code>prisma db push</code></td><td>Push schema changes directly (no migration file)</td></tr>
-            <tr><td><code>pnpm db:seed</code></td><td><code>prisma db seed</code> (runs <code>tsx prisma/seed.ts</code>)</td><td>Seed database with categories and products</td></tr>
-            <tr><td><code>pnpm db:studio</code></td><td><code>prisma studio</code></td><td>Open Prisma Studio GUI for data browsing</td></tr>
-            <tr><td><code>pnpm db:generate</code></td><td><code>prisma generate</code></td><td>Regenerate Prisma client after schema changes</td></tr>
+            <tr><td><code>pnpm db:migrate</code></td><td><code>supabase db push</code></td><td>Push schema changes to Supabase database</td></tr>
+            <tr><td><code>pnpm db:reset</code></td><td><code>supabase db reset</code></td><td>Reset database and re-run all migrations</td></tr>
+            <tr><td><code>pnpm db:seed</code></td><td><code>tsx prisma/seed.ts</code></td><td>Seed database with categories and products</td></tr>
           </tbody>
         </table>
       </div>
@@ -883,7 +881,7 @@ npx lefthook run pre-commit</pre>
             </tr>
             <tr>
               <td><code>DATABASE_URL</code></td>
-              <td>Turborepo cache key, Prisma</td>
+              <td>Turborepo cache key, Supabase CLI</td>
               <td>Direct Postgres connection string</td>
               <td><span class="tag tag-secret">Secret</span></td>
             </tr>
