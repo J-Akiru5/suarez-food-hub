@@ -163,13 +163,49 @@ export default function RidersPage() {
       title: "Welcome to the team!",
       message: "Your rider application has been approved. You can now accept deliveries.",
     });
-    Swal.fire({
+
+    const riderUrl = process.env.NEXT_PUBLIC_RIDER_URL || "";
+    const approvalMessage =
+      `You're approved as a Suarez Food Hub rider! ` +
+      `Download the rider app${riderUrl ? ` at ${riderUrl}` : ""} and log in with your registered account to start accepting deliveries.`;
+
+    const isPhMobile = /^(\+63|0)9\d{9}$/.test(rider.phone || "");
+
+    await Swal.fire({
       icon: "success",
       title: "Approved!",
-      text: `${rider.first_name} ${rider.last_name} has been approved.`,
-      timer: 2000,
-      showConfirmButton: false,
+      html: `<p style="margin-bottom:12px">${rider.first_name} ${rider.last_name} has been approved.</p>
+        <div style="text-align:left;background:#f9fafb;border-radius:8px;padding:12px;font-size:13px;color:#374151;border:1px solid #e5e7eb">
+          ${approvalMessage}
+        </div>`,
+      showCancelButton: isPhMobile,
+      cancelButtonText: "Text rider",
+      cancelButtonColor: "#2563eb",
+      confirmButtonText: "Copy message",
+      confirmButtonColor: "#6b7280",
+      didOpen: () => {
+        const copyBtn = Swal.getConfirmButton();
+        if (copyBtn) {
+          copyBtn.onclick = () => {
+            navigator.clipboard.writeText(approvalMessage).then(() => {
+              copyBtn.textContent = "Copied!";
+              setTimeout(() => {
+                Swal.close();
+              }, 1200);
+            });
+          };
+        }
+        const smsBtn = Swal.getCancelButton();
+        if (smsBtn && isPhMobile) {
+          smsBtn.onclick = () => {
+            const phone = (rider.phone || "").replace(/^0/, "+63");
+            window.open(`sms:${phone}?body=${encodeURIComponent(approvalMessage)}`, "_self");
+            Swal.close();
+          };
+        }
+      },
     });
+
     refreshSelectedRider({ rider_status: "available" as never, is_active: true });
   }
 
