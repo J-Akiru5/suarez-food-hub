@@ -67,6 +67,7 @@ function RegisterForm() {
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    if (loading) return; // guard against concurrent submissions
 
     if (!firstName.trim()) {
       setError("First name is required");
@@ -104,6 +105,17 @@ function RegisterForm() {
     }
 
     setLoading(true);
+
+    const { data: existing } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("username", username.trim())
+      .maybeSingle();
+    if (existing) {
+      setError("Username is already taken");
+      setLoading(false);
+      return;
+    }
 
     const { data, error: authError } = await supabase.auth.signUp({
       email,
@@ -169,22 +181,39 @@ function RegisterForm() {
             }),
           });
         } catch {}
-      }
-    }
 
-    if (role === "rider") {
+        await Swal.fire({
+          title: "Application Submitted!",
+          text: "Your rider application has been submitted! Please wait for admin approval before logging in.",
+          icon: "success",
+          confirmButtonColor: "#F08013",
+        });
+        router.push("/");
+      } else {
+        await Swal.fire({
+          title: "Account Created!",
+          text: "Welcome to Suarez Food Hub! You can now log in with your new account.",
+          icon: "success",
+          confirmButtonColor: "#F08013",
+        });
+        router.push("/login");
+      }
+      // NOTE: Do NOT call router.refresh() here — it races against router.push() and
+      // triggers the proxy to detect an active session on /register, redirecting
+      // the user to / instead of the intended destination.
+    } else {
+      // data.user is null — Supabase has email confirmation enabled.
+      // The auth account was created but the session is not yet active.
+      // The profile will be created via a Supabase trigger or on first login.
       await Swal.fire({
-        title: "Application Submitted!",
-        text: "Your rider application has been submitted! Please wait for admin approval before logging in.",
-        icon: "success",
+        title: "Check Your Email!",
+        text: "We've sent a confirmation link to your email address. Please confirm it to activate your account.",
+        icon: "info",
         confirmButtonColor: "#F08013",
       });
-      router.push("/");
-    } else {
       router.push("/login");
     }
-
-    router.refresh();
+    setLoading(false);
   };
 
   return (
