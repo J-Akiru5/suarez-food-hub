@@ -1,9 +1,29 @@
-import { createServiceClient } from "@repo/data-access/client";
+import { createAuthClient, createServiceClient } from "@repo/data-access/client";
 import { createNotifications } from "@repo/data-access/data/notifications";
+import { getProfileRole } from "@repo/data-access/data/profiles";
+import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
   try {
+    const cookieStore = await cookies();
+    const authSupabase = createAuthClient(cookieStore);
+    const {
+      data: { user },
+    } = await authSupabase.auth.getUser();
+
+    if (!user) return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
+
+    const profile = await getProfileRole(authSupabase, user.id);
+
+    if (!profile || (profile.role !== "staff" && profile.role !== "admin")) {
+      return NextResponse.json({ success: false, error: "Forbidden" }, { status: 403 });
+    }
+
+    if (profile.is_active === false) {
+      return NextResponse.json({ success: false, error: "Account inactive" }, { status: 403 });
+    }
+
     const serviceSupabase = createServiceClient();
     const body = await req.json();
     const { email, password, first_name, last_name, username, phone, vehicle_type, plate_number, license_number } =
