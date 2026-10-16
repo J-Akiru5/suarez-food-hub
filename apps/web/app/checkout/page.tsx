@@ -26,6 +26,7 @@ interface CartItem {
   quantity: number;
   variant: string;
   variantId?: string;
+  isPack?: boolean;
 }
 
 interface Business {

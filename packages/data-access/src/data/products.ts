@@ -187,6 +187,64 @@ export async function deductVariantStock(supabase: TypedSupabaseClient, variantI
 }
 
 /**
+ * Deduct whole PACKS from a product's pack_stock. A pack line item means the
+ * customer bought `quantity` packs (each of `pack_size` pieces), so we decrement
+ * the pack counter — not the piece/variant quantity. Availability is only flipped
+ * to sold_out when BOTH the piece stock AND the pack stock are exhausted.
+ */
+export async function deductPackStock(supabase: TypedSupabaseClient, productId: string, quantity: number) {
+  const { data: product } = await supabase
+    .from("products")
+    .select("quantity, pack_stock, pack_size, name")
+    .eq("id", productId)
+    .single();
+
+  if (!product) return { error: new Error("Product not found") };
+
+  const newPackStock = Math.max(0, (product.pack_stock ?? 0) - quantity);
+  // Only mark sold_out when no pieces AND no packs remain.
+  const soldOut = newPackStock <= 0 && (product.quantity ?? 0) <= 0;
+  const { error } = await supabase
+    .from("products")
+    .update({
+      pack_stock: newPackStock,
+      availability: soldOut ? "sold_out" : product.availability,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", productId);
+
+  return { error, newPackStock, name: product.name };
+}
+
+/**
+ * Restore whole PACKS to a product's pack_stock (used when a confirmed pack
+ * order is cancelled). Symmetric with deductPackStock — and re-opens a
+ * sold_out product once packs (or pieces) are available again.
+ */
+export async function restorePackStock(supabase: TypedSupabaseClient, productId: string, quantity: number) {
+  const { data: product } = await supabase
+    .from("products")
+    .select("quantity, pack_stock, availability")
+    .eq("id", productId)
+    .single();
+  if (!product) return { error: new Error("Product not found") };
+
+  const newPackStock = (product.pack_stock ?? 0) + quantity;
+  // Re-open the product if it has stock again (packs OR pieces).
+  const available = newPackStock > 0 || (product.quantity ?? 0) > 0;
+  const { error } = await supabase
+    .from("products")
+    .update({
+      pack_stock: newPackStock,
+      availability: available ? "available" : product.availability,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", productId);
+
+  return { error, newPackStock };
+}
+
+/**
  * Restore stock for a product (used when a confirmed order is cancelled).
  * Only restore up to the quantity that was deducted.
  */
@@ -252,7 +310,11 @@ export async function deductStockForOrderIfNeeded(
   let deductError: { message?: string } | null = null;
   if (items && items.length > 0) {
     for (const item of items) {
-      if (item.variant_name) {
+      if (item.is_pack) {
+        // Pack line item: decrement the pack counter, not piece/variant stock.
+        const result = await deductPackStock(supabase, item.product_id, item.quantity);
+        if (result?.error && !deductError) deductError = result.error;
+      } else if (item.variant_name) {
         const { data: variants } = await supabase
           .from("product_variants")
           .select("id, name, quantity")
@@ -322,7 +384,10 @@ export async function restoreStockForOrder(
   let restoreError: { message?: string } | null = null;
   if (items && items.length > 0) {
     for (const item of items) {
-      if (item.variant_name) {
+      if (item.is_pack) {
+        const { error } = await restorePackStock(supabase, item.product_id, item.quantity);
+        if (error) restoreError = error;
+      } else if (item.variant_name) {
         const { data: variants } = await supabase
           .from("product_variants")
           .select("id, name")

@@ -162,6 +162,8 @@ export interface Database {
           availability: "available" | "sold_out";
           is_featured: boolean;
           sort_order: number;
+          pack_size: number | null;
+          pack_stock: number;
           created_at: string;
           updated_at: string;
         };
@@ -181,6 +183,8 @@ export interface Database {
           availability?: "available" | "sold_out";
           is_featured?: boolean;
           sort_order?: number;
+          pack_size?: number | null;
+          pack_stock?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -200,6 +204,8 @@ export interface Database {
           availability?: "available" | "sold_out";
           is_featured?: boolean;
           sort_order?: number;
+          pack_size?: number | null;
+          pack_stock?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -365,6 +371,7 @@ export interface Database {
           quantity: number;
           unit_price: number;
           total_price: number;
+          is_pack: boolean;
         };
         Insert: {
           id?: string;
@@ -376,6 +383,7 @@ export interface Database {
           quantity?: number;
           unit_price: number;
           total_price: number;
+          is_pack?: boolean;
         };
         Update: {
           id?: string;
@@ -387,6 +395,7 @@ export interface Database {
           quantity?: number;
           unit_price?: number;
           total_price?: number;
+          is_pack?: boolean;
         };
         Relationships: [];
       };
