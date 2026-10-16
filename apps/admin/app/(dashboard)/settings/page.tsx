@@ -80,6 +80,7 @@ interface BusinessConfig {
   delivery_fee: number;
   delivery_tiers: { max_km: number; fee: number }[];
   max_delivery_km: number;
+  max_active_deliveries: number;
   delivery_areas: string;
   operating_hours: OperatingHours | null;
   about_content: AboutContent | null;
@@ -186,6 +187,7 @@ export default function SettingsPage() {
     delivery_fee: 20,
     delivery_tiers: DEFAULT_TIERS,
     max_delivery_km: 15,
+    max_active_deliveries: 2,
     delivery_areas: "",
     operating_hours: null,
     about_content: null,
@@ -213,6 +215,7 @@ export default function SettingsPage() {
         delivery_fee: Number(data.delivery_fee) || 20,
         delivery_tiers: tiers,
         max_delivery_km: Number(data.max_delivery_km) || tiers[tiers.length - 1]?.max_km || 15,
+        max_active_deliveries: Number(data.max_active_deliveries) || 2,
         delivery_areas: data.delivery_areas || "",
         operating_hours: data.operating_hours || null,
         about_content: data.about_content || null,
@@ -291,6 +294,7 @@ export default function SettingsPage() {
       delivery_fee: config.delivery_fee,
       delivery_tiers: tiers,
       max_delivery_km: maxKm,
+      max_active_deliveries: Math.max(1, Math.floor(Number(config.max_active_deliveries) || 2)),
       delivery_areas: config.delivery_areas || "063022000",
       operating_hours: config.operating_hours,
       about_content: config.about_content,
@@ -424,6 +428,21 @@ export default function SettingsPage() {
                     onChange={(e) => setConfig((p) => ({ ...p, max_delivery_km: parseFloat(e.target.value) || 0 }))}
                   />
                   <p className="text-xs text-muted-foreground mt-1">Orders beyond this distance are rejected.</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 block mb-1">
+                    Max Active Deliveries per Rider
+                  </label>
+                  <Input
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={config.max_active_deliveries}
+                    onChange={(e) => setConfig((p) => ({ ...p, max_active_deliveries: parseInt(e.target.value) || 1 }))}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Concurrent deliveries a rider may hold. Auto-Assign skips riders at the cap.
+                  </p>
                 </div>
               </div>
 

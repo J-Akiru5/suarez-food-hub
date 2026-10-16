@@ -14,6 +14,7 @@ export type OrderStatus =
   | "confirmed"
   | "preparing"
   | "ready_for_pickup"
+  | "awaiting_rider"
   | "claimed_by_rider"
   | "out_for_delivery"
   | "near_customer"

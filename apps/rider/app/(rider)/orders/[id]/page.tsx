@@ -33,6 +33,7 @@ const STATUS_FLOW = [
   { key: "confirmed", label: "Confirmed", icon: CheckCircle, color: "#3b82f6" },
   { key: "preparing", label: "Preparing", icon: ChefHat, color: "#8b5cf6" },
   { key: "ready_for_pickup", label: "Ready for Pickup", icon: Package, color: "#f59e0b" },
+  { key: "awaiting_rider", label: "Awaiting Your Acceptance", icon: Package, color: "#f59e0b" },
   { key: "claimed_by_rider", label: "Picked Up", icon: Package, color: "#06b6d4" },
   { key: "out_for_delivery", label: "Out for Delivery", icon: Navigation, color: "#f97316" },
   { key: "near_customer", label: "Near Customer", icon: MapPin, color: "#10b981" },

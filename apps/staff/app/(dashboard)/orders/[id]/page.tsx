@@ -2,39 +2,22 @@
 
 import { createBrowserTypedClient } from "@repo/data-access/client";
 import { getOrderById } from "@repo/data-access/data/orders";
-import { getAvailableRiders } from "@repo/data-access/data/profiles";
 import type { Order, Profile } from "@repo/types";
-import {
-  Button,
-  Card,
-  CardContent,
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@repo/ui";
+import { Button, Card, CardContent, Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@repo/ui";
 import { formatCurrency, parseServerDate } from "@repo/utils";
 import {
   ArrowLeft,
   CheckCircle2,
-  Clock,
   Loader2,
   MapPin,
   Phone,
   Printer,
   Search,
-  Send,
   User,
   UserPlus,
   XCircle,
 } from "lucide-react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Swal from "sweetalert2";
@@ -51,6 +34,9 @@ const statusColors: Record<string, string> = {
   confirmed: "bg-blue-100 text-blue-800",
   preparing: "bg-purple-100 text-purple-800",
   ready_for_pickup: "bg-indigo-100 text-indigo-800",
+  awaiting_rider: "bg-amber-100 text-amber-800",
+  claimed_by_rider: "bg-teal-100 text-teal-800",
+  near_customer: "bg-cyan-100 text-cyan-800",
   out_for_delivery: "bg-orange-100 text-orange-800",
   delivered: "bg-green-100 text-green-800",
   cancelled: "bg-red-100 text-red-800",
@@ -66,13 +52,9 @@ export default function OrderDetailPage() {
   const router = useRouter();
   const supabaseRef = useRef(createBrowserTypedClient());
   const [order, setOrder] = useState<OrderDetail | null>(null);
-  const [riders, setRiders] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState(false);
   const [realtimeStatus, setRealtimeStatus] = useState<string>("connecting");
-  const [inviteModalOpen, setInviteModalOpen] = useState(false);
-  const [selectedRiderIds, setSelectedRiderIds] = useState<string[]>([]);
-  const [sendingInvites, setSendingInvites] = useState(false);
   const [proofModalUrl, setProofModalUrl] = useState<string | null>(null);
 
   const orderId = params.id as string;
@@ -85,17 +67,9 @@ export default function OrderDetailPage() {
     setLoading(false);
   }, [orderId]);
 
-  const fetchRiders = useCallback(async () => {
-    // Pass current rider ID so they appear in dropdown even if occupied
-    const currentRiderId = order?.rider_id || undefined;
-    const data = await getAvailableRiders(supabaseRef.current, currentRiderId);
-    setRiders((data as Profile[]) || []);
-  }, [order?.rider_id]);
-
   useEffect(() => {
     fetchOrder();
-    fetchRiders();
-  }, [fetchOrder, fetchRiders]);
+  }, [fetchOrder]);
 
   // Realtime auto-refresh when order status or rider changes
   useEffect(() => {
@@ -112,7 +86,6 @@ export default function OrderDetailPage() {
         },
         () => {
           fetchOrder();
-          fetchRiders();
         },
       )
       .subscribe((status) => {
@@ -122,40 +95,34 @@ export default function OrderDetailPage() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [fetchOrder, fetchRiders, orderId]);
+  }, [fetchOrder, orderId]);
 
-  function toggleRiderSelection(riderId: string) {
-    setSelectedRiderIds((prev) => (prev.includes(riderId) ? prev.filter((id) => id !== riderId) : [...prev, riderId]));
-  }
+  async function revokeAssignment() {
+    if (!order) return;
+    const confirm = await Swal.fire({
+      icon: "warning",
+      title: "Revoke assignment?",
+      text: "The rider is detached and the order returns to the dispatch queue.",
+      showCancelButton: true,
+      confirmButtonText: "Revoke",
+      cancelButtonText: "Keep",
+    });
+    if (!confirm.isConfirmed) return;
 
-  async function sendInvitations() {
-    if (!order || selectedRiderIds.length === 0) return;
-    setSendingInvites(true);
+    setUpdating(true);
     try {
-      // Only set pending_riders — kitchen status is controlled separately
-      await supabaseRef.current
-        .from("orders")
-        .update({
-          pending_riders: selectedRiderIds,
-          updated_at: new Date().toISOString(),
-        })
-        .eq("id", orderId);
-
-      const notifications = selectedRiderIds.map((riderId: string) => ({
-        user_id: riderId,
-        type: "delivery_invitation",
-        title: "New Delivery Available",
-        message: "A new order is ready for pickup. First to accept gets it!",
-        data: { order_id: orderId },
-      }));
-      await supabaseRef.current.from("notifications").insert(notifications);
+      const res = await fetch("/api/dispatch", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ order_id: orderId }),
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.error || "Revoke failed");
+      fetchOrder();
     } catch (err) {
-      console.error("Failed to send invitations:", err);
-      Swal.fire({ icon: "error", title: "Failed", text: "Could not assign riders. Please check console for details." });
+      Swal.fire({ icon: "error", title: "Failed", text: err instanceof Error ? err.message : "Revoke failed" });
     }
-    setSendingInvites(false);
-    setInviteModalOpen(false);
-    fetchOrder();
+    setUpdating(false);
   }
 
   async function updateStatus(status: string) {
@@ -439,59 +406,49 @@ export default function OrderDetailPage() {
                     )}
                   </div>
                 )}
-                {["ready_for_pickup", "claimed_by_rider", "out_for_delivery", "near_customer"].includes(
-                  order.status,
-                ) && (
+                {[
+                  "awaiting_rider",
+                  "ready_for_pickup",
+                  "claimed_by_rider",
+                  "out_for_delivery",
+                  "near_customer",
+                ].includes(order.status) && (
                   <div>
                     <p className="text-xs text-muted-foreground mb-1">Rider Status</p>
                     {order.rider_id && (order as any).rider?.first_name ? (
-                      <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 px-3 py-2 rounded-lg">
+                      <div
+                        className={`flex items-center gap-2 text-sm px-3 py-2 rounded-lg ${
+                          order.status === "awaiting_rider"
+                            ? "text-amber-700 bg-amber-50"
+                            : "text-green-700 bg-green-50"
+                        }`}
+                      >
                         <CheckCircle2 className="h-4 w-4 shrink-0" />
                         <span className="font-medium">
                           {(order as any).rider.first_name} {(order as any).rider.last_name}
                         </span>
-                        <span className="text-xs text-green-500">accepted</span>
+                        <span className="text-xs opacity-70">
+                          {order.status === "awaiting_rider" ? "awaiting response" : "accepted"}
+                        </span>
                         <button
-                          onClick={() => setInviteModalOpen(true)}
-                          className="ml-auto text-xs text-gray-500 hover:text-gray-700 underline"
+                          onClick={revokeAssignment}
+                          disabled={updating}
+                          className="ml-auto text-xs text-red-500 hover:underline disabled:opacity-50"
                         >
-                          Reassign
+                          Revoke
                         </button>
                       </div>
                     ) : (
-                      <div className="space-y-2">
-                        <div className="flex items-center gap-2">
-                          {(order as any).pending_riders?.length > 0 ? (
-                            <div className="flex items-center gap-2 text-sm text-amber-700 bg-amber-50 px-3 py-2 rounded-lg flex-1">
-                              <Clock className="h-4 w-4 shrink-0" />
-                              <span>
-                                Awaiting acceptance from {(order as any).pending_riders.length} rider
-                                {(order as any).pending_riders.length > 1 ? "s" : ""}
-                              </span>
-                            </div>
-                          ) : (
-                            <p className="text-xs text-gray-400 flex-1">No riders invited yet</p>
-                          )}
-                          <Button size="sm" onClick={() => setInviteModalOpen(true)} className="gap-1 shrink-0">
+                      <div className="flex items-center gap-2">
+                        <p className="text-xs text-gray-400 flex-1">
+                          {order.status === "awaiting_rider" ? "Rider queue reassigning…" : "No rider assigned"}
+                        </p>
+                        <Link href="/dispatch">
+                          <Button size="sm" className="gap-1 shrink-0">
                             <UserPlus className="h-3 w-3" />
-                            Assign
+                            Open Dispatch
                           </Button>
-                        </div>
-                        {(order as any).pending_riders?.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            {(order as any).pending_riders.map((riderId: string) => {
-                              const rider = riders.find((r) => r.id === riderId);
-                              return rider ? (
-                                <span
-                                  key={riderId}
-                                  className="text-[10px] bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full"
-                                >
-                                  {rider.first_name || rider.full_name}
-                                </span>
-                              ) : null;
-                            })}
-                          </div>
-                        )}
+                        </Link>
                       </div>
                     )}
                   </div>
@@ -599,69 +556,6 @@ export default function OrderDetailPage() {
           />
         </div>
       )}
-
-      {/* Invite Riders Modal */}
-      <Dialog open={inviteModalOpen} onOpenChange={setInviteModalOpen}>
-        <DialogContent className="max-w-md">
-          <DialogHeader>
-            <DialogTitle>Invite Riders</DialogTitle>
-            <DialogDescription>Select riders to notify. First to accept gets the delivery.</DialogDescription>
-          </DialogHeader>
-          <div className="space-y-2 max-h-64 overflow-y-auto">
-            {riders.length === 0 ? (
-              <p className="text-sm text-gray-400 text-center py-4">No riders available</p>
-            ) : (
-              riders.map((rider) => {
-                const isSelected = selectedRiderIds.includes(rider.id);
-                return (
-                  <button
-                    key={rider.id}
-                    type="button"
-                    onClick={() => toggleRiderSelection(rider.id)}
-                    className={`w-full flex items-center gap-3 p-3 rounded-lg border text-left transition-all ${
-                      isSelected
-                        ? "border-brand-500 bg-brand-50"
-                        : "border-gray-200 hover:border-gray-300 hover:bg-gray-50"
-                    }`}
-                  >
-                    <div
-                      className={`h-5 w-5 rounded border-2 flex items-center justify-center shrink-0 transition-colors ${
-                        isSelected ? "bg-brand-500 border-brand-500 text-white" : "border-gray-300"
-                      }`}
-                    >
-                      {isSelected && <CheckCircle2 className="h-3.5 w-3.5" />}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">
-                        {rider.first_name || rider.full_name} {rider.last_name || ""}
-                      </p>
-                      <p className="text-xs text-gray-400 capitalize">{rider.rider_status?.replace(/_/g, " ")}</p>
-                    </div>
-                    {rider.vehicle_type && (
-                      <span className="text-[10px] text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full shrink-0">
-                        {rider.vehicle_type}
-                      </span>
-                    )}
-                  </button>
-                );
-              })
-            )}
-          </div>
-          <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setInviteModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              onClick={sendInvitations}
-              disabled={selectedRiderIds.length === 0 || sendingInvites}
-              className="gap-2"
-            >
-              {sendingInvites ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              Send to {selectedRiderIds.length} rider{selectedRiderIds.length !== 1 ? "s" : ""}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Printable Receipt (only visible on print) */}
       <div className="hidden print:block font-mono bg-white text-black p-4 w-full">
