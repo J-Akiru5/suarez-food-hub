@@ -44,6 +44,7 @@ export async function DELETE(request: NextRequest) {
   // deliveries — the FKs from rider_earnings/rider_cashouts to profiles are
   // ON DELETE CASCADE (0001, never changed), so a delete erases that history.
   // Return 409 so the UI can tell the admin to use "Mark as Resigned" instead.
+  // Fail closed: if ANY query returns an error, abort with 500.
   const [earningsCheck, cashoutsCheck, deliveredCheck] = await Promise.all([
     supabaseAdmin.from("rider_earnings").select("id", { count: "exact", head: true }).eq("rider_id", id),
     supabaseAdmin.from("rider_cashouts").select("id", { count: "exact", head: true }).eq("rider_id", id),
@@ -53,6 +54,10 @@ export async function DELETE(request: NextRequest) {
       .eq("rider_id", id)
       .eq("status", "delivered"),
   ]);
+
+  if (earningsCheck.error || cashoutsCheck.error || deliveredCheck.error) {
+    return NextResponse.json({ success: false, error: "Failed to check rider history" }, { status: 500 });
+  }
 
   const hasHistory =
     (earningsCheck.count ?? 0) > 0 || (cashoutsCheck.count ?? 0) > 0 || (deliveredCheck.count ?? 0) > 0;

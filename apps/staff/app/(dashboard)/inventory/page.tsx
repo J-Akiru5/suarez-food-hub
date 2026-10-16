@@ -129,22 +129,21 @@ export default function StaffInventoryPage() {
     const reordered = arrayMove(reorderItems, oldIndex, newIndex);
     const ids = reordered.map((p) => p.id);
 
-    // Optimistic UI
+    // Optimistic UI — reorder the filtered list in place
     setProducts((prev) => {
       const updated = [...prev];
       for (let i = 0; i < ids.length; i++) {
         const idx = updated.findIndex((p) => p.id === ids[i]);
-        if (idx !== -1) updated[idx] = { ...updated[idx], sort_order: i };
+        if (idx !== -1) updated[idx] = { ...updated[idx] };
       }
-      return updated.sort((a: any, b: any) => (a.sort_order ?? 0) - (b.sort_order ?? 0));
+      return updated;
     });
 
     const { error } = await reorderProducts(supabase, ids);
     if (error) {
-      // Rollback on error
       Swal.fire({ title: "Reorder failed", text: error.message, icon: "error" });
-      fetchData();
     }
+    fetchData();
   }
 
   const fetchData = useCallback(async () => {
