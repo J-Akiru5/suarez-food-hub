@@ -405,6 +405,7 @@ export interface Database {
           max_delivery_km: number;
           delivery_provinces: string | null;
           delivery_areas: string | null;
+          delivery_min_order_amount: number | null;
           base_lat: number | null;
           base_lng: number | null;
           created_at: string;
@@ -424,6 +425,7 @@ export interface Database {
           max_delivery_km?: number;
           delivery_provinces?: string | null;
           delivery_areas?: string | null;
+          delivery_min_order_amount?: number | null;
           base_lat?: number | null;
           base_lng?: number | null;
           created_at?: string;
@@ -443,6 +445,7 @@ export interface Database {
           max_delivery_km?: number;
           delivery_provinces?: string | null;
           delivery_areas?: string | null;
+          delivery_min_order_amount?: number | null;
           base_lat?: number | null;
           base_lng?: number | null;
           created_at?: string;
