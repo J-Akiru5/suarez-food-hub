@@ -65,8 +65,11 @@ export async function POST(request: NextRequest) {
     // The RPC serializes under an advisory lock (accept vs. revoke vs.
     // timeout can't interleave), and on decline it cascades to the next
     // rider in the fair queue automatically.
+    // The RPC identifies the caller with auth.uid(), so it must run on the rider's
+    // own session (authClient). The service client has no uid and would always
+    // be answered with "Unauthorized".
     if (order.status === "awaiting_rider") {
-      const { data: rpcData, error: rpcError } = await supabase.rpc("rider_assignment_response", {
+      const { data: rpcData, error: rpcError } = await authClient.rpc("rider_assignment_response", {
         p_order_id: order_id,
         p_accept: status === "claimed_by_rider",
       });
