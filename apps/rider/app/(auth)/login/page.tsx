@@ -49,14 +49,12 @@ export default function LoginPage() {
         setLoading(false);
         return;
       }
-      if (profile.is_active === false && profile.rider_status === "pending_approval") {
-        setError("Application received — you can sign in once an admin approves it.");
-        await supabase.auth.signOut();
-        setLoading(false);
-        return;
-      }
-      if (profile.is_active === false) {
-        setError("Your account is pending admin approval. Please wait for confirmation.");
+      if (profile.is_active === false || profile.rider_status === "pending_approval") {
+        if (profile.rider_status === "pending_approval") {
+          setError("Application received — you can sign in once an admin approves it.");
+        } else {
+          setError("Your account is not active. Please contact support.");
+        }
         await supabase.auth.signOut();
         setLoading(false);
         return;
