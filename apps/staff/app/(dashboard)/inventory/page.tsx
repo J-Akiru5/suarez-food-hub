@@ -101,6 +101,7 @@ export default function StaffInventoryPage() {
   const [formIsFeatured, setFormIsFeatured] = useState(false);
   const [formQuantity, setFormQuantity] = useState("");
   const [formBuffer, setFormBuffer] = useState("5");
+  const [formLeadTime, setFormLeadTime] = useState("");
   const [formVariantType, setFormVariantType] = useState<string>("none");
   const [formVariants, setFormVariants] = useState<{ name: string; price: string; qty: string }[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -231,6 +232,7 @@ export default function StaffInventoryPage() {
     setFormIsFeatured(false);
     setFormQuantity("0");
     setFormBuffer("5");
+    setFormLeadTime("");
     setFormVariantType("none");
     setFormVariants([]);
     setDialogOpen(true);
@@ -248,6 +250,7 @@ export default function StaffInventoryPage() {
     setFormIsFeatured(!!product.is_featured);
     setFormQuantity(String(product.quantity ?? 0));
     setFormBuffer(String(product.buffer_quantity ?? 5));
+    setFormLeadTime(product.restock_lead_time_days != null ? String(product.restock_lead_time_days) : "");
     setFormVariantType(product.variant_type || "none");
     // Load existing variants (key from Supabase select: product_variants)
     if (product.product_variants && product.product_variants.length > 0) {
@@ -310,6 +313,7 @@ export default function StaffInventoryPage() {
       is_featured: formIsFeatured,
       quantity: parseInt(formQuantity, 10) || 0,
       buffer_quantity: parseInt(formBuffer, 10) || 5,
+      restock_lead_time_days: formLeadTime !== "" ? parseInt(formLeadTime, 10) || null : null,
     };
 
     let result: any;
@@ -1268,6 +1272,17 @@ export default function StaffInventoryPage() {
                       placeholder="5"
                       min="0"
                     />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700 block mb-1">Restock Lead Time (days)</label>
+                    <Input
+                      type="number"
+                      value={formLeadTime}
+                      onChange={(e) => setFormLeadTime(e.target.value)}
+                      placeholder="e.g. 3"
+                      min="0"
+                    />
+                    <p className="text-xs text-gray-400 mt-1">How many days until this item is restocked.</p>
                   </div>
                 </div>
               ) : (

@@ -229,6 +229,12 @@ export default function InventoryPage() {
                             <Badge className="bg-red-100 text-red-700 text-[9px] border-0">Low</Badge>
                           )}
                         </div>
+                        {productStock(product) <= (product.buffer_quantity ?? 5) &&
+                          (product as any).restock_lead_time_days != null && (
+                            <span className="block text-[10px] text-amber-600 font-medium mt-0.5">
+                              Restocks in ~{(product as any).restock_lead_time_days}d
+                            </span>
+                          )}
                         {product.variant_type &&
                           product.variant_type !== "none" &&
                           (product.product_variants || []).length > 0 && (
