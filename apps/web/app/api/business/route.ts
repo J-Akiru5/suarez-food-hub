@@ -45,6 +45,7 @@ export async function PATCH(req: NextRequest) {
       "max_delivery_km",
       "delivery_provinces",
       "delivery_areas",
+      "max_active_deliveries",
     ];
     const updateData: Record<string, unknown> = {};
     for (const key of allowedFields) {

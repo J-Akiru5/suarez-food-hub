@@ -80,7 +80,9 @@ interface BusinessConfig {
   delivery_fee: number;
   delivery_tiers: { max_km: number; fee: number }[];
   max_delivery_km: number;
+  max_active_deliveries: number;
   delivery_areas: string;
+  delivery_min_order_amount: number | null;
   operating_hours: OperatingHours | null;
   about_content: AboutContent | null;
 }
@@ -186,7 +188,9 @@ export default function SettingsPage() {
     delivery_fee: 20,
     delivery_tiers: DEFAULT_TIERS,
     max_delivery_km: 15,
+    max_active_deliveries: 2,
     delivery_areas: "",
+    delivery_min_order_amount: null,
     operating_hours: null,
     about_content: null,
   });
@@ -213,7 +217,9 @@ export default function SettingsPage() {
         delivery_fee: Number(data.delivery_fee) || 20,
         delivery_tiers: tiers,
         max_delivery_km: Number(data.max_delivery_km) || tiers[tiers.length - 1]?.max_km || 15,
+        max_active_deliveries: Number(data.max_active_deliveries) || 2,
         delivery_areas: data.delivery_areas || "",
+        delivery_min_order_amount: data.delivery_min_order_amount ?? null,
         operating_hours: data.operating_hours || null,
         about_content: data.about_content || null,
       });
@@ -291,6 +297,7 @@ export default function SettingsPage() {
       delivery_fee: config.delivery_fee,
       delivery_tiers: tiers,
       max_delivery_km: maxKm,
+      max_active_deliveries: Math.max(1, Math.floor(Number(config.max_active_deliveries) || 2)),
       delivery_areas: config.delivery_areas || "063022000",
       operating_hours: config.operating_hours,
       about_content: config.about_content,
@@ -425,6 +432,32 @@ export default function SettingsPage() {
                   />
                   <p className="text-xs text-muted-foreground mt-1">Orders beyond this distance are rejected.</p>
                 </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 block mb-1">
+                    Max Active Deliveries per Rider
+                  </label>
+                  <Input
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={config.max_active_deliveries}
+                    onChange={(e) => setConfig((p) => ({ ...p, max_active_deliveries: parseInt(e.target.value) || 1 }))}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Concurrent deliveries a rider may hold. Auto-Assign skips riders at the cap.
+                  </p>
+                </div>
+              </div>
+
+              {/* Minimum order amount — read-only here, edited by staff in the Staff app */}
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <p className="text-sm font-medium text-gray-700 mb-1">Minimum Order Amount</p>
+                <p className="text-sm font-semibold text-gray-900">
+                  {config.delivery_min_order_amount ? `₱${config.delivery_min_order_amount}` : "No minimum set"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Applies to the order subtotal for delivery orders. Managed by staff in Staff → Settings.
+                </p>
               </div>
 
               {/* Distance-based fee tiers */}

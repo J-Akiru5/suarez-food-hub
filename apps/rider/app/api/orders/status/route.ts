@@ -15,6 +15,7 @@ const RIDER_STATUS_FLOW: Record<string, string[]> = {
   confirmed: ["claimed_by_rider", "rejected"],
   preparing: ["claimed_by_rider", "rejected"],
   ready_for_pickup: ["claimed_by_rider", "rejected"],
+  awaiting_rider: ["claimed_by_rider", "rejected"],
   claimed_by_rider: ["out_for_delivery"],
   out_for_delivery: ["near_customer"],
   near_customer: ["delivered"],
@@ -58,6 +59,51 @@ export async function POST(request: NextRequest) {
         },
         { status: 400 },
       );
+    }
+
+    // ── Dispatch flow: order was directly assigned by staff ──────────────
+    // The RPC serializes under an advisory lock (accept vs. revoke vs.
+    // timeout can't interleave), and on decline it cascades to the next
+    // rider in the fair queue automatically.
+    // The RPC identifies the caller with auth.uid(), so it must run on the rider's
+    // own session (authClient). The service client has no uid and would always
+    // be answered with "Unauthorized".
+    if (order.status === "awaiting_rider") {
+      const { data: rpcData, error: rpcError } = await authClient.rpc("rider_assignment_response", {
+        p_order_id: order_id,
+        p_accept: status === "claimed_by_rider",
+      });
+      if (rpcError) return NextResponse.json({ success: false, error: rpcError.message }, { status: 500 });
+
+      const payload = rpcData as { success?: boolean; action?: string; reason?: string };
+      // A decline always succeeds from the rider's point of view — even when
+      // the queue is exhausted and the order bounces back to staff (that's a
+      // staff-side condition, not a rider error).
+      if (!payload?.success && status === "claimed_by_rider") {
+        return NextResponse.json({ success: false, error: "Failed to accept this delivery." }, { status: 409 });
+      }
+
+      if (payload.action === "accepted") {
+        // 🔁 Same stock semantics as the legacy accept path: keyed on
+        // confirmed_at, so it's a no-op when staff already confirmed.
+        await deductStockForOrderIfNeeded(supabase, order_id, { notifyLowStock: true });
+
+        const { data: staff } = await supabase.from("profiles").select("id").in("role", ["admin", "staff"]);
+        if (staff) {
+          await supabase.from("notifications").insert(
+            staff.map((s) => ({
+              user_id: s.id,
+              type: "rider_accepted",
+              title: "Rider Accepted Delivery",
+              message: `Rider has accepted order #${order_id.slice(0, 8)}.`,
+              data: { order_id, rider_id: user.id },
+            })),
+          );
+        }
+      }
+      // Decline: dispatch_pick_next already re-assigned (or exhausted) and
+      // notified everyone inside the RPC — nothing else to do here.
+      return NextResponse.json({ success: true, data: payload });
     }
 
     // Handle rejection: remove rider from pending_riders (broadcast model)

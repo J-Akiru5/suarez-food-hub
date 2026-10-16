@@ -41,6 +41,7 @@ const statusColors: Record<string, string> = {
   confirmed: "bg-blue-100 text-blue-800",
   preparing: "bg-purple-100 text-purple-800",
   ready_for_pickup: "bg-amber-100 text-amber-800",
+  awaiting_rider: "bg-amber-100 text-amber-800",
   claimed_by_rider: "bg-cyan-100 text-cyan-800",
   out_for_delivery: "bg-orange-100 text-orange-800",
   near_customer: "bg-emerald-100 text-emerald-800",

@@ -10,6 +10,18 @@ export {
   maxDeliveryKm,
   parseDeliveryTiers,
 } from "./delivery";
+export {
+  ACTIVE_DELIVERY_STATUSES,
+  ASSIGNMENT_TIMEOUT_MIN,
+  DEFAULT_MAX_ACTIVE_DELIVERIES,
+  DISPATCHABLE_STATUSES,
+  type DispatchRiderCandidate,
+  MAX_CASCADE_ATTEMPTS,
+  normalizeMaxActiveDeliveries,
+  pickAutoAssignRider,
+  type RankedDispatchRider,
+  rankDispatchRiders,
+} from "./dispatch";
 
 export function cn(...inputs: ClassValue[]): string {
   return twMerge(clsx(inputs));
@@ -134,6 +146,26 @@ export function getOrderStatusConfig(status: string): {
       label: "Out for Delivery",
       color: "bg-indigo-100 text-indigo-800",
       icon: "truck",
+    },
+    ready_for_pickup: {
+      label: "Ready for Pickup",
+      color: "bg-amber-100 text-amber-800",
+      icon: "package",
+    },
+    awaiting_rider: {
+      label: "Finding Your Rider",
+      color: "bg-amber-100 text-amber-800",
+      icon: "bike",
+    },
+    claimed_by_rider: {
+      label: "Rider on the Way",
+      color: "bg-cyan-100 text-cyan-800",
+      icon: "bike",
+    },
+    near_customer: {
+      label: "Rider is Nearby",
+      color: "bg-teal-100 text-teal-800",
+      icon: "map-pin",
     },
     delivered: {
       label: "Delivered",

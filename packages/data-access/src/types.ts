@@ -162,6 +162,8 @@ export interface Database {
           availability: "available" | "sold_out";
           is_featured: boolean;
           sort_order: number;
+          pack_size: number | null;
+          pack_stock: number;
           created_at: string;
           updated_at: string;
         };
@@ -181,6 +183,8 @@ export interface Database {
           availability?: "available" | "sold_out";
           is_featured?: boolean;
           sort_order?: number;
+          pack_size?: number | null;
+          pack_stock?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -200,6 +204,8 @@ export interface Database {
           availability?: "available" | "sold_out";
           is_featured?: boolean;
           sort_order?: number;
+          pack_size?: number | null;
+          pack_stock?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -245,6 +251,7 @@ export interface Database {
             | "confirmed"
             | "preparing"
             | "ready_for_pickup"
+            | "awaiting_rider"
             | "claimed_by_rider"
             | "out_for_delivery"
             | "near_customer"
@@ -267,6 +274,19 @@ export interface Database {
           total: number;
           rider_earnings: number;
           pending_riders: Json;
+          rider_assigned_at: string | null;
+          dispatch_prev_status:
+            | "pending"
+            | "confirmed"
+            | "preparing"
+            | "ready_for_pickup"
+            | "awaiting_rider"
+            | "claimed_by_rider"
+            | "out_for_delivery"
+            | "near_customer"
+            | "delivered"
+            | "cancelled"
+            | null;
           confirmed_at: string | null;
           prepared_at: string | null;
           picked_up_at: string | null;
@@ -284,6 +304,7 @@ export interface Database {
             | "confirmed"
             | "preparing"
             | "ready_for_pickup"
+            | "awaiting_rider"
             | "claimed_by_rider"
             | "out_for_delivery"
             | "near_customer"
@@ -305,6 +326,19 @@ export interface Database {
           delivery_fee?: number;
           total: number;
           rider_earnings?: number;
+          rider_assigned_at?: string | null;
+          dispatch_prev_status?:
+            | "pending"
+            | "confirmed"
+            | "preparing"
+            | "ready_for_pickup"
+            | "awaiting_rider"
+            | "claimed_by_rider"
+            | "out_for_delivery"
+            | "near_customer"
+            | "delivered"
+            | "cancelled"
+            | null;
           confirmed_at?: string | null;
           prepared_at?: string | null;
           picked_up_at?: string | null;
@@ -322,6 +356,7 @@ export interface Database {
             | "confirmed"
             | "preparing"
             | "ready_for_pickup"
+            | "awaiting_rider"
             | "claimed_by_rider"
             | "out_for_delivery"
             | "near_customer"
@@ -344,6 +379,19 @@ export interface Database {
           total?: number;
           rider_earnings?: number;
           pending_riders?: Json;
+          rider_assigned_at?: string | null;
+          dispatch_prev_status?:
+            | "pending"
+            | "confirmed"
+            | "preparing"
+            | "ready_for_pickup"
+            | "awaiting_rider"
+            | "claimed_by_rider"
+            | "out_for_delivery"
+            | "near_customer"
+            | "delivered"
+            | "cancelled"
+            | null;
           confirmed_at?: string | null;
           prepared_at?: string | null;
           picked_up_at?: string | null;
@@ -365,6 +413,7 @@ export interface Database {
           quantity: number;
           unit_price: number;
           total_price: number;
+          is_pack: boolean;
         };
         Insert: {
           id?: string;
@@ -376,6 +425,7 @@ export interface Database {
           quantity?: number;
           unit_price: number;
           total_price: number;
+          is_pack?: boolean;
         };
         Update: {
           id?: string;
@@ -387,6 +437,7 @@ export interface Database {
           quantity?: number;
           unit_price?: number;
           total_price?: number;
+          is_pack?: boolean;
         };
         Relationships: [];
       };
@@ -403,8 +454,10 @@ export interface Database {
           delivery_fee: number;
           delivery_tiers: Json;
           max_delivery_km: number;
+          max_active_deliveries: number;
           delivery_provinces: string | null;
           delivery_areas: string | null;
+          delivery_min_order_amount: number | null;
           base_lat: number | null;
           base_lng: number | null;
           created_at: string;
@@ -422,8 +475,10 @@ export interface Database {
           delivery_fee?: number;
           delivery_tiers?: Json;
           max_delivery_km?: number;
+          max_active_deliveries?: number;
           delivery_provinces?: string | null;
           delivery_areas?: string | null;
+          delivery_min_order_amount?: number | null;
           base_lat?: number | null;
           base_lng?: number | null;
           created_at?: string;
@@ -441,8 +496,10 @@ export interface Database {
           delivery_fee?: number;
           delivery_tiers?: Json;
           max_delivery_km?: number;
+          max_active_deliveries?: number;
           delivery_provinces?: string | null;
           delivery_areas?: string | null;
+          delivery_min_order_amount?: number | null;
           base_lat?: number | null;
           base_lng?: number | null;
           created_at?: string;
@@ -551,6 +608,7 @@ export interface Database {
             | "confirmed"
             | "preparing"
             | "ready_for_pickup"
+            | "awaiting_rider"
             | "claimed_by_rider"
             | "out_for_delivery"
             | "near_customer"
@@ -568,6 +626,7 @@ export interface Database {
             | "confirmed"
             | "preparing"
             | "ready_for_pickup"
+            | "awaiting_rider"
             | "claimed_by_rider"
             | "out_for_delivery"
             | "near_customer"
@@ -585,6 +644,7 @@ export interface Database {
             | "confirmed"
             | "preparing"
             | "ready_for_pickup"
+            | "awaiting_rider"
             | "claimed_by_rider"
             | "out_for_delivery"
             | "near_customer"
@@ -674,12 +734,53 @@ export interface Database {
         };
         Relationships: [];
       };
+      dispatch_log: {
+        Row: {
+          id: string;
+          order_id: string;
+          rider_id: string | null;
+          action: string;
+          actor: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          order_id: string;
+          rider_id?: string | null;
+          action: string;
+          actor?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          order_id?: string;
+          rider_id?: string | null;
+          action?: string;
+          actor?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: Record<string, never>;
     Functions: {
       is_admin: { Args: Record<string, never>; Returns: boolean };
       is_staff_or_admin: { Args: Record<string, never>; Returns: boolean };
       is_rider: { Args: Record<string, never>; Returns: boolean };
+      assign_rider: {
+        Args: { p_order_id: string; p_rider_id: string; p_assigned_by: string };
+        Returns: Json;
+      };
+      rider_assignment_response: {
+        Args: { p_order_id: string; p_accept: boolean };
+        Returns: Json;
+      };
+      requeue_stale_assignments: { Args: Record<string, never>; Returns: Json };
+      revoke_assignment: { Args: { p_order_id: string; p_actor: string }; Returns: Json };
+      dispatch_pick_next: {
+        Args: { p_order_id: string; p_declined?: string[] };
+        Returns: Json;
+      };
     };
     Enums: {
       user_role: "customer" | "admin" | "staff" | "rider";
@@ -689,6 +790,7 @@ export interface Database {
         | "confirmed"
         | "preparing"
         | "ready_for_pickup"
+        | "awaiting_rider"
         | "claimed_by_rider"
         | "out_for_delivery"
         | "near_customer"

@@ -166,6 +166,9 @@ export default function InventoryPage() {
                     <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 hidden sm:table-cell">
                       Stock
                     </th>
+                    <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 hidden sm:table-cell">
+                      Packs
+                    </th>
                     <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">
                       Status
                     </th>
@@ -229,6 +232,12 @@ export default function InventoryPage() {
                             <Badge className="bg-red-100 text-red-700 text-[9px] border-0">Low</Badge>
                           )}
                         </div>
+                        {productStock(product) <= (product.buffer_quantity ?? 5) &&
+                          (product as any).restock_lead_time_days != null && (
+                            <span className="block text-[10px] text-amber-600 font-medium mt-0.5">
+                              Restocks in ~{(product as any).restock_lead_time_days}d
+                            </span>
+                          )}
                         {product.variant_type &&
                           product.variant_type !== "none" &&
                           (product.product_variants || []).length > 0 && (
@@ -239,6 +248,23 @@ export default function InventoryPage() {
                                 .join(" · ")}
                             </span>
                           )}
+                      </td>
+                      <td className="px-4 py-3 hidden sm:table-cell">
+                        {product.pack_size && product.pack_size > 0 ? (
+                          <div className="flex items-center gap-1">
+                            <span
+                              className={`text-sm font-bold ${(product.pack_stock ?? 0) <= 0 ? "text-red-600" : "text-gray-900"}`}
+                            >
+                              {product.pack_stock ?? 0}
+                            </span>
+                            <span className="text-[10px] text-gray-400 font-normal">× {product.pack_size} pcs</span>
+                            {(product.pack_stock ?? 0) <= 0 && (
+                              <Badge className="bg-red-100 text-red-700 text-[9px] border-0">Out</Badge>
+                            )}
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-300">—</span>
+                        )}
                       </td>
                       <td className="px-4 py-3">
                         <span
@@ -304,15 +330,24 @@ export default function InventoryPage() {
                       <p className="text-xs text-gray-500 mt-0.5">{product.category?.name || "N/A"}</p>
                       <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100">
                         <span className="text-sm font-bold">{formatCurrency(product.base_price)}</span>
-                        <div className="flex items-center gap-1">
-                          <span
-                            className={`text-xs font-bold ${productStock(product) <= (product.buffer_quantity ?? 5) ? "text-red-600" : "text-gray-900"}`}
-                          >
-                            Stock: {productStock(product)}
-                          </span>
-                          {productStock(product) <= (product.buffer_quantity ?? 5) && (
-                            <Badge className="bg-red-100 text-red-700 text-[9px] border-0">Low</Badge>
+                        <div className="flex items-center gap-2">
+                          {product.pack_size && product.pack_size > 0 && (
+                            <span
+                              className={`text-xs font-bold ${(product.pack_stock ?? 0) <= 0 ? "text-red-600" : "text-gray-700"}`}
+                            >
+                              Packs: {product.pack_stock ?? 0}
+                            </span>
                           )}
+                          <div className="flex items-center gap-1">
+                            <span
+                              className={`text-xs font-bold ${productStock(product) <= (product.buffer_quantity ?? 5) ? "text-red-600" : "text-gray-900"}`}
+                            >
+                              Stock: {productStock(product)}
+                            </span>
+                            {productStock(product) <= (product.buffer_quantity ?? 5) && (
+                              <Badge className="bg-red-100 text-red-700 text-[9px] border-0">Low</Badge>
+                            )}
+                          </div>
                         </div>
                         {product.variant_type &&
                           product.variant_type !== "none" &&

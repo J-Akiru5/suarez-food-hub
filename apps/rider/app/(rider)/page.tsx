@@ -16,8 +16,10 @@ import {
   Package,
   Phone,
   RefreshCw,
+  Timer,
   TrendingUp,
   XCircle,
+  Zap,
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
@@ -333,6 +335,7 @@ export default function RiderDashboard() {
           if (!isAssignedToMe && !isInvitedToMe && !wasInvitedToMe) return;
 
           if (
+            newOrder.status === "awaiting_rider" ||
             newOrder.status === "confirmed" ||
             newOrder.status === "preparing" ||
             newOrder.status === "ready_for_pickup" ||
@@ -454,9 +457,17 @@ export default function RiderDashboard() {
       if (!data.success) {
         Swal.fire({ icon: "error", title: "Error", text: data.error || "Failed to update." });
       } else {
+        const title =
+          nextStatus === "delivered"
+            ? "Delivered!"
+            : nextStatus === "rejected"
+              ? "Declined — sent to the next rider"
+              : nextStatus === "claimed_by_rider"
+                ? "Delivery accepted"
+                : "Status Updated";
         Swal.fire({
           icon: "success",
-          title: nextStatus === "delivered" ? "Delivered!" : "Status Updated",
+          title,
           timer: 2000,
           showConfirmButton: false,
           toast: true,
@@ -987,36 +998,136 @@ export default function RiderDashboard() {
         </div>
       )}
 
+      {/* ── Claim card: staff assigned us directly, must answer ──────────── */}
+      {pendingOrders.some((o) => o.status === "awaiting_rider") && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-bold text-gray-700 flex items-center gap-1.5 px-1">
+            <Zap size={14} className="text-crimson-500" />
+            Assigned to You — respond now
+          </h3>
+          {pendingOrders
+            .filter((o) => o.status === "awaiting_rider")
+            .map((order) => {
+              const assignedAt = parseServerDate((order as any).rider_assigned_at);
+              const elapsedMs = Date.now() - assignedAt.getTime();
+              const remainingMin = Math.max(0, 10 - Math.floor(elapsedMs / 60000));
+              const urgent = remainingMin <= 3;
+              return (
+                <div
+                  key={order.id}
+                  className="bg-white rounded-xl shadow-sm border-2 border-crimson-200 overflow-hidden pulse-notification"
+                >
+                  <div className="p-4 space-y-3">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="text-xs font-bold text-crimson-600 uppercase tracking-wide">
+                        New Delivery Assigned
+                      </p>
+                      <span
+                        className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${
+                          urgent ? "bg-red-100 text-red-700" : "bg-crimson-100 text-crimson-700"
+                        }`}
+                      >
+                        <Timer size={11} className="inline mr-1 -mt-0.5" />
+                        {remainingMin} min left
+                      </span>
+                    </div>
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-semibold text-gray-800 truncate">
+                          {(() => {
+                            const c = (order as any).customer;
+                            if (!c) return "Customer";
+                            return `${c.first_name || ""} ${c.last_name || ""}`.trim() || "Customer";
+                          })()}
+                        </p>
+                        <p className="text-xs text-gray-500 truncate">{order.delivery_address}</p>
+                      </div>
+                      <span className="text-sm font-bold text-brand-600 shrink-0">
+                        ₱{Number(order.total).toFixed(2)}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs">
+                      {order.payment_method === "cod" ? (
+                        <span className="text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full font-medium">
+                          Cash on Delivery — collect ₱{Number(order.total).toFixed(2)}
+                        </span>
+                      ) : (
+                        <span className="text-blue-700 bg-blue-50 px-2 py-0.5 rounded-full font-medium">GCash</span>
+                      )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-2 pt-1">
+                      <button
+                        onClick={() => handleStatusAction(order.id, "claimed_by_rider")}
+                        disabled={updating}
+                        className="flex items-center justify-center gap-2 bg-crimson-600 hover:bg-crimson-700 text-white py-3 rounded-xl font-bold text-sm transition disabled:opacity-50"
+                      >
+                        <CheckCircle size={16} />
+                        {updating ? "..." : "Accept"}
+                      </button>
+                      <button
+                        onClick={async () => {
+                          const result = await Swal.fire({
+                            title: "Decline This Delivery?",
+                            text: "It goes to the next rider in the queue automatically.",
+                            icon: "question",
+                            showCancelButton: true,
+                            confirmButtonColor: "#dc2626",
+                            cancelButtonColor: "#6b7280",
+                            confirmButtonText: "Yes, decline",
+                          });
+                          if (result.isConfirmed) {
+                            handleStatusAction(order.id, "rejected");
+                          }
+                        }}
+                        disabled={updating}
+                        className="flex items-center justify-center gap-2 bg-red-500 hover:bg-red-600 text-white py-3 rounded-xl font-semibold text-sm transition disabled:opacity-50"
+                      >
+                        <XCircle size={16} />
+                        {updating ? "..." : "Decline"}
+                      </button>
+                    </div>
+                    <p className="text-[11px] text-gray-400 text-center">
+                      Not answered in 10 minutes → reassigned to the next rider.
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+        </div>
+      )}
+
       {/* Pending Orders (assigned but not yet out for delivery) */}
-      {pendingOrders.length > 0 && (
+      {pendingOrders.filter((o) => o.status !== "awaiting_rider").length > 0 && (
         <div className="space-y-2">
           <h3 className="text-sm font-bold text-gray-700 flex items-center gap-1.5 px-1">
             <Clock size={14} className="text-amber-500" />
-            Pending Pickup ({pendingOrders.length})
+            Pending Pickup ({pendingOrders.filter((o) => o.status !== "awaiting_rider").length})
           </h3>
-          {pendingOrders.map((order) => (
-            <Link
-              key={order.id}
-              href={`/orders/${order.id}`}
-              className="block bg-white rounded-xl shadow-sm border border-amber-100 p-3 hover:shadow-md hover:border-amber-300 transition active:scale-[0.98]"
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="text-sm font-semibold text-gray-800">
-                    {(() => {
-                      const c = (order as any).customer;
-                      if (!c) return "Customer";
-                      return `${c.first_name || ""} ${c.last_name || ""}`.trim() || "Customer";
-                    })()}
-                  </p>
-                  <p className="text-xs text-gray-500 truncate">{order.delivery_address}</p>
+          {pendingOrders
+            .filter((o) => o.status !== "awaiting_rider")
+            .map((order) => (
+              <Link
+                key={order.id}
+                href={`/orders/${order.id}`}
+                className="block bg-white rounded-xl shadow-sm border border-amber-100 p-3 hover:shadow-md hover:border-amber-300 transition active:scale-[0.98]"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-gray-800">
+                      {(() => {
+                        const c = (order as any).customer;
+                        if (!c) return "Customer";
+                        return `${c.first_name || ""} ${c.last_name || ""}`.trim() || "Customer";
+                      })()}
+                    </p>
+                    <p className="text-xs text-gray-500 truncate">{order.delivery_address}</p>
+                  </div>
+                  <span className="text-xs font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full capitalize whitespace-nowrap">
+                    {order.status.replace(/_/g, " ")}
+                  </span>
                 </div>
-                <span className="text-xs font-medium text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full capitalize whitespace-nowrap">
-                  {order.status.replace(/_/g, " ")}
-                </span>
-              </div>
-            </Link>
-          ))}
+              </Link>
+            ))}
         </div>
       )}
 

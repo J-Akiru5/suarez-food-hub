@@ -61,12 +61,24 @@ const statusConfig: Record<string, { label: string; icon: any; color: string; bg
   confirmed: { label: "Confirmed", icon: CheckCircle, color: "#3b82f6", bg: "#eff6ff" },
   preparing: { label: "Preparing", icon: ChefHat, color: "#8b5cf6", bg: "#f5f3ff" },
   ready_for_pickup: { label: "Ready for Pickup", icon: Package, color: "#06b6d4", bg: "#ecfeff" },
+  awaiting_rider: { label: "Finding Your Rider", icon: Bike, color: "#f59e0b", bg: "#fffbeb" },
+  claimed_by_rider: { label: "Rider on the Way", icon: Bike, color: "#06b6d4", bg: "#ecfeff" },
+  near_customer: { label: "Rider is Nearby", icon: Bike, color: "#06b6d4", bg: "#ecfeff" },
   out_for_delivery: { label: "Out for Delivery", icon: Bike, color: "#06b6d4", bg: "#ecfeff" },
   delivered: { label: "Delivered", icon: CheckCircle, color: "#22c55e", bg: "#f0fdf4" },
   cancelled: { label: "Cancelled", icon: XCircle, color: "#ef4444", bg: "#fef2f2" },
 };
 
-const activeStatuses = ["pending", "confirmed", "preparing", "ready_for_pickup", "out_for_delivery"];
+const activeStatuses = [
+  "pending",
+  "confirmed",
+  "preparing",
+  "ready_for_pickup",
+  "awaiting_rider",
+  "claimed_by_rider",
+  "out_for_delivery",
+  "near_customer",
+];
 
 function OrdersPageInner() {
   const router = useRouter();
@@ -261,7 +273,10 @@ function OrdersPageInner() {
     { key: "confirmed", label: "Confirmed", icon: CheckCircle, color: "#3b82f6" },
     { key: "preparing", label: "Preparing", icon: ChefHat, color: "#8b5cf6" },
     { key: "ready_for_pickup", label: "Ready", icon: Package, color: "#06b6d4" },
+    { key: "awaiting_rider", label: "Finding Rider", icon: Bike, color: "#f59e0b" },
+    { key: "claimed_by_rider", label: "Picked Up", icon: Bike, color: "#06b6d4" },
     { key: "out_for_delivery", label: "Out for Delivery", icon: Bike, color: "#06b6d4" },
+    { key: "near_customer", label: "Nearby", icon: Bike, color: "#10b981" },
     { key: "delivered", label: "Delivered", icon: CheckCircle, color: "#22c55e" },
   ];
 

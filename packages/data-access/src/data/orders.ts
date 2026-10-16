@@ -109,10 +109,10 @@ export async function getPendingOrdersForRider(supabase: TypedSupabaseClient, ri
     .from("orders")
     .select("*, customer:profiles!orders_user_id_fkey(first_name, last_name, phone)")
     .eq("rider_id", riderId)
-    // All assigned orders waiting for rider action — includes ready_for_pickup
-    // so newly-assigned deliveries are visible even when rider has an active
-    // delivery (the client reported they couldn't see new assignments).
-    .in("status", ["confirmed", "preparing", "ready_for_pickup"] as OrderStatus[])
+    // All assigned orders waiting for rider action. awaiting_rider is the
+    // dispatch flow (staff assigned us directly — must claim or decline);
+    // the rest are legacy invite-era states kept for in-flight orders.
+    .in("status", ["awaiting_rider", "confirmed", "preparing", "ready_for_pickup"] as OrderStatus[])
     .order("created_at", { ascending: false });
   return data || [];
 }

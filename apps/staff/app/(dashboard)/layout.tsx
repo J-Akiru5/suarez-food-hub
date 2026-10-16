@@ -4,6 +4,7 @@ import { getProfile } from "@repo/data-access/auth";
 import { createBrowserTypedClient } from "@repo/data-access/client";
 import {
   Bell,
+  Bike,
   ChefHat,
   ChevronLeft,
   ChevronRight,
@@ -12,6 +13,7 @@ import {
   LogOut,
   Menu,
   Package,
+  Settings,
   Tag,
   X,
 } from "lucide-react";
@@ -22,8 +24,10 @@ import { useCallback, useEffect, useRef, useState } from "react";
 const navItems = [
   { href: "/", label: "Dashboard", icon: LayoutDashboard },
   { href: "/orders", label: "Orders", icon: ClipboardList },
+  { href: "/dispatch", label: "Dispatch", icon: Bike },
   { href: "/inventory", label: "Inventory", icon: Package },
   { href: "/categories", label: "Categories", icon: Tag },
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
