@@ -162,6 +162,8 @@ export interface Database {
           availability: "available" | "sold_out";
           is_featured: boolean;
           sort_order: number;
+          pack_size: number | null;
+          pack_stock: number;
           created_at: string;
           updated_at: string;
         };
@@ -181,6 +183,8 @@ export interface Database {
           availability?: "available" | "sold_out";
           is_featured?: boolean;
           sort_order?: number;
+          pack_size?: number | null;
+          pack_stock?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -200,6 +204,8 @@ export interface Database {
           availability?: "available" | "sold_out";
           is_featured?: boolean;
           sort_order?: number;
+          pack_size?: number | null;
+          pack_stock?: number;
           created_at?: string;
           updated_at?: string;
         };
@@ -407,6 +413,7 @@ export interface Database {
           quantity: number;
           unit_price: number;
           total_price: number;
+          is_pack: boolean;
         };
         Insert: {
           id?: string;
@@ -418,6 +425,7 @@ export interface Database {
           quantity?: number;
           unit_price: number;
           total_price: number;
+          is_pack?: boolean;
         };
         Update: {
           id?: string;
@@ -429,6 +437,7 @@ export interface Database {
           quantity?: number;
           unit_price?: number;
           total_price?: number;
+          is_pack?: boolean;
         };
         Relationships: [];
       };
@@ -448,6 +457,7 @@ export interface Database {
           max_active_deliveries: number;
           delivery_provinces: string | null;
           delivery_areas: string | null;
+          delivery_min_order_amount: number | null;
           base_lat: number | null;
           base_lng: number | null;
           created_at: string;
@@ -468,6 +478,7 @@ export interface Database {
           max_active_deliveries?: number;
           delivery_provinces?: string | null;
           delivery_areas?: string | null;
+          delivery_min_order_amount?: number | null;
           base_lat?: number | null;
           base_lng?: number | null;
           created_at?: string;
@@ -488,6 +499,7 @@ export interface Database {
           max_active_deliveries?: number;
           delivery_provinces?: string | null;
           delivery_areas?: string | null;
+          delivery_min_order_amount?: number | null;
           base_lat?: number | null;
           base_lng?: number | null;
           created_at?: string;

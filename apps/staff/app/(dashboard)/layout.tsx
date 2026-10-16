@@ -13,6 +13,7 @@ import {
   LogOut,
   Menu,
   Package,
+  Settings,
   Tag,
   X,
 } from "lucide-react";
@@ -26,6 +27,7 @@ const navItems = [
   { href: "/dispatch", label: "Dispatch", icon: Bike },
   { href: "/inventory", label: "Inventory", icon: Package },
   { href: "/categories", label: "Categories", icon: Tag },
+  { href: "/settings", label: "Settings", icon: Settings },
 ];
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {

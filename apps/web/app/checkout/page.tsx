@@ -48,6 +48,7 @@ interface CartItem {
   quantity: number;
   variant: string;
   variantId?: string;
+  isPack?: boolean;
 }
 
 interface Business {
@@ -57,6 +58,7 @@ interface Business {
   max_delivery_km?: number;
   delivery_provinces?: string | null;
   delivery_areas?: string | null;
+  delivery_min_order_amount?: number | null;
 }
 
 interface FeeEstimate {
@@ -181,6 +183,10 @@ export default function CheckoutPage() {
   const fee = estimate?.fee ?? Number(business?.delivery_fee ?? 40);
   const total = subtotal + fee;
   const feeOutOfRange = !!estimate?.out_of_range;
+  // Delivery orders must reach the minimum SUBTOTAL (before delivery fee). The server enforces it too.
+  const minOrderAmount = business?.delivery_min_order_amount ?? 0;
+  const isBelowMinimum = minOrderAmount > 0 && subtotal < minOrderAmount;
+  const belowMinimumMessage = `Minimum order for delivery is ₱${minOrderAmount}. Add ₱${Math.ceil(minOrderAmount - subtotal)} more to proceed.`;
 
   const validatePhone = (val: string) => {
     if (!val.trim()) return "Phone number is required";
@@ -190,6 +196,10 @@ export default function CheckoutPage() {
 
   const handleNextStep1 = () => {
     setError("");
+    if (isBelowMinimum) {
+      setError(belowMinimumMessage);
+      return;
+    }
     if (feeOutOfRange) {
       setError(
         `Delivery is too far — about ${estimate?.distance_km} km away (we deliver up to ${estimate?.max_km} km). Please move your pin closer or update your address.`,
@@ -259,6 +269,11 @@ export default function CheckoutPage() {
 
     if (cart.length === 0) {
       setError("Your basket is empty");
+      return;
+    }
+
+    if (isBelowMinimum) {
+      setError(belowMinimumMessage);
       return;
     }
 
@@ -895,6 +910,22 @@ export default function CheckoutPage() {
                       <p style={{ color: "#ef4444", fontSize: 13, marginTop: 6, position: "absolute" }}>{phoneError}</p>
                     )}
                   </div>
+
+                  {isBelowMinimum && (
+                    <div
+                      style={{
+                        padding: "16px 20px",
+                        borderRadius: 16,
+                        background: "#fffbeb",
+                        border: "1px solid #fde68a",
+                        color: "#b45309",
+                        fontSize: 14,
+                        fontWeight: 500,
+                      }}
+                    >
+                      {belowMinimumMessage}
+                    </div>
+                  )}
 
                   <div>
                     <button

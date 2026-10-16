@@ -91,6 +91,10 @@ export interface Product {
   availability: ProductAvailability;
   is_featured: boolean;
   sort_order: number;
+  // Pack (bulk) selling — a product may additionally be sold as a pack of
+  // `pack_size` pieces. Pack price is derived: base_price * pack_size.
+  pack_size: number | null;
+  pack_stock: number;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
@@ -221,6 +225,8 @@ export interface BusinessConfig {
   max_delivery_km: number;
   delivery_provinces: string | null;
   delivery_areas: string | null;
+  /** Minimum order SUBTOTAL (PHP pesos) for delivery orders. null/undefined = no minimum. */
+  delivery_min_order_amount?: number | null;
   base_lat: number | null;
   base_lng: number | null;
   created_at: string;

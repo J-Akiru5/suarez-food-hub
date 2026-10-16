@@ -106,17 +106,6 @@ function RegisterForm() {
 
     setLoading(true);
 
-    const { data: existing } = await supabase
-      .from("profiles")
-      .select("id")
-      .eq("username", username.trim())
-      .maybeSingle();
-    if (existing) {
-      setError("Username is already taken");
-      setLoading(false);
-      return;
-    }
-
     const { data, error: authError } = await supabase.auth.signUp({
       email,
       password,

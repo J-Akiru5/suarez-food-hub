@@ -44,7 +44,7 @@
 <div class="card">
 <h2>TL;DR</h2>
 <p class="tldr">
-All four lane branches (web, rider, admin, staff) merged cleanly into <code>develop</code> with zero conflicts. The duplicated stock-restore loop in admin/staff <code>api/orders</code> routes was extracted into a shared <code>restoreStockForOrder()</code> in <code>packages/data-access</code>. Drift workarounds (dead <code>sort_order</code> fallbacks) were already cleaned by the staff lane. Root hygiene completed: deleted 6 junk files, repaired corrupted .gitignore NUL bytes, added dev-artifact ignore patterns. One locked-out rider identified (Cris Mique) &mdash; UPDATE held until rider fix is deployed. Pipeline passes: typecheck 7/7, build 4/4, tests 26/26.
+All four lane branches (web, rider, admin, staff) merged cleanly into <code>develop</code> with zero conflicts. The duplicated stock-restore loop in admin/staff <code>api/orders</code> routes was extracted into a shared <code>restoreStockForOrder()</code> in <code>packages/data-access</code>. Drift workarounds (dead <code>sort_order</code> fallbacks) were already cleaned by the staff lane. Root hygiene completed: deleted 6 junk files, repaired corrupted .gitignore NUL bytes, added dev-artifact ignore patterns. One locked-out rider identified (rider 1) &mdash; UPDATE held until rider fix is deployed. Pipeline passes: typecheck 7/7, build 4/4, tests 26/26.
 </p>
 </div>
 
@@ -144,7 +144,7 @@ All four lane branches (web, rider, admin, staff) merged cleanly into <code>deve
 <tr><td>sort_order fallbacks fully removed</td><td><span class="badge badge-green">Verified</span></td></tr>
 <tr><td>package-lock.json unreferenced before delete</td><td><span class="badge badge-green">Verified</span></td></tr>
 <tr><td>Develop pushed to origin</td><td><span class="badge badge-green">Verified</span></td></tr>
-<tr><td>Locked rider: Cris Mique (5269e28d) &mdash; is_active=false, rider_status=available</td><td><span class="badge badge-green">Verified</span></td></tr>
+<tr><td>Locked rider: rider 1 &mdash; is_active=false, rider_status=available</td><td><span class="badge badge-green">Verified</span></td></tr>
 <tr><td>restoreStockForOrder: non-atomic loop (flagged)</td><td><span class="badge badge-orange">Inference</span></td></tr>
 <tr><td>Admin sends {id}, staff sends {order_id} (flagged)</td><td><span class="badge badge-orange">Inference</span></td></tr>
 <tr><td>Live rider lockout count = 1</td><td><span class="badge badge-orange">Inference</span></td></tr>
@@ -175,7 +175,7 @@ All four lane branches (web, rider, admin, staff) merged cleanly into <code>deve
 <table>
 <thead><tr><th>id</th><th>email</th><th>name</th><th>rider_status</th><th>is_active</th></tr></thead>
 <tbody>
-<tr><td><code>5269e28d-fb70-40d6-9420-3d6f6cb4bf28</code></td><td>crismique@gmail.com</td><td>Cris Mique</td><td>available</td><td>false</td></tr>
+<tr><td><code>rider-1-id</code></td><td>rider1@example.com</td><td>Rider 1</td><td>available</td><td>false</td></tr>
 </tbody>
 </table>
 <p style="color:var(--muted);font-size:13px;margin-top:8px"><strong>Status:</strong> UPDATE held. This rider&rsquo;s <code>is_active</code> was set to <code>false</code> by the old layout.tsx toggle code. They cannot log in. The UPDATE will set <code>is_active=true</code> for this rider &mdash; <strong>only after Jeff confirms the rider fix is deployed</strong> (otherwise they&rsquo;d lock out again immediately).</p>
@@ -186,7 +186,7 @@ All four lane branches (web, rider, admin, staff) merged cleanly into <code>deve
 <h3>Immediate (Jeff must do)</h3>
 <ol style="color:var(--muted);margin-left:20px">
 <li>Deploy <code>develop</code> to Vercel (all 4 apps)</li>
-<li>Run the rider data repair UPDATE: <code>UPDATE profiles SET is_active=true WHERE id = '5269e28d-fb70-40d6-9420-3d6f6cb4bf28' RETURNING id</code></li>
+<li>Run the rider data repair UPDATE: <code>UPDATE profiles SET is_active=true WHERE id = 'rider-1-id' RETURNING id</code></li>
 <li>Set <code>NEXT_PUBLIC_WEB_URL</code> on rider Vercel project (for &ldquo;Back to website&rdquo; and &ldquo;Create an account&rdquo; links)</li>
 </ol>
 

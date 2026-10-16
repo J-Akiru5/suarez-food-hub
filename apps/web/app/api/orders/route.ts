@@ -48,7 +48,27 @@ export async function POST(req: NextRequest) {
     let serverSubtotal = 0;
     const dbPrices: number[] = [];
     for (const item of cart) {
-      if (item.variantId) {
+      if (item.isPack) {
+        // Pack line item: price = base_price * pack_size, stock = pack_stock.
+        const { data: product } = await serviceSupabase
+          .from("products")
+          .select("id, name, base_price, pack_size, pack_stock")
+          .eq("id", item.id)
+          .single();
+        if (!product) {
+          stockErrors.push(`"${item.name}" not found`);
+        } else if (!product.pack_size || product.pack_size <= 0) {
+          stockErrors.push(`"${item.name}" is not sold as a pack`);
+        } else if ((product.pack_stock ?? 0) < item.quantity) {
+          stockErrors.push(
+            `"${item.name}" only has ${product.pack_stock ?? 0} pack(s) left, you ordered ${item.quantity}`,
+          );
+        } else {
+          const packPrice = Number(product.base_price) * Number(product.pack_size);
+          serverSubtotal += packPrice * item.quantity;
+          dbPrices.push(packPrice);
+        }
+      } else if (item.variantId) {
         // Check variant stock + verify the parent product still exists
         // (prevents an FK error on order_items insert when a product was hard-deleted)
         const { data: variant } = await serviceSupabase
@@ -147,7 +167,7 @@ export async function POST(req: NextRequest) {
     // with province-level fallback for backwards compatibility.
     const { data: business } = await serviceSupabase
       .from("business")
-      .select("delivery_provinces, delivery_areas")
+      .select("delivery_provinces, delivery_areas, delivery_min_order_amount")
       .limit(1)
       .single();
 
@@ -227,6 +247,20 @@ export async function POST(req: NextRequest) {
     const deliveryFee = feeOutcome.fee;
 
     serverSubtotal = Math.round(serverSubtotal * 100) / 100;
+
+    // Minimum order value for delivery (checked against the DB-priced subtotal,
+    // before the delivery fee). Every order placed here is a delivery order.
+    const minOrderAmount = business?.delivery_min_order_amount ?? 0;
+    if (minOrderAmount > 0 && serverSubtotal < minOrderAmount) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Minimum order for delivery is ₱${minOrderAmount}. Add ₱${Math.ceil(minOrderAmount - serverSubtotal)} more to proceed.`,
+        },
+        { status: 400 },
+      );
+    }
+
     const totalAmount = Math.round((serverSubtotal + deliveryFee) * 100) / 100;
 
     const { data: order, error: orderError } = await createOrder(serviceSupabase, {
@@ -265,6 +299,7 @@ export async function POST(req: NextRequest) {
           quantity: item.quantity,
           unit_price: itemPrice,
           total_price: itemPrice * item.quantity,
+          is_pack: !!item.isPack,
         },
       ]);
 
