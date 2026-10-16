@@ -16,14 +16,14 @@
   },
   "ignore": [
     "scripts/**",
+    "supabase/_legacy/**",
     "apps/*/lib/**",
     "apps/*/components/LocationPicker.tsx",
     "apps/*/components/MapComponent.tsx",
     "apps/web/components/Navbar.tsx",
     "apps/web/components/AuthNavbar.tsx",
-    "apps/rider/public/sw.js",
-    "supabase/_legacy/**"
+    "apps/rider/public/sw.js"
   ],
   "ignoreDependencies": ["@repo/supabase", "@types/leaflet", "turbo-ignore"],
-  "ignoreBinaries": ["trufflehog"]
+  "ignoreBinaries": ["trufflehog", "supabase"]
 }
