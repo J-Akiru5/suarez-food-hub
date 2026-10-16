@@ -220,6 +220,8 @@ export interface BusinessConfig {
   max_delivery_km: number;
   delivery_provinces: string | null;
   delivery_areas: string | null;
+  /** Minimum order SUBTOTAL (PHP pesos) for delivery orders. null/undefined = no minimum. */
+  delivery_min_order_amount?: number | null;
   base_lat: number | null;
   base_lng: number | null;
   created_at: string;

@@ -81,6 +81,7 @@ interface BusinessConfig {
   delivery_tiers: { max_km: number; fee: number }[];
   max_delivery_km: number;
   delivery_areas: string;
+  delivery_min_order_amount: number | null;
   operating_hours: OperatingHours | null;
   about_content: AboutContent | null;
 }
@@ -187,6 +188,7 @@ export default function SettingsPage() {
     delivery_tiers: DEFAULT_TIERS,
     max_delivery_km: 15,
     delivery_areas: "",
+    delivery_min_order_amount: null,
     operating_hours: null,
     about_content: null,
   });
@@ -214,6 +216,7 @@ export default function SettingsPage() {
         delivery_tiers: tiers,
         max_delivery_km: Number(data.max_delivery_km) || tiers[tiers.length - 1]?.max_km || 15,
         delivery_areas: data.delivery_areas || "",
+        delivery_min_order_amount: data.delivery_min_order_amount ?? null,
         operating_hours: data.operating_hours || null,
         about_content: data.about_content || null,
       });
@@ -425,6 +428,17 @@ export default function SettingsPage() {
                   />
                   <p className="text-xs text-muted-foreground mt-1">Orders beyond this distance are rejected.</p>
                 </div>
+              </div>
+
+              {/* Minimum order amount — read-only here, edited by staff in the Staff app */}
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <p className="text-sm font-medium text-gray-700 mb-1">Minimum Order Amount</p>
+                <p className="text-sm font-semibold text-gray-900">
+                  {config.delivery_min_order_amount ? `₱${config.delivery_min_order_amount}` : "No minimum set"}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Applies to the order subtotal for delivery orders. Managed by staff in Staff → Settings.
+                </p>
               </div>
 
               {/* Distance-based fee tiers */}

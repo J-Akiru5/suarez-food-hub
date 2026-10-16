@@ -147,7 +147,7 @@ export async function POST(req: NextRequest) {
     // with province-level fallback for backwards compatibility.
     const { data: business } = await serviceSupabase
       .from("business")
-      .select("delivery_provinces, delivery_areas")
+      .select("delivery_provinces, delivery_areas, delivery_min_order_amount")
       .limit(1)
       .single();
 
@@ -227,6 +227,20 @@ export async function POST(req: NextRequest) {
     const deliveryFee = feeOutcome.fee;
 
     serverSubtotal = Math.round(serverSubtotal * 100) / 100;
+
+    // Minimum order value for delivery (checked against the DB-priced subtotal,
+    // before the delivery fee). Every order placed here is a delivery order.
+    const minOrderAmount = business?.delivery_min_order_amount ?? 0;
+    if (minOrderAmount > 0 && serverSubtotal < minOrderAmount) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Minimum order for delivery is ₱${minOrderAmount}. Add ₱${Math.ceil(minOrderAmount - serverSubtotal)} more to proceed.`,
+        },
+        { status: 400 },
+      );
+    }
+
     const totalAmount = Math.round((serverSubtotal + deliveryFee) * 100) / 100;
 
     const { data: order, error: orderError } = await createOrder(serviceSupabase, {
