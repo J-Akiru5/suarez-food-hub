@@ -90,6 +90,10 @@ export interface Product {
   availability: ProductAvailability;
   is_featured: boolean;
   sort_order: number;
+  // Pack (bulk) selling — a product may additionally be sold as a pack of
+  // `pack_size` pieces. Pack price is derived: base_price * pack_size.
+  pack_size: number | null;
+  pack_stock: number;
   created_at: string;
   updated_at: string;
   deleted_at: string | null;
