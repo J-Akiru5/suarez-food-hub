@@ -28,6 +28,8 @@ interface Product {
   rating: number;
   variant_type: string;
   variants: ProductVariant[];
+  pack_size: number | null;
+  pack_stock: number;
 }
 
 interface CartItem {
@@ -38,6 +40,7 @@ interface CartItem {
   quantity: number;
   variant: string;
   variantId?: string;
+  isPack?: boolean;
 }
 
 // ─── Emoji map for categories ─────────────────────────
@@ -99,6 +102,7 @@ export default function MenuPage() {
   const [modalProduct, setModalProduct] = useState<Product | null>(null);
   const [selectedVariant, setSelectedVariant] = useState("");
   const [quantity, setQuantity] = useState(1);
+  const [buyPack, setBuyPack] = useState(false);
 
   // Toast
   const [toast, setToast] = useState<string | null>(null);
@@ -231,6 +235,8 @@ export default function MenuPage() {
     const firstInStock = product.variants.find((v) => v.quantity > 0);
     setSelectedVariant(firstInStock?.name || opts[0] || "");
     setQuantity(1);
+    // Default to pack only if the product sells packs and has pack stock
+    setBuyPack(!!product.pack_size && product.pack_size > 0 && (product.pack_stock ?? 0) > 0);
   };
 
   // Deep-link: opening /menu?product=<id> (e.g. from a featured card on the
@@ -254,26 +260,37 @@ export default function MenuPage() {
       return;
     }
 
-    // Prevent adding out-of-stock variants (defensive check)
-    const variantData = modalProduct.variants.find((v) => v.name === selectedVariant);
-    if (variantData && variantData.quantity <= 0) {
-      showToast(`${modalProduct.name} (${selectedVariant}) is sold out`);
-      setModalProduct(null);
-      return;
+    // Prevent adding out-of-stock variants (defensive check).
+    // Skipped for packs — the variant selector is hidden and the pack stock
+    // is checked separately below.
+    if (!buyPack) {
+      const variantData = modalProduct.variants.find((v) => v.name === selectedVariant);
+      if (variantData && variantData.quantity <= 0) {
+        showToast(`${modalProduct.name} (${selectedVariant}) is sold out`);
+        setModalProduct(null);
+        return;
+      }
     }
 
-    const price = getVariantPrice(modalProduct, selectedVariant);
     const foundVariant = modalProduct.variants.find((v) => v.name === selectedVariant);
+    const sellingPacks =
+      buyPack && !!modalProduct.pack_size && modalProduct.pack_size > 0 && (modalProduct.pack_stock ?? 0) > 0;
+    // A pack is its own cart line: price = base_price × pack_size, flagged isPack
+    // so checkout/stock treat it as a pack (deducted from pack_stock, not quantity).
+    const price = sellingPacks
+      ? modalProduct.price * (modalProduct.pack_size as number)
+      : getVariantPrice(modalProduct, selectedVariant);
     const cartItem: CartItem = {
       id: modalProduct.id,
-      name: modalProduct.name,
+      name: sellingPacks ? `${modalProduct.name} (Pack of ${modalProduct.pack_size})` : modalProduct.name,
       image: modalProduct.image,
       price,
       quantity,
-      variant: selectedVariant,
-      variantId: foundVariant?.id,
+      variant: sellingPacks ? "" : selectedVariant,
+      variantId: sellingPacks ? undefined : foundVariant?.id,
+      isPack: sellingPacks,
     };
-    const existing = cart.findIndex((c) => c.id === modalProduct.id && c.variant === selectedVariant);
+    const existing = cart.findIndex((c) => c.id === modalProduct.id && c.variant === cartItem.variant);
     let updated: CartItem[];
     if (existing >= 0) {
       updated = cart.map((c, i) => (i === existing ? { ...c, quantity: c.quantity + quantity } : c));
@@ -487,8 +504,43 @@ export default function MenuPage() {
               </h2>
               <p className="text-sm text-gray-500 leading-relaxed m-0 mb-6">{modalProduct.description}</p>
 
+              {/* Pack (bulk) option — shown when the product sells packs and has stock */}
+              {modalProduct.pack_size && modalProduct.pack_size > 0 && (modalProduct.pack_stock ?? 0) > 0 && (
+                <div className="mb-5">
+                  <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest m-0 mb-3">Buy as</p>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => setBuyPack(false)}
+                      className={cn(
+                        "px-5 py-2 rounded-full text-sm font-semibold border-2 transition-all duration-200",
+                        !buyPack
+                          ? "bg-brand-500 text-white border-brand-500"
+                          : "bg-white text-gray-600 border-gray-200 hover:border-brand-500/50 cursor-pointer",
+                      )}
+                    >
+                      Single
+                    </button>
+                    <button
+                      onClick={() => setBuyPack(true)}
+                      className={cn(
+                        "px-5 py-2 rounded-full text-sm font-semibold border-2 transition-all duration-200",
+                        buyPack
+                          ? "bg-brand-500 text-white border-brand-500"
+                          : "bg-white text-gray-600 border-gray-200 hover:border-brand-500/50 cursor-pointer",
+                      )}
+                    >
+                      Pack of {modalProduct.pack_size}
+                      <span className="text-[10px] ml-1 font-normal opacity-80">
+                        ₱{(modalProduct.price * modalProduct.pack_size).toLocaleString()}
+                      </span>
+                    </button>
+                  </div>
+                  <p className="text-[11px] text-gray-400 mt-2">{modalProduct.pack_stock} packs left</p>
+                </div>
+              )}
+
               {/* Variant Options */}
-              {hasVariants(modalProduct) && (
+              {hasVariants(modalProduct) && !buyPack && (
                 <div className="mb-5">
                   <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest m-0 mb-3">
                     {getVariantLabel(modalProduct.variant_type)}
@@ -541,7 +593,9 @@ export default function MenuPage() {
                   <button
                     onClick={() => {
                       const variantData = modalProduct.variants.find((v) => v.name === selectedVariant);
-                      const max = variantData?.quantity || modalProduct.quantity;
+                      const max = buyPack
+                        ? (modalProduct.pack_stock ?? 0)
+                        : variantData?.quantity || modalProduct.quantity;
                       setQuantity((q) => Math.min(max, q + 1));
                     }}
                     className="w-9 h-9 rounded-full bg-white border-none flex items-center justify-center cursor-pointer shadow-sm hover:shadow transition-shadow"
@@ -559,14 +613,21 @@ export default function MenuPage() {
                     className="text-2xl md:text-3xl font-bold text-brand-500 m-0"
                     style={{ fontFamily: "var(--playfair-display)" }}
                   >
-                    ₱{getVariantPrice(modalProduct, selectedVariant) * quantity}.00
+                    ₱
+                    {(buyPack
+                      ? modalProduct.price * (modalProduct.pack_size ?? 0) * quantity
+                      : getVariantPrice(modalProduct, selectedVariant) * quantity
+                    ).toLocaleString()}
+                    .00
                   </p>
                 </div>
                 {(() => {
                   const variantData = modalProduct.variants.find((v) => v.name === selectedVariant);
-                  const selectedSoldOut = hasVariants(modalProduct)
-                    ? !variantData || variantData.quantity <= 0
-                    : modalProduct.availability === "sold_out";
+                  const selectedSoldOut = buyPack
+                    ? (modalProduct.pack_stock ?? 0) <= 0
+                    : hasVariants(modalProduct)
+                      ? !variantData || variantData.quantity <= 0
+                      : modalProduct.availability === "sold_out";
                   return (
                     <button
                       onClick={addToCart}

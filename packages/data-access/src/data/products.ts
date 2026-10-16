@@ -195,7 +195,7 @@ export async function deductVariantStock(supabase: TypedSupabaseClient, variantI
 export async function deductPackStock(supabase: TypedSupabaseClient, productId: string, quantity: number) {
   const { data: product } = await supabase
     .from("products")
-    .select("quantity, pack_stock, pack_size, name")
+    .select("quantity, pack_stock, pack_size, availability, name")
     .eq("id", productId)
     .single();
 

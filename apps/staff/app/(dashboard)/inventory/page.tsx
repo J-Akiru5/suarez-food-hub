@@ -101,6 +101,8 @@ export default function StaffInventoryPage() {
   const [formIsFeatured, setFormIsFeatured] = useState(false);
   const [formQuantity, setFormQuantity] = useState("");
   const [formBuffer, setFormBuffer] = useState("5");
+  const [formPackSize, setFormPackSize] = useState("");
+  const [formPackStock, setFormPackStock] = useState("0");
   const [formVariantType, setFormVariantType] = useState<string>("none");
   const [formVariants, setFormVariants] = useState<{ name: string; price: string; qty: string }[]>([]);
   const [uploading, setUploading] = useState(false);
@@ -231,6 +233,8 @@ export default function StaffInventoryPage() {
     setFormIsFeatured(false);
     setFormQuantity("0");
     setFormBuffer("5");
+    setFormPackSize("");
+    setFormPackStock("0");
     setFormVariantType("none");
     setFormVariants([]);
     setDialogOpen(true);
@@ -248,6 +252,8 @@ export default function StaffInventoryPage() {
     setFormIsFeatured(!!product.is_featured);
     setFormQuantity(String(product.quantity ?? 0));
     setFormBuffer(String(product.buffer_quantity ?? 5));
+    setFormPackSize(product.pack_size ? String(product.pack_size) : "");
+    setFormPackStock(String(product.pack_stock ?? 0));
     setFormVariantType(product.variant_type || "none");
     // Load existing variants (key from Supabase select: product_variants)
     if (product.product_variants && product.product_variants.length > 0) {
@@ -310,6 +316,10 @@ export default function StaffInventoryPage() {
       is_featured: formIsFeatured,
       quantity: parseInt(formQuantity, 10) || 0,
       buffer_quantity: parseInt(formBuffer, 10) || 5,
+      // Pack config: empty/zero pack size means the product doesn't sell packs,
+      // so we store NULL and reset the pack counter.
+      pack_size: formPackSize ? parseInt(formPackSize, 10) || null : null,
+      pack_stock: formPackSize ? parseInt(formPackStock, 10) || 0 : 0,
     };
 
     let result: any;
@@ -700,6 +710,9 @@ export default function StaffInventoryPage() {
                     <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 hidden sm:table-cell">
                       Stock
                     </th>
+                    <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3 hidden sm:table-cell">
+                      Packs
+                    </th>
                     <th className="text-left text-xs font-medium text-gray-500 uppercase tracking-wider px-4 py-3">
                       Status
                     </th>
@@ -782,6 +795,23 @@ export default function StaffInventoryPage() {
                                   .join(" · ")}
                               </span>
                             )}
+                        </td>
+                        <td className="px-4 py-3 hidden sm:table-cell">
+                          {product.pack_size && product.pack_size > 0 ? (
+                            <div className="flex items-center gap-2">
+                              <span
+                                className={`text-sm font-bold ${(product.pack_stock ?? 0) <= 0 ? "text-red-600" : "text-gray-900"}`}
+                              >
+                                {product.pack_stock ?? 0}
+                              </span>
+                              <span className="text-[10px] text-gray-400 font-normal">× {product.pack_size} pcs</span>
+                              {(product.pack_stock ?? 0) <= 0 && (
+                                <Badge className="bg-red-100 text-red-700 text-[9px] border-0">Out</Badge>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-sm text-gray-300">—</span>
+                          )}
                         </td>
                         <td className="px-4 py-3">
                           <span
@@ -1276,6 +1306,36 @@ export default function StaffInventoryPage() {
                   {formVariants.reduce((sum, v) => sum + (parseInt(v.qty, 10) || 0), 0)} units
                 </div>
               )}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-gray-700 block mb-1">Pack Size (pcs)</label>
+                  <Input
+                    type="number"
+                    value={formPackSize}
+                    onChange={(e) => setFormPackSize(e.target.value)}
+                    placeholder="Not sold as pack"
+                    min="0"
+                  />
+                  <p className="text-[11px] text-gray-400 mt-1">Leave empty if the product has no packs.</p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 block mb-1">Pack Stock</label>
+                  <Input
+                    type="number"
+                    value={formPackStock}
+                    onChange={(e) => setFormPackStock(e.target.value)}
+                    placeholder="0"
+                    min="0"
+                    disabled={!formPackSize}
+                  />
+                  <p className="text-[11px] text-gray-400 mt-1">
+                    {formPackSize
+                      ? `Pack price: ₱${((parseFloat(formPrice) || 0) * (parseInt(formPackSize, 10) || 0)).toFixed(2)}`
+                      : "Set a pack size first."}
+                  </p>
+                </div>
+              </div>
+
               <div>
                 <label className="text-sm font-medium text-gray-700 block mb-1">Availability</label>
                 <Select value={formAvailability} onValueChange={setFormAvailability}>
