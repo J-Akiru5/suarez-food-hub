@@ -64,12 +64,23 @@ export async function getRankedRiders(supabase: TypedSupabaseClient, maxActive: 
     .in("status", ACTIVE_DELIVERY_STATUSES as unknown as string[])
     .not("rider_id", "is", null);
 
-  const { data: recentDeliveries } = await supabase
-    .from("orders")
-    .select("rider_id, delivered_at")
-    .not("delivered_at", "is", null)
-    .order("delivered_at", { ascending: false })
-    .limit(500);
+  // Last completed delivery per rider, one tiny query each (a handful of riders,
+  // idx_orders_rider). Scanning "the N most recent deliveries of everyone" instead
+  // would silently drop quiet riders and rank them as "never delivered" (= first in
+  // line), disagreeing with dispatch_pick_next() in the database.
+  const lastDeliveries = await Promise.all(
+    riders.map(async (r) => {
+      const { data } = await supabase
+        .from("orders")
+        .select("delivered_at")
+        .eq("rider_id", r.id)
+        .not("delivered_at", "is", null)
+        .order("delivered_at", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      return [r.id, (data?.delivered_at as string | null) ?? null] as const;
+    }),
+  );
 
   const activeByRider = new Map<string, number>();
   for (const o of activeOrders || []) {
@@ -78,9 +89,8 @@ export async function getRankedRiders(supabase: TypedSupabaseClient, maxActive: 
   }
 
   const lastDeliveryByRider = new Map<string, string>();
-  for (const o of recentDeliveries || []) {
-    const id = o.rider_id as string;
-    if (!lastDeliveryByRider.has(id)) lastDeliveryByRider.set(id, o.delivered_at as string);
+  for (const [id, at] of lastDeliveries) {
+    if (at) lastDeliveryByRider.set(id, at);
   }
 
   const candidates = riders.map((r) => ({

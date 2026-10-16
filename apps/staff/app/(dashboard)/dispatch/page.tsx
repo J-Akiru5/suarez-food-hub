@@ -98,6 +98,7 @@ export default function DispatchPage() {
   const [busyOrderId, setBusyOrderId] = useState<string | null>(null);
   const [manualFor, setManualFor] = useState<string | null>(null);
   const [filter, setFilter] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const inFlight = useRef(false);
 
   const fetchBoard = useCallback(async () => {
@@ -105,10 +106,16 @@ export default function DispatchPage() {
     inFlight.current = true;
     try {
       const res = await fetch("/api/dispatch");
-      const data = await res.json();
-      if (res.ok && data?.data) setBoard(data.data as Board);
+      const data = await res.json().catch(() => null);
+      if (res.ok && data?.data) {
+        setBoard(data.data as Board);
+        setError(null);
+      } else {
+        // Never fall through to "All caught up" on a failed load — that would hide waiting orders.
+        setError(data?.error || `Could not load the dispatch board (HTTP ${res.status}).`);
+      }
     } catch {
-      /* keep last board on transient network errors */
+      setError("Network problem — showing the last board we loaded.");
     } finally {
       inFlight.current = false;
       setLoading(false);
@@ -123,9 +130,11 @@ export default function DispatchPage() {
 
   // Realtime: order lifecycle and rider status changes both matter here.
   useEffect(() => {
+    let cancelled = false;
     let unsub = () => {};
     (async () => {
       const { createBrowserTypedClient } = await import("@repo/data-access/client");
+      if (cancelled) return; // unmounted while the client was loading — don't leak a channel
       const supabase = createBrowserTypedClient();
       const channel = supabase
         .channel("dispatch-realtime")
@@ -134,7 +143,10 @@ export default function DispatchPage() {
         .subscribe();
       unsub = () => supabase.removeChannel(channel);
     })();
-    return () => unsub();
+    return () => {
+      cancelled = true;
+      unsub();
+    };
   }, [fetchBoard]);
 
   async function assign(orderId: string, riderId?: string) {
@@ -228,7 +240,19 @@ export default function DispatchPage() {
         </button>
       </div>
 
-      {unassigned.length === 0 && awaiting.length === 0 && (
+      {error && (
+        <div
+          role="alert"
+          className="flex items-start gap-3 p-4 rounded-xl bg-red-50 border border-red-200 text-red-800 text-sm"
+        >
+          <AlertTriangle className="h-5 w-5 shrink-0 mt-0.5" />
+          <div>
+            <strong>The dispatch board could not be loaded.</strong> {error}
+          </div>
+        </div>
+      )}
+
+      {board && !error && unassigned.length === 0 && awaiting.length === 0 && (
         <div className="flex items-center gap-3 p-4 rounded-xl bg-green-50 border border-green-200 text-green-800 text-sm">
           <CheckCircle2 className="h-5 w-5 shrink-0" /> All caught up — no orders need a rider right now.
         </div>
@@ -359,15 +383,20 @@ export default function DispatchPage() {
                       {manualFor === o.id && (
                         <div className="w-full border-t border-dashed border-gray-200 pt-3 mt-1">
                           <p className="text-xs text-muted-foreground mb-2">
-                            Ranked queue — tap to assign. Over-cap riders are marked{" "}
-                            <span className="font-semibold text-amber-600">full</span>.
+                            Ranked queue — tap to assign. Riders at capacity are marked{" "}
+                            <span className="font-semibold text-amber-600">full</span> and cannot take another order.
                           </p>
                           <div className="flex flex-wrap gap-2">
                             {riders.map((r, i) => (
                               <button
                                 key={r.id}
                                 onClick={() => assign(o.id, r.id)}
-                                disabled={busyOrderId === o.id}
+                                disabled={busyOrderId === o.id || !r.under_cap}
+                                title={
+                                  r.under_cap
+                                    ? undefined
+                                    : `At capacity (${maxActive}) — raise the limit in Admin → Settings`
+                                }
                                 className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border text-xs font-medium transition-colors disabled:opacity-50 ${
                                   r.under_cap
                                     ? "border-gray-200 hover:border-crimson-400 hover:bg-crimson-50 text-gray-700"
@@ -494,8 +523,8 @@ export default function DispatchPage() {
 
           <div className="px-5 py-3 border-t border-gray-100 bg-gray-50/50">
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              Ranking: fewest active deliveries → longest idle. Riders at the cap ({maxActive}) can still be picked
-              manually but are skipped by Auto-Assign.
+              Ranking: fewest active deliveries → longest idle. Riders at the cap ({maxActive}) are listed but cannot be
+              assigned until they finish a delivery (or the limit is raised in Admin → Settings).
             </p>
           </div>
         </section>

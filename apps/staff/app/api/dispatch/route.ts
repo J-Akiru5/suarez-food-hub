@@ -68,6 +68,16 @@ export async function GET(req: NextRequest) {
         .limit(20),
     ]);
 
+    // A failed query must not look like "nothing waiting". The usual cause is the dispatch
+    // migration (0030) not being applied yet: surface it instead of rendering an empty board.
+    const queryError = unassignedRes.error || awaitingRes.error || logRes.error;
+    if (queryError) {
+      return NextResponse.json(
+        { success: false, error: `Dispatch data could not be loaded: ${queryError.message}` },
+        { status: 500 },
+      );
+    }
+
     return NextResponse.json({
       success: true,
       data: {
