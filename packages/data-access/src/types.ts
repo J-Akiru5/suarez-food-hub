@@ -401,9 +401,12 @@ export interface Database {
           registration_no: string | null;
           gcash_qr_url: string | null;
           delivery_fee: number;
-          free_delivery_min: number;
+          delivery_tiers: Json;
+          max_delivery_km: number;
           delivery_provinces: string | null;
           delivery_areas: string | null;
+          base_lat: number | null;
+          base_lng: number | null;
           created_at: string;
           updated_at: string;
         };
@@ -417,9 +420,12 @@ export interface Database {
           registration_no?: string | null;
           gcash_qr_url?: string | null;
           delivery_fee?: number;
-          free_delivery_min?: number;
+          delivery_tiers?: Json;
+          max_delivery_km?: number;
           delivery_provinces?: string | null;
           delivery_areas?: string | null;
+          base_lat?: number | null;
+          base_lng?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -433,9 +439,12 @@ export interface Database {
           registration_no?: string | null;
           gcash_qr_url?: string | null;
           delivery_fee?: number;
-          free_delivery_min?: number;
+          delivery_tiers?: Json;
+          max_delivery_km?: number;
           delivery_provinces?: string | null;
           delivery_areas?: string | null;
+          base_lat?: number | null;
+          base_lng?: number | null;
           created_at?: string;
           updated_at?: string;
         };
@@ -449,6 +458,8 @@ export interface Database {
           code: string | null;
           parent_id: string | null;
           is_custom: boolean;
+          centroid_lat: number | null;
+          centroid_lng: number | null;
           created_at: string;
         };
         Insert: {

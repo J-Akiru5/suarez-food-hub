@@ -11,8 +11,15 @@ UPDATE business SET
   email = 'hello@suarezfoodhub.com',
   gcash_qr_url = NULL,
   maya_qr_url = NULL,
-  delivery_fee = 40,
-  free_delivery_min = 200
+  delivery_fee = 20
+WHERE name = 'Suarez Food Hub';
+-- Distance-based fee tiers (0028) — 0–2 km = ₱20, 2–5 km = ₱40, 5–10 km = ₱70, 10–15 km = ₱120
+UPDATE business SET delivery_tiers = '[
+  {"max_km": 2,  "fee": 20},
+  {"max_km": 5,  "fee": 40},
+  {"max_km": 10, "fee": 70},
+  {"max_km": 15, "fee": 120}
+]'::jsonb, max_delivery_km = 15
 WHERE name = 'Suarez Food Hub';
 
 -- 2. Categories

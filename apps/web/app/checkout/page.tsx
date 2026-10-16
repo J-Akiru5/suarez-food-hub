@@ -12,11 +12,33 @@ import {
   X,
   ZoomIn,
 } from "lucide-react";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import AddressSetupForm from "../../components/AddressSetupForm";
 import AuthNavbar from "../../components/AuthNavbar";
 import { useAuth } from "../../components/auth-provider";
+
+// Leaflet map for the optional delivery pin — client-only.
+const LocationPicker = dynamic(() => import("../../components/LocationPicker"), {
+  ssr: false,
+  loading: () => (
+    <div
+      style={{
+        height: 256,
+        borderRadius: 16,
+        background: "#f8fafc",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        color: "#94a3b8",
+        fontSize: 14,
+      }}
+    >
+      Loading map...
+    </div>
+  ),
+});
 
 interface CartItem {
   id: string;
@@ -31,8 +53,18 @@ interface CartItem {
 interface Business {
   gcash_qr_url: string | null;
   delivery_fee: number;
+  delivery_tiers?: { max_km: number; fee: number }[] | null;
+  max_delivery_km?: number;
   delivery_provinces?: string | null;
   delivery_areas?: string | null;
+}
+
+interface FeeEstimate {
+  fee: number;
+  distance_km: number | null;
+  source: "pin" | "town_centroid" | "flat_fee";
+  out_of_range: boolean;
+  max_km: number | null;
 }
 
 const PH_REGEX = /^(?:\+63|0)9\d{9}$/;
@@ -59,7 +91,10 @@ export default function CheckoutPage() {
   const [placedOrderId, setPlacedOrderId] = useState("");
   const [error, setError] = useState("");
   const [qrModalUrl, setQrModalUrl] = useState<string | null>(null);
-  const [position, _setPosition] = useState<{ lat: number; lng: number } | null>(null);
+  const [position, setPosition] = useState<{ lat: number; lng: number } | null>(null);
+  const [showMapPicker, setShowMapPicker] = useState(false);
+  const [estimate, setEstimate] = useState<FeeEstimate | null>(null);
+  const [estimateLoading, setEstimateLoading] = useState(false);
   const [step, setStep] = useState(1);
   const [showAddressForm, setShowAddressForm] = useState(false);
   const addressRef = useRef<HTMLTextAreaElement>(null);
@@ -93,7 +128,37 @@ export default function CheckoutPage() {
       .catch(() => {});
   }, []);
 
-  // Town/city-level delivery restriction (Iloilo City + selected towns), with
+  // Live delivery-fee estimate — recomputed whenever the pin or the
+  // profile town changes. Server recomputes authoritatively on placement.
+  const townId = (profile as any)?.town_id as string | undefined;
+  const fetchEstimate = useCallback(async () => {
+    setEstimateLoading(true);
+    try {
+      const res = await fetch("/api/delivery-estimate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          lat: position?.lat ?? null,
+          lng: position?.lng ?? null,
+          town_id: position ? null : (townId ?? null),
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data?.data) setEstimate(data.data as FeeEstimate);
+    } catch {
+      /* keep the fallback fee already displayed */
+    } finally {
+      setEstimateLoading(false);
+    }
+  }, [position?.lat, position?.lng, townId]);
+
+  useEffect(() => {
+    if (!profile) return;
+    const t = setTimeout(fetchEstimate, 400); // debounce pin drags
+    return () => clearTimeout(t);
+  }, [fetchEstimate, profile]);
+
+  // Town/city-level delivery restriction (Iloilo Province + selected towns), with
   // province-level fallback for backwards compatibility.
   const deliveryAreaList = business?.delivery_areas ? business.delivery_areas.split(",").filter(Boolean) : null;
   const deliveryProvinceList = business?.delivery_provinces
@@ -111,8 +176,11 @@ export default function CheckoutPage() {
         : false);
 
   const subtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
-  const fee = Number(business?.delivery_fee ?? 40);
+  // Live estimate when available, otherwise the flat fallback fee until the
+  // estimate call returns. The server recomputes the real fee on placement.
+  const fee = estimate?.fee ?? Number(business?.delivery_fee ?? 40);
   const total = subtotal + fee;
+  const feeOutOfRange = !!estimate?.out_of_range;
 
   const validatePhone = (val: string) => {
     if (!val.trim()) return "Phone number is required";
@@ -122,6 +190,12 @@ export default function CheckoutPage() {
 
   const handleNextStep1 = () => {
     setError("");
+    if (feeOutOfRange) {
+      setError(
+        `Delivery is too far — about ${estimate?.distance_km} km away (we deliver up to ${estimate?.max_km} km). Please move your pin closer or update your address.`,
+      );
+      return;
+    }
     if (!address.trim()) {
       setError("Delivery address is required");
       return;
@@ -185,6 +259,11 @@ export default function CheckoutPage() {
 
     if (cart.length === 0) {
       setError("Your basket is empty");
+      return;
+    }
+
+    if (feeOutOfRange) {
+      setError("Your delivery address is beyond our maximum delivery distance. Please adjust your pin or address.");
       return;
     }
 
@@ -590,8 +669,8 @@ export default function CheckoutPage() {
                 fontWeight: 500,
               }}
             >
-              <strong>Delivery not available</strong> — We currently only deliver within Iloilo City and selected towns
-              in Iloilo. Please update your profile address to a covered area.
+              <strong>Delivery not available</strong> — We currently only deliver within Iloilo Province and selected
+              towns in Iloilo. Please update your profile address to a covered area.
             </div>
           )}
           {error && (
@@ -630,7 +709,7 @@ export default function CheckoutPage() {
               </h3>
               <p style={{ margin: "0 0 20px", fontSize: 15, color: "#64748b", lineHeight: 1.6 }}>
                 You need to add your delivery address before you can place an order. We currently deliver within{" "}
-                <strong>Iloilo City</strong> and selected towns in Iloilo.
+                <strong>Iloilo Province</strong> and selected towns in Iloilo.
               </p>
 
               <div style={{ display: "flex", gap: 12, flexWrap: "wrap", marginBottom: 8 }}>
@@ -840,6 +919,83 @@ export default function CheckoutPage() {
                       Continue to Payment
                     </button>
                   </div>
+                </div>
+
+                {/* Optional: exact delivery pin for an accurate distance-based fee */}
+                <div style={{ borderTop: "1px solid #f1f5f9", paddingTop: 20 }}>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: 12,
+                    }}
+                  >
+                    <div>
+                      <p style={{ margin: 0, fontSize: 14, fontWeight: 700, color: "var(--secondary-color)" }}>
+                        Exact location (optional)
+                      </p>
+                      <p style={{ margin: "2px 0 0", fontSize: 13, color: "#64748b" }}>
+                        {position
+                          ? "Pin set — your delivery fee is calculated from this location."
+                          : "Drop a pin for an accurate distance-based fee, or we'll estimate from your saved town."}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowMapPicker((v) => !v)}
+                      style={{
+                        padding: "10px 18px",
+                        borderRadius: 12,
+                        border: "2px solid var(--primary-color)",
+                        background: showMapPicker ? "var(--primary-color)" : "#fff",
+                        color: showMapPicker ? "#fff" : "var(--primary-color)",
+                        fontWeight: 700,
+                        fontSize: 13,
+                        cursor: "pointer",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {showMapPicker ? "Hide Map" : position ? "Edit Pin" : "Set on Map"}
+                    </button>
+                  </div>
+                  {showMapPicker && (
+                    <div style={{ position: "relative" }}>
+                      <LocationPicker position={position} setPosition={setPosition} />
+                      {position && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPosition(null);
+                            setShowMapPicker(false);
+                          }}
+                          style={{
+                            position: "absolute",
+                            top: 10,
+                            right: 10,
+                            zIndex: 1000,
+                            padding: "6px 12px",
+                            borderRadius: 10,
+                            border: "1px solid #e2e8f0",
+                            background: "#fff",
+                            color: "#dc2626",
+                            fontWeight: 600,
+                            fontSize: 12,
+                            cursor: "pointer",
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+                          }}
+                        >
+                          Remove Pin
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  {feeOutOfRange && (
+                    <p style={{ color: "#dc2626", fontSize: 13, fontWeight: 600, marginTop: 10 }}>
+                      ✕ This location is about {estimate?.distance_km} km away — we deliver up to {estimate?.max_km} km.
+                      Please move your pin closer.
+                    </p>
+                  )}
                 </div>
               </div>
             </div>
@@ -1444,9 +1600,23 @@ export default function CheckoutPage() {
                   marginBottom: 12,
                 }}
               >
-                <span>Delivery fee</span>
-                <span style={{ fontWeight: 600, color: "var(--secondary-color)" }}>₱{fee}</span>
+                <span>
+                  Delivery fee
+                  {estimate?.distance_km != null && (
+                    <span style={{ fontSize: 12, color: "#94a3b8" }}> ({estimate.distance_km} km)</span>
+                  )}
+                </span>
+                <span style={{ fontWeight: 600, color: "var(--secondary-color)" }}>
+                  {estimateLoading ? "…" : `₱${fee}`}
+                </span>
               </div>
+              {estimate && (
+                <p style={{ margin: "0 0 12px", fontSize: 11, color: "#94a3b8" }}>
+                  {estimate.source === "flat_fee"
+                    ? "Set your exact location for a distance-based fee."
+                    : "Estimated distance-based fee."}
+                </p>
+              )}
               <div
                 style={{
                   display: "flex",

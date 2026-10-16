@@ -41,6 +41,8 @@ export async function PATCH(req: NextRequest) {
       "gcash_qr_url",
 
       "delivery_fee",
+      "delivery_tiers",
+      "max_delivery_km",
       "delivery_provinces",
       "delivery_areas",
     ];

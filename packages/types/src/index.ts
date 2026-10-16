@@ -85,6 +85,7 @@ export interface Product {
   rating: number;
   quantity: number;
   buffer_quantity: number;
+  restock_lead_time_days: number | null;
   low_stock_alerted_at: string | null;
   availability: ProductAvailability;
   is_featured: boolean;
@@ -199,6 +200,12 @@ export interface Location {
   created_at: string;
 }
 
+/** One distance band of the delivery fee schedule (see packages/utils delivery.ts). */
+export interface DeliveryTier {
+  max_km: number;
+  fee: number;
+}
+
 export interface BusinessConfig {
   id: string;
   name: string;
@@ -209,9 +216,12 @@ export interface BusinessConfig {
   registration_no: string | null;
   gcash_qr_url: string | null;
   delivery_fee: number;
-  free_delivery_min: number;
+  delivery_tiers: DeliveryTier[] | null;
+  max_delivery_km: number;
   delivery_provinces: string | null;
   delivery_areas: string | null;
+  base_lat: number | null;
+  base_lng: number | null;
   created_at: string;
   updated_at: string;
 }

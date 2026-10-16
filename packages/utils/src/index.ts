@@ -1,6 +1,16 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
+export {
+  calculateDistance,
+  DEFAULT_FLAT_FEE,
+  type DeliveryFeeResult,
+  type DeliveryTier,
+  feeForDistance,
+  maxDeliveryKm,
+  parseDeliveryTiers,
+} from "./delivery";
+
 export function cn(...inputs: ClassValue[]): string {
   return twMerge(clsx(inputs));
 }

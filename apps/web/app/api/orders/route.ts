@@ -5,6 +5,7 @@ import { createOrder, createOrderItems, deleteOrder, getOrdersByUser } from "@re
 import { getProfileById, isUsernameTaken, upsertProfile } from "@repo/data-access/data/profiles";
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
+import { resolveDeliveryFee } from "../../../lib/delivery-fee";
 
 export async function POST(req: NextRequest) {
   try {
@@ -142,7 +143,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Check delivery area restriction — town/city level (Iloilo City + selected towns),
+    // Check delivery area restriction — town/city level (Iloilo Province + selected towns),
     // with province-level fallback for backwards compatibility.
     const { data: business } = await serviceSupabase
       .from("business")
@@ -175,7 +176,7 @@ export async function POST(req: NextRequest) {
             {
               success: false,
               error:
-                "Delivery is not available in your area. We currently only deliver within Iloilo City and selected towns in Iloilo.",
+                "Delivery is not available in your area. We currently only deliver within Iloilo Province and selected towns in Iloilo.",
             },
             { status: 403 },
           );
@@ -203,9 +204,27 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    // Delivery fee from the business config (flat fee, no free delivery threshold).
-    const { data: bizConfig } = await serviceSupabase.from("business").select("delivery_fee").limit(1).maybeSingle();
-    const deliveryFee = Number(bizConfig?.delivery_fee ?? 40);
+    // Distance-based delivery fee, computed from the business tiers
+    // (pin → town centroid → flat-fee fallback). Rejects orders beyond the
+    // configured max delivery distance.
+    const feeOutcome = await resolveDeliveryFee({
+      supabase: serviceSupabase,
+      pin:
+        typeof delivery_lat === "number" && typeof delivery_lng === "number"
+          ? { lat: delivery_lat, lng: delivery_lng }
+          : null,
+      townId: profile?.town_id ?? null,
+    });
+    if (feeOutcome.outOfRange) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Delivery address is too far — about ${feeOutcome.distanceKm} km away (maximum delivery distance is ${feeOutcome.maxKm} km).`,
+        },
+        { status: 422 },
+      );
+    }
+    const deliveryFee = feeOutcome.fee;
 
     serverSubtotal = Math.round(serverSubtotal * 100) / 100;
     const totalAmount = Math.round((serverSubtotal + deliveryFee) * 100) / 100;

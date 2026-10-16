@@ -9,7 +9,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Swal from "sweetalert2";
 
 // Fetch all cities/municipalities (towns) of Iloilo province from the public PSGC API
-// (no key needed). Delivery is restricted to Iloilo City + selected towns.
+// (no key needed). Delivery is restricted to Iloilo Province and selected towns.
 async function fetchIloiloTowns(): Promise<{ id: string; name: string }[]> {
   try {
     const regionsRes = await fetch("https://psgc.gitlab.io/api/regions");
@@ -78,10 +78,19 @@ interface BusinessConfig {
   email: string;
   gcash_qr_url: string;
   delivery_fee: number;
+  delivery_tiers: { max_km: number; fee: number }[];
+  max_delivery_km: number;
   delivery_areas: string;
   operating_hours: OperatingHours | null;
   about_content: AboutContent | null;
 }
+
+const DEFAULT_TIERS = [
+  { max_km: 2, fee: 20 },
+  { max_km: 5, fee: 40 },
+  { max_km: 10, fee: 70 },
+  { max_km: 15, fee: 120 },
+];
 
 const DAYS: (keyof OperatingHours)[] = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
 
@@ -174,7 +183,9 @@ export default function SettingsPage() {
     phone: "",
     email: "",
     gcash_qr_url: "",
-    delivery_fee: 40,
+    delivery_fee: 20,
+    delivery_tiers: DEFAULT_TIERS,
+    max_delivery_km: 15,
     delivery_areas: "",
     operating_hours: null,
     about_content: null,
@@ -183,6 +194,15 @@ export default function SettingsPage() {
   const fetchConfig = useCallback(async () => {
     const data = await getBusinessConfig(supabase);
     if (data) {
+      // DB stores tiers as JSONB (any); normalize into the editor shape.
+      const rawTiers = Array.isArray(data.delivery_tiers) ? data.delivery_tiers : null;
+      const tiers =
+        rawTiers && rawTiers.length > 0
+          ? rawTiers
+              .map((t: any) => ({ max_km: Number(t?.max_km), fee: Number(t?.fee) }))
+              .filter((t: any) => Number.isFinite(t.max_km) && t.max_km > 0 && Number.isFinite(t.fee) && t.fee >= 0)
+              .sort((a: any, b: any) => a.max_km - b.max_km)
+          : DEFAULT_TIERS;
       setConfig({
         id: data.id,
         name: data.name || "Suarez Food Hub",
@@ -190,7 +210,9 @@ export default function SettingsPage() {
         phone: data.phone || "",
         email: data.email || "",
         gcash_qr_url: data.gcash_qr_url || "",
-        delivery_fee: Number(data.delivery_fee) || 40,
+        delivery_fee: Number(data.delivery_fee) || 20,
+        delivery_tiers: tiers,
+        max_delivery_km: Number(data.max_delivery_km) || tiers[tiers.length - 1]?.max_km || 15,
         delivery_areas: data.delivery_areas || "",
         operating_hours: data.operating_hours || null,
         about_content: data.about_content || null,
@@ -247,6 +269,17 @@ export default function SettingsPage() {
   }
 
   async function handleSave() {
+    // Validate + sort distance tiers before saving.
+    const tiers = [...config.delivery_tiers]
+      .map((t) => ({ max_km: Number(t.max_km), fee: Number(t.fee) }))
+      .filter((t) => Number.isFinite(t.max_km) && t.max_km > 0 && Number.isFinite(t.fee) && t.fee >= 0)
+      .sort((a, b) => a.max_km - b.max_km);
+    if (tiers.length === 0) {
+      Swal.fire({ icon: "error", title: "Invalid tiers", text: "Add at least one delivery distance tier." });
+      return;
+    }
+    const maxKm = Number(config.max_delivery_km) > 0 ? Number(config.max_delivery_km) : tiers[tiers.length - 1].max_km;
+
     setSaving(true);
     const payload = {
       ...(config.id ? { id: config.id } : {}),
@@ -256,6 +289,8 @@ export default function SettingsPage() {
       email: config.email,
       gcash_qr_url: config.gcash_qr_url,
       delivery_fee: config.delivery_fee,
+      delivery_tiers: tiers,
+      max_delivery_km: maxKm,
       delivery_areas: config.delivery_areas || "063022000",
       operating_hours: config.operating_hours,
       about_content: config.about_content,
@@ -365,7 +400,9 @@ export default function SettingsPage() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium text-gray-700 block mb-1">Delivery Fee (₱)</label>
+                  <label className="text-sm font-medium text-gray-700 block mb-1">
+                    Fallback Flat Fee (₱) — no location set
+                  </label>
                   <Input
                     type="number"
                     min="0"
@@ -373,6 +410,104 @@ export default function SettingsPage() {
                     value={config.delivery_fee}
                     onChange={(e) => setConfig((p) => ({ ...p, delivery_fee: parseFloat(e.target.value) || 0 }))}
                   />
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Charged when the customer sets no map pin and no town centroid is available.
+                  </p>
+                </div>
+                <div>
+                  <label className="text-sm font-medium text-gray-700 block mb-1">Max Delivery Distance (km)</label>
+                  <Input
+                    type="number"
+                    min="1"
+                    step="0.5"
+                    value={config.max_delivery_km}
+                    onChange={(e) => setConfig((p) => ({ ...p, max_delivery_km: parseFloat(e.target.value) || 0 }))}
+                  />
+                  <p className="text-xs text-muted-foreground mt-1">Orders beyond this distance are rejected.</p>
+                </div>
+              </div>
+
+              {/* Distance-based fee tiers */}
+              <div className="mt-4 pt-4 border-t border-gray-100">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="text-sm font-medium text-gray-700">Distance Fee Tiers</label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setConfig((p) => {
+                        const last = p.delivery_tiers[p.delivery_tiers.length - 1];
+                        return {
+                          ...p,
+                          delivery_tiers: [...p.delivery_tiers, { max_km: (last?.max_km ?? 0) + 5, fee: 0 }],
+                        };
+                      })
+                    }
+                  >
+                    <Plus className="h-4 w-4 mr-1" /> Add Tier
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground mb-3">
+                  The fee charged for deliveries up to each distance band, e.g. 0–2 km = ₱20. Bands must increase in
+                  distance.
+                </p>
+                <div className="space-y-2">
+                  {config.delivery_tiers.map((tier, idx) => {
+                    const prevMax = idx === 0 ? 0 : config.delivery_tiers[idx - 1].max_km;
+                    return (
+                      <div key={idx} className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground w-24 shrink-0">
+                          {prevMax}–{tier.max_km} km
+                        </span>
+                        <Input
+                          type="number"
+                          min={prevMax + 0.1}
+                          step="0.5"
+                          value={tier.max_km}
+                          className="w-28"
+                          onChange={(e) =>
+                            setConfig((p) => ({
+                              ...p,
+                              delivery_tiers: p.delivery_tiers.map((t, i) =>
+                                i === idx ? { ...t, max_km: parseFloat(e.target.value) || 0 } : t,
+                              ),
+                            }))
+                          }
+                        />
+                        <span className="text-sm text-gray-500">km —</span>
+                        <span className="text-sm text-gray-500">₱</span>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="1"
+                          value={tier.fee}
+                          className="w-28"
+                          onChange={(e) =>
+                            setConfig((p) => ({
+                              ...p,
+                              delivery_tiers: p.delivery_tiers.map((t, i) =>
+                                i === idx ? { ...t, fee: parseFloat(e.target.value) || 0 } : t,
+                              ),
+                            }))
+                          }
+                        />
+                        <button
+                          type="button"
+                          disabled={config.delivery_tiers.length <= 1}
+                          onClick={() =>
+                            setConfig((p) => ({
+                              ...p,
+                              delivery_tiers: p.delivery_tiers.filter((_, i) => i !== idx),
+                            }))
+                          }
+                          className="p-2 rounded-lg text-red-500 hover:bg-red-50 disabled:opacity-30 disabled:cursor-not-allowed"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -380,9 +515,9 @@ export default function SettingsPage() {
               <div className="mt-4 pt-4 border-t border-gray-100">
                 <label className="text-sm font-medium text-gray-700 block mb-2">Allowed Delivery Towns (Iloilo)</label>
                 <p className="text-xs text-muted-foreground mb-3">
-                  Delivery is limited to <strong>Iloilo City</strong> and the towns you select below. Customers outside
-                  these towns cannot place an order. If no towns are selected, delivery defaults to{" "}
-                  <strong>Iloilo City only</strong>.
+                  Delivery is limited to <strong>Iloilo Province</strong> and the towns you select below. Customers
+                  outside these towns cannot place an order. If no towns are selected, delivery defaults to{" "}
+                  <strong>Iloilo Province only</strong>.
                 </p>
 
                 {/* Selected towns as chips */}
@@ -417,7 +552,7 @@ export default function SettingsPage() {
                         })
                     : null}
                   {!config.delivery_areas && (
-                    <span className="text-xs text-gray-400 italic">Iloilo City only (default)</span>
+                    <span className="text-xs text-gray-400 italic">Iloilo Province only (default)</span>
                   )}
                 </div>
 
@@ -425,7 +560,7 @@ export default function SettingsPage() {
                 <div className="relative">
                   <input
                     type="text"
-                    placeholder="Search towns (e.g. Iloilo City, Passi, Janiuay)..."
+                    placeholder="Search towns (e.g. Iloilo Province, Passi, Janiuay)..."
                     value={searchTown}
                     onChange={(e) => setSearchTown(e.target.value)}
                     className="w-full h-9 pl-3 pr-3 rounded-md border border-gray-200 text-sm focus:outline-none focus:ring-1 focus:ring-brand-500 mb-2"
