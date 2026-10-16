@@ -15,6 +15,12 @@
 --
 -- Race safety: pg_advisory_xact_lock per order serializes concurrent
 -- assign/accept/decline (same pattern as request_rider_cashout in 0022).
+--
+-- Security model: assign_rider / revoke_assignment / requeue_stale_assignments /
+-- dispatch_pick_next are executable by the SERVICE ROLE ONLY (the staff API route
+-- authenticates the staff session first). rider_assignment_response is the only
+-- function riders can call, and it only acts on the order assigned to auth.uid().
+-- The staff functions also re-check that the actor is an active staff/admin.
 
 -- ===========================
 -- 1. Schema
@@ -45,7 +51,7 @@ CREATE TABLE IF NOT EXISTS dispatch_log (
   rider_id UUID REFERENCES profiles(id) ON DELETE SET NULL,
   action TEXT NOT NULL, -- assigned | accepted | declined | cascaded | revoked | timeout | exhausted
   actor UUID REFERENCES profiles(id) ON DELETE SET NULL,
-  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+  created_at TIMESTAMPTZ NOT NULL DEFAULT clock_timestamp()
 );
 CREATE INDEX IF NOT EXISTS idx_dispatch_log_order ON dispatch_log(order_id, created_at DESC);
 
@@ -58,9 +64,14 @@ CREATE POLICY "staff insert dispatch log" ON dispatch_log FOR INSERT WITH CHECK 
 -- ===========================
 -- 2. Fair-queue picker (internal)
 -- ===========================
--- Picks the fairest eligible rider for an order, cascading past any riders
--- in p_declined (those who already declined this order). If the queue is
--- exhausted, the order falls back to ready_for_pickup and staff are paged.
+-- Picks the fairest eligible rider for an order and offers it to them.
+--
+-- A dispatch "cycle" runs from the last time the order left dispatch
+-- (accepted / revoked / exhausted) until now. Riders who already declined or
+-- timed out inside the current cycle are never offered the order again —
+-- otherwise two decliners would bounce it between them forever — and after 5
+-- declines/timeouts the order goes back to staff. If no eligible rider is left
+-- the order returns to the status it had before dispatch and staff are paged.
 
 CREATE OR REPLACE FUNCTION public.dispatch_pick_next(
   p_order_id UUID,
@@ -72,44 +83,53 @@ DECLARE
   v_max INT;
   v_order_no TEXT;
   v_declined UUID[] := COALESCE(p_declined, '{}'::UUID[]);
-  v_attempt INT;
+  v_cycle_start TIMESTAMPTZ;
+  v_tries INT := 0;
   v_rider UUID;
 BEGIN
   SELECT COALESCE(MAX(max_active_deliveries), 2) INTO v_max FROM business;
   SELECT COALESCE(order_number, '') INTO v_order_no FROM orders WHERE id = p_order_id;
 
-  FOR v_attempt IN 1..5 LOOP
-    SELECT candidate INTO v_rider FROM (
-      SELECT p.id AS candidate,
-             COALESCE(o.active_count, 0) AS active_count,
-             d.last_delivered_at
-      FROM profiles p
-      LEFT JOIN (
-        SELECT rider_id, COUNT(*) AS active_count
-        FROM orders
-        WHERE rider_id IS NOT NULL
-          AND status IN ('awaiting_rider', 'claimed_by_rider', 'out_for_delivery', 'near_customer')
-        GROUP BY rider_id
-      ) o ON o.rider_id = p.id
-      LEFT JOIN (
-        SELECT rider_id, MAX(delivered_at) AS last_delivered_at
-        FROM orders
-        WHERE rider_id IS NOT NULL AND delivered_at IS NOT NULL
-        GROUP BY rider_id
-      ) d ON d.rider_id = p.id
-      WHERE p.role = 'rider'
-        AND p.is_active = true
-        AND p.rider_status IN ('available', 'vacant')
-        AND p.id <> ALL (v_declined)
-      ORDER BY COALESCE(o.active_count, 0) ASC, d.last_delivered_at ASC NULLS FIRST
-    ) ranked
-    WHERE ranked.active_count < v_max
+  SELECT COALESCE(MAX(created_at), '-infinity'::timestamptz) INTO v_cycle_start
+  FROM dispatch_log
+  WHERE order_id = p_order_id AND action IN ('accepted', 'revoked', 'exhausted');
+
+  SELECT v_declined || COALESCE(array_agg(DISTINCT rider_id), '{}'::UUID[]), COUNT(*)
+  INTO v_declined, v_tries
+  FROM dispatch_log
+  WHERE order_id = p_order_id
+    AND action IN ('declined', 'timeout')
+    AND created_at > v_cycle_start
+    AND rider_id IS NOT NULL;
+
+  IF v_tries < 5 THEN
+    -- Fair order: least loaded first, then longest idle (never delivered = longest).
+    -- Ordering and the capacity filter live in the same query level on purpose.
+    SELECT p.id INTO v_rider
+    FROM profiles p
+    LEFT JOIN (
+      SELECT rider_id, COUNT(*) AS active_count
+      FROM orders
+      WHERE rider_id IS NOT NULL
+        AND status IN ('awaiting_rider', 'claimed_by_rider', 'out_for_delivery', 'near_customer')
+      GROUP BY rider_id
+    ) o ON o.rider_id = p.id
+    LEFT JOIN (
+      SELECT rider_id, MAX(delivered_at) AS last_delivered_at
+      FROM orders
+      WHERE rider_id IS NOT NULL AND delivered_at IS NOT NULL
+      GROUP BY rider_id
+    ) d ON d.rider_id = p.id
+    WHERE p.role = 'rider'
+      AND p.is_active = true
+      AND p.rider_status IN ('available', 'vacant')
+      AND p.id <> ALL (v_declined)
+      AND COALESCE(o.active_count, 0) < v_max
+    ORDER BY COALESCE(o.active_count, 0) ASC, d.last_delivered_at ASC NULLS FIRST, p.id
     LIMIT 1;
+  END IF;
 
-    EXIT WHEN v_rider IS NULL;
-
-    v_declined := array_append(v_declined, v_rider);
-
+  IF v_rider IS NOT NULL THEN
     UPDATE orders
     SET rider_id = v_rider,
         rider_assigned_at = now(),
@@ -121,7 +141,7 @@ BEGIN
 
     INSERT INTO dispatch_log (id, order_id, rider_id, action, actor)
     VALUES (gen_random_uuid(), p_order_id, v_rider,
-            CASE WHEN v_attempt = 1 THEN 'assigned' ELSE 'cascaded' END, NULL);
+            CASE WHEN v_tries = 0 THEN 'assigned' ELSE 'cascaded' END, NULL);
 
     -- Notify the rider they have a delivery waiting for acceptance.
     INSERT INTO notifications (id, user_id, type, title, message, data)
@@ -132,8 +152,8 @@ BEGIN
       jsonb_build_object('order_id', p_order_id, 'order_number', v_order_no, 'auto_assigned', true)
     );
 
-    RETURN jsonb_build_object('success', true, 'rider_id', v_rider, 'attempt', v_attempt);
-  END LOOP;
+    RETURN jsonb_build_object('success', true, 'rider_id', v_rider, 'attempt', v_tries + 1);
+  END IF;
 
   -- No eligible rider left: hand the order back to staff at the kitchen
   -- status it had BEFORE dispatch took it (not necessarily ready_for_pickup).
@@ -172,28 +192,34 @@ RETURNS JSONB
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
   v_status order_status;
+  v_prev_rider UUID;
   v_max INT;
   v_active INT;
   v_eligible BOOLEAN;
   v_order_no TEXT;
 BEGIN
-  -- Not callable by customers/anon — the apps invoke this with the service
-  -- client, but keep the guard for direct RPC abuse.
-  IF p_assigned_by IS NULL THEN
+  -- Only an active staff/admin may dispatch. EXECUTE is additionally limited to
+  -- the service role (section 7); this is the second lock if grants ever regress.
+  IF p_assigned_by IS NULL OR NOT EXISTS (
+    SELECT 1 FROM profiles
+    WHERE id = p_assigned_by AND role IN ('staff', 'admin') AND is_active IS DISTINCT FROM false
+  ) THEN
     RAISE EXCEPTION 'Unauthorized';
   END IF;
 
   -- Serialize concurrent assignments for the same order.
   PERFORM pg_advisory_xact_lock(hashtextextended('assign:' || p_order_id::text, 0));
 
-  SELECT status, COALESCE(order_number, '') INTO v_status, v_order_no
+  SELECT status, rider_id, COALESCE(order_number, '') INTO v_status, v_prev_rider, v_order_no
   FROM orders WHERE id = p_order_id FOR UPDATE;
 
   IF v_status IS NULL THEN
     RAISE EXCEPTION 'Order not found';
   END IF;
-  IF v_status IN ('delivered', 'cancelled') THEN
-    RAISE EXCEPTION 'Order is already %', v_status;
+  -- Only kitchen-stage orders can be dispatched (or re-assigned while waiting).
+  -- Pending orders are not confirmed yet; claimed / out-for-delivery orders must be revoked first.
+  IF v_status NOT IN ('confirmed', 'preparing', 'ready_for_pickup', 'awaiting_rider') THEN
+    RAISE EXCEPTION 'Order cannot be dispatched (status: %)', v_status;
   END IF;
 
   -- Rider must be active and available (vacant = available, never-used alias).
@@ -206,7 +232,7 @@ BEGIN
     RAISE EXCEPTION 'Rider is not available';
   END IF;
 
-  -- Stacking cap: skip the cap when reassigning the same order back.
+  -- Stacking cap: this order itself does not count against the rider.
   SELECT COALESCE(MAX(max_active_deliveries), 2) INTO v_max FROM business;
   SELECT COUNT(*) INTO v_active
   FROM orders
@@ -237,6 +263,17 @@ BEGIN
     'Order #' || v_order_no || ' is assigned to you. Accept or decline within 10 minutes.',
     jsonb_build_object('order_id', p_order_id, 'order_number', v_order_no, 'auto_assigned', false)
   );
+
+  -- A different rider was holding this offer: tell them it moved on.
+  IF v_status = 'awaiting_rider' AND v_prev_rider IS NOT NULL AND v_prev_rider <> p_rider_id THEN
+    INSERT INTO notifications (id, user_id, type, title, message, data)
+    VALUES (
+      gen_random_uuid(), v_prev_rider, 'assignment_revoked',
+      'Delivery Assignment Removed',
+      'Order #' || v_order_no || ' was reassigned to another rider by staff.',
+      jsonb_build_object('order_id', p_order_id, 'order_number', v_order_no)
+    );
+  END IF;
 
   RETURN jsonb_build_object('success', true, 'rider_id', p_rider_id);
 END;
@@ -324,7 +361,7 @@ $$;
 -- 5. Timeout: stale assignments (lazy, no cron required)
 -- ===========================
 -- A rider who never responds within 10 minutes loses the order and it
--- cascades. Called from the dispatch board fetch and from assign_rider.
+-- cascades. Called from the dispatch board fetch (service role).
 
 CREATE OR REPLACE FUNCTION public.requeue_stale_assignments()
 RETURNS JSONB
@@ -378,6 +415,11 @@ $$;
 -- ===========================
 -- 6. revoke_assignment — staff override
 -- ===========================
+-- Detaches the rider and puts the order back in the dispatch queue:
+--   awaiting_rider                         -> the status it had before dispatch
+--   claimed / out_for_delivery / near      -> ready_for_pickup (food is handed to the next rider)
+--   confirmed / preparing / ready (legacy) -> unchanged, rider detached
+-- It never leaves an active-delivery status with no rider.
 
 CREATE OR REPLACE FUNCTION public.revoke_assignment(
   p_order_id UUID,
@@ -390,7 +432,10 @@ DECLARE
   v_status order_status;
   v_order_no TEXT;
 BEGIN
-  IF p_actor IS NULL THEN
+  IF p_actor IS NULL OR NOT EXISTS (
+    SELECT 1 FROM profiles
+    WHERE id = p_actor AND role IN ('staff', 'admin') AND is_active IS DISTINCT FROM false
+  ) THEN
     RAISE EXCEPTION 'Unauthorized';
   END IF;
 
@@ -410,10 +455,15 @@ BEGIN
   UPDATE orders
   SET rider_id = NULL,
       rider_assigned_at = NULL,
-      -- Revoking a waiting order returns it to its pre-dispatch kitchen state.
       status = CASE
         WHEN v_status = 'awaiting_rider' THEN COALESCE(dispatch_prev_status, 'ready_for_pickup'::order_status)
+        WHEN v_status IN ('claimed_by_rider', 'out_for_delivery', 'near_customer') THEN 'ready_for_pickup'::order_status
         ELSE v_status
+      END,
+      -- A taken-back order was not actually picked up by the next rider yet.
+      picked_up_at = CASE
+        WHEN v_status IN ('claimed_by_rider', 'out_for_delivery', 'near_customer') THEN NULL
+        ELSE picked_up_at
       END,
       dispatch_prev_status = NULL,
       updated_at = now()
@@ -437,18 +487,23 @@ $$;
 -- ===========================
 -- 7. Grants
 -- ===========================
-REVOKE ALL ON FUNCTION public.dispatch_pick_next(UUID, UUID[]) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.assign_rider(UUID, UUID, UUID) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.rider_assignment_response(UUID, BOOLEAN) FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.requeue_stale_assignments() FROM PUBLIC;
-REVOKE ALL ON FUNCTION public.revoke_assignment(UUID, UUID) FROM PUBLIC;
+-- Supabase grants every new function in "public" to anon / authenticated directly,
+-- so REVOKE ... FROM PUBLIC alone does NOT close them: revoke those roles by name.
+-- Staff-side functions are for the service role only (the staff API route checks the
+-- staff session first, then calls these with the service client).
+REVOKE ALL ON FUNCTION public.dispatch_pick_next(UUID, UUID[]) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.assign_rider(UUID, UUID, UUID) FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.requeue_stale_assignments() FROM PUBLIC, anon, authenticated;
+REVOKE ALL ON FUNCTION public.revoke_assignment(UUID, UUID) FROM PUBLIC, anon, authenticated;
+GRANT EXECUTE ON FUNCTION public.dispatch_pick_next(UUID, UUID[]) TO service_role;
+GRANT EXECUTE ON FUNCTION public.assign_rider(UUID, UUID, UUID) TO service_role;
+GRANT EXECUTE ON FUNCTION public.requeue_stale_assignments() TO service_role;
+GRANT EXECUTE ON FUNCTION public.revoke_assignment(UUID, UUID) TO service_role;
 
-GRANT EXECUTE ON FUNCTION public.assign_rider(UUID, UUID, UUID) TO authenticated, service_role;
+-- Riders answer through their own session; the function only acts on the order
+-- assigned to auth.uid().
+REVOKE ALL ON FUNCTION public.rider_assignment_response(UUID, BOOLEAN) FROM PUBLIC, anon;
 GRANT EXECUTE ON FUNCTION public.rider_assignment_response(UUID, BOOLEAN) TO authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.requeue_stale_assignments() TO authenticated, service_role;
-GRANT EXECUTE ON FUNCTION public.revoke_assignment(UUID, UUID) TO authenticated, service_role;
--- Internal helper only — the RPCs above call it as DEFINER.
-REVOKE EXECUTE ON FUNCTION public.dispatch_pick_next(UUID, UUID[]) FROM authenticated, anon;
 
 -- ===========================
 -- 8. Customer-facing copy for the new status
