@@ -29,7 +29,7 @@ export type ProductAvailability = "available" | "sold_out";
 
 export type VariantType = "none" | "size" | "preparation" | "sugar_level";
 
-export type LocationType = "region" | "province" | "city" | "barangay";
+export type LocationType = "region" | "province" | "city" | "district" | "barangay";
 
 export type EarningStatus = "pending" | "paid";
 
@@ -49,6 +49,7 @@ export interface Profile {
   region_id: string | null;
   province_id: string | null;
   town_id: string | null;
+  district_id: string | null;
   barangay_id: string | null;
   zip_code: string;
   avatar_url: string | null;

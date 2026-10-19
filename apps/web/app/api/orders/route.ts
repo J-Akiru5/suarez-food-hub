@@ -6,6 +6,7 @@ import { getProfileById, isUsernameTaken, upsertProfile } from "@repo/data-acces
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 import { resolveDeliveryFee } from "../../../lib/delivery-fee";
+import { validateProfileLocationChain } from "../../../lib/location-validation";
 
 export async function POST(req: NextRequest) {
   try {
@@ -176,6 +177,23 @@ export async function POST(req: NextRequest) {
     // Block deleted/deactivated accounts from placing orders (session may still be valid)
     if (profile && profile.is_active === false) {
       return NextResponse.json({ success: false, error: "Your account has been deactivated." }, { status: 403 });
+    }
+
+    // Re-check the saved city → district → barangay chain at order time. A
+    // profile saved before a location-data change must not slip through with
+    // an address that no longer matches the hierarchy.
+    if (profile) {
+      const chainError = await validateProfileLocationChain(serviceSupabase, {
+        townId: profile.town_id,
+        districtId: profile.district_id,
+        barangayId: profile.barangay_id,
+      });
+      if (chainError) {
+        return NextResponse.json(
+          { success: false, error: `${chainError} Please update your address in My Profile.` },
+          { status: 400 },
+        );
+      }
     }
 
     if (business?.delivery_areas) {

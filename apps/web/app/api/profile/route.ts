@@ -3,6 +3,7 @@ import { createAuthClient, createServiceClient } from "@repo/data-access/client"
 import { getProfileById, isUsernameTaken, updateProfile, upsertProfile } from "@repo/data-access/data/profiles";
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
+import { validateProfileLocationChain } from "../../../lib/location-validation";
 
 export async function GET() {
   try {
@@ -124,6 +125,7 @@ export async function PATCH(req: NextRequest) {
       region_id,
       province_id,
       town_id,
+      district_id,
       barangay_id,
       zip_code,
       address,
@@ -138,6 +140,7 @@ export async function PATCH(req: NextRequest) {
     if (region_id !== undefined) updateData.region_id = region_id;
     if (province_id !== undefined) updateData.province_id = province_id;
     if (town_id !== undefined) updateData.town_id = town_id;
+    if (district_id !== undefined) updateData.district_id = district_id;
     if (barangay_id !== undefined) updateData.barangay_id = barangay_id;
     // zip_code is NOT NULL in the DB — an empty/omitted value must be "" not null,
     // otherwise the save fails with a raw constraint error.
@@ -151,20 +154,45 @@ export async function PATCH(req: NextRequest) {
     // phone), which would destroy the saved town/province/barangay and break
     // checkout's delivery-area check. Keep the existing value unless a
     // non-empty replacement is actually provided.
+    //
+    // district_id is deliberately NOT in this preserve list: it is new, so no
+    // legacy client relies on null-to-preserve, and an explicit null must clear
+    // the district when the customer switches to a city without districts.
     const LOCATION_FIELDS = ["region_id", "province_id", "town_id", "barangay_id"] as const;
+    const LOCATION_KEYS = [...LOCATION_FIELDS, "district_id"] as const;
+    const existsLocationUpdate = LOCATION_KEYS.some((f) => body[f] !== undefined);
+    const existing = existsLocationUpdate
+      ? ((await getProfileById(serviceSupabase, user.id)) as unknown as Record<string, unknown> | null)
+      : null;
     if (LOCATION_FIELDS.some((f) => body[f] === null || body[f] === "")) {
-      const existing = await getProfileById(serviceSupabase, user.id);
       if (existing) {
-        const existingRow = existing as unknown as Record<string, unknown>;
         for (const f of LOCATION_FIELDS) {
           const incoming = body[f] as string | null | undefined;
-          const saved = existingRow[f] as string | null | undefined;
+          const saved = existing[f] as string | null | undefined;
           // Only preserve when the incoming value is empty AND a saved value exists.
           if ((incoming === null || incoming === "") && saved) {
             updateData[f] = saved;
           }
         }
       }
+    }
+
+    // Validate the resulting city → district → barangay chain. This runs on
+    // every location-touching update, using the merged values so a partial
+    // PATCH cannot bypass the check.
+    if (existsLocationUpdate) {
+      const effective = (field: string) => {
+        // An explicit null in the payload (e.g. clearing district_id) is a real
+        // value — only fall back to the saved row when the field was omitted.
+        if (updateData[field] !== undefined) return (updateData[field] as string | null) ?? null;
+        return (existing?.[field] as string | null | undefined) ?? null;
+      };
+      const chainError = await validateProfileLocationChain(serviceSupabase, {
+        townId: effective("town_id"),
+        districtId: effective("district_id"),
+        barangayId: effective("barangay_id"),
+      });
+      if (chainError) return NextResponse.json({ success: false, error: chainError }, { status: 400 });
     }
 
     let result = await updateProfile(serviceSupabase, user.id, updateData);

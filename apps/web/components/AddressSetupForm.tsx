@@ -15,14 +15,44 @@ interface Location {
 const WESTERN_VISAYAS_ID = "060000000";
 const ILOILO_ID = "063000000";
 
+const fieldLabelStyle = {
+  fontSize: 14,
+  fontWeight: 700,
+  color: "var(--secondary-color)",
+  marginBottom: 8,
+  display: "block",
+} as const;
+
+const selectTriggerStyle = {
+  width: "100%",
+  padding: "14px 18px",
+  borderRadius: 14,
+  border: "1px solid #e2e8f0",
+  background: "#fff",
+  fontSize: 15,
+  height: "auto",
+  boxSizing: "border-box",
+} as const;
+
 export default function AddressSetupForm({ onSaved }: { onSaved: (fullAddress: string) => void }) {
   const { profile } = useAuth();
   const [street, setStreet] = useState("");
   const [townId, setTownId] = useState("");
+  const [districtId, setDistrictId] = useState("");
   const [barangayId, setBarangayId] = useState("");
   const [zipCode, setZipCode] = useState("");
   const [towns, setTowns] = useState<Location[]>([]);
+  const [districts, setDistricts] = useState<Location[]>([]);
   const [barangays, setBarangays] = useState<Location[]>([]);
+  const [loadingTowns, setLoadingTowns] = useState(true);
+  const [loadingDistricts, setLoadingDistricts] = useState(false);
+  const [loadingBarangays, setLoadingBarangays] = useState(false);
+  // Districts must finish loading before barangays are requested, otherwise a
+  // city with districts would briefly show its full flat barangay list.
+  const [districtsLoaded, setDistrictsLoaded] = useState(false);
+  const [townsError, setTownsError] = useState("");
+  const [districtsError, setDistrictsError] = useState("");
+  const [barangaysError, setBarangaysError] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
@@ -32,44 +62,111 @@ export default function AddressSetupForm({ onSaved }: { onSaved: (fullAddress: s
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [locationsRes, businessRes] = await Promise.all([
-        fetch(`/api/locations?type=city&parent=${ILOILO_ID}`),
-        fetch("/api/business"),
-      ]);
-      const [locations, business] = await Promise.all([locationsRes.json(), businessRes.json().catch(() => ({}))]);
-      if (cancelled) return;
-      const allTowns = Array.isArray(locations.data || locations) ? locations.data || locations : [];
-      const deliveryAreas = business?.data?.delivery_areas
-        ? String(business.data.delivery_areas)
-            .split(",")
-            .map((s: string) => s.trim())
-            .filter(Boolean)
-        : null;
-      const filtered =
-        deliveryAreas && deliveryAreas.length > 0
-          ? allTowns.filter((t: { id: string }) => deliveryAreas.includes(t.id))
-          : allTowns;
-      setTowns(filtered);
+      setLoadingTowns(true);
+      setTownsError("");
+      try {
+        const [locationsRes, businessRes] = await Promise.all([
+          fetch(`/api/locations?type=city&parent=${ILOILO_ID}`),
+          fetch("/api/business"),
+        ]);
+        if (cancelled) return;
+        const locations = await locationsRes.json().catch(() => ({}));
+        const business = await businessRes.json().catch(() => ({}));
+        if (!locationsRes.ok) throw new Error(locations?.error || "Failed to load towns");
+        const allTowns = Array.isArray(locations.data || locations) ? locations.data || locations : [];
+        const deliveryAreas = business?.data?.delivery_areas
+          ? String(business.data.delivery_areas)
+              .split(",")
+              .map((s: string) => s.trim())
+              .filter(Boolean)
+          : null;
+        const filtered =
+          deliveryAreas && deliveryAreas.length > 0
+            ? allTowns.filter((t: { id: string }) => deliveryAreas.includes(t.id))
+            : allTowns;
+        if (!cancelled) setTowns(filtered);
+      } catch {
+        if (!cancelled) setTownsError("Could not load delivery towns. Please refresh and try again.");
+      } finally {
+        if (!cancelled) setLoadingTowns(false);
+      }
     })();
     return () => {
       cancelled = true;
     };
   }, []);
 
+  // Some cities have districts (Iloilo City → Jaro, Molo, ...). Ask the API
+  // for every selected town; towns without districts just return [] and keep
+  // the original flat barangay flow.
   useEffect(() => {
-    if (!townId) {
-      setBarangays([]);
-      setBarangayId("");
-      return;
-    }
-    fetch(`/api/locations?type=barangay&parent=${townId}`)
-      .then((r) => r.json())
-      .then((response) => {
-        const data = response.data || response;
-        if (Array.isArray(data)) setBarangays(data);
-      })
-      .catch(() => {});
+    let cancelled = false;
+    setDistricts([]);
+    setDistrictId("");
+    setDistrictsLoaded(false);
+    setDistrictsError("");
+    setBarangays([]);
+    setBarangayId("");
+    setBarangaysError("");
+    if (!townId) return;
+
+    setLoadingDistricts(true);
+    (async () => {
+      try {
+        const res = await fetch(`/api/locations?type=district&parent=${townId}`);
+        const json = await res.json().catch(() => ({}));
+        if (cancelled) return;
+        if (!res.ok) throw new Error(json?.error || "Failed to load districts");
+        setDistricts(Array.isArray(json.data) ? json.data : []);
+      } catch {
+        if (!cancelled) setDistrictsError("Could not load districts for this city. Please refresh and try again.");
+      } finally {
+        if (!cancelled) {
+          setDistrictsLoaded(true);
+          setLoadingDistricts(false);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [townId]);
+
+  // Barangays come from the district when the city has districts, otherwise
+  // straight from the city (Passi, Janiuay, ... — unchanged behaviour).
+  useEffect(() => {
+    let cancelled = false;
+    setBarangays([]);
+    setBarangayId("");
+    setBarangaysError("");
+    // If district loading failed we deliberately do NOT fall back to the city's
+    // flat barangay list: the server would reject a district-less barangay.
+    if (!townId || !districtsLoaded || districtsError) return;
+
+    const parent = districts.length > 0 ? districtId : townId;
+    if (!parent) return;
+
+    setLoadingBarangays(true);
+    (async () => {
+      try {
+        const res = await fetch(`/api/locations?type=barangay&parent=${parent}`);
+        const json = await res.json().catch(() => ({}));
+        if (cancelled) return;
+        if (!res.ok) throw new Error(json?.error || "Failed to load barangays");
+        setBarangays(Array.isArray(json.data) ? json.data : []);
+      } catch {
+        if (!cancelled) setBarangaysError("Could not load barangays. Please refresh and try again.");
+      } finally {
+        if (!cancelled) setLoadingBarangays(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [townId, districtId, districtsLoaded, districts.length, districtsError]);
+
+  const hasDistricts = districts.length > 0;
+  const barangayDisabled = !townId || loadingDistricts || (hasDistricts && !districtId);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -82,6 +179,14 @@ export default function AddressSetupForm({ onSaved }: { onSaved: (fullAddress: s
       setError("Please select your town / city");
       return;
     }
+    if (districtsError) {
+      setError("We couldn't load the districts for this city. Please refresh and try again.");
+      return;
+    }
+    if (hasDistricts && !districtId) {
+      setError("Please select your district");
+      return;
+    }
     if (!barangayId) {
       setError("Please select your barangay");
       return;
@@ -90,8 +195,11 @@ export default function AddressSetupForm({ onSaved }: { onSaved: (fullAddress: s
     setSaving(true);
     try {
       const townName = towns.find((t) => t.id === townId)?.name || "";
+      const districtName = districts.find((d) => d.id === districtId)?.name || "";
       const barangayName = barangays.find((b) => b.id === barangayId)?.name || "";
-      const fullAddress = [street.trim(), barangayName, townName, "Iloilo", "Western Visayas"]
+      // District is inserted before the city so the saved label reads
+      // "..., Barangay, District, City, Province, Region".
+      const fullAddress = [street.trim(), barangayName, districtName, townName, "Iloilo", "Western Visayas"]
         .filter(Boolean)
         .join(", ");
 
@@ -108,6 +216,9 @@ export default function AddressSetupForm({ onSaved }: { onSaved: (fullAddress: s
           region_id: WESTERN_VISAYAS_ID,
           province_id: ILOILO_ID,
           town_id: townId,
+          // Explicit null clears a previously saved district when switching to
+          // a city that has none (the PATCH only skips undefined fields).
+          district_id: hasDistricts ? districtId : null,
           barangay_id: barangayId,
           zip_code: zipCode.trim() || null,
           address: fullAddress,
@@ -141,11 +252,7 @@ export default function AddressSetupForm({ onSaved }: { onSaved: (fullAddress: s
       )}
 
       <div>
-        <label
-          style={{ fontSize: 14, fontWeight: 700, color: "var(--secondary-color)", marginBottom: 8, display: "block" }}
-        >
-          Street Address (House #, Street)
-        </label>
+        <label style={fieldLabelStyle}>Street Address (House #, Street)</label>
         <input
           type="text"
           value={street}
@@ -169,30 +276,9 @@ export default function AddressSetupForm({ onSaved }: { onSaved: (fullAddress: s
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
         <div>
-          <label
-            style={{
-              fontSize: 14,
-              fontWeight: 700,
-              color: "var(--secondary-color)",
-              marginBottom: 8,
-              display: "block",
-            }}
-          >
-            Town / City
-          </label>
+          <label style={fieldLabelStyle}>Town / City</label>
           <Select value={townId} onValueChange={(v) => setTownId(v)}>
-            <SelectTrigger
-              style={{
-                width: "100%",
-                padding: "14px 18px",
-                borderRadius: 14,
-                border: "1px solid #e2e8f0",
-                background: "#fff",
-                fontSize: 15,
-                height: "auto",
-                boxSizing: "border-box",
-              }}
-            >
+            <SelectTrigger style={selectTriggerStyle}>
               <SelectValue placeholder="Select Town / City" />
             </SelectTrigger>
             <SelectContent>
@@ -203,52 +289,96 @@ export default function AddressSetupForm({ onSaved }: { onSaved: (fullAddress: s
               ))}
             </SelectContent>
           </Select>
+          {loadingTowns && <p style={{ margin: "6px 0 0", fontSize: 12, color: "#94a3b8" }}>Loading towns...</p>}
+          {!loadingTowns && towns.length === 0 && (
+            <p style={{ margin: "6px 0 0", fontSize: 12, color: "#94a3b8" }}>
+              No delivery towns are available right now.
+            </p>
+          )}
+          {townsError && <p style={{ margin: "6px 0 0", fontSize: 12, color: "#dc2626" }}>{townsError}</p>}
         </div>
-        <div>
-          <label
-            style={{
-              fontSize: 14,
-              fontWeight: 700,
-              color: "var(--secondary-color)",
-              marginBottom: 8,
-              display: "block",
-            }}
-          >
-            Barangay
-          </label>
-          <Select value={barangayId} onValueChange={(v) => setBarangayId(v)} disabled={!townId}>
-            <SelectTrigger
-              style={{
-                width: "100%",
-                padding: "14px 18px",
-                borderRadius: 14,
-                border: "1px solid #e2e8f0",
-                background: "#fff",
-                fontSize: 15,
-                height: "auto",
-                boxSizing: "border-box",
-                opacity: townId ? 1 : 0.6,
-              }}
-            >
-              <SelectValue placeholder="Select Barangay" />
-            </SelectTrigger>
-            <SelectContent>
-              {barangays.map((b) => (
-                <SelectItem key={b.id} value={b.id}>
-                  {b.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
+
+        {hasDistricts ? (
+          <div>
+            <label style={fieldLabelStyle}>District</label>
+            <Select value={districtId} onValueChange={(v) => setDistrictId(v)}>
+              <SelectTrigger style={selectTriggerStyle}>
+                <SelectValue placeholder="Select District" />
+              </SelectTrigger>
+              <SelectContent>
+                {districts.map((d) => (
+                  <SelectItem key={d.id} value={d.id}>
+                    {d.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        ) : (
+          <div>
+            <label style={fieldLabelStyle}>Barangay</label>
+            <Select value={barangayId} onValueChange={(v) => setBarangayId(v)} disabled={barangayDisabled}>
+              <SelectTrigger style={{ ...selectTriggerStyle, opacity: barangayDisabled ? 0.6 : 1 }}>
+                <SelectValue placeholder="Select Barangay" />
+              </SelectTrigger>
+              <SelectContent>
+                {barangays.map((b) => (
+                  <SelectItem key={b.id} value={b.id}>
+                    {b.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
       </div>
 
+      {loadingDistricts && townId && districts.length === 0 && (
+        <p style={{ margin: 0, fontSize: 13, color: "#94a3b8" }}>Loading districts...</p>
+      )}
+      {districtsError && <p style={{ margin: 0, fontSize: 12, color: "#dc2626" }}>{districtsError}</p>}
+
+      {hasDistricts && (
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+          <div>
+            <label style={fieldLabelStyle}>Barangay</label>
+            <Select value={barangayId} onValueChange={(v) => setBarangayId(v)} disabled={barangayDisabled}>
+              <SelectTrigger style={{ ...selectTriggerStyle, opacity: barangayDisabled ? 0.6 : 1 }}>
+                <SelectValue placeholder="Select Barangay" />
+              </SelectTrigger>
+              <SelectContent>
+                {barangays.map((b) => (
+                  <SelectItem key={b.id} value={b.id}>
+                    {b.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {!districtId && (
+              <p style={{ margin: "6px 0 0", fontSize: 12, color: "#94a3b8" }}>Choose a district first.</p>
+            )}
+            {loadingBarangays && (
+              <p style={{ margin: "6px 0 0", fontSize: 12, color: "#94a3b8" }}>Loading barangays...</p>
+            )}
+            {barangaysError && <p style={{ margin: "6px 0 0", fontSize: 12, color: "#dc2626" }}>{barangaysError}</p>}
+          </div>
+          <div />
+        </div>
+      )}
+
+      {!hasDistricts && (
+        <>
+          {loadingBarangays && <p style={{ margin: 0, fontSize: 12, color: "#94a3b8" }}>Loading barangays...</p>}
+          {barangaysError && <p style={{ margin: 0, fontSize: 12, color: "#dc2626" }}>{barangaysError}</p>}
+        </>
+      )}
+
+      {!loadingBarangays && !barangaysError && barangays.length === 0 && (hasDistricts ? !!districtId : !!townId) && (
+        <p style={{ margin: 0, fontSize: 12, color: "#94a3b8" }}>No barangays found for this area.</p>
+      )}
+
       <div style={{ maxWidth: 200 }}>
-        <label
-          style={{ fontSize: 14, fontWeight: 700, color: "var(--secondary-color)", marginBottom: 8, display: "block" }}
-        >
-          Zip Code
-        </label>
+        <label style={fieldLabelStyle}>Zip Code</label>
         <input
           type="text"
           value={zipCode}

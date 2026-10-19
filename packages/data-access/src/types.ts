@@ -18,6 +18,7 @@ export interface Database {
           region_id: string | null;
           province_id: string | null;
           town_id: string | null;
+          district_id: string | null;
           barangay_id: string | null;
           zip_code: string;
           avatar_url: string | null;
@@ -53,6 +54,7 @@ export interface Database {
           region_id?: string | null;
           province_id?: string | null;
           town_id?: string | null;
+          district_id?: string | null;
           barangay_id?: string | null;
           zip_code?: string;
           avatar_url?: string | null;
@@ -88,6 +90,7 @@ export interface Database {
           region_id?: string | null;
           province_id?: string | null;
           town_id?: string | null;
+          district_id?: string | null;
           barangay_id?: string | null;
           zip_code?: string;
           avatar_url?: string | null;
@@ -510,7 +513,7 @@ export interface Database {
       locations: {
         Row: {
           id: string;
-          type: "region" | "province" | "city" | "barangay";
+          type: "region" | "province" | "city" | "district" | "barangay";
           name: string;
           code: string | null;
           parent_id: string | null;
@@ -521,7 +524,7 @@ export interface Database {
         };
         Insert: {
           id: string;
-          type: "region" | "province" | "city" | "barangay";
+          type: "region" | "province" | "city" | "district" | "barangay";
           name: string;
           code?: string | null;
           parent_id?: string | null;
@@ -530,7 +533,7 @@ export interface Database {
         };
         Update: {
           id?: string;
-          type?: "region" | "province" | "city" | "barangay";
+          type?: "region" | "province" | "city" | "district" | "barangay";
           name?: string;
           code?: string | null;
           parent_id?: string | null;
@@ -798,7 +801,7 @@ export interface Database {
         | "cancelled";
       payment_method: "cod" | "gcash";
       payment_status: "pending" | "verified" | "rejected" | "refunded";
-      location_type: "region" | "province" | "city" | "barangay";
+      location_type: "region" | "province" | "city" | "district" | "barangay";
       earning_status: "pending" | "paid";
       cashout_status: "requested" | "approved" | "paid" | "rejected";
     };

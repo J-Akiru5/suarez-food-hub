@@ -22,6 +22,12 @@ export {
   type RankedDispatchRider,
   rankDispatchRiders,
 } from "./dispatch";
+export {
+  type LocationRecord,
+  type LocationRelationRows,
+  type LocationSelection,
+  validateLocationSelection,
+} from "./locations";
 
 export function cn(...inputs: ClassValue[]): string {
   return twMerge(clsx(inputs));

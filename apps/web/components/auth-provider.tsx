@@ -17,6 +17,7 @@ interface Profile {
   region_id: string;
   province_id: string;
   town_id: string;
+  district_id: string;
   barangay_id: string;
   zip_code: string;
   role: string;
