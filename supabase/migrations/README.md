@@ -122,10 +122,9 @@ replay the schema from `0001` onward.
 | 20261016024529 | min_delivery_order | `business.delivery_min_order_amount` + check constraint present |
 | 20261016113500 | products_restock_lead_time | `products.restock_lead_time_days` present |
 
-Known non-blocking gap: `products.restock_lead_time_days` exists but its
-`CHECK (>= 0)` constraint is absent (the original `ADD COLUMN IF NOT EXISTS`
-cannot add an inline check to an existing column). The app only writes
-validated non-negative values.
+The `products.restock_lead_time_days` CHECK constraint was initially missing
+(the original `ADD COLUMN IF NOT EXISTS` cannot add an inline check to an
+existing column). It was added and validated on 2026-10-20.
 
 ## Key Details
 
