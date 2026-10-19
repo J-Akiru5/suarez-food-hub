@@ -1,0 +1,15 @@
+# Vercel CLI upload exclusions — keep the monorepo upload small.
+# Vercel still installs workspace dependencies during the build.
+node_modules
+**/node_modules
+.turbo
+**/.turbo
+.next
+**/.next
+.opencode
+.git
+docs
+e2e
+*.log
+.env
+.env.*
