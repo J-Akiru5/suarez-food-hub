@@ -89,7 +89,43 @@ npx supabase migration repair --status reverted <version> --db-url "$DATABASE_UR
 | 0025 | business_hours_about | Operating hours + About Us JSONB columns |
 | 0026 | customer_notification_triggers | Customer notification triggers + delete policy |
 | 0027 | rider_resigned | Resigned enum value + admin delete policy |
-| 0028 | reorder_products | reorder_products() bulk reorder RPC |
+| 0028 | distance_pricing | Distance-based delivery tiers + location centroids |
+| 0029 | product_packs | Product pack size/stock + pack order items |
+| 0030 | dispatch_queue | Awaiting-rider dispatch, fair queue RPCs, dispatch log |
+| 20260920040108 | reorder_products | reorder_products() bulk reorder RPC |
+| 20260920062827 | fix_notify_payment_verified | Skip COD payment-verification notifications |
+| 20260920062840 | fix_reorder_products | Correct reorder position computation |
+| 20261016024529 | min_delivery_order | business.delivery_min_order_amount |
+| 20261016113500 | products_restock_lead_time | products.restock_lead_time_days |
+| 20261019120000 | location_district_level | District location type + profiles.district_id |
+| 20261019120100 | seed_iloilo_city_districts | Iloilo City districts + 180 PSGC barangays |
+
+### Applied out-of-band (recorded 2026-10-20)
+
+The migrations below were applied manually to the live database before the CLI
+history was reconciled. On 2026-10-20 every resulting object was verified
+directly against the live schema (columns, enum values, `dispatch_log` RLS and
+policies, function bodies and grants), then the versions were recorded with
+`supabase migration repair --status applied ...`.
+
+They are **deprecated as pending migrations** — do not run them manually again.
+The SQL files are intentionally retained: a fresh database still needs them to
+replay the schema from `0001` onward.
+
+| Version | Name | Live verification |
+|---|---|---|
+| 0028 | distance_pricing | `business.delivery_tiers`, `business.max_delivery_km`, `locations.centroid_lat/lng` present |
+| 0029 | product_packs | `products.pack_size/pack_stock`, `order_items.is_pack` present |
+| 0030 | dispatch_queue | `awaiting_rider` enum, orders/business columns, `dispatch_log` + RLS/policies, all dispatch functions + grants, updated notification function |
+| 20260920062827 | fix_notify_payment_verified | COD guard present in `notify_payment_verified()` |
+| 20260920062840 | fix_reorder_products | fixed `reorder_products()` body present |
+| 20261016024529 | min_delivery_order | `business.delivery_min_order_amount` + check constraint present |
+| 20261016113500 | products_restock_lead_time | `products.restock_lead_time_days` present |
+
+Known non-blocking gap: `products.restock_lead_time_days` exists but its
+`CHECK (>= 0)` constraint is absent (the original `ADD COLUMN IF NOT EXISTS`
+cannot add an inline check to an existing column). The app only writes
+validated non-negative values.
 
 ## Key Details
 
