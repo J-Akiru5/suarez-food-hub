@@ -26,6 +26,17 @@ export {
   type RankedDispatchRider,
   rankDispatchRiders,
 } from "./dispatch";
+export {
+  addressChangeInvalidatesPin,
+  buildAddressSearchQueries,
+  buildNominatimSearchUrl,
+  type GeocodeCandidate,
+  ILOILO_VIEWBOX,
+  NOMINATIM_SEARCH_URL,
+  normalizeAddressQuery,
+  type PinSource,
+  parseNominatimSearchResults,
+} from "./geocoding";
 export { formatGeolocationAccuracy, geolocationErrorMessage } from "./geolocation";
 export {
   type LocationRecord,

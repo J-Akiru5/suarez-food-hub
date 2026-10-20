@@ -23,6 +23,8 @@ interface LocationPickerProps {
   readOnly?: boolean;
   /** Reverse-geocoded label for the current pin (informational). */
   onAddressDetect?: (address: string) => void;
+  /** Where the pin came from — GPS or a manual map interaction. */
+  onPositionSourceChange?: (source: "gps" | "map" | null) => void;
   /** Map centre before a pin is selected (restaurant origin by default). */
   defaultCenter?: { lat: number; lng: number } | null;
   /** Restaurant origin marker (not the customer pin). */
@@ -34,6 +36,7 @@ export default function LocationPicker({
   setPosition,
   readOnly = false,
   onAddressDetect,
+  onPositionSourceChange,
   defaultCenter,
   storePosition,
 }: LocationPickerProps) {
@@ -53,6 +56,8 @@ export default function LocationPicker({
   const geocodeSeqRef = useRef(0);
   const onAddressDetectRef = useRef(onAddressDetect);
   onAddressDetectRef.current = onAddressDetect;
+  const onPositionSourceChangeRef = useRef(onPositionSourceChange);
+  onPositionSourceChangeRef.current = onPositionSourceChange;
 
   const clearDetectedAddress = () => {
     setDetectedAddress("");
@@ -70,6 +75,7 @@ export default function LocationPicker({
     setAccuracy(null);
     setErrorMessage("");
     clearDetectedAddress();
+    onPositionSourceChangeRef.current?.("map");
     setPosition(next);
   };
 
@@ -81,6 +87,7 @@ export default function LocationPicker({
     setAccuracy(null);
     setErrorMessage("");
     clearDetectedAddress();
+    onPositionSourceChangeRef.current?.(null);
     setPosition(null);
   };
 
@@ -113,6 +120,7 @@ export default function LocationPicker({
 
         setPosition({ lat, lng });
         setAccuracy(Number.isFinite(pos.coords.accuracy) ? pos.coords.accuracy : null);
+        onPositionSourceChangeRef.current?.("gps");
         setDetecting(false);
       },
       (err) => {
@@ -216,7 +224,7 @@ export default function LocationPicker({
               ) : (
                 <Crosshair className="h-3 w-3 mr-1.5" />
               )}
-              {detecting ? "Locating..." : "Auto Detect"}
+              {detecting ? "Locating..." : "Use My Current Location"}
             </Button>
           </div>
         </div>
@@ -232,7 +240,7 @@ export default function LocationPicker({
         />
         {!readOnly && !position && (
           <div className="pointer-events-none absolute inset-x-3 top-3 z-10 rounded-lg bg-white/95 px-3 py-2 text-xs font-medium text-slate-700 shadow-md">
-            Tap the map to place your delivery pin, or use Auto Detect.
+            Tap the map to place your delivery pin, or use your current location.
           </div>
         )}
       </div>
@@ -240,16 +248,19 @@ export default function LocationPicker({
       {!readOnly && (
         <div className="space-y-1.5 text-xs">
           {detecting && (
-            <p className="text-blue-700">Getting your location… Allow the browser permission prompt if it appears.</p>
+            <p className="text-blue-700">
+              Getting your device location… This uses GPS, not the typed address. Allow the browser permission if asked.
+            </p>
           )}
           {!detecting && accuracyLabel && (
             <p className="text-emerald-700">
-              Location detected {accuracyLabel}.{approximate ? " It may be approximate — fine-tune the pin below." : ""}
+              Device location detected {accuracyLabel}.
+              {approximate ? " It may be approximate — fine-tune the pin below." : ""}
             </p>
           )}
           {!detecting && addressLoading && <p className="text-slate-500">Looking up the detected address…</p>}
           {!detecting && !addressLoading && detectedAddress && (
-            <p className="text-slate-600">Detected near: {detectedAddress}</p>
+            <p className="text-slate-600">Nearest address: {detectedAddress}</p>
           )}
           {!detecting && !addressLoading && addressError && (
             <p className="text-amber-700">Address lookup unavailable — please verify the pin on the map.</p>

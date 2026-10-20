@@ -1,6 +1,16 @@
 "use client";
 
-import { deliveryEstimateKey, isValidCoordinates } from "@repo/utils";
+import {
+  addressChangeInvalidatesPin,
+  buildAddressSearchQueries,
+  buildNominatimSearchUrl,
+  deliveryEstimateKey,
+  type GeocodeCandidate,
+  isValidCoordinates,
+  normalizeAddressQuery,
+  type PinSource,
+  parseNominatimSearchResults,
+} from "@repo/utils";
 import {
   ArrowLeft,
   Banknote,
@@ -8,6 +18,7 @@ import {
   CreditCard,
   Loader2,
   MapPin,
+  Search,
   ShoppingBag,
   ShoppingCart,
   X,
@@ -104,7 +115,16 @@ export default function CheckoutPage() {
   const [qrModalUrl, setQrModalUrl] = useState<string | null>(null);
   const [position, setPosition] = useState<{ lat: number; lng: number } | null>(null);
   const [pinAddress, setPinAddress] = useState("");
+  const [pinSource, setPinSource] = useState<PinSource>(null);
+  const [resolvedAddress, setResolvedAddress] = useState<string | null>(null);
   const [showMapPicker, setShowMapPicker] = useState(false);
+  const [geocoding, setGeocoding] = useState(false);
+  const [geocodeError, setGeocodeError] = useState("");
+  const [geocodeNotice, setGeocodeNotice] = useState("");
+  const [geocodeNoticeTone, setGeocodeNoticeTone] = useState<"info" | "success" | "warning">("info");
+  const [geocodeCandidates, setGeocodeCandidates] = useState<GeocodeCandidate[]>([]);
+  const [geocodeQuery, setGeocodeQuery] = useState("");
+  const [addressNeedsResolution, setAddressNeedsResolution] = useState(false);
   const [estimate, setEstimate] = useState<KeyedFeeEstimate | null>(null);
   const [estimateLoading, setEstimateLoading] = useState(false);
   const [estimateError, setEstimateError] = useState("");
@@ -114,6 +134,8 @@ export default function CheckoutPage() {
   const addressRef = useRef<HTMLTextAreaElement>(null);
   const initialProfileLoaded = useRef(false);
   const estimateSeq = useRef(0);
+  const geocodeSeq = useRef(0);
+  const geocodeAbort = useRef<AbortController | null>(null);
 
   useEffect(() => {
     try {
@@ -141,6 +163,11 @@ export default function CheckoutPage() {
       .then((r) => r.json())
       .then((response) => setBusiness(response.data || response))
       .catch(() => {});
+  }, []);
+
+  // Cancel an in-flight address lookup if checkout unmounts.
+  useEffect(() => {
+    return () => geocodeAbort.current?.abort();
   }, []);
 
   // Live delivery-fee estimate — recomputed whenever the pin or the profile
@@ -243,6 +270,226 @@ export default function CheckoutPage() {
     if (!val.trim()) return "Phone number is required";
     if (!PH_REGEX.test(val.trim())) return "Enter a valid PH mobile number (e.g. 09123456789)";
     return "";
+  };
+
+  const applyGeocodeCandidate = (
+    candidate: GeocodeCandidate,
+    query: string,
+    notice = "Address found on the map. Check the pin and adjust it if needed.",
+  ) => {
+    setPosition({ lat: candidate.lat, lng: candidate.lng });
+    setPinSource("address");
+    setResolvedAddress(query);
+    setPinAddress(candidate.displayName);
+    setShowMapPicker(true);
+    setGeocodeCandidates([]);
+    setGeocodeQuery("");
+    setGeocodeError("");
+    setGeocodeNoticeTone("success");
+    setGeocodeNotice(notice);
+    setAddressNeedsResolution(false);
+  };
+
+  // Resolve the typed address with Nominatim (the same provider used for the
+  // reverse-geocoded pin label). This is separate from browser GPS.
+  const findAddressOnMap = async (queryOverride?: string) => {
+    const query = normalizeAddressQuery(queryOverride ?? address);
+    if (!query) {
+      setGeocodeError("Enter a delivery address first.");
+      setGeocodeNotice("");
+      setGeocodeCandidates([]);
+      return;
+    }
+
+    const queries = buildAddressSearchQueries(query);
+    if (queries.length === 0) {
+      setGeocodeError("Enter a delivery address first.");
+      return;
+    }
+
+    geocodeAbort.current?.abort();
+    const controller = new AbortController();
+    geocodeAbort.current = controller;
+    const seq = ++geocodeSeq.current;
+
+    setGeocoding(true);
+    setGeocodeError("");
+    setGeocodeNotice("");
+    setGeocodeNoticeTone("info");
+    setGeocodeCandidates([]);
+
+    try {
+      let matchedQuery = query;
+      let candidates: GeocodeCandidate[] = [];
+
+      for (let index = 0; index < queries.length; index++) {
+        if (index > 0) {
+          // Nominatim's usage policy allows at most one request per second.
+          setGeocodeNoticeTone("info");
+          setGeocodeNotice("Trying a broader version of the address…");
+          await new Promise((resolve) => setTimeout(resolve, 1100));
+          if (seq !== geocodeSeq.current) return;
+        }
+
+        const url = buildNominatimSearchUrl(queries[index]);
+        if (!url) continue;
+        const res = await fetch(url, {
+          signal: controller.signal,
+          headers: { Accept: "application/json" },
+        });
+        if (!res.ok) throw new Error(`Address search failed (${res.status}).`);
+        const raw = await res.json();
+        if (seq !== geocodeSeq.current) return;
+
+        const found = parseNominatimSearchResults(raw);
+        if (found.length > 0) {
+          candidates = found;
+          matchedQuery = queries[index];
+          break;
+        }
+      }
+
+      if (candidates.length === 0) {
+        setGeocodeNotice("");
+        setGeocodeError(
+          "No matching location found. Add a barangay or municipality, or set the pin manually on the map.",
+        );
+        return;
+      }
+
+      const usedBroaderQuery = matchedQuery !== query;
+      if (candidates.length === 1) {
+        applyGeocodeCandidate(
+          candidates[0],
+          query,
+          usedBroaderQuery
+            ? "Address found using a broader search. Verify the pin and adjust it if needed."
+            : "Address found on the map. Check the pin and adjust it if needed.",
+        );
+        return;
+      }
+
+      setGeocodeCandidates(candidates);
+      setGeocodeQuery(query);
+      setGeocodeNoticeTone("info");
+      setGeocodeNotice(
+        usedBroaderQuery
+          ? "Multiple locations match the broader search. Choose the correct destination below."
+          : "Multiple locations match. Choose the correct destination below.",
+      );
+    } catch {
+      if (controller.signal.aborted || seq !== geocodeSeq.current) return;
+      setGeocodeNotice("");
+      setGeocodeError(
+        "Address lookup failed. Check your connection and try again, or set the pin manually on the map.",
+      );
+    } finally {
+      if (seq === geocodeSeq.current) setGeocoding(false);
+    }
+  };
+
+  const handleAddressChange = (value: string) => {
+    if (value === address) return;
+    const normalizedChanged = normalizeAddressQuery(value) !== normalizeAddressQuery(address);
+    setAddress(value);
+    if (!normalizedChanged) return;
+
+    const hadAddressPin = pinSource === "address";
+    const keepAddressWarning = hadAddressPin || addressNeedsResolution;
+
+    // The in-flight lookup, if any, no longer describes the edited field.
+    geocodeSeq.current += 1;
+    geocodeAbort.current?.abort();
+    setGeocoding(false);
+    setGeocodeError("");
+    setGeocodeNotice("");
+    setGeocodeNoticeTone("info");
+    setGeocodeCandidates([]);
+    setGeocodeQuery("");
+
+    const invalidatesPin = addressChangeInvalidatesPin({ pinSource, resolvedAddress, nextAddress: value });
+
+    if (invalidatesPin) {
+      // An address-derived pin must never stay attached to different text.
+      setPosition(null);
+      setPinSource(null);
+      setResolvedAddress(null);
+      setPinAddress("");
+      setAddressNeedsResolution(true);
+      setGeocodeNoticeTone("warning");
+      setGeocodeNotice("Address changed — find the new address on the map or set the pin manually.");
+    } else if (keepAddressWarning && !position) {
+      setAddressNeedsResolution(true);
+      setGeocodeNoticeTone("warning");
+      setGeocodeNotice("Address changed — find the new address on the map or set the pin manually.");
+    } else if (position) {
+      setGeocodeNoticeTone("warning");
+      setGeocodeNotice(
+        "Address changed — your existing pin is unchanged. Use Find Address on Map to match it, or move the pin.",
+      );
+    }
+  };
+
+  const handlePinSourceChange = (source: "gps" | "map" | null) => {
+    // A GPS/manual/clear choice always wins over a slower address lookup.
+    geocodeSeq.current += 1;
+    geocodeAbort.current?.abort();
+    setGeocoding(false);
+    setAddressNeedsResolution(false);
+    if (!source) {
+      setPinSource(null);
+      setResolvedAddress(null);
+      setGeocodeCandidates([]);
+      setGeocodeQuery("");
+      setGeocodeError("");
+      setGeocodeNotice("");
+      setGeocodeNoticeTone("info");
+      return;
+    }
+    // A manual refinement of an address-resolved pin stays associated with
+    // that address, so later address edits still invalidate it.
+    setPinSource((prev) => (prev === "address" && source === "map" ? "address" : source));
+    setGeocodeCandidates([]);
+    setGeocodeQuery("");
+    setGeocodeError("");
+    setGeocodeNotice("");
+    setGeocodeNoticeTone("info");
+  };
+
+  const handleUseSavedAddress = () => {
+    if (!profile) return;
+    const savedAddress = ((profile as any).address || (profile as any).street_address || "").trim();
+    if (!savedAddress) {
+      setGeocodeError("No saved profile address found. Enter your address and use Find Address on Map.");
+      return;
+    }
+
+    // Drop the previous pin/resolution before resolving the saved address.
+    setPosition(null);
+    setPinSource(null);
+    setResolvedAddress(null);
+    setPinAddress("");
+    setShowMapPicker(false);
+    setGeocodeCandidates([]);
+    setGeocodeQuery("");
+    setGeocodeError("");
+    setGeocodeNotice("");
+    setGeocodeNoticeTone("info");
+    setAddressNeedsResolution(false);
+    setAddress(savedAddress);
+    if (profile.phone) setPhone(profile.phone);
+
+    void findAddressOnMap(savedAddress);
+  };
+
+  const handleUsePinAddress = () => {
+    if (!pinAddress) return;
+    setAddress(pinAddress);
+    if (pinSource === "address") setResolvedAddress(pinAddress);
+    setGeocodeError("");
+    setGeocodeNotice("");
+    setGeocodeNoticeTone("info");
+    setAddressNeedsResolution(false);
   };
 
   const handleNextStep1 = () => {
@@ -897,18 +1144,7 @@ export default function CheckoutPage() {
                       </label>
                       <button
                         type="button"
-                        onClick={() => {
-                          if (profile) {
-                            // The saved profile address is the town-centroid
-                            // fallback; clear any exact pin so the address,
-                            // distance and fee all refer to the same place.
-                            setPosition(null);
-                            setPinAddress("");
-                            setShowMapPicker(false);
-                            setAddress((profile as any).address || (profile as any).street_address || "");
-                            if (profile.phone) setPhone(profile.phone);
-                          }
-                        }}
+                        onClick={handleUseSavedAddress}
                         style={{
                           background: "none",
                           border: "none",
@@ -926,7 +1162,7 @@ export default function CheckoutPage() {
                     <textarea
                       ref={addressRef}
                       value={address}
-                      onChange={(e) => setAddress(e.target.value)}
+                      onChange={(e) => handleAddressChange(e.target.value)}
                       required
                       rows={3}
                       placeholder="House #, Street, Barangay, City"
@@ -946,6 +1182,96 @@ export default function CheckoutPage() {
                       onFocus={(e) => (e.target.style.borderColor = "var(--primary-color)")}
                       onBlur={(e) => (e.target.style.borderColor = "#e2e8f0")}
                     />
+
+                    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: 8, marginTop: 8 }}>
+                      <button
+                        type="button"
+                        onClick={() => void findAddressOnMap()}
+                        disabled={geocoding || !address.trim()}
+                        style={{
+                          display: "inline-flex",
+                          alignItems: "center",
+                          gap: 6,
+                          padding: "9px 14px",
+                          borderRadius: 10,
+                          border: "2px solid var(--primary-color)",
+                          background: "#fff",
+                          color: "var(--primary-color)",
+                          fontWeight: 700,
+                          fontSize: 12,
+                          cursor: geocoding || !address.trim() ? "not-allowed" : "pointer",
+                          opacity: geocoding || !address.trim() ? 0.6 : 1,
+                        }}
+                      >
+                        {geocoding ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
+                        {geocoding ? "Finding address…" : "Find Address on Map"}
+                      </button>
+                      <span style={{ fontSize: 12, color: "#94a3b8" }}>
+                        Uses the typed address. GPS is available on the map as a separate option.
+                      </span>
+                    </div>
+
+                    {geocodeNotice && (
+                      <p
+                        style={{
+                          margin: "8px 0 0",
+                          fontSize: 12,
+                          lineHeight: 1.5,
+                          color:
+                            geocodeNoticeTone === "success"
+                              ? "#15803d"
+                              : geocodeNoticeTone === "warning"
+                                ? "#b45309"
+                                : "#475569",
+                        }}
+                      >
+                        {geocodeNotice}
+                      </p>
+                    )}
+                    {geocodeError && (
+                      <p style={{ margin: "8px 0 0", fontSize: 12, color: "#dc2626", lineHeight: 1.5 }}>
+                        {geocodeError}
+                      </p>
+                    )}
+                    {geocodeCandidates.length > 1 && (
+                      <div
+                        style={{
+                          marginTop: 8,
+                          padding: "10px 12px",
+                          borderRadius: 12,
+                          border: "1px solid #e2e8f0",
+                          background: "#f8fafc",
+                        }}
+                      >
+                        <p
+                          style={{ margin: "0 0 8px", fontSize: 12, fontWeight: 700, color: "var(--secondary-color)" }}
+                        >
+                          Multiple matches — choose the correct destination:
+                        </p>
+                        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                          {geocodeCandidates.map((candidate) => (
+                            <button
+                              key={`${candidate.lat},${candidate.lng}`}
+                              type="button"
+                              onClick={() => applyGeocodeCandidate(candidate, geocodeQuery)}
+                              style={{
+                                textAlign: "left",
+                                padding: "8px 10px",
+                                borderRadius: 8,
+                                border: "1px solid #e2e8f0",
+                                background: "#fff",
+                                color: "#334155",
+                                fontSize: 12,
+                                lineHeight: 1.45,
+                                cursor: "pointer",
+                              }}
+                            >
+                              {candidate.displayName}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div>
@@ -1113,6 +1439,7 @@ export default function CheckoutPage() {
                       defaultCenter={storePosition}
                       storePosition={storePosition}
                       onAddressDetect={setPinAddress}
+                      onPositionSourceChange={handlePinSourceChange}
                     />
                   )}
 
@@ -1132,11 +1459,11 @@ export default function CheckoutPage() {
                       }}
                     >
                       <p style={{ margin: 0, fontSize: 12, color: "#475569", lineHeight: 1.5 }}>
-                        <strong>Detected near:</strong> {pinAddress}
+                        <strong>Matched location:</strong> {pinAddress}
                       </p>
                       <button
                         type="button"
-                        onClick={() => setAddress(pinAddress)}
+                        onClick={handleUsePinAddress}
                         style={{
                           background: "none",
                           border: "1px solid var(--primary-color)",
