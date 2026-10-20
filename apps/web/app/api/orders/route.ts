@@ -3,6 +3,7 @@ import { getUser } from "@repo/data-access/auth";
 import { createAuthClient, createServiceClient } from "@repo/data-access/client";
 import { createOrder, createOrderItems, deleteOrder, getOrdersByUser } from "@repo/data-access/data/orders";
 import { getProfileById, isUsernameTaken, upsertProfile } from "@repo/data-access/data/profiles";
+import { isValidCoordinates } from "@repo/utils";
 import { cookies } from "next/headers";
 import { type NextRequest, NextResponse } from "next/server";
 import { resolveDeliveryFee } from "../../../lib/delivery-fee";
@@ -35,13 +36,35 @@ export async function POST(req: NextRequest) {
     // business config so a tampered request can't change what a customer
     // pays or what a rider earns.
 
-    if (!cart?.length || !delivery_address || !delivery_contact) {
+    if (
+      !cart?.length ||
+      typeof delivery_address !== "string" ||
+      !delivery_address.trim() ||
+      typeof delivery_contact !== "string" ||
+      !delivery_contact.trim()
+    ) {
       return NextResponse.json({ success: false, error: "Missing required fields" }, { status: 400 });
     }
 
     if (!["cod", "gcash"].includes(payment_method)) {
       return NextResponse.json({ success: false, error: "Invalid payment method" }, { status: 400 });
     }
+
+    // A pin must be a complete, finite, in-range coordinate pair. Otherwise a
+    // malformed request could be priced from bad distance data or stored with
+    // coordinates that don't match the address.
+    const hasLat = delivery_lat !== undefined && delivery_lat !== null;
+    const hasLng = delivery_lng !== undefined && delivery_lng !== null;
+    if (hasLat !== hasLng) {
+      return NextResponse.json(
+        { success: false, error: "Delivery coordinates must include both latitude and longitude." },
+        { status: 400 },
+      );
+    }
+    if (hasLat && !isValidCoordinates(delivery_lat, delivery_lng)) {
+      return NextResponse.json({ success: false, error: "Invalid delivery coordinates." }, { status: 400 });
+    }
+    const orderPin = hasLat ? { lat: delivery_lat as number, lng: delivery_lng as number } : null;
 
     const stockErrors: string[] = [];
     // Server-side price authority: the subtotal is built from DB prices,
@@ -247,10 +270,7 @@ export async function POST(req: NextRequest) {
     // configured max delivery distance.
     const feeOutcome = await resolveDeliveryFee({
       supabase: serviceSupabase,
-      pin:
-        typeof delivery_lat === "number" && typeof delivery_lng === "number"
-          ? { lat: delivery_lat, lng: delivery_lng }
-          : null,
+      pin: orderPin,
       townId: profile?.town_id ?? null,
     });
     if (feeOutcome.outOfRange) {
@@ -287,8 +307,8 @@ export async function POST(req: NextRequest) {
       gcash_reference_no: payment_method === "gcash" ? gcash_reference || null : null,
       payment_proof_url: payment_method === "gcash" ? payment_proof_url || null : null,
       delivery_address,
-      delivery_lat,
-      delivery_lng,
+      delivery_lat: orderPin?.lat ?? null,
+      delivery_lng: orderPin?.lng ?? null,
       delivery_contact,
       subtotal: serverSubtotal,
       delivery_fee: deliveryFee,

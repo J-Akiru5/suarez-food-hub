@@ -4,6 +4,7 @@ import {
   DEFAULT_FLAT_FEE,
   type DeliveryTier,
   feeForDistance,
+  isValidCoordinates,
   maxDeliveryKm,
   parseDeliveryTiers,
 } from "@repo/utils";
@@ -53,15 +54,16 @@ export async function resolveDeliveryFee({ supabase, pin, townId }: ResolveArgs)
   const flatFee = Number(biz?.delivery_fee ?? DEFAULT_FLAT_FEE);
   const maxKm = Number(biz?.max_delivery_km) > 0 ? Number(biz?.max_delivery_km) : (maxDeliveryKm(tiers) ?? null);
 
-  const origin =
-    biz?.base_lat != null && biz?.base_lng != null ? { lat: Number(biz.base_lat), lng: Number(biz.base_lng) } : null;
+  const baseLat = biz?.base_lat == null ? null : Number(biz.base_lat);
+  const baseLng = biz?.base_lng == null ? null : Number(biz.base_lng);
+  const origin = isValidCoordinates(baseLat, baseLng) ? { lat: baseLat as number, lng: baseLng as number } : null;
 
   // Resolve destination coordinates: pin first, then town centroid.
   let dest: { lat: number; lng: number } | null = null;
   let source: DeliveryFeeOutcome["source"] = "flat_fee";
 
-  if (pin && Number.isFinite(pin.lat) && Number.isFinite(pin.lng)) {
-    dest = { lat: pin.lat, lng: pin.lng };
+  if (pin && isValidCoordinates(pin.lat, pin.lng)) {
+    dest = { lat: Number(pin.lat), lng: Number(pin.lng) };
     source = "pin";
   } else if (townId) {
     const { data: loc } = await supabase
@@ -69,8 +71,10 @@ export async function resolveDeliveryFee({ supabase, pin, townId }: ResolveArgs)
       .select("centroid_lat, centroid_lng")
       .eq("id", townId)
       .maybeSingle();
-    if (loc?.centroid_lat != null && loc?.centroid_lng != null) {
-      dest = { lat: Number(loc.centroid_lat), lng: Number(loc.centroid_lng) };
+    const centroidLat = loc?.centroid_lat == null ? null : Number(loc.centroid_lat);
+    const centroidLng = loc?.centroid_lng == null ? null : Number(loc.centroid_lng);
+    if (isValidCoordinates(centroidLat, centroidLng)) {
+      dest = { lat: centroidLat as number, lng: centroidLng as number };
       source = "town_centroid";
     }
   }
@@ -87,7 +91,10 @@ export async function resolveDeliveryFee({ supabase, pin, townId }: ResolveArgs)
     };
   }
 
-  const distanceKm = Math.round(calculateDistance(origin.lat, origin.lng, dest.lat, dest.lng) * 10) / 10;
+  // Use the same 2-decimal distance for display and tier selection so a
+  // customer can never see "5 km" while being charged the 7 km tier. The old
+  // 0.1 km rounding before pricing moved 5.01 km into the 5 km tier.
+  const distanceKm = Math.round(calculateDistance(origin.lat, origin.lng, dest.lat, dest.lng) * 100) / 100;
   const outOfRange = maxKm != null && distanceKm > maxKm;
   const result = feeForDistance(distanceKm, tiers, flatFee);
 

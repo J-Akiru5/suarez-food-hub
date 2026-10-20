@@ -2,11 +2,15 @@ import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 
 export {
+  type Coordinates,
   calculateDistance,
   DEFAULT_FLAT_FEE,
   type DeliveryFeeResult,
   type DeliveryTier,
+  deliveryEstimateKey,
   feeForDistance,
+  isValidCoordinatePair,
+  isValidCoordinates,
   maxDeliveryKm,
   parseDeliveryTiers,
 } from "./delivery";
@@ -22,6 +26,7 @@ export {
   type RankedDispatchRider,
   rankDispatchRiders,
 } from "./dispatch";
+export { formatGeolocationAccuracy, geolocationErrorMessage } from "./geolocation";
 export {
   type LocationRecord,
   type LocationRelationRows,

@@ -26,6 +26,50 @@ export interface DeliveryFeeResult {
   isFallback: boolean;
 }
 
+export interface Coordinates {
+  lat: number;
+  lng: number;
+}
+
+/**
+ * True only for a finite, in-range WGS84 coordinate pair. Used by both API
+ * routes and the map so malformed pins can never be priced.
+ */
+export function isValidCoordinates(lat: unknown, lng: unknown): boolean {
+  return (
+    typeof lat === "number" &&
+    typeof lng === "number" &&
+    Number.isFinite(lat) &&
+    Number.isFinite(lng) &&
+    lat >= -90 &&
+    lat <= 90 &&
+    lng >= -180 &&
+    lng <= 180
+  );
+}
+
+/** Same check for an object shape (e.g. a React state pin). */
+export function isValidCoordinatePair(value: unknown): value is Coordinates {
+  if (!value || typeof value !== "object") return false;
+  const { lat, lng } = value as { lat?: unknown; lng?: unknown };
+  return isValidCoordinates(lat, lng);
+}
+
+/**
+ * Stable identity for a delivery estimate request. A fee is only rendered
+ * when the estimate's key still matches the current pin/town, which prevents
+ * a slow response for an old pin from overwriting a newer one.
+ */
+export function deliveryEstimateKey(pin: Coordinates | null | undefined, townId: string | null | undefined): string {
+  if (pin && isValidCoordinates(pin.lat, pin.lng)) {
+    // ~0.1 m precision — enough to distinguish real pin moves, stable across
+    // tiny floating-point jitter for the same tap.
+    return `pin:${pin.lat.toFixed(6)},${pin.lng.toFixed(6)}`;
+  }
+  if (townId?.trim()) return `town:${townId.trim()}`;
+  return "none";
+}
+
 /** Fallback flat fee used when no tiers are configured or distance is unknown. */
 export const DEFAULT_FLAT_FEE = 40;
 
@@ -73,6 +117,10 @@ export function maxDeliveryKm(tiers: DeliveryTier[]): number | null {
  * `tier: null`) when no tiers are configured.
  */
 export function feeForDistance(distanceKm: number, tiers: DeliveryTier[], flatFee: number): DeliveryFeeResult {
+  // Invalid/negative distances must never be priced by the highest tier.
+  if (!Number.isFinite(distanceKm) || distanceKm < 0) {
+    return { fee: flatFee, tier: null, isFallback: true };
+  }
   const sorted = tiers.length > 1 ? [...tiers].sort((a, b) => a.max_km - b.max_km) : tiers;
   for (const tier of sorted) {
     if (distanceKm <= tier.max_km) {

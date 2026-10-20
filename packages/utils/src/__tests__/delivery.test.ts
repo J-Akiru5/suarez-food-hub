@@ -3,7 +3,10 @@ import {
   calculateDistance,
   DEFAULT_FLAT_FEE,
   type DeliveryTier,
+  deliveryEstimateKey,
   feeForDistance,
+  isValidCoordinatePair,
+  isValidCoordinates,
   maxDeliveryKm,
   parseDeliveryTiers,
 } from "../delivery";
@@ -104,5 +107,85 @@ describe("maxDeliveryKm", () => {
   });
   it("is null with no tiers", () => {
     expect(maxDeliveryKm([])).toBeNull();
+  });
+});
+
+describe("isValidCoordinates", () => {
+  it("accepts finite in-range latitude/longitude", () => {
+    expect(isValidCoordinates(10.9501875, 122.5065625)).toBe(true);
+    expect(isValidCoordinates(-90, -180)).toBe(true);
+    expect(isValidCoordinates(90, 180)).toBe(true);
+    expect(isValidCoordinates(0, 0)).toBe(true);
+  });
+
+  it("rejects non-finite, out-of-range and non-number values", () => {
+    expect(isValidCoordinates(Number.NaN, 122.5)).toBe(false);
+    expect(isValidCoordinates(10.95, Number.POSITIVE_INFINITY)).toBe(false);
+    expect(isValidCoordinates(91, 122.5)).toBe(false);
+    expect(isValidCoordinates(10.95, -181)).toBe(false);
+    expect(isValidCoordinates("10.95", "122.5")).toBe(false);
+    expect(isValidCoordinates(null, undefined)).toBe(false);
+  });
+
+  it("validates an object pin shape", () => {
+    expect(isValidCoordinatePair({ lat: 10.95, lng: 122.5 })).toBe(true);
+    expect(isValidCoordinatePair({ lat: 10.95 })).toBe(false);
+    expect(isValidCoordinatePair({ lat: "10.95", lng: 122.5 })).toBe(false);
+    expect(isValidCoordinatePair(null)).toBe(false);
+  });
+});
+
+describe("deliveryEstimateKey", () => {
+  it("uses a stable pin key and changes when the pin moves", () => {
+    const a = deliveryEstimateKey({ lat: 10.9501875, lng: 122.5065625 }, "063023000");
+    const b = deliveryEstimateKey({ lat: 10.9501881, lng: 122.5065631 }, "063023000");
+    const c = deliveryEstimateKey({ lat: 10.9502, lng: 122.5066 }, "063023000");
+    expect(a).toBe("pin:10.950188,122.506563");
+    expect(b).toBe(a);
+    expect(c).not.toBe(a);
+  });
+
+  it("falls back to the town key without a pin, and to 'none' without either", () => {
+    expect(deliveryEstimateKey(null, "063023000")).toBe("town:063023000");
+    expect(deliveryEstimateKey({ lat: 200, lng: 500 }, "063023000")).toBe("town:063023000");
+    expect(deliveryEstimateKey(null, null)).toBe("none");
+  });
+});
+
+describe("reference delivery scenario (live pricing rules)", () => {
+  // Live business.delivery_tiers on 2026-10-20 (admin-configured).
+  const LIVE_TIERS: DeliveryTier[] = [
+    { max_km: 1, fee: 30 },
+    { max_km: 3, fee: 45 },
+    { max_km: 5, fee: 60 },
+    { max_km: 7, fee: 75 },
+    { max_km: 9, fee: 90 },
+    { max_km: 10, fee: 105 },
+    { max_km: 11, fee: 120 },
+    { max_km: 12, fee: 135 },
+    { max_km: 20, fee: 255 },
+  ];
+
+  it("prices the screenshot's 3.9 km at ₱60 and keeps subtotal + fee = total", () => {
+    const fee = feeForDistance(3.9, LIVE_TIERS, 20).fee;
+    expect(fee).toBe(60);
+    const subtotal = 350;
+    expect(subtotal + fee).toBe(410);
+  });
+
+  it("uses the 5 km tier at the boundary and the next tier just beyond it", () => {
+    expect(feeForDistance(5, LIVE_TIERS, 20).fee).toBe(60);
+    expect(feeForDistance(5.01, LIVE_TIERS, 20).fee).toBe(75);
+  });
+});
+
+describe("invalid distance handling", () => {
+  it("falls back to the flat fee instead of pricing NaN/negative distances at the top tier", () => {
+    for (const distance of [Number.NaN, Number.POSITIVE_INFINITY, -1]) {
+      const result = feeForDistance(distance, TIERS, 40);
+      expect(result.fee).toBe(40);
+      expect(result.isFallback).toBe(true);
+      expect(result.tier).toBeNull();
+    }
   });
 });

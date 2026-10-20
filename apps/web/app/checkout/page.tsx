@@ -1,5 +1,6 @@
 "use client";
 
+import { deliveryEstimateKey, isValidCoordinates } from "@repo/utils";
 import {
   ArrowLeft,
   Banknote,
@@ -14,7 +15,7 @@ import {
 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import AddressSetupForm from "../../components/AddressSetupForm";
 import AuthNavbar from "../../components/AuthNavbar";
 import { useAuth } from "../../components/auth-provider";
@@ -59,6 +60,8 @@ interface Business {
   delivery_provinces?: string | null;
   delivery_areas?: string | null;
   delivery_min_order_amount?: number | null;
+  base_lat?: number | null;
+  base_lng?: number | null;
 }
 
 interface FeeEstimate {
@@ -69,6 +72,12 @@ interface FeeEstimate {
   max_km: number | null;
 }
 
+/** The request identity is stored with the response so a slow old estimate
+ * can never be rendered for a newer pin. */
+interface KeyedFeeEstimate extends FeeEstimate {
+  key: string;
+}
+
 const PH_REGEX = /^(?:\+63|0)9\d{9}$/;
 const REF_REGEX = /^[A-Za-z0-9]{5,20}$/;
 
@@ -76,7 +85,7 @@ type PaymentMethod = "cod" | "gcash";
 
 export default function CheckoutPage() {
   const router = useRouter();
-  const { user, profile, refreshProfile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartLoaded, setCartLoaded] = useState(false);
   const [address, setAddress] = useState("");
@@ -94,13 +103,17 @@ export default function CheckoutPage() {
   const [error, setError] = useState("");
   const [qrModalUrl, setQrModalUrl] = useState<string | null>(null);
   const [position, setPosition] = useState<{ lat: number; lng: number } | null>(null);
+  const [pinAddress, setPinAddress] = useState("");
   const [showMapPicker, setShowMapPicker] = useState(false);
-  const [estimate, setEstimate] = useState<FeeEstimate | null>(null);
+  const [estimate, setEstimate] = useState<KeyedFeeEstimate | null>(null);
   const [estimateLoading, setEstimateLoading] = useState(false);
+  const [estimateError, setEstimateError] = useState("");
+  const [estimateRetry, setEstimateRetry] = useState(0);
   const [step, setStep] = useState(1);
   const [showAddressForm, setShowAddressForm] = useState(false);
   const addressRef = useRef<HTMLTextAreaElement>(null);
   const initialProfileLoaded = useRef(false);
+  const estimateSeq = useRef(0);
 
   useEffect(() => {
     try {
@@ -130,35 +143,73 @@ export default function CheckoutPage() {
       .catch(() => {});
   }, []);
 
-  // Live delivery-fee estimate — recomputed whenever the pin or the
-  // profile town changes. Server recomputes authoritatively on placement.
+  // Live delivery-fee estimate — recomputed whenever the pin or the profile
+  // town changes. The server recomputes authoritatively on placement. Each
+  // response is keyed to its request so a slow old response can never
+  // overwrite a newer pin's fee.
   const townId = (profile as any)?.town_id as string | undefined;
-  const fetchEstimate = useCallback(async () => {
-    setEstimateLoading(true);
-    try {
-      const res = await fetch("/api/delivery-estimate", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          lat: position?.lat ?? null,
-          lng: position?.lng ?? null,
-          town_id: position ? null : (townId ?? null),
-        }),
-      });
-      const data = await res.json();
-      if (res.ok && data?.data) setEstimate(data.data as FeeEstimate);
-    } catch {
-      /* keep the fallback fee already displayed */
-    } finally {
-      setEstimateLoading(false);
-    }
-  }, [position?.lat, position?.lng, townId]);
+  const profileLoaded = !!profile;
+  const pin = position && isValidCoordinates(position.lat, position.lng) ? position : null;
+  const pinIsInvalid = !!position && !pin;
+  const estimateKey = `${deliveryEstimateKey(pin, townId)}#${estimateRetry}`;
 
   useEffect(() => {
-    if (!profile) return;
-    const t = setTimeout(fetchEstimate, 400); // debounce pin drags
-    return () => clearTimeout(t);
-  }, [fetchEstimate, profile]);
+    if (pinIsInvalid) {
+      setEstimate(null);
+      setEstimateLoading(false);
+      setEstimateError("The selected pin location is invalid. Please choose it again on the map.");
+      return;
+    }
+    if (!profileLoaded && !pin) return;
+
+    const seq = ++estimateSeq.current;
+    const controller = new AbortController();
+    const requestKey = estimateKey;
+
+    setEstimateError("");
+    setEstimateLoading(true);
+
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch("/api/delivery-estimate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
+          body: JSON.stringify({
+            lat: pin?.lat ?? null,
+            lng: pin?.lng ?? null,
+            town_id: pin ? null : (townId ?? null),
+          }),
+        });
+        const data = await res.json().catch(() => ({}));
+        if (seq !== estimateSeq.current) return; // a newer pin/town already won
+        if (!res.ok || !data?.data) throw new Error(data?.error || "Could not calculate the delivery fee.");
+        setEstimate({ ...(data.data as FeeEstimate), key: requestKey });
+      } catch (err) {
+        if (controller.signal.aborted || seq !== estimateSeq.current) return;
+        setEstimate(null);
+        setEstimateError(err instanceof Error ? err.message : "Could not calculate the delivery fee.");
+      } finally {
+        if (seq === estimateSeq.current) setEstimateLoading(false);
+      }
+    }, 350); // debounce rapid pin drags
+
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [estimateKey, pin, pinIsInvalid, profileLoaded, townId]);
+
+  const estimateForCurrent = estimate?.key === estimateKey ? estimate : null;
+  const feeReady = !!estimateForCurrent && !estimateLoading && !estimateError;
+  const continueDisabled = !feeReady || pinIsInvalid;
+
+  // Authoritative restaurant origin from the business config. Used only to
+  // centre the map — never as a customer pin.
+  const storePosition =
+    business?.base_lat != null && business?.base_lng != null && isValidCoordinates(business.base_lat, business.base_lng)
+      ? { lat: Number(business.base_lat), lng: Number(business.base_lng) }
+      : null;
 
   // Town/city-level delivery restriction (Iloilo Province + selected towns), with
   // province-level fallback for backwards compatibility.
@@ -178,11 +229,11 @@ export default function CheckoutPage() {
         : false);
 
   const subtotal = cart.reduce((s, i) => s + i.price * i.quantity, 0);
-  // Live estimate when available, otherwise the flat fallback fee until the
-  // estimate call returns. The server recomputes the real fee on placement.
-  const fee = estimate?.fee ?? Number(business?.delivery_fee ?? 40);
-  const total = subtotal + fee;
-  const feeOutOfRange = !!estimate?.out_of_range;
+  // No stale fallback: while the current destination's estimate is loading or
+  // failed, the fee/total are shown as pending instead of a made-up number.
+  const fee = estimateForCurrent?.fee ?? null;
+  const total = fee != null ? subtotal + fee : null;
+  const feeOutOfRange = !!estimateForCurrent?.out_of_range;
   // Delivery orders must reach the minimum SUBTOTAL (before delivery fee). The server enforces it too.
   const minOrderAmount = business?.delivery_min_order_amount ?? 0;
   const isBelowMinimum = minOrderAmount > 0 && subtotal < minOrderAmount;
@@ -200,9 +251,25 @@ export default function CheckoutPage() {
       setError(belowMinimumMessage);
       return;
     }
+    if (pinIsInvalid) {
+      setError("The selected pin location is invalid. Please choose it again on the map.");
+      return;
+    }
+    if (estimateLoading) {
+      setError("Calculating your delivery fee — please wait a moment.");
+      return;
+    }
+    if (estimateError) {
+      setError(estimateError);
+      return;
+    }
+    if (!estimateForCurrent || total == null) {
+      setError("We couldn't determine the delivery fee for this destination. Please retry.");
+      return;
+    }
     if (feeOutOfRange) {
       setError(
-        `Delivery is too far — about ${estimate?.distance_km} km away (we deliver up to ${estimate?.max_km} km). Please move your pin closer or update your address.`,
+        `Delivery is too far — about ${estimateForCurrent.distance_km} km away (we deliver up to ${estimateForCurrent.max_km} km). Please move your pin closer or update your address.`,
       );
       return;
     }
@@ -277,6 +344,14 @@ export default function CheckoutPage() {
       return;
     }
 
+    // Never submit with a stale or missing fee. The server recomputes the
+    // authoritative fee from the same pin, but the customer must see a
+    // confirmed amount before placing the order.
+    if (pinIsInvalid || !estimateForCurrent || total == null || estimateLoading || estimateError) {
+      setError("Delivery fee is not ready. Please go back and confirm your delivery location.");
+      return;
+    }
+
     if (feeOutOfRange) {
       setError("Your delivery address is beyond our maximum delivery distance. Please adjust your pin or address.");
       return;
@@ -290,9 +365,9 @@ export default function CheckoutPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           cart,
-          delivery_address: address,
-          delivery_lat: position?.lat || null,
-          delivery_lng: position?.lng || null,
+          delivery_address: address.trim(),
+          delivery_lat: pin?.lat ?? null,
+          delivery_lng: pin?.lng ?? null,
           delivery_contact: phone.trim(),
           payment_method: paymentMethod,
           gcash_reference: paymentMethod === "gcash" ? refNumber.trim() : null,
@@ -824,6 +899,12 @@ export default function CheckoutPage() {
                         type="button"
                         onClick={() => {
                           if (profile) {
+                            // The saved profile address is the town-centroid
+                            // fallback; clear any exact pin so the address,
+                            // distance and fee all refer to the same place.
+                            setPosition(null);
+                            setPinAddress("");
+                            setShowMapPicker(false);
                             setAddress((profile as any).address || (profile as any).street_address || "");
                             if (profile.phone) setPhone(profile.phone);
                           }
@@ -930,6 +1011,14 @@ export default function CheckoutPage() {
                   <div>
                     <button
                       onClick={handleNextStep1}
+                      disabled={continueDisabled}
+                      title={
+                        estimateError
+                          ? estimateError
+                          : estimateLoading
+                            ? "Calculating your delivery fee…"
+                            : "Confirm your delivery location first"
+                      }
                       style={{
                         padding: "16px 32px",
                         borderRadius: 16,
@@ -938,17 +1027,42 @@ export default function CheckoutPage() {
                         color: "#fff",
                         fontWeight: 700,
                         fontSize: 16,
-                        cursor: "pointer",
+                        cursor: continueDisabled ? "not-allowed" : "pointer",
                         boxShadow: "0 8px 24px rgba(177,69,74,0.25)",
                         transition: "opacity 0.2s",
                         height: 56,
                         whiteSpace: "nowrap",
+                        opacity: continueDisabled ? 0.6 : 1,
                       }}
-                      onMouseOver={(e) => (e.currentTarget.style.opacity = "0.9")}
-                      onMouseOut={(e) => (e.currentTarget.style.opacity = "1")}
+                      onMouseOver={(e) => {
+                        if (!continueDisabled) e.currentTarget.style.opacity = "0.9";
+                      }}
+                      onMouseOut={(e) => {
+                        e.currentTarget.style.opacity = continueDisabled ? "0.6" : "1";
+                      }}
                     >
-                      Continue to Payment
+                      {estimateLoading ? "Calculating fee…" : "Continue to Payment"}
                     </button>
+                    {estimateError && (
+                      <p style={{ color: "#dc2626", fontSize: 12, marginTop: 6, maxWidth: 240 }}>
+                        {estimateError}{" "}
+                        <button
+                          type="button"
+                          onClick={() => setEstimateRetry((n) => n + 1)}
+                          style={{
+                            background: "none",
+                            border: "none",
+                            color: "var(--primary-color)",
+                            fontWeight: 700,
+                            cursor: "pointer",
+                            padding: 0,
+                            textDecoration: "underline",
+                          }}
+                        >
+                          Retry
+                        </button>
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -968,8 +1082,10 @@ export default function CheckoutPage() {
                       </p>
                       <p style={{ margin: "2px 0 0", fontSize: 13, color: "#64748b" }}>
                         {position
-                          ? "Pin set — your delivery fee is calculated from this location."
-                          : "Drop a pin for an accurate distance-based fee, or we'll estimate from your saved town."}
+                          ? "Pin set — the fee below is calculated from this exact location."
+                          : estimateForCurrent?.source === "town_centroid"
+                            ? "No pin set — the fee uses your saved town's distance estimate."
+                            : "No pin set — a flat fee applies until you place a pin for distance pricing."}
                       </p>
                     </div>
                     <button
@@ -991,40 +1107,62 @@ export default function CheckoutPage() {
                     </button>
                   </div>
                   {showMapPicker && (
-                    <div style={{ position: "relative" }}>
-                      <LocationPicker position={position} setPosition={setPosition} />
-                      {position && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setPosition(null);
-                            setShowMapPicker(false);
-                          }}
-                          style={{
-                            position: "absolute",
-                            top: 10,
-                            right: 10,
-                            zIndex: 1000,
-                            padding: "6px 12px",
-                            borderRadius: 10,
-                            border: "1px solid #e2e8f0",
-                            background: "#fff",
-                            color: "#dc2626",
-                            fontWeight: 600,
-                            fontSize: 12,
-                            cursor: "pointer",
-                            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
-                          }}
-                        >
-                          Remove Pin
-                        </button>
-                      )}
+                    <LocationPicker
+                      position={position}
+                      setPosition={setPosition}
+                      defaultCenter={storePosition}
+                      storePosition={storePosition}
+                      onAddressDetect={setPinAddress}
+                    />
+                  )}
+
+                  {position && pinAddress && (
+                    <div
+                      style={{
+                        marginTop: 10,
+                        padding: "10px 14px",
+                        borderRadius: 12,
+                        background: "#f8fafc",
+                        border: "1px solid #e2e8f0",
+                        display: "flex",
+                        flexWrap: "wrap",
+                        alignItems: "center",
+                        justifyContent: "space-between",
+                        gap: 8,
+                      }}
+                    >
+                      <p style={{ margin: 0, fontSize: 12, color: "#475569", lineHeight: 1.5 }}>
+                        <strong>Detected near:</strong> {pinAddress}
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setAddress(pinAddress)}
+                        style={{
+                          background: "none",
+                          border: "1px solid var(--primary-color)",
+                          borderRadius: 8,
+                          color: "var(--primary-color)",
+                          fontSize: 12,
+                          fontWeight: 700,
+                          padding: "5px 10px",
+                          cursor: "pointer",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        Use this address
+                      </button>
                     </div>
                   )}
-                  {feeOutOfRange && (
+
+                  {pinIsInvalid && (
                     <p style={{ color: "#dc2626", fontSize: 13, fontWeight: 600, marginTop: 10 }}>
-                      ✕ This location is about {estimate?.distance_km} km away — we deliver up to {estimate?.max_km} km.
-                      Please move your pin closer.
+                      The selected pin is invalid. Please remove it and set it again on the map.
+                    </p>
+                  )}
+                  {feeOutOfRange && estimateForCurrent && (
+                    <p style={{ color: "#dc2626", fontSize: 13, fontWeight: 600, marginTop: 10 }}>
+                      ✕ This location is about {estimateForCurrent.distance_km} km away — we deliver up to{" "}
+                      {estimateForCurrent.max_km} km. Please move your pin closer.
                     </p>
                   )}
                 </div>
@@ -1633,19 +1771,31 @@ export default function CheckoutPage() {
               >
                 <span>
                   Delivery fee
-                  {estimate?.distance_km != null && (
-                    <span style={{ fontSize: 12, color: "#94a3b8" }}> ({estimate.distance_km} km)</span>
+                  {estimateForCurrent?.distance_km != null && !estimateLoading && (
+                    <span style={{ fontSize: 12, color: "#94a3b8" }}> ({estimateForCurrent.distance_km} km)</span>
                   )}
                 </span>
                 <span style={{ fontWeight: 600, color: "var(--secondary-color)" }}>
-                  {estimateLoading ? "…" : `₱${fee}`}
+                  {estimateLoading ? "…" : estimateForCurrent ? `₱${estimateForCurrent.fee}` : "—"}
                 </span>
               </div>
-              {estimate && (
+              {estimateLoading && (
+                <p style={{ margin: "0 0 12px", fontSize: 11, color: "#94a3b8" }}>Updating delivery fee…</p>
+              )}
+              {!estimateLoading && estimateForCurrent && (
                 <p style={{ margin: "0 0 12px", fontSize: 11, color: "#94a3b8" }}>
-                  {estimate.source === "flat_fee"
-                    ? "Set your exact location for a distance-based fee."
-                    : "Estimated distance-based fee."}
+                  {estimateForCurrent.source === "pin"
+                    ? `Straight-line distance from Suarez Food Hub${
+                        estimateForCurrent.distance_km != null ? ` (${estimateForCurrent.distance_km} km)` : ""
+                      }.`
+                    : estimateForCurrent.source === "town_centroid"
+                      ? "Estimated from your saved town — set a pin for an exact fee."
+                      : "Flat fee — set a pin or a saved address for distance pricing."}
+                </p>
+              )}
+              {!estimateLoading && estimateError && (
+                <p style={{ margin: "0 0 12px", fontSize: 11, color: "#dc2626" }}>
+                  Delivery fee unavailable. Please retry the location estimate.
                 </p>
               )}
               <div
@@ -1661,7 +1811,9 @@ export default function CheckoutPage() {
                 }}
               >
                 <span>Total</span>
-                <span style={{ color: "var(--primary-color)" }}>₱{total}</span>
+                <span style={{ color: "var(--primary-color)" }}>
+                  {estimateLoading || total == null ? "…" : `₱${total}`}
+                </span>
               </div>
             </div>
           </div>
