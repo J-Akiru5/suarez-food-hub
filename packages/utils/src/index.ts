@@ -30,12 +30,22 @@ export {
   addressChangeInvalidatesPin,
   buildAddressSearchQueries,
   buildNominatimSearchUrl,
+  candidateMatchesQuery,
+  GEOCODE_MALFORMED_MESSAGE,
+  GEOCODE_NO_RESULTS_MESSAGE,
+  GEOCODE_TIMEOUT_MESSAGE,
+  GEOCODE_TIMEOUT_MS,
   type GeocodeCandidate,
+  type GeocodePrecision,
+  geocodeHttpErrorMessage,
+  geocodePrecision,
   ILOILO_VIEWBOX,
+  interpretGeocodeResponse,
   NOMINATIM_SEARCH_URL,
   normalizeAddressQuery,
   type PinSource,
   parseNominatimSearchResults,
+  shouldAutoApplyGeocodeCandidate,
 } from "./geocoding";
 export { formatGeolocationAccuracy, geolocationErrorMessage } from "./geolocation";
 export {

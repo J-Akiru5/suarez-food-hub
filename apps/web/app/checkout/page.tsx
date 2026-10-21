@@ -5,11 +5,16 @@ import {
   buildAddressSearchQueries,
   buildNominatimSearchUrl,
   deliveryEstimateKey,
+  GEOCODE_NO_RESULTS_MESSAGE,
+  GEOCODE_TIMEOUT_MESSAGE,
+  GEOCODE_TIMEOUT_MS,
   type GeocodeCandidate,
+  geocodePrecision,
+  interpretGeocodeResponse,
   isValidCoordinates,
   normalizeAddressQuery,
   type PinSource,
-  parseNominatimSearchResults,
+  shouldAutoApplyGeocodeCandidate,
 } from "@repo/utils";
 import {
   ArrowLeft,
@@ -276,6 +281,7 @@ export default function CheckoutPage() {
     candidate: GeocodeCandidate,
     query: string,
     notice = "Address found on the map. Check the pin and adjust it if needed.",
+    tone: "success" | "warning" = "success",
   ) => {
     setPosition({ lat: candidate.lat, lng: candidate.lng });
     setPinSource("address");
@@ -285,9 +291,25 @@ export default function CheckoutPage() {
     setGeocodeCandidates([]);
     setGeocodeQuery("");
     setGeocodeError("");
-    setGeocodeNoticeTone("success");
+    setGeocodeNoticeTone(tone);
     setGeocodeNotice(notice);
     setAddressNeedsResolution(false);
+  };
+
+  const handleGeocodeCandidateSelect = (candidate: GeocodeCandidate) => {
+    const precision = geocodePrecision(candidate);
+    if (precision === "exact") {
+      applyGeocodeCandidate(candidate, geocodeQuery);
+      return;
+    }
+    applyGeocodeCandidate(
+      candidate,
+      geocodeQuery,
+      precision === "broad"
+        ? "Broad area selected — the pin is at the area centre. Move it to your exact delivery location."
+        : "Approximate match selected — drag the pin to your exact delivery point.",
+      "warning",
+    );
   };
 
   // Resolve the typed address with Nominatim (the same provider used for the
@@ -318,8 +340,14 @@ export default function CheckoutPage() {
     setGeocodeNoticeTone("info");
     setGeocodeCandidates([]);
 
+    let timedOut = false;
+    const timeoutId = setTimeout(() => {
+      timedOut = true;
+      controller.abort();
+    }, GEOCODE_TIMEOUT_MS);
+
     try {
-      let matchedQuery = query;
+      let matchedQuery = queries[0];
       let candidates: GeocodeCandidate[] = [];
 
       for (let index = 0; index < queries.length; index++) {
@@ -337,53 +365,64 @@ export default function CheckoutPage() {
           signal: controller.signal,
           headers: { Accept: "application/json" },
         });
-        if (!res.ok) throw new Error(`Address search failed (${res.status}).`);
-        const raw = await res.json();
+        const raw = await res.json().catch(() => null);
         if (seq !== geocodeSeq.current) return;
-
-        const found = parseNominatimSearchResults(raw);
-        if (found.length > 0) {
-          candidates = found;
+        const result = interpretGeocodeResponse(res.status, raw, queries[index]);
+        if (result.kind === "error") {
+          setGeocodeNotice("");
+          setGeocodeError(result.error ?? GEOCODE_NO_RESULTS_MESSAGE);
+          return;
+        }
+        if (result.kind === "ok") {
+          candidates = result.candidates;
           matchedQuery = queries[index];
           break;
         }
+        // result.kind === "empty": try the next controlled fallback query.
       }
 
       if (candidates.length === 0) {
         setGeocodeNotice("");
-        setGeocodeError(
-          "No matching location found. Add a barangay or municipality, or set the pin manually on the map.",
-        );
+        setGeocodeError(GEOCODE_NO_RESULTS_MESSAGE);
         return;
       }
 
-      const usedBroaderQuery = matchedQuery !== query;
-      if (candidates.length === 1) {
-        applyGeocodeCandidate(
-          candidates[0],
-          query,
-          usedBroaderQuery
-            ? "Address found using a broader search. Verify the pin and adjust it if needed."
-            : "Address found on the map. Check the pin and adjust it if needed.",
-        );
+      // Only a single precise house/building result is safe to apply silently.
+      // Approximate landmarks/barangays and broad municipalities must be
+      // explicitly selected so a centroid is never presented as a doorstep.
+      if (shouldAutoApplyGeocodeCandidate(candidates)) {
+        applyGeocodeCandidate(candidates[0], query);
         return;
       }
 
+      const usedFallbackQuery = matchedQuery !== queries[0];
+      const singlePrecision = candidates.length === 1 ? geocodePrecision(candidates[0]) : null;
       setGeocodeCandidates(candidates);
       setGeocodeQuery(query);
-      setGeocodeNoticeTone("info");
+      setGeocodeNoticeTone("warning");
       setGeocodeNotice(
-        usedBroaderQuery
-          ? "Multiple locations match the broader search. Choose the correct destination below."
-          : "Multiple locations match. Choose the correct destination below.",
+        candidates.length === 1
+          ? singlePrecision === "broad"
+            ? "Only a broad area matched. Select it below, then move the pin to your exact delivery location."
+            : "An approximate landmark or street matched. Select it below and adjust the pin to your exact delivery point."
+          : usedFallbackQuery
+            ? "Multiple locations match the broader search. Choose the correct destination below."
+            : "Multiple locations match. Choose the correct destination below.",
       );
     } catch {
-      if (controller.signal.aborted || seq !== geocodeSeq.current) return;
+      if (seq !== geocodeSeq.current) return;
+      if (timedOut) {
+        setGeocodeNotice("");
+        setGeocodeError(GEOCODE_TIMEOUT_MESSAGE);
+        return;
+      }
+      if (controller.signal.aborted) return;
       setGeocodeNotice("");
       setGeocodeError(
         "Address lookup failed. Check your connection and try again, or set the pin manually on the map.",
       );
     } finally {
+      clearTimeout(timeoutId);
       if (seq === geocodeSeq.current) setGeocoding(false);
     }
   };
@@ -1233,7 +1272,7 @@ export default function CheckoutPage() {
                         {geocodeError}
                       </p>
                     )}
-                    {geocodeCandidates.length > 1 && (
+                    {geocodeCandidates.length > 0 && (
                       <div
                         style={{
                           marginTop: 8,
@@ -1246,29 +1285,49 @@ export default function CheckoutPage() {
                         <p
                           style={{ margin: "0 0 8px", fontSize: 12, fontWeight: 700, color: "var(--secondary-color)" }}
                         >
-                          Multiple matches — choose the correct destination:
+                          {geocodeCandidates.length > 1
+                            ? "Multiple matches — choose the correct destination:"
+                            : "Approximate match — select and confirm:"}
                         </p>
                         <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                          {geocodeCandidates.map((candidate) => (
-                            <button
-                              key={`${candidate.lat},${candidate.lng}`}
-                              type="button"
-                              onClick={() => applyGeocodeCandidate(candidate, geocodeQuery)}
-                              style={{
-                                textAlign: "left",
-                                padding: "8px 10px",
-                                borderRadius: 8,
-                                border: "1px solid #e2e8f0",
-                                background: "#fff",
-                                color: "#334155",
-                                fontSize: 12,
-                                lineHeight: 1.45,
-                                cursor: "pointer",
-                              }}
-                            >
-                              {candidate.displayName}
-                            </button>
-                          ))}
+                          {geocodeCandidates.map((candidate) => {
+                            const precision = geocodePrecision(candidate);
+                            return (
+                              <button
+                                key={`${candidate.lat},${candidate.lng}`}
+                                type="button"
+                                onClick={() => handleGeocodeCandidateSelect(candidate)}
+                                style={{
+                                  textAlign: "left",
+                                  padding: "8px 10px",
+                                  borderRadius: 8,
+                                  border: "1px solid #e2e8f0",
+                                  background: "#fff",
+                                  color: "#334155",
+                                  fontSize: 12,
+                                  lineHeight: 1.45,
+                                  cursor: "pointer",
+                                }}
+                              >
+                                <span style={{ display: "block" }}>{candidate.displayName}</span>
+                                <span
+                                  style={{
+                                    display: "block",
+                                    marginTop: 4,
+                                    fontSize: 11,
+                                    fontWeight: 700,
+                                    color: precision === "exact" ? "#15803d" : "#b45309",
+                                  }}
+                                >
+                                  {precision === "exact"
+                                    ? "Exact building"
+                                    : precision === "broad"
+                                      ? "Broad area — approximate"
+                                      : "Landmark/street — approximate"}
+                                </span>
+                              </button>
+                            );
+                          })}
                         </div>
                       </div>
                     )}
